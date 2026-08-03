@@ -1,0 +1,212 @@
+@import 'tailwindcss';
+
+/* class-based dark variant: `.dark` on <html> swaps tokens */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Sensorium design tokens - single source: docs/DESIGN.md
+  Do not add colors, fonts, or radii outside this theme.
+*/
+@theme {
+  /* surfaces */
+  --color-surface: #fff8f6;
+  --color-surface-dim: #e5d7d2;
+  --color-surface-bright: #fff8f6;
+  --color-surface-lowest: #ffffff;
+  --color-surface-low: #fff1ec;
+  --color-surface-container: #faebe6;
+  --color-surface-high: #f4e5e0;
+  --color-surface-highest: #eedfda;
+  --color-background: #fff8f6;
+
+  /* text */
+  --color-on-surface: #211a17;
+  --color-on-surface-variant: #56423c;
+  --color-inverse-surface: #372f2b;
+  --color-inverse-on-surface: #fdeee8;
+
+  /* borders / outlines */
+  --color-outline: #8a726b;
+  --color-outline-variant: #ddc0b8;
+
+  /* primary (terracotta) */
+  --color-primary: #9d3d1c;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #bd5532;
+  --color-on-primary-container: #fffbff;
+  --color-inverse-primary: #ffb59e;
+  --color-primary-fixed: #ffdbd0;
+  --color-primary-fixed-dim: #ffb59e;
+  --color-on-primary-fixed: #3a0b00;
+  --color-on-primary-fixed-variant: #802908;
+
+  /* secondary (cream/parchment) */
+  --color-secondary: #615e58;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #e7e2da;
+  --color-on-secondary-container: #67645e;
+  --color-secondary-fixed: #e7e2da;
+  --color-secondary-fixed-dim: #cbc6be;
+  --color-on-secondary-fixed: #1d1b17;
+  --color-on-secondary-fixed-variant: #494641;
+
+  /* tertiary (deep cocoa) */
+  --color-tertiary: #695851;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #837069;
+  --color-on-tertiary-container: #fffaff;
+
+  /* error */
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* typography */
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-brand: 'Special Elite', 'Courier New', monospace;
+
+  /* radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-pill: 9999px;
+
+  /* elevation - diffused, tinted with primary brown */
+  --shadow-soft: 0 4px 20px rgba(157, 61, 28, 0.05);
+  --shadow-lift: 0 8px 32px rgba(61, 24, 8, 0.08);
+}
+
+/*
+  Dark mode - "Ink & Parchment", a warm inversion inspired by emmanuelmathew.dev.
+  Neutral warm charcoal + warm cream + vivid terracotta. Values mirror colors-dark
+  in docs/DESIGN.md. `.dark` (set by ThemeProvider) swaps tokens; components never
+  branch on theme.
+*/
+.dark {
+  color-scheme: dark;
+
+  /* surfaces - neutral warm charcoal, never brown-tinted */
+  --color-surface: #1a1a1a;
+  --color-surface-dim: #1a1a1a;
+  --color-surface-bright: #2a2a2a;
+  --color-surface-lowest: #111111;
+  --color-surface-low: #1f1f1f;
+  --color-surface-container: #222222;
+  --color-surface-high: #2a2a2a;
+  --color-surface-highest: #333333;
+  --color-background: #1a1a1a;
+
+  /* text - warm cream */
+  --color-on-surface: #fcf9f2;
+  --color-on-surface-variant: #8a847e;
+  --color-inverse-surface: #fcf9f2;
+  --color-inverse-on-surface: #1a1a1a;
+
+  /* borders / outlines */
+  --color-outline: #6f6a64;
+  --color-outline-variant: #2a2a2a;
+
+  /* primary - vivid terracotta (brightened #d95d39) */
+  --color-primary: #ff8a5c;
+  --color-on-primary: #3a0b00;
+  --color-primary-container: #8f2f0d;
+  --color-on-primary-container: #ffdbcf;
+  --color-inverse-primary: #9d3d1c;
+  --color-primary-fixed: #ffdbcf;
+  --color-primary-fixed-dim: #ffb59e;
+  --color-on-primary-fixed: #3a0b00;
+  --color-on-primary-fixed-variant: #8f2f0d;
+
+  /* secondary (cream/parchment) */
+  --color-secondary: #cbc6be;
+  --color-on-secondary: #33312c;
+  --color-secondary-container: #4a4842;
+  --color-on-secondary-container: #e7e2da;
+  --color-secondary-fixed: #e7e2da;
+  --color-secondary-fixed-dim: #cbc6be;
+  --color-on-secondary-fixed: #1d1b17;
+  --color-on-secondary-fixed-variant: #494641;
+
+  /* tertiary (cocoa) */
+  --color-tertiary: #d9c2b9;
+  --color-on-tertiary: #3b2d27;
+  --color-tertiary-container: #53433d;
+  --color-on-tertiary-container: #f6ddd5;
+
+  /* error */
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  /* elevation - deeper + neutral in dark */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --shadow-lift: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Subtle crossfade when switching room views - keeps tabs feeling like one room.
+   Opacity only: a transform here would create a containing block and break
+   position:fixed descendants (e.g. the room's new-messages pill). */
+@keyframes room-view-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.room-view-in {
+  animation: room-view-in 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-view-in {
+    animation: none;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* visible keyboard focus everywhere (mouse clicks don't show rings) */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-on-surface);
+    font-family: var(--font-sans);
+    @apply antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
+  /* safe-area aware mobile nav */
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+
+  /* Height of the fixed mobile bottom nav (+ safe area). The room composer and
+     its new-messages pill anchor above it on small screens. */
+  :root {
+    --bottom-nav-offset: calc(4rem + max(env(safe-area-inset-bottom), 0.5rem));
+  }
+  @media (min-width: 1024px) {
+    :root {
+      --bottom-nav-offset: 0rem;
+    }
+  }
+}

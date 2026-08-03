@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+  # Optional manual run so you can exercise the pipeline on demand.
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: lint · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit & component tests (with coverage gate)
+        run: npm run test:coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+
+  migrations:
+    name: migrations (local apply)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start Supabase
+        run: npx supabase start
+
+      - name: Apply migrations to local DB
+        run: npx supabase db push --local
+
+      - name: Lint local DB
+        run: npx supabase db lint --local
+
+      # Integration tests exercise RPCs, RLS and security-definer functions
+      # against the local stack started above, so run them before teardown.
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Stop Supabase
+        if: always()
+        run: npx supabase stop
+
+  e2e:
+    name: e2e (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start Supabase
+        run: npx supabase start
+
+      # Seed writes .env (VITE_SUPABASE_URL / ANON_KEY) and creates the demo golden-path user + cluster.
+      - name: Seed demo data
+        run: npm run seed:demo
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: ignore
