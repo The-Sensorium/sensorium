@@ -13,6 +13,7 @@
   <a href="#features">Features</a> ·
   <a href="#tech-stack">Tech Stack</a> ·
   <a href="#getting-started">Getting Started</a> ·
+  <a href="#development-workflow">Development Workflow</a> ·
   <a href="#documentation">Documentation</a> ·
   <a href="#license">License</a>
 </p>
@@ -113,6 +114,25 @@ npm run seed:demo
 
 > **Local realtime note:** if chat or presence does not flow after changing realtime migrations, run `supabase stop && supabase start` so the realtime server reconnects.
 
+## Development Workflow
+
+Sensorium uses a **staging-driven** Git workflow. There are two long-lived branches:
+
+- **`main`** is **Production**. Only tested, reviewed changes land here. Merging to `main` deploys the production app and applies migrations to the production database.
+- **`develop`** is **Staging**. This is the integration branch where all work converges and gets tested in a shared staging environment before release.
+
+All work starts from `develop`. Feature, fix, and docs branches are cut from `develop`, merged back into `develop` via pull request, then — once the team is happy — `develop` is merged into `main` to release.
+
+```
+feature/*
+    ↓
+develop
+    ↓
+main
+```
+
+Contributors must never create branches from `main`, open pull requests directly into `main`, or push directly to `develop` or `main`. Both long-lived branches are protected; all changes go through pull requests.
+
 ## Scripts
 
 | Command | Description |
@@ -139,15 +159,26 @@ Tests live under `src/**/*.test.ts(x)`, `tests/integration/**/*.test.ts`, and `e
 
 ## CI/CD
 
-`.github/workflows/ci.yml` runs on push and pull requests to `main`:
+`.github/workflows/ci.yml` runs on every push and pull request to `main`, `develop`, `feature/**`, `fix/**`, and `docs/**`, so every branch and PR is validated:
 
 - **lint, test, build**: `npm ci`, oxlint, Vitest, Vite build. The build artifact is uploaded.
 - **migrations**: starts a local Supabase stack, applies all migrations, runs the integration suite, and confirms a clean, lint-free database build.
 - **e2e (blocking)**: starts Supabase, seeds demo data, installs Chromium, and runs the Playwright suite.
 
-`.github/workflows/db-migrate.yml` applies pending migrations to the linked Supabase project on every push to `main`.
+Separate migration workflows apply schema changes to the two remote Supabase projects:
 
-Deployment: the frontend is served on Vercel, with SPA rewrites defined in `vercel.json`.
+- **`.github/workflows/migrate-staging.yml`** applies pending migrations to the **staging** project on merge/push to `develop`. Feature branches do **not** apply migrations; migration SQL is committed to the PR and applied only once it lands on `develop`.
+- **`.github/workflows/migrate-production.yml`** applies pending migrations to the **production** project on merge/push to `main`.
+
+Deployment by environment (single Vercel project, two environments):
+
+| Branch      | Vercel environment | Database               |
+| ----------- | ------------------ | ---------------------- |
+| `feature/*` | Preview            | Staging (read-only)    |
+| `develop`   | Preview            | Staging                |
+| `main`      | Production         | Production             |
+
+The frontend is served from **one Vercel project** connected to this repository. `main` deploys to the **Production** environment using the production Supabase credentials; `develop` and every `feature/*` branch deploy to **Preview** environments using the staging Supabase credentials. Feature branches get their own preview deploys, but migrations are **never** applied from a feature branch — they apply only when the PR reaches `develop` (staging) and, later, `main` (production). SPA rewrites are defined in `vercel.json`.
 
 ## Environment Variables
 
@@ -156,7 +187,17 @@ Deployment: the frontend is served on Vercel, with SPA rewrites defined in `verc
 | `VITE_SUPABASE_URL` | yes | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | yes | Public anon (publishable) key |
 
-Only the anon key is used in the browser. All privileged operations run through Postgres RPC functions guarded by Row Level Security.
+There are two Supabase projects backed by environments in a **single Vercel project**:
+
+| Branch      | Vercel environment | Database     |
+| ----------- | ------------------ | ------------ |
+| `feature/*` | Preview            | Staging      |
+| `develop`   | Preview            | Staging      |
+| `main`      | Production         | Production   |
+
+For local development, point `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` at your local stack (see [Getting Started](#getting-started)). On the single Vercel project, set the Production environment variables to the production Supabase project and the Preview environment variables to the staging Supabase project; Vercel injects the correct pair per deployment.
+
+Only the anon key is used in the browser. All privileged operations run through Postgres RPC functions guarded by Row Level Security. See [GitHub Secrets](#github-secrets) for the workflow-level secrets backing staging and production.
 
 ## Security
 
@@ -167,6 +208,26 @@ Only the anon key is used in the browser. All privileged operations run through 
 - No secrets ship in the client. Use `VITE_` variables for public values only.
 
 If you find a vulnerability, please open a private issue or reach out before publishing details.
+
+## GitHub Secrets
+
+The migration workflows are environment-aware and expect the following repository secrets. Add these in **Settings → Secrets and variables → Actions**:
+
+**Production**
+
+| Secret | Purpose |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (shared by both environments) |
+| `SUPABASE_PROD_PROJECT_ID` | Production Supabase project reference |
+| `SUPABASE_PROD_DB_PASSWORD` | Production database password for `db push` |
+
+**Staging**
+
+| Secret | Purpose |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (reused) |
+| `SUPABASE_STAGING_PROJECT_ID` | Staging Supabase project reference |
+| `SUPABASE_STAGING_DB_PASSWORD` | Staging database password for `db push` |
 
 ## Documentation
 

@@ -9,6 +9,8 @@ Thanks for wanting to contribute. Sensorium is a small, carefully scoped project
 - [Setting up a development environment](#setting-up-a-development-environment)
 - [Finding something to work on](#finding-something-to-work-on)
 - [Development workflow](#development-workflow)
+- [Release process](#release-process)
+- [Branch protection](#branch-protection)
 - [Code style and conventions](#code-style-and-conventions)
 - [Database and migrations](#database-and-migrations)
 - [Testing](#testing)
@@ -63,11 +65,43 @@ npm run seed:demo
 
 ## Development workflow
 
+This project uses a **staging-driven** Git workflow. All work starts from `develop` and merges back into `develop`; `main` is reserved for production releases.
+
+```
+feature/*
+    ↓
+develop
+    ↓
+main
+```
+
 1. **Open an issue first.** Discuss the change before opening a pull request, especially anything that touches the schema, RLS, or realtime contracts. This is a small project; the maintainers want to keep the surface area intentional.
-2. **Create a branch.** Use a short, descriptive branch name, e.g. `feat/signal-reactions`, `fix/avatar-upload`, `docs/contributing`.
+2. **Create a branch from `develop`.** Never branch from `main`:
+
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/my-feature   # or fix/..., docs/...
+   ```
+
+   Use a short, descriptive branch name, e.g. `feat/signal-reactions`, `fix/avatar-upload`, `docs/contributing`.
 3. **Make your changes.** Keep them focused on the issue. Try to keep the diff reviewable.
 4. **Add tests.** Changes to logic should come with unit tests; changes that cross the database boundary should come with integration tests where feasible.
-5. **Run the checks below locally** before pushing.
+5. **Commit and push your branch**, then open a pull request that targets `develop`:
+
+   ```bash
+   git push -u origin feature/my-feature
+   ```
+
+   ```
+   feature/my-feature
+             ↓
+   develop
+   ```
+
+6. **Run the checks below locally** before pushing.
+
+Never open a pull request directly into `main`, and never push directly to `develop` or `main`.
 
 ### Commit style
 
@@ -100,6 +134,29 @@ npm run test:integration   # integration suite against the fresh stack
 
 E2E changes are validated in CI; you can run them locally with `npm run test:e2e` after `supabase start` and `npm run seed:demo`.
 
+## Release process
+
+Releases are the only time work moves into `main`. Only maintainers merge into `main`.
+
+Once the changes on `develop` have passed team/QA testing, open a pull request from `develop` into `main` and have it reviewed. Merging it deploys the production app and applies pending migrations to the production Supabase project.
+
+```
+develop
+    ↓
+main
+```
+
+Migrations are applied to staging when a PR merges into `develop`, and to production when `develop` is merged into `main`.
+
+## Branch protection
+
+Both long-lived branches are protected:
+
+- **`main`** is protected — production. Merging requires review and green CI.
+- **`develop`** is protected — staging. Merging requires review and green CI.
+
+All changes go through pull requests; nobody pushes directly to `develop` or `main`. Feature branches are short-lived and merge back into `develop`.
+
 ## Code style and conventions
 
 - **Linting:** oxlint via `npm run lint`. There are no fix-up scripts; keep the linter clean by hand.
@@ -119,6 +176,10 @@ Migrations live in `supabase/migrations/` and are **order-dependent**. This is i
 - Keep privileged operations in `security definer` functions and restrict them with grants, not by trusting the caller.
 - Verify your migration against the integration suite in `tests/integration/`, which exercises RLS and RPC behavior with per-user clients.
 
+Migration SQL is committed inside your PR but is **not** applied to any remote database from a feature branch. It is applied to the **staging** Supabase project only once the PR merges into `develop`, and to **production** when `develop` merges into `main`. This keeps multiple in-flight feature branches from clobbering the shared staging schema while a PR is still under review.
+
+Because migrations are order-dependent and applied on merge, coordinate migration filenames/sequencing with other in-flight branches. If two branches add migrations and merge into `develop` in an order that differs from local timestamps, the remote apply may sequence them differently than your local stack — surface this early by rebasing and re-running `supabase db reset` before merging.
+
 ## Testing
 
 The project has three layers:
@@ -133,10 +194,11 @@ The coverage gate in `vite.config.ts` is an enforced floor — CI fails if it re
 
 ## Pull requests
 
-1. Push your branch and open a PR against `main`. Use the pull request template and fill it out.
+1. Push your feature branch and open a PR **targeting `develop`**. Use the pull request template and fill it out.
 2. The CI workflows run on every PR: lint, coverage, build, migration apply, integration suite, and the blocking E2E suite. All must pass.
 3. Request review from a maintainer. Respond to feedback; it's part of the process.
-4. Once approved and green, a maintainer merges. Keep `main` green — it is deployed.
+4. Once approved and green, a maintainer merges your branch into `develop`. This updates the shared staging environment — keep it green.
+5. Releases happen separately when a maintainer merges `develop` into `main` (see [Release process](#release-process)).
 
 ## Code of Conduct
 

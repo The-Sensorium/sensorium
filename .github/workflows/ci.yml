@@ -2,12 +2,19 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop, 'feature/**', 'fix/**', 'docs/**']
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
   # Optional manual run so you can exercise the pipeline on demand.
   workflow_dispatch:
+
+# Cancel superseded runs in the same group so a merged develop/main push
+# supersedes the PR run that just triggered it, and a docs-only push cancels
+# its own prior run. Do not cancel across branches (group includes the ref).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:

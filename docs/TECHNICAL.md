@@ -115,10 +115,13 @@ The Supabase CLI starts the full stack in Docker (Postgres, API, Studio, Inbucke
 
 ## CI and Deployment
 
-Two GitHub Actions workflows run on push and pull requests to `main`:
+The repository uses a staging-driven Git workflow. `develop` is the integration branch; `main` is production. Three GitHub Actions workflows validate and deploy:
 
-- **`ci.yml`**: lint, unit tests with the v8 coverage gate, build, local migration apply plus the integration suite, and the blocking Playwright e2e suite.
-- **`db-migrate.yml`**: applies pending migrations to the linked Supabase project.
+- **`ci.yml`**: lint, unit tests with the v8 coverage gate, build, local migration apply plus the integration suite, and the blocking Playwright e2e suite. Runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`.
+- **`migrate-staging.yml`**: applies pending migrations to the **staging** Supabase project on merge/push to `develop`.
+- **`migrate-production.yml`**: applies the same migrations to the **production** Supabase project on merge/push to `main`.
+
+Deployments by branch: a **single Vercel project** serves the app. `main` deploys to the Production environment against the production Supabase project; `develop` and every `feature/*` branch deploy to Preview environments against the staging Supabase project. Feature branches never apply migrations directly — migration SQL lands on staging only when merged into `develop`, and on production when `develop` merges into `main`.
 
 The frontend is served on Vercel with SPA rewrites defined in `vercel.json`.
 
