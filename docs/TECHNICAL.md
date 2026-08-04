@@ -1,8 +1,8 @@
 # Technical Architecture
 
-Sensorium is a React single-page application backed by Supabase (Postgres, Auth, Storage, Realtime). This document describes the stack, how the pieces fit together, and the key design decisions.
+This is the deep technical reference for Sensorium. Read [`ARCHITECTURE.md`](ARCHITECTURE.md) first for the high-level mental model; this document fills in the details: exact libraries, the database schema, migrations, storage, realtime, environment variables, and how the project is built and deployed.
 
-> For a high-level overview of how the system is organized, see [`ARCHITECTURE.md`](ARCHITECTURE.md). This document is the deeper technical reference.
+For a quick start and the front-door overview, see the [README](../README.md).
 
 ## Tech Stack
 
@@ -36,10 +36,10 @@ Sensorium is a React single-page application backed by Supabase (Postgres, Auth,
 
 ```
 sensorium/
-├─ docs/                  # product requirements and design tokens
+├─ docs/                  # product, design, and architecture documentation
 ├─ supabase/
 │  ├─ config.toml         # local Supabase stack configuration
-│  └─ migrations/         # order-dependent SQL, 0001 to 0034
+│  └─ migrations/         # order-dependent SQL: schema, RLS, functions, cron
 ├─ src/
 │  ├─ app/                # router, providers, guards, auth context, layouts
 │  ├─ pages/              # route page components
@@ -52,12 +52,13 @@ sensorium/
 ├─ scripts/               # idempotent demo seed
 ├─ public/                # favicons and static assets
 ├─ vercel.json            # SPA rewrites for Vercel
+├─ .env.example           # local environment variables
 └─ package.json
 ```
 
 ## Feature Areas
 
-The app is organized into feature modules in `src/features/`:
+The app is organized into feature modules in `src/features/`. Each module owns one domain and exposes its data hooks, TanStack Query sources, mutations, and realtime subscriptions.
 
 | Module | Responsibility |
 |---|---|
@@ -70,10 +71,18 @@ The app is organized into feature modules in `src/features/`:
 | `notifications.ts` | user notifications |
 | `moderation.ts` | reporting |
 | `avatars.ts` | avatar signed URLs and storage paths |
+| `mentions.ts` | mention parsing and linkification |
+
+## Frontend Patterns
+
+- **Routing**: declarative routes in `src/app/router.tsx`, with layout components (`AppShell`, `PublicLayout`, `ClusterLayout`) and guard components that redirect based on auth and onboarding state.
+- **Server state**: every server read goes through a feature module that wraps TanStack Query. Components call hooks; they never talk to Supabase directly.
+- **Typed client**: a single typed Supabase client instance in `src/lib/supabase.ts`, with a generated TypeScript type for the database in `src/lib/database.types.ts`.
+- **Styling**: Tailwind utility classes restricted to the tokens in `docs/DESIGN.md`, mirrored into `src/index.css`. No new colors, typefaces, or radii outside the documented tokens.
 
 ## Database
 
-All schema lives in `supabase/migrations/` and is order-dependent. Migrations build on each other:
+All schema lives in `supabase/migrations/` and is **order-dependent**. Migrations build on each other and are never edited after they have been applied; changes come as new ordered files on top.
 
 - **Core schema (0001-0010)**: enums, profiles, queues and clusters, chat, signals, moods and status, votes and member replacement, notifications, reports, and demo seed data.
 - **Functions (0011-0015)**: matching, intro and social helpers, vote and replacement functions, and the pg_cron schedule.
@@ -81,7 +90,7 @@ All schema lives in `supabase/migrations/` and is order-dependent. Migrations bu
 - **Realtime (0021-0024)**: chat, signal replies, governance events, and notification payloads.
 - **Hardening (0025-0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
 
-Every table has Row Level Security enabled. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts.
+Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
 ### Scheduled jobs
 
@@ -102,6 +111,10 @@ The browser obtains a signed URL with a short TTL, uses it to render the image, 
 
 Authentication uses Supabase Auth with email and password. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028).
 
+## Security
+
+Security lives in the database, not in the client. The browser holds only the public anon key and is never trusted; Row Level Security and RPC functions are the enforcement point. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the mental model.
+
 ## Environment Variables
 
 | Variable | Required | Description |
@@ -113,19 +126,59 @@ Only the anon key is used in the browser. All privileged operations run through 
 
 ## Local Development
 
-The Supabase CLI starts the full stack in Docker (Postgres, API, Studio, Inbucket, Storage, Realtime) using `supabase/config.toml`. `npm run seed:demo` seeds demo users and a cluster. Run migrations from scratch with `supabase db reset`.
+The Supabase CLI starts the full stack in Docker (Postgres, API, Studio, Inbucket, Storage, Realtime) using `supabase/config.toml`. `npm run seed:demo` seeds demo users and a cluster. Run migrations from scratch with `supabase db reset`. See the [README](../README.md#getting-started) for the full local setup.
 
 ## CI and Deployment
 
-The repository uses a staging-driven Git workflow. `develop` is the integration branch; `main` is production. Three GitHub Actions workflows validate and deploy:
+### Git workflow
 
-- **`ci.yml`**: lint, unit tests with the v8 coverage gate, build, local migration apply plus the integration suite, and the blocking Playwright e2e suite. Runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`.
+Sensorium uses a staging-driven Git workflow with two long-lived branches. `develop` is the shared preview branch; `main` is production.
+
+```
+feature/*
+    ↓
+develop
+    ↓
+main
+```
+
+- **`feature/*`** branches are cut from `develop` and get their own Vercel Preview deployment against the staging Supabase project. They never apply migrations directly.
+- **`develop`** is the integration branch. External changes land via pull requests; core maintainers may commit directly. It deploys to the preview environment and applies pending migrations to the staging Supabase project on merge.
+- **`main`** is production. Releases always go through a pull request from `develop` into `main`. Merging it deploys the production app and applies pending migrations to the production Supabase project.
+
+### GitHub Actions
+
+Three workflows validate and deploy:
+
+- **`ci.yml`**: runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`. It runs lint, unit tests with the v8 coverage gate, the production build (artifact uploaded), applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
 - **`migrate-staging.yml`**: applies pending migrations to the **staging** Supabase project on merge/push to `develop`.
 - **`migrate-production.yml`**: applies the same migrations to the **production** Supabase project on merge/push to `main`.
 
-Deployments by branch: a **single Vercel project** serves the app. `main` deploys to the Production environment against the production Supabase project; `develop` and every `feature/*` branch deploy to Preview environments against the staging Supabase project. Feature branches never apply migrations directly — migration SQL lands on staging only when merged into `develop`, and on production when `develop` merges into `main`.
+### Deployments
 
-The frontend is served on Vercel with SPA rewrites defined in `vercel.json`.
+A **single Vercel project** serves the app. `main` deploys to the Production environment against the production Supabase project; `develop` and every `feature/*` branch deploy to Preview environments against the staging Supabase project. SPA rewrites are defined in `vercel.json`.
+
+The order matters: migrations land on staging first, are tested there, and only reach production through a `main` release. Feature branches never apply migrations directly; migration SQL lands on staging only when merged into `develop`, and on production when `develop` merges into `main`.
+
+### GitHub Secrets
+
+The migration workflows are environment-aware and expect the following repository secrets. Add these in **Settings → Secrets and variables → Actions**:
+
+**Production**
+
+| Secret | Purpose |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (shared by both environments) |
+| `SUPABASE_PROD_PROJECT_ID` | Production Supabase project reference |
+| `SUPABASE_PROD_DB_PASSWORD` | Production database password for `db push` |
+
+**Staging**
+
+| Secret | Purpose |
+|---|---|
+| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (reused) |
+| `SUPABASE_STAGING_PROJECT_ID` | Staging Supabase project reference |
+| `SUPABASE_STAGING_DB_PASSWORD` | Staging database password for `db push` |
 
 ## Scripts
 
@@ -133,6 +186,7 @@ The frontend is served on Vercel with SPA rewrites defined in `vercel.json`.
 |---|---|
 | `npm run dev` | start the Vite dev server |
 | `npm run build` | typecheck then build for production |
+| `npm run preview` | preview the production build locally |
 | `npm run lint` | run oxlint |
 | `npm test` | run the Vitest suite |
 | `npm run test:coverage` | run the unit suite and enforce the v8 coverage gate |
@@ -140,4 +194,3 @@ The frontend is served on Vercel with SPA rewrites defined in `vercel.json`.
 | `npm run test:watch` | run Vitest in watch mode |
 | `npm run test:e2e` | run the Playwright suite |
 | `npm run seed:demo` | seed the local database with demo data |
-| `npm run preview` | preview the production build |

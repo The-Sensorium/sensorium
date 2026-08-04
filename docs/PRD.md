@@ -1,15 +1,12 @@
-## What the app is about
+﻿# Sensorium - Product Requirements Document (MVP)
 
-Sensorium - Product Requirements Document (MVP)
+This document defines what Sensorium is, who it is for, and how it should behave. It is the product source of truth: before changing product behavior, read this first. For the technical architecture, see [`ARCHITECTURE.md`](ARCHITECTURE.md); for the visual design, see [`DESIGN.md`](DESIGN.md).
 
-Product Name
-Sensorium
+**Product Name:** Sensorium
 
-Tagline
-Eight strangers. One cluster.
+**Tagline:** Eight strangers. One cluster.
 
-________________________________________
-Naming Note
+## Naming Note
 
 Sensorium is inspired by the show Sense8, and that inspiration is fine to reference openly in conversation, marketing, and community communication. What we should avoid is using the show's own coined terminology as actual product naming: feature names, screen labels, or branding. Those terms belong to the show and carry IP risk if baked into the product itself, especially if this grows beyond a volunteer project.
 
@@ -19,15 +16,15 @@ Terms that are fine to keep using, since they're ordinary English words the show
 
 If anyone proposes a new feature or screen name going forward, check whether it's a term coined specifically by the show before it goes into the spec. When in doubt, prefer plain language over anything that sounds like it was pulled directly from Sense8's mythology.
 
-________________________________________
-Vision
+---
+## Vision
 
 Sensorium is a social platform that helps strangers form meaningful long-term connections through small permanent groups called Clusters.
 
 Unlike traditional social networks that focus on content, followers, and engagement, Sensorium focuses on conversation, emotional awareness, and shared experiences.
 
-________________________________________
-Problem Statement
+---
+## Problem Statement
 
 Existing platforms optimize for broadcasting.
 - Instagram optimizes for attention.
@@ -39,8 +36,8 @@ None are designed to help a small group of strangers build genuine long-term fri
 
 Sensorium solves this by placing users into permanent clusters of exactly eight people and giving them the tools to build trust, connection, and shared history over time.
 
-________________________________________
-Target Audience
+---
+## Target Audience
 
 Primary
 Adults (18+) looking to connect with new people.
@@ -52,8 +49,8 @@ Examples:
 - People with niche interests
 - People feeling socially isolated
 
-________________________________________
-Core Concepts
+---
+## Core Concepts
 
 ### Cluster
 
@@ -92,10 +89,10 @@ This preserves user intent. Some respondents in the beta form said they would ra
 A visualization of current cluster moods.
 
 Example:
-- 😀 Great: 3
-- 🙂 Good: 2
-- 😐 Okay: 2
-- 😔 Low: 1
+- ðŸ˜€ Great: 3
+- ðŸ™‚ Good: 2
+- ðŸ˜ Okay: 2
+- ðŸ˜” Low: 1
 
 ### Signals
 
@@ -109,8 +106,8 @@ Open question: should Signals support a category tag (advice, recommendation, ac
 
 Open question: should there be a notification specifically for new Signals, separate from regular message notifications, so a genuine ask for help doesn't get buried in chat activity?
 
-________________________________________
-User Requirements
+---
+## User Requirements
 
 Users must:
 - Be 18+
@@ -124,8 +121,8 @@ Date of birth cannot be changed after registration.
 
 Open question: the original beta form only asked for birth year to keep signup friction low. Asking for full date of birth at signup is a bigger ask of new users and may affect signup conversion. Worth weighing against the matching flexibility it enables.
 
-________________________________________
-User Profile
+---
+## User Profile
 
 Required Fields
 - Display Name
@@ -141,8 +138,8 @@ Users may edit profile information at any time except date of birth.
 
 Open question: should full date of birth be visible to other users, or only birth year, with month and day used internally for matching but not displayed? Beta respondents were comfortable sharing birth year, but full DOB visibility wasn't tested.
 
-________________________________________
-Cluster Joining
+---
+## Cluster Joining
 
 Users may join any combination of available matching modes, each forming a separate cluster:
 - Exact Birthdate
@@ -153,8 +150,8 @@ Users may join any combination of available matching modes, each forming a separ
 
 Each mode a user opts into puts them in a separate queue for that mode. A user is not required to join all modes. They can start with just one and add others later from the Discovery page.
 
-________________________________________
-Queue System
+---
+## Queue System
 
 Clusters are formed through queues, one per matching mode per user.
 
@@ -168,8 +165,8 @@ No communication is allowed while waiting in queue.
 
 Because users can be in multiple queues at once, the Home and Queue screens need to show queue status per mode, not just a single queue state.
 
-________________________________________
-Onboarding Flow
+---
+## Onboarding Flow
 
 Step 1
 User completes profile (display name, full date of birth, country; optional photo, bio, location).
@@ -200,8 +197,8 @@ Chat unlocks.
 
 Steps 6 through 9 repeat independently per cluster, since a user may be in multiple clusters at different stages at once.
 
-________________________________________
-Introduction Questions
+---
+## Introduction Questions
 
 Rules:
 - Platform defined
@@ -214,8 +211,8 @@ Failure to complete within 72 hours results in removal and replacement.
 
 Introduction answers remain permanently visible on user profiles, per cluster.
 
-________________________________________
-Identity Model
+---
+## Identity Model
 
 Before introductions complete:
 
@@ -240,10 +237,10 @@ Visible:
 
 Real names are not required.
 
-________________________________________
-Communication
+---
+## Communication
 
-Cluster Chat
+### Cluster Chat
 
 Supported:
 - Text Messages
@@ -258,8 +255,8 @@ Not Supported:
 
 Open question: with a user potentially in multiple clusters, should there be a unified inbox view across clusters, or fully separate spaces?
 
-________________________________________
-Message Features
+---
+## Message Features
 
 Users can:
 - Send messages
@@ -270,61 +267,61 @@ Users can:
 Deleted messages are removed for all users.
 Edited messages display an "edited" indicator.
 
-________________________________________
-Mood System
+---
+## Mood System
 
 Users may optionally select a mood.
 
 Options:
-- 😀 Great
-- 🙂 Good
-- 😐 Okay
-- 😔 Low
-- 😩 Stressed
+- ðŸ˜€ Great
+- ðŸ™‚ Good
+- ðŸ˜ Okay
+- ðŸ˜” Low
+- ðŸ˜© Stressed
 
 Mood is visible to all cluster members.
 
 Open question: if a user is in multiple clusters, is mood shared globally across all of them, or set per cluster?
 
-________________________________________
-Mood History
+---
+## Mood History
 
 Profiles display recent mood history.
 
 Example:
-😀 😀 🙂 😐 😔 😀 🙂
+ðŸ˜€ ðŸ˜€ ðŸ™‚ ðŸ˜ ðŸ˜” ðŸ˜€ ðŸ™‚
 
-________________________________________
-Status System
+---
+## Status System
 
 Users may set a current status.
 
 Examples:
-- 💻 Working
-- 📚 Studying
-- 🎮 Gaming
-- ✈️ Traveling
-- 😴 Sleeping
+- ðŸ’» Working
+- ðŸ“š Studying
+- ðŸŽ® Gaming
+- âœˆï¸ Traveling
+- ðŸ˜´ Sleeping
 
 Visible to cluster members.
 
-________________________________________
-Availability System
+---
+## Availability System
 
 Options:
-- 🟢 Available
-- 🟡 Busy
-- 🔴 Do Not Disturb
+- ðŸŸ¢ Available
+- ðŸŸ¡ Busy
+- ðŸ”´ Do Not Disturb
 
 Visible to cluster members.
 
-________________________________________
-Cluster Governance
+---
+## Cluster Governance
 
 Clusters are community governed.
 
-________________________________________
-Replacement Votes
+---
+## Replacement Votes
 
 Any cluster member may initiate a replacement vote.
 
@@ -338,8 +335,8 @@ Results are revealed after voting closes.
 
 Open question: beta research flagged safety and harassment as the top concern, and a vote only removal process, with no individual blocking, means a harassed user depends on the rest of the cluster to act. Worth deciding whether to add an individual block or mute option as a faster personal safeguard alongside the vote system.
 
-________________________________________
-Replacement Process
+---
+## Replacement Process
 
 If replacement vote succeeds:
 1. Platform selects candidate pool.
@@ -352,8 +349,8 @@ If accepted:
 - Joins cluster
 - Receives access to full cluster history
 
-________________________________________
-Cluster Leaving
+---
+## Cluster Leaving
 
 Users may leave at any time.
 
@@ -363,8 +360,8 @@ Upon leaving:
 
 User messages remain in cluster history.
 
-________________________________________
-Cooldown Rules
+---
+## Cooldown Rules
 
 Leaving a cluster triggers a 30 day cooldown before joining another cluster of the same mode.
 
@@ -373,8 +370,8 @@ Leaving a Birth Year + Month cluster triggers a 30 day cooldown for that specifi
 
 Open question: beta research flagged fear of being "stuck" as a top concern. Worth weighing whether 30 days is the right length, or whether it should be shorter, especially since the multi mode model already gives users other active clusters to fall back on.
 
-________________________________________
-Cluster Naming
+---
+## Cluster Naming
 
 Clusters may vote to change their name.
 
@@ -383,10 +380,10 @@ Example:
 
 Name changes require a cluster vote.
 
-________________________________________
-Moderation
+---
+## Moderation
 
-Reporting
+### Reporting
 
 Users may report other members.
 
@@ -399,8 +396,8 @@ Reasons:
 
 Reports are reviewed by platform moderators.
 
-________________________________________
-NSFW Policy
+---
+### NSFW Policy
 
 NSFW content is prohibited.
 
@@ -411,8 +408,8 @@ Includes:
 
 Violations may result in suspension or removal.
 
-________________________________________
-Blocking
+---
+### Blocking
 
 Blocking is not supported.
 
@@ -423,8 +420,8 @@ Users may:
 
 See the open question under Replacement Votes above; this is the same tension flagged there.
 
-________________________________________
-Notifications
+---
+## Notifications
 
 User configurable.
 
@@ -438,8 +435,8 @@ Examples:
 
 Open question: with multiple simultaneous clusters, notification settings may need to be configurable per cluster, not just globally.
 
-________________________________________
-Discovery
+---
+## Discovery
 
 Users may browse available matching modes and their queue status.
 
@@ -453,8 +450,8 @@ Birth Year + Month: 1996-March
 
 Users cannot see queue members.
 
-________________________________________
-Success Metrics
+---
+## Success Metrics
 
 Primary
 - Cluster Retention Rate (90 Days)
@@ -475,36 +472,36 @@ Secondary
 
 ```text
 Landing Page
-├── Login
-├── Sign Up
-├── Privacy Policy
-├── Terms
+â”œâ”€â”€ Login
+â”œâ”€â”€ Sign Up
+â”œâ”€â”€ Privacy Policy
+â”œâ”€â”€ Terms
 
 Authenticated Area
-├── Home (Cluster List, across all active clusters and modes)
-│
-├── Discovery
-│   ├── Exact Birthdate Clusters
-│   ├── Birth Year + Month Clusters
-│   ├── Birth Month Clusters
-│   ├── Birth Year Clusters
-│   └── Local Clusters
-│
-├── Queue Waiting (per mode, can have multiple active)
-│
-├── Cluster
-│   ├── Chat
-│   ├── Members
-│   ├── Signals
-│   ├── Cluster Pulse
-│   ├── Votes
-│   └── Settings
-│
-├── Profile
-│
-├── Notifications
-│
-└── Account Settings
+â”œâ”€â”€ Home (Cluster List, across all active clusters and modes)
+â”‚
+â”œâ”€â”€ Discovery
+â”‚   â”œâ”€â”€ Exact Birthdate Clusters
+â”‚   â”œâ”€â”€ Birth Year + Month Clusters
+â”‚   â”œâ”€â”€ Birth Month Clusters
+â”‚   â”œâ”€â”€ Birth Year Clusters
+â”‚   â””â”€â”€ Local Clusters
+â”‚
+â”œâ”€â”€ Queue Waiting (per mode, can have multiple active)
+â”‚
+â”œâ”€â”€ Cluster
+â”‚   â”œâ”€â”€ Chat
+â”‚   â”œâ”€â”€ Members
+â”‚   â”œâ”€â”€ Signals
+â”‚   â”œâ”€â”€ Cluster Pulse
+â”‚   â”œâ”€â”€ Votes
+â”‚   â””â”€â”€ Settings
+â”‚
+â”œâ”€â”€ Profile
+â”‚
+â”œâ”€â”€ Notifications
+â”‚
+â””â”€â”€ Account Settings
 ```
 
 ---
@@ -958,7 +955,7 @@ Waiting For Members
 Progress bar
 
 ```text
-██████░░
+â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘
 ```
 
 Note
@@ -1001,9 +998,9 @@ Your Cluster Is Ready
 Members list
 
 ```text
-CodeNomad 🇮🇳
-TokyoReader 🇯🇵
-MountainFox 🇨🇦
+CodeNomad ðŸ‡®ðŸ‡³
+TokyoReader ðŸ‡¯ðŸ‡µ
+MountainFox ðŸ‡¨ðŸ‡¦
 ...
 ```
 
@@ -1086,9 +1083,9 @@ Content
 Member list
 
 ```text
-✓ CodeNomad
-✓ TokyoReader
-⏳ MountainFox
+âœ“ CodeNomad
+âœ“ TokyoReader
+â³ MountainFox
 ```
 
 ---
@@ -1297,16 +1294,16 @@ Cluster Pulse
 Charts
 
 ```text
-😀 Great 3
-🙂 Good 2
-😐 Okay 2
-😔 Low 1
+ðŸ˜€ Great 3
+ðŸ™‚ Good 2
+ðŸ˜ Okay 2
+ðŸ˜” Low 1
 ```
 
 Recent Mood Updates
 
 ```text
-CodeNomad > 😀
+CodeNomad > ðŸ˜€
 ```
 
 ---

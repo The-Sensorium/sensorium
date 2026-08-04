@@ -2,7 +2,7 @@
 
 This document gives a high-level overview of how Sensorium is organized. It is written for new contributors: reading it should take 10-15 minutes and leave you with a mental map you can use before diving into the code.
 
-For deeper implementation detail (exact libraries, config, schema internals, and migration mechanics), see [`TECHNICAL.md`](TECHNICAL.md). For what the product is and why, see [`PRD.md`](PRD.md).
+For the deeper implementation detail (exact libraries, config, schema internals, migration mechanics, and deployment), see [`TECHNICAL.md`](TECHNICAL.md). For what the product is and why, see [`PRD.md`](PRD.md). The recommended reading order is in the [README](../README.md#documentation) and the [docs index](README.md).
 
 ## 1. Architecture Overview
 
@@ -140,9 +140,7 @@ flowchart LR
 - **`develop`**: the shared staging branch. External contributors land work via pull requests; core maintainers may commit directly. It auto-deploys to **preview.thesensorium.online**.
 - **`main`**: production. Releases are always a pull request from `develop` into `main`. Direct pushes are prohibited; it deploys to **www.thesensorium.online**.
 
-Contributors never branch from `main`, never open PRs directly into `main`, and never push directly to `main`. Migrations are applied to staging when a PR merges into `develop`, and to production when `develop` merges into `main`.
-
-See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for the full contributor workflow.
+Contributors never branch from `main`, never open PRs directly into `main`, and never push directly to `main`. See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for the full contributor workflow and [`TECHNICAL.md`](TECHNICAL.md#ci-and-deployment) for the pipelines in detail.
 
 ## 8. Deployment Architecture
 
@@ -154,33 +152,15 @@ A single Vercel project serves the app with two environments, backed by two Supa
 | Preview | `develop` | Preview deployment | Staging project |
 | Feature previews | `feature/*` | Individual Preview deployments | Staging project |
 
-```mermaid
-flowchart TB
-    subgraph Production
-        Main["main"] --> ProdVercel["Vercel Production"]
-        Main --> ProdDB["Production Supabase"]
-        ProdVercel --> ProdDB
-    end
-    subgraph Preview
-        Develop["develop"] --> PrevVercel["Vercel Preview"]
-        Develop --> StageDB["Staging Supabase"]
-        Feature["feature/*"] --> FeaturePrev["Vercel Preview (per branch)"]
-        Feature --> StageDB
-        PrevVercel --> StageDB
-        FeaturePrev --> StageDB
-    end
-```
-
 Production and staging are always isolated: different Vercel environments, different Supabase projects, separate credentials. Feature branches share the staging Supabase project but get their own frontend preview.
 
 ## 9. CI/CD Overview
 
-The pipelines validate every branch and release changes in a controlled order.
+The pipelines validate every branch and release changes in a controlled order. Three GitHub Actions workflows handle it; for the exact steps and secrets, see [`TECHNICAL.md`](TECHNICAL.md#ci-and-deployment).
 
 - **CI workflow**: runs on push/PR to `main` and `develop`, and on push to `feature/*`, `fix/*`, and `docs/*`. It runs lint, unit tests with a coverage gate, the production build, applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
 - **Staging migration workflow**: on merge/push to `develop`, applies pending migrations to the staging Supabase project. Feature branches never apply migrations directly; migration SQL is applied only once the PR lands on `develop`.
 - **Production migration workflow**: on merge/push to `main`, applies the same pending migrations to the production Supabase project.
-- **Deployments**: Vercel handles frontend deploys: production from `main`, previews from `develop` and every feature branch.
 
 The order matters: migrations land on staging first, are tested there, and only reach production through a `main` release.
 

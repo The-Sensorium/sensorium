@@ -157,7 +157,7 @@ The palette is inspired by the "Golden Hour" (the transition between day and nig
 - **Secondary (Cream/Parchment):** The foundational surface color. It is softer on the eyes than pure white, providing a tactile, organic feel.
 - **Tertiary (Deep Cocoa):** A muted warm brown used for tertiary containers and supporting text, keeping the warm tonal profile.
 - **Neutral (Warm Slate):** Used for secondary text (`on-surface-variant`), borders, and inactive states (`outline`/`outline-variant`).
-- **Status (semantic):** Mood and availability use Tailwind status colors rather than custom tokens — `emerald` for available, `amber` for busy, `red` for do-not-disturb. Error states use the Material `error` roles (`#ba1a1a` light, `#ffb4ab` dark).
+- **Status (semantic):** Mood and availability use Tailwind status colors rather than custom tokens: `emerald` for available, `amber` for busy, `red` for do-not-disturb. Error states use the Material `error` roles (`#ba1a1a` light, `#ffb4ab` dark).
 
 ## Dark Mode
 
@@ -179,7 +179,7 @@ The typographic system pairs a humanist sans-serif with a single typewriter acce
 
 - **Headlines:** all headings (`h1`–`h6`) render in Plus Jakarta Sans via the `font-display` token, weighted Semibold (`600`) in the app shell. Headlines stay tight and contemporary rather than decorative.
 - **Body & Labels:** Plus Jakarta Sans (`font-sans`) with open counters and friendly, rounded terminals. It keeps the UI feeling modern and accessible.
-- **Brand:** the "Sensorium" wordmark — on the landing page, auth layouts, and the app shell header — uses **Special Elite** (`font-brand`), a typewriter-style face with monospace fallback, with wide letter-spacing (`0.15em`–`0.2em`). It is reserved for the wordmark only; it is never used for body copy or interface text.
+- **Brand:** the "Sensorium" wordmark (on the landing page, auth layouts, and the app shell header) uses **Special Elite** (`font-brand`), a typewriter-style face with monospace fallback, with wide letter-spacing (`0.15em` to `0.2em`). It is reserved for the wordmark only; it is never used for body copy or interface text.
 - **Styling:** generous line heights (1.5x body) keep the UI from feeling cluttered. The two fonts are loaded from `@fontsource` (Plus Jakarta Sans 400–700, Special Elite 400) in `src/main.tsx`.
 
 ## Layout & Spacing
@@ -196,7 +196,7 @@ The layout philosophy follows a **Fluid Content Model** with strict safe-area ma
 Hierarchy is established through **Tonal Layering** and **Soft Shadows** rather than stark borders.
 
 - **Surfaces:** The base layer is the primary cream surface color. Cards and floating elements use `surface-container`/`surface-low` tones to appear "raised."
-- **Shadows:** Two tokens — `soft` (`0 4px 20px`, tinted terracotta) for resting elevation and `lift` (`0 8px 32px`, deeper brown) for floating/popover elements. In light mode shadows are tinted with the primary terracotta or deep brown rather than pure black to maintain color harmony.
+- **Shadows:** Two tokens: `soft` (`0 4px 20px`, tinted terracotta) for resting elevation and `lift` (`0 8px 32px`, deeper brown) for floating/popover elements. In light mode shadows are tinted with the primary terracotta or deep brown rather than pure black to maintain color harmony.
 - **Depth Masks:** Use soft gradients or "mist" effects at the edges of photos to create a seamless transition between imagery and the interface.
 
 ## Shapes
