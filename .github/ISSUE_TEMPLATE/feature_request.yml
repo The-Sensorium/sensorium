@@ -1,0 +1,51 @@
+name: Feature request
+description: Propose a feature or improvement for Sensorium
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sensorium is a small, carefully scoped project. Before proposing a feature, please:
+        - Read the [PRD](../../blob/main/docs/PRD.md) to understand what the product is.
+        - Check the [existing issues](https://github.com/The-Sensorium/sensorium/issues) for a duplicate or a related discussion.
+        - Read the [contributing guide](../../blob/main/CONTRIBUTING.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem does this feature solve, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior or UI you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you consider, and why is this approach better?
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope of impact
+      description: What does this change touch?
+      multiple: true
+      options:
+        - Frontend UI
+        - Schema / RLS / migrations
+        - Realtime contracts
+        - Storage / signed URLs
+        - Notifications
+        - Governance / votes
+        - Matching
+        - Other
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Mockups, sketches, or links that help explain the idea.

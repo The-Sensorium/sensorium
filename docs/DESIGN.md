@@ -4,18 +4,17 @@ colors:
   surface: '#fff8f6'
   surface-dim: '#e5d7d2'
   surface-bright: '#fff8f6'
-  surface-container-lowest: '#ffffff'
-  surface-container-low: '#fff1ec'
+  surface-lowest: '#ffffff'
+  surface-low: '#fff1ec'
   surface-container: '#faebe6'
-  surface-container-high: '#f4e5e0'
-  surface-container-highest: '#eedfda'
+  surface-high: '#f4e5e0'
+  surface-highest: '#eedfda'
   on-surface: '#211a17'
   on-surface-variant: '#56423c'
   inverse-surface: '#372f2b'
   inverse-on-surface: '#fdeee8'
   outline: '#8a726b'
   outline-variant: '#ddc0b8'
-  surface-tint: '#a0401f'
   primary: '#9d3d1c'
   on-primary: '#ffffff'
   primary-container: '#bd5532'
@@ -54,12 +53,11 @@ colors-dark:
   surface: '#1a1a1a'
   surface-dim: '#1a1a1a'
   surface-bright: '#2a2a2a'
-  surface-container-lowest: '#111111'
-  surface-container-low: '#1f1f1f'
+  surface-lowest: '#111111'
+  surface-low: '#1f1f1f'
   surface-container: '#222222'
-  surface-container-high: '#2a2a2a'
-  surface-container-highest: '#333333'
-  surface-variant: '#2a2a2a'
+  surface-high: '#2a2a2a'
+  surface-highest: '#333333'
   on-surface: '#fcf9f2'
   on-surface-variant: '#8a847e'
   inverse-surface: '#fcf9f2'
@@ -96,27 +94,15 @@ colors-dark:
   error-container: '#93000a'
   on-error-container: '#ffdad6'
 typography:
-  display-lg:
-    fontFamily: Playfair Display
-    fontSize: 48px
-    fontWeight: '700'
-    lineHeight: 56px
-    letterSpacing: -0.02em
-  headline-lg:
-    fontFamily: Playfair Display
-    fontSize: 32px
-    fontWeight: '700'
-    lineHeight: 40px
-  headline-lg-mobile:
-    fontFamily: Playfair Display
-    fontSize: 28px
-    fontWeight: '700'
-    lineHeight: 36px
-  headline-md:
-    fontFamily: Playfair Display
-    fontSize: 24px
-    fontWeight: '600'
-    lineHeight: 32px
+  display:
+    fontFamily: Plus Jakarta Sans
+    className: font-display
+  sans:
+    fontFamily: Plus Jakarta Sans
+    className: font-sans
+  brand:
+    fontFamily: Special Elite
+    className: font-brand
   body-lg:
     fontFamily: Plus Jakarta Sans
     fontSize: 18px
@@ -140,11 +126,11 @@ typography:
     lineHeight: 16px
 rounded:
   sm: 0.25rem
-  DEFAULT: 0.5rem
   md: 0.75rem
   lg: 1rem
   xl: 1.5rem
-  full: 9999px
+  2xl: 2rem
+  pill: 9999px
 spacing:
   unit: 8px
   container-margin: 24px
@@ -169,9 +155,9 @@ The palette is inspired by the "Golden Hour" (the transition between day and nig
 
 - **Primary (Terracotta):** A warm, clay-inspired earth tone used for primary actions, progress indicators, and key brand moments. It evokes the warmth of a campfire.
 - **Secondary (Cream/Parchment):** The foundational surface color. It is softer on the eyes than pure white, providing a tactile, organic feel.
-- **Tertiary (Deep Cocoa):** Used for primary text and high-hierarchy headings to ensure legibility while maintaining the warm tonal profile.
-- **Neutral (Warm Slate):** Used for secondary text, borders, and inactive states. 
-- **Accent (Muted Sage/Sand):** Soft greens and desert sands are used sparingly for icons and status indicators to reinforce the nature-inspired theme.
+- **Tertiary (Deep Cocoa):** A muted warm brown used for tertiary containers and supporting text, keeping the warm tonal profile.
+- **Neutral (Warm Slate):** Used for secondary text (`on-surface-variant`), borders, and inactive states (`outline`/`outline-variant`).
+- **Status (semantic):** Mood and availability use Tailwind status colors rather than custom tokens — `emerald` for available, `amber` for busy, `red` for do-not-disturb. Error states use the Material `error` roles (`#ba1a1a` light, `#ffb4ab` dark).
 
 ## Dark Mode
 
@@ -184,16 +170,17 @@ Behavior:
 - **Tokens:** the dark values live in the `colors-dark` front-matter above and mirror the light set 1:1 (every light token has a dark counterpart, including `fixed`/`inverse` roles). No new hue families are introduced.
 - **Accent:** `--color-primary: #ff8a5c` is the single vivid moment on dark, used for actions, active states, and brand highlights. It is the brightened sibling of the light theme's `#9d3d1c` terracotta and matches how the reference site uses `#d95d39`.
 - **Elevation:** shadows go deeper and more neutral in dark mode; prefer the same token classes over `dark:shadow-*` variants.
-- **Identity preserved:** typography (Playfair Display / Plus Jakarta Sans), radii, and the soft, tactile tone of the light theme are unchanged in dark mode; only the color treatment inverts.
+- **Identity preserved:** typography (Plus Jakarta Sans / Special Elite), radii, and the soft, tactile tone of the light theme are unchanged in dark mode; only the color treatment inverts.
 - **Toggle placement:** a theme toggle is available on the app shell header (top nav desktop, slim bar mobile) and on public pages (landing, auth) via a compact icon menu (Light / System / Dark).
 
 ## Typography
 
-The typographic system uses a sophisticated pairing of an editorial serif and a contemporary sans-serif.
+The typographic system pairs a humanist sans-serif with a single typewriter accent used sparingly for brand moments.
 
-- **Headlines:** `Playfair Display` provides an authoritative yet poetic feel. It should be used for all major section headers and "moments of reflection." Use high contrast (Bold/SemiBold) to create a rhythmic vertical flow.
-- **Body & Labels:** `Plus Jakarta Sans` offers excellent legibility with its open counters and friendly, rounded terminals. It keeps the UI feeling modern and accessible.
-- **Styling:** Maintain generous line heights (1.5x - 1.6x for body) to prevent the UI from feeling cluttered. Headline tracking should be slightly tightened for a premium, custom-set appearance.
+- **Headlines:** all headings (`h1`–`h6`) render in Plus Jakarta Sans via the `font-display` token, weighted Semibold (`600`) in the app shell. Headlines stay tight and contemporary rather than decorative.
+- **Body & Labels:** Plus Jakarta Sans (`font-sans`) with open counters and friendly, rounded terminals. It keeps the UI feeling modern and accessible.
+- **Brand:** the "Sensorium" wordmark — on the landing page, auth layouts, and the app shell header — uses **Special Elite** (`font-brand`), a typewriter-style face with monospace fallback, with wide letter-spacing (`0.15em`–`0.2em`). It is reserved for the wordmark only; it is never used for body copy or interface text.
+- **Styling:** generous line heights (1.5x body) keep the UI from feeling cluttered. The two fonts are loaded from `@fontsource` (Plus Jakarta Sans 400–700, Special Elite 400) in `src/main.tsx`.
 
 ## Layout & Spacing
 
@@ -208,8 +195,8 @@ The layout philosophy follows a **Fluid Content Model** with strict safe-area ma
 
 Hierarchy is established through **Tonal Layering** and **Soft Shadows** rather than stark borders.
 
-- **Surfaces:** The base layer is the secondary cream color. Cards and floating elements use pure white or a slightly lighter cream to appear "raised."
-- **Shadows:** Use extra-diffused, low-opacity shadows (e.g., `y-offset: 4px, blur: 20px, opacity: 0.05`). Shadows should be tinted with the primary terracotta or deep brown rather than pure black to maintain color harmony.
+- **Surfaces:** The base layer is the primary cream surface color. Cards and floating elements use `surface-container`/`surface-low` tones to appear "raised."
+- **Shadows:** Two tokens — `soft` (`0 4px 20px`, tinted terracotta) for resting elevation and `lift` (`0 8px 32px`, deeper brown) for floating/popover elements. In light mode shadows are tinted with the primary terracotta or deep brown rather than pure black to maintain color harmony.
 - **Depth Masks:** Use soft gradients or "mist" effects at the edges of photos to create a seamless transition between imagery and the interface.
 
 ## Shapes
@@ -224,7 +211,7 @@ The shape language is characterized by **Generous Radii**, mimicking organic for
 
 ### Buttons
 - **Primary:** Solid terracotta background with white text. High roundedness (pill-shaped). 
-- **Secondary/Ghost:** Outlined with 1px terracotta or neutral borders. Use Playfair Display sparingly for text-only buttons to add editorial flair.
+- **Secondary/Ghost:** Outlined with 1px terracotta or neutral borders. Use the `font-brand` (Special Elite) treatment sparingly for wordmark moments; interface buttons stay in Plus Jakarta Sans.
 
 ### Cards
 - Surfaces should be white or a very light cream.

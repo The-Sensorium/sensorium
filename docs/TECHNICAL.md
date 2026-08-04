@@ -37,7 +37,7 @@ sensorium/
 ├─ docs/                  # product requirements and design tokens
 ├─ supabase/
 │  ├─ config.toml         # local Supabase stack configuration
-│  └─ migrations/         # order-dependent SQL, 0001 to 0032
+│  └─ migrations/         # order-dependent SQL, 0001 to 0034
 ├─ src/
 │  ├─ app/                # router, providers, guards, auth context, layouts
 │  ├─ pages/              # route page components
@@ -77,7 +77,7 @@ All schema lives in `supabase/migrations/` and is order-dependent. Migrations bu
 - **Functions (0011-0015)**: matching, intro and social helpers, vote and replacement functions, and the pg_cron schedule.
 - **Storage and permissions (0016-0020)**: storage buckets, grants, and fixes.
 - **Realtime (0021-0024)**: chat, signal replies, governance events, and notification payloads.
-- **Hardening (0025-0032)**: RLS and privilege tightening, account deletion, and private storage buckets.
+- **Hardening (0025-0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
 
 Every table has Row Level Security enabled. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts.
 

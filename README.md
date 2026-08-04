@@ -175,15 +175,14 @@ Product and design docs are kept in this repository and treated as the single so
 - [`docs/PRD.md`](docs/PRD.md): product requirements.
 - [`docs/DESIGN.md`](docs/DESIGN.md): visual design system and tokens.
 - [`docs/TECHNICAL.md`](docs/TECHNICAL.md): tech stack and architecture.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): how to contribute, workflow, and code conventions.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md): community standards and reporting.
 
 ## Contributing
 
-Contributions are welcome. This is a small, carefully scoped project, so please:
+Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before starting — it covers the development workflow, code style, database and migration rules, and testing requirements.
 
-1. Read the PRD and design docs in the `docs/` folder before starting.
-2. Open an issue to discuss the change first, especially for anything that touches the schema, RLS, or realtime contracts.
-3. Follow the design tokens in `docs/DESIGN.md`; do not introduce new palettes, typefaces, or radii outside those tokens.
-4. Keep migrations order-dependent and verify with `supabase db reset` before opening a pull request.
+By participating in this project you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
