@@ -22,14 +22,22 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue" alt="License: GPL-3.0" />
 </p>
 
-<p align="center">
-
-| Environment | URL |
-| --- | --- |
-| **Production** | [www.thesensorium.online](https://www.thesensorium.online) |
-| **Preview** | [preview.thesensorium.online](https://preview.thesensorium.online) |
-
-</p>
+<div align="center">
+  <table>
+    <tr>
+      <th>Environment</th>
+      <th>URL</th>
+    </tr>
+    <tr>
+      <td><b>Production</b></td>
+      <td><a href="https://www.thesensorium.online">www.thesensorium.online</a></td>
+    </tr>
+    <tr>
+      <td><b>Preview</b></td>
+      <td><a href="https://preview.thesensorium.online">preview.thesensorium.online</a></td>
+    </tr>
+  </table>
+</div>
 
 ---
 
