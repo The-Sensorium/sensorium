@@ -22,6 +22,19 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue" alt="License: GPL-3.0" />
 </p>
 
+<p align="center">
+  <table>
+    <tr>
+      <td><span style="color:#16a34a">●</span> <b>Production:</b></td>
+      <td><a href="https://www.thesensorium.online">www.thesensorium.online</a></td>
+    </tr>
+    <tr>
+      <td><span style="color:#f97316">●</span> <b>Staging:</b></td>
+      <td><a href="https://preview.thesensorium.online">preview.thesensorium.online</a></td>
+    </tr>
+  </table>
+</p>
+
 ---
 
 ## About
