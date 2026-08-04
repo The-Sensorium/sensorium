@@ -9,7 +9,7 @@ Thanks for wanting to contribute. Sensorium is a small, carefully scoped project
 - [Setting up a development environment](#setting-up-a-development-environment)
 - [Finding something to work on](#finding-something-to-work-on)
 - [Development workflow](#development-workflow)
-- [Staging environment](#staging-environment)
+- [Preview environment](#preview-environment)
 - [Release process](#release-process)
 - [Branch protection](#branch-protection)
 - [Code style and conventions](#code-style-and-conventions)
@@ -137,9 +137,9 @@ npm run test:integration   # integration suite against the fresh stack
 
 E2E changes are validated in CI; you can run them locally with `npm run test:e2e` after `supabase start` and `npm run seed:demo`.
 
-## Staging environment
+## Preview environment
 
-The shared staging environment lives at **https://preview.thesensorium.online** and reflects the latest state of `develop` against the staging Supabase database and its seeded data. Every `feature/*` branch also gets its own Vercel Preview (against the same staging Supabase database). Test your feature branch's preview before merging into `develop`, then use the shared staging URL for team/QA checks after the merge.
+The shared preview environment lives at **https://preview.thesensorium.online** and reflects the latest state of `develop` against the staging Supabase database and its seeded data. Every `feature/*` branch also gets its own Vercel Preview (against the same staging Supabase database). Test your feature branch's preview before merging into `develop`, then use the shared preview URL for team/QA checks after the merge.
 
 ## Release process
 
@@ -158,7 +158,7 @@ Migrations are applied to staging when a PR merges into `develop`, and to produc
 ## Branch protection
 
 - **`main`** is protected — production. Only maintainers merge into it, always via a pull request from `develop` with green CI. Direct pushes are prohibited.
-- **`develop`** is the shared staging branch. Core maintainers may commit directly; external changes land via pull requests into `develop`. It automatically deploys to https://preview.thesensorium.online, so keep it green.
+- **`develop`** is the shared preview branch. Core maintainers may commit directly; external changes land via pull requests into `develop`. It automatically deploys to https://preview.thesensorium.online, so keep it green.
 
 ## Code style and conventions
 
@@ -200,7 +200,7 @@ The coverage gate in `vite.config.ts` is an enforced floor — CI fails if it re
 1. Push your feature branch and open a PR **targeting `develop`**. Use the pull request template and fill it out.
 2. The CI workflows run on every PR: lint, coverage, build, migration apply, integration suite, and the blocking E2E suite. All must pass.
 3. Request review from a maintainer. Respond to feedback; it's part of the process.
-4. Once approved and green, a maintainer merges your branch into `develop`. This updates the shared staging environment — keep it green.
+4. Once approved and green, a maintainer merges your branch into `develop`. This updates the shared preview environment — keep it green.
 5. Core maintainers may also commit to `develop` directly instead of going through a PR.
 6. Releases happen separately when a maintainer merges `develop` into `main` (see [Release process](#release-process)).
 

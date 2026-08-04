@@ -23,16 +23,12 @@
 </p>
 
 <p align="center">
-  <table>
-    <tr>
-      <td><span style="color:#16a34a">●</span> <b>Production:</b></td>
-      <td><a href="https://www.thesensorium.online">www.thesensorium.online</a></td>
-    </tr>
-    <tr>
-      <td><span style="color:#f97316">●</span> <b>Staging:</b></td>
-      <td><a href="https://preview.thesensorium.online">preview.thesensorium.online</a></td>
-    </tr>
-  </table>
+
+| Environment | URL |
+| --- | --- |
+| **Production** | [www.thesensorium.online](https://www.thesensorium.online) |
+| **Preview** | [preview.thesensorium.online](https://preview.thesensorium.online) |
+
 </p>
 
 ---
@@ -132,9 +128,9 @@ npm run seed:demo
 Sensorium uses a **staging-driven** Git workflow. There are two long-lived branches:
 
 - **`main`** is **Production**. Only tested, reviewed changes land here. Merging to `main` deploys the production app and applies migrations to the production database.
-- **`develop`** is **Staging**. This is the integration branch where all work converges and gets tested in a shared staging environment before release.
+- **`develop`** is **Preview**. This is the integration branch where all work converges and gets tested in a shared preview environment before release.
 
-All work starts from `develop`. External contributors cut feature, fix, and docs branches from `develop` and merge them back via pull request; core maintainers may commit to `develop` directly. `develop` is the shared staging branch and automatically deploys to https://preview.thesensorium.online. Once the team is happy, `develop` is merged into `main` to release.
+All work starts from `develop`. External contributors cut feature, fix, and docs branches from `develop` and merge them back via pull request; core maintainers may commit to `develop` directly. `develop` is the shared preview branch and automatically deploys to https://preview.thesensorium.online. Once the team is happy, `develop` is merged into `main` to release.
 
 ```
 feature/*
@@ -151,7 +147,7 @@ Contributors must never create branches from `main` or open pull requests direct
 | Environment | Branch      | URL                            | Database   |
 | ----------- | ----------- | ------------------------------ | ---------- |
 | Production  | `main`      | https://www.thesensorium.online | Production |
-| Staging     | `develop`   | https://preview.thesensorium.online | Staging  |
+| Preview     | `develop`   | https://preview.thesensorium.online | Staging  |
 
 All `feature/*` branches automatically receive their own Vercel **Preview** deployment (each with its own preview URL) and use the **staging** Supabase database.
 
@@ -199,8 +195,7 @@ Deployment by environment (single Vercel project, two environments):
 | `feature/*` | Preview            | Staging (read-only)    |
 | `develop`   | Preview            | Staging                |
 | `main`      | Production         | Production             |
-
-The frontend is served from **one Vercel project** connected to this repository. `main` deploys to the **Production** environment using the production Supabase credentials; `develop` and every `feature/*` branch deploy to **Preview** environments using the staging Supabase credentials. Feature branches get their own preview deploys, but migrations are **never** applied from a feature branch — they apply only when the PR reaches `develop` (staging) and, later, `main` (production). SPA rewrites are defined in `vercel.json`.
+The frontend is served from **one Vercel project** connected to this repository. `main` deploys to the **Production** environment using the production Supabase credentials; `develop` and every `feature/*` branch deploy to **Preview** environments using the staging Supabase credentials. Feature branches get their own preview deploys, but migrations are **never** applied from a feature branch — they apply only when the PR reaches `develop` (preview) and, later, `main` (production). SPA rewrites are defined in `vercel.json`.
 
 ## Environment Variables
 
