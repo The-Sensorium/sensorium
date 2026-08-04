@@ -2,6 +2,8 @@
 
 Sensorium is a React single-page application backed by Supabase (Postgres, Auth, Storage, Realtime). This document describes the stack, how the pieces fit together, and the key design decisions.
 
+> For a high-level overview of how the system is organized, see [`ARCHITECTURE.md`](ARCHITECTURE.md). This document is the deeper technical reference.
+
 ## Tech Stack
 
 ### Frontend

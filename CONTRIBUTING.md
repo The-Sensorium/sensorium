@@ -22,9 +22,10 @@ Thanks for wanting to contribute. Sensorium is a small, carefully scoped project
 
 Please read these before opening an issue or a pull request:
 
-1. [`docs/PRD.md`](docs/PRD.md) — the product requirements. Understand what the product is before changing how it behaves.
-2. [`docs/DESIGN.md`](docs/DESIGN.md) — the visual design system. Do not introduce new palettes, typefaces, or radii outside the documented tokens.
-3. [`docs/TECHNICAL.md`](docs/TECHNICAL.md) — the architecture, schema, and how migrations, RLS, realtime, and storage fit together.
+1. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the high-level architecture. Read this first for a mental map of how the system fits together.
+2. [`docs/PRD.md`](docs/PRD.md) — the product requirements. Understand what the product is before changing how it behaves.
+3. [`docs/DESIGN.md`](docs/DESIGN.md) — the visual design system. Do not introduce new palettes, typefaces, or radii outside the documented tokens.
+4. [`docs/TECHNICAL.md`](docs/TECHNICAL.md) — the architecture, schema, and how migrations, RLS, realtime, and storage fit together.
 
 ## Project overview
 
