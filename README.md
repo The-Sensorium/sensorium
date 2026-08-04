@@ -121,7 +121,7 @@ Sensorium uses a **staging-driven** Git workflow. There are two long-lived branc
 - **`main`** is **Production**. Only tested, reviewed changes land here. Merging to `main` deploys the production app and applies migrations to the production database.
 - **`develop`** is **Staging**. This is the integration branch where all work converges and gets tested in a shared staging environment before release.
 
-All work starts from `develop`. Feature, fix, and docs branches are cut from `develop`, merged back into `develop` via pull request, then — once the team is happy — `develop` is merged into `main` to release.
+All work starts from `develop`. External contributors cut feature, fix, and docs branches from `develop` and merge them back via pull request; core maintainers may commit to `develop` directly. `develop` is the shared staging branch and automatically deploys to https://preview.thesensorium.online. Once the team is happy, `develop` is merged into `main` to release.
 
 ```
 feature/*
@@ -131,7 +131,16 @@ develop
 main
 ```
 
-Contributors must never create branches from `main`, open pull requests directly into `main`, or push directly to `develop` or `main`. Both long-lived branches are protected; all changes go through pull requests.
+Contributors must never create branches from `main` or open pull requests directly into `main`. `main` is protected: direct pushes are prohibited, and releases always go through a pull request from `develop` into `main`.
+
+## Environments
+
+| Environment | Branch      | URL                            | Database   |
+| ----------- | ----------- | ------------------------------ | ---------- |
+| Production  | `main`      | https://www.thesensorium.online | Production |
+| Staging     | `develop`   | https://preview.thesensorium.online | Staging  |
+
+All `feature/*` branches automatically receive their own Vercel **Preview** deployment (each with its own preview URL) and use the **staging** Supabase database.
 
 ## Scripts
 
