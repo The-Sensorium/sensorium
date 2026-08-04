@@ -74,6 +74,7 @@ Sensorium is an open-source social platform that places you into a permanent gro
 ```
 sensorium/
 ├─ docs/
+│  ├─ ARCHITECTURE.md     # high-level architecture for new contributors
 │  ├─ PRD.md              # product requirements
 │  ├─ DESIGN.md           # visual design system and tokens
 │  └─ TECHNICAL.md        # tech stack and architecture
@@ -258,6 +259,7 @@ The migration workflows are environment-aware and expect the following repositor
 
 Product and design docs are kept in this repository and treated as the single source of truth:
 
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): high-level architecture and how the pieces fit together.
 - [`docs/PRD.md`](docs/PRD.md): product requirements.
 - [`docs/DESIGN.md`](docs/DESIGN.md): visual design system and tokens.
 - [`docs/TECHNICAL.md`](docs/TECHNICAL.md): tech stack and architecture.
