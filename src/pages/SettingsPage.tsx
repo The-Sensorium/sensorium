@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellRing, ImagePlus, Loader2, LogOut, Trash2, UserRound, X } from 'lucide-react'
+import { AlertTriangle, BellRing, ImageMinus, ImagePlus, Loader2, LogOut, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -87,7 +87,7 @@ export function SettingsPage() {
         <div className="mt-5 flex items-center gap-4">
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container">
             {avatarUploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden />}
-            {profile.data?.avatar_url ? 'Change photo' : 'Upload photo'}
+            {profile.data?.avatar_url ? 'Change' : 'Upload photo'}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
@@ -100,10 +100,11 @@ export function SettingsPage() {
               type="button"
               onClick={() => setRemoveAvatarOpen(true)}
               disabled={saveProfile.isPending}
+              aria-label="Remove photo"
               className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-error/40 hover:text-error disabled:opacity-60"
             >
-              <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-              Remove photo
+              <ImageMinus className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              Remove
             </button>
           )}
           {avatarError && <p className="text-sm text-error">{avatarError}</p>}
