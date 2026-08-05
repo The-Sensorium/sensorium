@@ -18,7 +18,8 @@ function resolve() {
     return { url, serviceRole }
   } catch (err) {
     throw new Error(
-      'Could not parse `supabase status -o json`. Is the stack running?\n' + err.message,
+      'Could not parse `supabase status -o json`. Is the stack running?\n' +
+        (err instanceof Error ? err.message : String(err)),
     )
   }
 }

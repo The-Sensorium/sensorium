@@ -11,6 +11,7 @@ import {
   Megaphone,
   MoreHorizontal,
   Pencil,
+  Plus,
   Scale,
   Send,
   ShieldOff,
@@ -126,12 +127,10 @@ function MentionText({
   content,
   members,
   clusterId,
-  own,
 }: {
   content: string
   members: MentionMember[]
   clusterId: string
-  own: boolean
 }) {
   const parts = parseMentions(content, members)
   return (
@@ -145,12 +144,7 @@ function MentionText({
             <Link
               to={`/profile/${part.id}?cluster=${clusterId}`}
               title={part.name}
-              className={cn(
-                'rounded px-1 py-0.5 font-semibold no-underline transition-colors',
-                own
-                  ? 'bg-on-primary/30 text-on-primary hover:bg-on-primary/45'
-                  : 'bg-primary text-on-primary hover:opacity-90',
-              )}
+              className="rounded px-1 py-0.5 font-semibold no-underline transition-colors bg-surface text-on-surface hover:bg-surface-container"
             >
               @{part.name}
             </Link>
@@ -192,6 +186,7 @@ export function RoomView() {
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [pickerFor, setPickerFor] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [composerOpen, setComposerOpen] = useState(false)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
   const [pinned, setPinned] = useState(true)
@@ -369,6 +364,7 @@ export function RoomView() {
     function dismiss() {
       setMenuFor(null)
       setPickerFor(null)
+      setComposerOpen(false)
     }
     function onKey(e: globalThis.KeyboardEvent) {
       if (e.key === 'Escape') dismiss()
@@ -789,7 +785,6 @@ export function RoomView() {
                             content={m.content ?? ''}
                             members={parseMembers}
                             clusterId={clusterId}
-                            own={mine}
                           />
                         )}
                         {!isEditing && m.edited_at && (
@@ -976,28 +971,61 @@ export function RoomView() {
             e.target.value = ''
           }}
         />
-        <button
-          type="button"
-          aria-label="Send an image"
-          disabled={uploading}
-          onClick={() => fileRef.current?.click()}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60 sm:h-11 sm:w-11"
-        >
-          {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-          ) : (
-            <ImagePlus className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            aria-label="Room actions"
+            aria-haspopup="menu"
+            aria-expanded={composerOpen}
+            aria-controls={composerOpen ? 'room-actions-menu' : undefined}
+            disabled={raise.isPending}
+            onClick={(e) => {
+              e.stopPropagation()
+              setComposerOpen((open) => !open)
+            }}
+            className="grid h-10 w-10 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60 sm:h-11 sm:w-11"
+          >
+            <Plus
+              className={cn('h-5 w-5 transition-transform', composerOpen && 'rotate-45')}
+              strokeWidth={1.5}
+              aria-hidden
+            />
+          </button>
+          {composerOpen && (
+            <div
+              id="room-actions-menu"
+              role="menu"
+              aria-label="Room actions"
+              className="absolute bottom-full left-0 z-20 mb-2 flex w-max flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-soft"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                disabled={uploading}
+                onClick={() => {
+                  setComposerOpen(false)
+                  fileRef.current?.click()
+                }}
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              >
+                <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Send an image
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={raise.isPending}
+                onClick={() => {
+                  setComposerOpen(false)
+                  setSignalOpen(true)
+                }}
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container hover:text-tertiary disabled:opacity-60"
+              >
+                <Megaphone className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Raise a signal
+              </button>
+            </div>
           )}
-        </button>
-        <button
-          type="button"
-          aria-label="Raise a signal"
-          disabled={raise.isPending}
-          onClick={() => setSignalOpen(true)}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-tertiary disabled:opacity-60 sm:h-11 sm:w-11"
-        >
-          <Megaphone className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-        </button>
+        </div>
         <label htmlFor="room-input" className="sr-only">
           Message
         </label>
@@ -1062,7 +1090,10 @@ export function RoomView() {
           type="submit"
           disabled={!draft.trim() || send.isPending || uploading}
           aria-label="Send message"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          className={cn(
+            'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-container transition-colors disabled:opacity-60 sm:h-11 sm:w-11',
+            draft.trim() ? 'text-primary' : 'text-on-surface-variant',
+          )}
         >
           {send.isPending ? (
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden />

@@ -69,9 +69,9 @@ describe('matching', () => {
       })
       .select('id')
       .single()
-    clusterIds.push(cluster.id)
+    clusterIds.push(cluster!.id)
     const { error: mErr } = await admin.from('cluster_members').insert({
-      cluster_id: cluster.id,
+      cluster_id: cluster!.id,
       user_id: u.id,
     })
     expect(mErr).toBeNull()

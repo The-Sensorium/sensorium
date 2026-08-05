@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Loader2, MessageSquare, Scale } from 'lucide-react'
+import { Loader2, MessageCircle, MessageSquare, Scale } from 'lucide-react'
 import { useClusterSignals, useSignalReplies } from '../features/signals'
 import { useClusterVotes } from '../features/votes'
 import { CountdownTimer } from './CountdownTimer'
@@ -21,11 +21,13 @@ const SIGNAL_STATUS: Record<Signal['status'], { label: string; className: string
 
 function RailCard({
   title,
+  icon: Icon,
   count,
   to,
   children,
 }: {
   title: string
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number; 'aria-hidden'?: boolean }>
   count?: number
   to: string
   children: React.ReactNode
@@ -36,7 +38,10 @@ function RailCard({
         to={to}
         className="flex items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant transition-colors hover:text-on-surface"
       >
-        <span>{title}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          {Icon && <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />}
+          <span className="truncate">{title}</span>
+        </span>
         {count !== undefined && (
           <span className="rounded-pill bg-surface-container px-2 py-0.5 text-xs tabular-nums">
             {count}
@@ -69,7 +74,7 @@ export function ClusterRail({
 
   return (
     <div className={cn('sticky space-y-4', stickyTop)}>
-      <RailCard title="Signals" count={activeSignals.length} to={`/cluster/${clusterId}/signals`}>
+      <RailCard title="Signals" icon={MessageCircle} count={activeSignals.length} to={`/cluster/${clusterId}/signals`}>
         {signals.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
@@ -106,14 +111,14 @@ export function ClusterRail({
         )}
       </RailCard>
 
-      <RailCard title="Open votes" count={openVotes.length} to={`/cluster/${clusterId}/votes`}>
+      <RailCard title="Open votes" icon={Scale} count={openVotes.length} to={`/cluster/${clusterId}/votes`}>
         {votes.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
           </div>
         ) : openVotes.length === 0 ? (
           <p className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <Scale className="h-4 w-4" strokeWidth={1.5} aria-hidden /> No open votes right now.
+            No open votes right now.
           </p>
         ) : (
           <ul className="space-y-2.5">

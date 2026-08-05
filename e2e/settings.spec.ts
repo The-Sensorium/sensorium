@@ -55,7 +55,6 @@ test.describe('settings (seeded)', () => {
     await page.goto('/settings')
     const messages = page.getByRole('switch', { name: 'Messages' }).first()
     const before = (await messages.getAttribute('aria-checked')) === 'true'
-    const after = !before
 
     await messages.click()
     await expect(messages).toHaveAttribute('aria-checked', String(before ? false : true))

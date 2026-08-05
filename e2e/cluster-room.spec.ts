@@ -59,7 +59,8 @@ test.describe('cluster room (seeded Aurora)', () => {
 
   test('raise signal modal opens and can be cancelled without submitting', async ({ page }) => {
     await openRoom(page)
-    await page.getByRole('button', { name: 'Raise a signal' }).click()
+    await page.getByRole('button', { name: 'Room actions' }).click()
+    await page.getByRole('menuitem', { name: 'Raise a signal' }).click()
     const dialog = page.getByRole('dialog', { name: 'Raise a signal' })
     await expect(dialog).toBeVisible()
     await page.getByRole('button', { name: 'Cancel' }).click()
