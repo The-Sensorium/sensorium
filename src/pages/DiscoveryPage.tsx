@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, MapPin } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { CLUSTER_SIZE } from '../lib/constants'
 import { MATCHING_MODES, type MatchingMode } from '../lib/modes'
 import { LOCAL_RADII, type LocalRadius } from './onboarding/draft'
 import { getCurrentPosition, reverseGeocode } from '../lib/geo'
@@ -11,8 +12,6 @@ import { requireSupabase } from '../lib/supabase'
 import { useMyQueueStatus, useJoinQueue, useQueueCount, useMyClusters } from '../features/matching'
 import { useProfile } from '../lib/use-profile'
 import { ClusterCard } from '../components/ClusterCard'
-
-const CLUSTER_SIZE = 8
 
 export function DiscoveryPage() {
   useDocumentTitle('Discovery')

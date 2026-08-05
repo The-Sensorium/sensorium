@@ -2,6 +2,7 @@ import TextareaAutosize from 'react-textarea-autosize'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
+import { CLUSTER_SIZE } from '../../lib/constants'
 import {
   ArrowDown,
   ImagePlus,
@@ -68,7 +69,6 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 const MAX_SIGNAL_PROMPT = 300
-const ROOM_CAPACITY = 8
 
 const SIGNAL_STATUS: Record<SignalStatus, { label: string; className: string }> = {
   open: { label: 'Open', className: 'bg-primary/10 text-primary' },
@@ -520,7 +520,7 @@ export function RoomView() {
           <span className="min-w-0">
             <span className="block font-semibold">A spot just opened</span>
             <span className="block text-tertiary/70">
-              We're {members.data ? members.data.length : '…'} of {ROOM_CAPACITY}, finding a new member.
+              We're {members.data ? members.data.length : '…'} of {CLUSTER_SIZE}, finding a new member.
             </span>
           </span>
         </div>

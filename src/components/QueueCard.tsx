@@ -1,10 +1,9 @@
 import { Link } from 'react-router'
 import { LogOut } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { CLUSTER_SIZE } from '../lib/constants'
 import { useQueueCount, type MyQueueEntry } from '../features/matching'
 import { modeInfo } from '../lib/modes'
-
-const CLUSTER_SIZE = 8
 
 /** n/8 progress bar with live count. */
 export function QueueProgress({
