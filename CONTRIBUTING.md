@@ -9,6 +9,9 @@ Thanks for wanting to contribute. Sensorium is a small, carefully scoped project
 - [Setting up a development environment](#setting-up-a-development-environment)
 - [Finding something to work on](#finding-something-to-work-on)
 - [Development workflow](#development-workflow)
+- [Preview environment](#preview-environment)
+- [Release process](#release-process)
+- [Branch protection](#branch-protection)
 - [Code style and conventions](#code-style-and-conventions)
 - [Database and migrations](#database-and-migrations)
 - [Testing](#testing)
@@ -17,11 +20,12 @@ Thanks for wanting to contribute. Sensorium is a small, carefully scoped project
 
 ## Before you start
 
-Please read these before opening an issue or a pull request:
+Read these before opening an issue or a pull request. The recommended order is in the [README](README.md#documentation) and the [docs index](docs/README.md):
 
-1. [`docs/PRD.md`](docs/PRD.md) — the product requirements. Understand what the product is before changing how it behaves.
-2. [`docs/DESIGN.md`](docs/DESIGN.md) — the visual design system. Do not introduce new palettes, typefaces, or radii outside the documented tokens.
-3. [`docs/TECHNICAL.md`](docs/TECHNICAL.md) — the architecture, schema, and how migrations, RLS, realtime, and storage fit together.
+1. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - the high-level architecture. Read this first for a mental map of how the system fits together.
+2. [`docs/PRD.md`](docs/PRD.md) - the product requirements. Understand what the product is before changing how it behaves.
+3. [`docs/DESIGN.md`](docs/DESIGN.md) - the visual design system. Do not introduce new palettes, typefaces, or radii outside the documented tokens.
+4. [`docs/TECHNICAL.md`](docs/TECHNICAL.md) - the technical reference: schema, and how migrations, RLS, realtime, and storage fit together.
 
 ## Project overview
 
@@ -29,23 +33,7 @@ Sensorium places each user into a permanent cluster of exactly eight people, mat
 
 ## Setting up a development environment
 
-You need Node.js 20+, npm, the [Supabase CLI](https://supabase.com/docs/guides/cli), and Docker.
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Start the local Supabase stack (Postgres, Auth, Storage, Realtime, Studio)
-supabase start
-
-# 3. Point the app at the local stack
-cp .env.example .env
-#     VITE_SUPABASE_URL=http://127.0.0.1:54321
-#     VITE_SUPABASE_ANON_KEY=<from `supabase status`>
-
-# 4. Run the app
-npm run dev
-```
+Follow the [Getting Started](README.md#getting-started) section of the README to install dependencies, start the local Supabase stack, and run the app.
 
 If the database changes under you, rebuild it from scratch and reseed:
 
@@ -63,11 +51,49 @@ npm run seed:demo
 
 ## Development workflow
 
+This project uses a **staging-driven** Git workflow. All work starts from `develop`; `main` is reserved for production releases.
+
+```
+feature/*
+    ↓
+develop
+    ↓
+main
+```
+
+**External contributors** create a feature branch from `develop` and open a pull request into `develop`. **Core maintainers** may commit directly to `develop` when collaborating. Production releases always go through a pull request from `develop` into `main`; direct pushes to `main` are prohibited.
+
 1. **Open an issue first.** Discuss the change before opening a pull request, especially anything that touches the schema, RLS, or realtime contracts. This is a small project; the maintainers want to keep the surface area intentional.
-2. **Create a branch.** Use a short, descriptive branch name, e.g. `feat/signal-reactions`, `fix/avatar-upload`, `docs/contributing`.
+2. **Create a branch from `develop`.** Never branch from `main`:
+
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/my-feature   # or fix/..., docs/...
+   ```
+
+   Use a short, descriptive branch name, e.g. `feat/signal-reactions`, `fix/avatar-upload`, `docs/contributing`.
 3. **Make your changes.** Keep them focused on the issue. Try to keep the diff reviewable.
 4. **Add tests.** Changes to logic should come with unit tests; changes that cross the database boundary should come with integration tests where feasible.
-5. **Run the checks below locally** before pushing.
+5. **Commit and push your branch**, then open a pull request that targets `develop`:
+
+   ```bash
+   git push -u origin feature/my-feature
+   ```
+
+   ```
+   feature/my-feature
+             ↓
+   develop
+   ```
+
+6. **Run the checks below locally** before pushing.
+
+Never open a pull request directly into `main`, and never push directly to `main`.
+
+### Opening an issue
+
+Use the issue templates when they exist. Include enough context to reproduce the problem or to understand the proposed change: steps, expected vs. actual behavior, and relevant screenshots or error output.
 
 ### Commit style
 
@@ -100,6 +126,29 @@ npm run test:integration   # integration suite against the fresh stack
 
 E2E changes are validated in CI; you can run them locally with `npm run test:e2e` after `supabase start` and `npm run seed:demo`.
 
+## Preview environment
+
+The shared preview environment lives at **https://preview.thesensorium.online** and reflects the latest state of `develop` against the staging Supabase database and its seeded data. Every `feature/*` branch also gets its own Vercel Preview (against the same staging Supabase database). Test your feature branch's preview before merging into `develop`, then use the shared preview URL for team/QA checks after the merge.
+
+## Release process
+
+Releases are the only time work moves into `main`. Only maintainers merge into `main`.
+
+Once the changes on `develop` have passed team/QA testing, open a pull request from `develop` into `main` and have it reviewed. Merging it deploys the production app and applies pending migrations to the production Supabase project.
+
+```
+develop
+    ↓
+main
+```
+
+Migrations are applied to staging when a PR merges into `develop`, and to production when `develop` is merged into `main`.
+
+## Branch protection
+
+- **`main`** is protected - production. Only maintainers merge into it, always via a pull request from `develop` with green CI. Direct pushes are prohibited.
+- **`develop`** is the shared preview branch. Core maintainers may commit directly; external changes land via pull requests into `develop`. It automatically deploys to https://preview.thesensorium.online, so keep it green.
+
 ## Code style and conventions
 
 - **Linting:** oxlint via `npm run lint`. There are no fix-up scripts; keep the linter clean by hand.
@@ -107,17 +156,21 @@ E2E changes are validated in CI; you can run them locally with `npm run test:e2e
 - **No comments unless they carry meaning.** Prefer expressive code over explanatory comments.
 - **Styling:** Tailwind utility classes, restricted to the tokens in `docs/DESIGN.md`. No new colors, typefaces, or radii.
 - **Imports:** use the `@/` alias for `src/` paths, e.g. `import { modes } from '@/lib/modes'`.
-- **React:** follow the patterns already in the codebase — TanStack Query for server state, feature modules in `src/features/`, colocated tests next to the code they cover.
+- **React:** follow the patterns already in the codebase - TanStack Query for server state, feature modules in `src/features/`, colocated tests next to the code they cover.
 
 ## Database and migrations
 
 Migrations live in `supabase/migrations/` and are **order-dependent**. This is important:
 
-- Name files by sequence, e.g. `0035_short_description.sql`. Never edit an applied migration — add a new one.
+- Name files by sequence, e.g. `0035_short_description.sql`. Never edit an applied migration - add a new one.
 - Apply new migrations locally with `supabase db reset` and verify they build cleanly with `supabase db lint --local`.
 - Every table must have **Row Level Security enabled**. The frontend should never write tables directly except through RPC functions or RLS-permitted inserts.
 - Keep privileged operations in `security definer` functions and restrict them with grants, not by trusting the caller.
 - Verify your migration against the integration suite in `tests/integration/`, which exercises RLS and RPC behavior with per-user clients.
+
+Migration SQL is committed inside your PR but is **not** applied to any remote database from a feature branch. It is applied to the **staging** Supabase project only once the PR merges into `develop`, and to **production** when `develop` merges into `main`. This keeps multiple in-flight feature branches from clobbering the shared staging schema while a PR is still under review.
+
+Because migrations are order-dependent and applied on merge, coordinate migration filenames/sequencing with other in-flight branches. If two branches add migrations and merge into `develop` in an order that differs from local timestamps, the remote apply may sequence them differently than your local stack - surface this early by rebasing and re-running `supabase db reset` before merging.
 
 ## Testing
 
@@ -129,14 +182,16 @@ The project has three layers:
 | Integration | `npm run test:integration` | `supabase start` |
 | E2E | `npm run test:e2e` | `supabase start` + `npm run seed:demo` + `npx playwright install chromium` |
 
-The coverage gate in `vite.config.ts` is an enforced floor — CI fails if it regresses. Treat it as a minimum, not a target.
+The coverage gate in `vite.config.ts` is an enforced floor - CI fails if it regresses. Treat it as a minimum, not a target.
 
 ## Pull requests
 
-1. Push your branch and open a PR against `main`. Use the pull request template and fill it out.
+1. Push your feature branch and open a PR **targeting `develop`**. Use the pull request template and fill it out.
 2. The CI workflows run on every PR: lint, coverage, build, migration apply, integration suite, and the blocking E2E suite. All must pass.
 3. Request review from a maintainer. Respond to feedback; it's part of the process.
-4. Once approved and green, a maintainer merges. Keep `main` green — it is deployed.
+4. Once approved and green, a maintainer merges your branch into `develop`. This updates the shared preview environment - keep it green.
+5. Core maintainers may also commit to `develop` directly instead of going through a PR.
+6. Releases happen separately when a maintainer merges `develop` into `main` (see [Release process](#release-process)).
 
 ## Code of Conduct
 
