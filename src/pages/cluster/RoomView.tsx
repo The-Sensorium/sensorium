@@ -45,6 +45,7 @@ import {
   type SignalStatus,
 } from '../../features/signals'
 import { useClusterVotes, useReplacementRound, type Vote } from '../../features/votes'
+import { useMarkClusterRead } from '../../features/notifications'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { CountdownTimer } from '../../components/CountdownTimer'
@@ -175,6 +176,7 @@ export function RoomView() {
   const editMessage = useEditMessage(clusterId)
   const deleteMessage = useDeleteMessage(clusterId)
   const raise = useRaiseSignal(clusterId)
+  const markRead = useMarkClusterRead()
   const { typing, signalTyping, resetTyping } = usePresence(clusterId)
 
   const [draft, setDraft] = useState('')
@@ -312,6 +314,19 @@ export function RoomView() {
       if (typingTimer.current) window.clearTimeout(typingTimer.current)
     }
   }, [])
+
+  // Debounce: advance the room's read marker while the member is pinned to the
+  // newest messages (on open, on scroll-to-bottom, and as messages stream in).
+  // Clearing the timer on each new message collapses bursts into one write.
+  const markReadTimer = useRef<number | null>(null)
+  useEffect(() => {
+    if (!pinned || !clusterId) return
+    if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
+    markReadTimer.current = window.setTimeout(() => markRead.mutate(clusterId), 400)
+    return () => {
+      if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
+    }
+  }, [pinned, clusterId, messages.data, markRead])
 
   // Close the message action menu and reaction picker on outside click / Escape.
   useEffect(() => {

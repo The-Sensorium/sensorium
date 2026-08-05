@@ -27,7 +27,7 @@ export function useMyNotifications(enabled = true) {
   })
 }
 
-/** Unread count after prefs filtering (header badge). */
+/** Unread count after prefs filtering (header badge). Includes unread chat. */
 export function useUnreadCount(enabled = true) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -35,6 +35,7 @@ export function useUnreadCount(enabled = true) {
   return useQuery({
     queryKey: ['notifications', 'unread', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_unread_notification_count')
@@ -73,28 +74,35 @@ export function useMarkNotificationRead() {
   })
 }
 
-/** Mark all of the caller's unread notifications read. */
+/** Mark all of the caller's notifications read, plus chat in every cluster. */
 export function useMarkAllNotificationsRead() {
-  const auth = useAuth()
-  const userId = auth.state === 'signedIn' ? auth.userId : null
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async () => {
-      if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
-      const { error } = await supabase
-        .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .is('read_at', null)
+      const { error } = await supabase.rpc('mark_all_read')
       if (error) throw error
     },
     onSuccess: () => {
-      if (userId) {
-        void queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
-        void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
-      }
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+    },
+  })
+}
+
+/** Mark the caller's chat read in one cluster (advances last_read_message_at). */
+export function useMarkClusterRead() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (clusterId: string) => {
+      const supabase = requireSupabase()
+      const { error } = await supabase.rpc('mark_cluster_read', { p_cluster_id: clusterId })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
     },
   })
 }

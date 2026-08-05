@@ -8,8 +8,9 @@ import {
   type TestUser,
 } from './helpers'
 
-// Notifications: get_my_notifications, get_unread_notification_count, pref
-// filtering, and the reaction trigger notification.
+// Notifications: get_my_notifications, get_unread_notification_count (now
+// including chat unread via last_read_message_at), mark_cluster_read /
+// mark_all_read, pref filtering, and the reaction trigger notification.
 
 describe('notifications', () => {
   const admin = adminClient()
@@ -35,32 +36,33 @@ describe('notifications', () => {
   it('returns only the caller notifications, newest first', async () => {
     const a = await member('n-a')
     const b = await member('n-b')
+    await admin.from('profiles').update({ display_name: 'Briana Mention' }).eq('id', b.id)
     const clusterId = await createCluster(admin, {
       memberIds: [a.id, b.id],
       status: 'active',
     })
     clusterIds.push(clusterId)
 
-    // A message notification for a; a message notification for b.
+    // Two mentions of b; discrete events still write notification rows.
     await a.client.rpc('send_message', {
       p_cluster_id: clusterId,
-      p_content: 'first',
+      p_content: 'Hey @Briana Mention one',
     })
-    await b.client.rpc('send_message', {
+    await a.client.rpc('send_message', {
       p_cluster_id: clusterId,
-      p_content: 'second',
+      p_content: 'Hey @Briana Mention two',
     })
 
-    const { data, error } = await a.client.rpc('get_my_notifications')
+    const { data, error } = await b.client.rpc('get_my_notifications')
     expect(error).toBeNull()
-    expect(data?.length).toBe(1)
-    expect(data![0].title).toContain('sent a message')
+    expect(data?.length).toBe(2)
+    expect(data![0].title).toContain('mentioned you')
 
-    const { data: mine } = await b.client.rpc('get_my_notifications')
-    expect(mine).toHaveLength(1)
+    const { data: mine } = await a.client.rpc('get_my_notifications')
+    expect(mine).toHaveLength(0)
   })
 
-  it('tracks unread count and updates it when notifications are read', async () => {
+  it('chat messages count as unread until the cluster is marked read', async () => {
     const a = await member('n-unread')
     const b = await member('n-unread2')
     const clusterId = await createCluster(admin, {
@@ -69,23 +71,34 @@ describe('notifications', () => {
     })
     clusterIds.push(clusterId)
 
-    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'hi' })
+    // Sending messages no longer creates per-member `message` notification rows.
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'first' })
+    await b.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'second' })
 
-    const { data: unread } = await b.client.rpc('get_unread_notification_count')
-    expect(unread).toBe(1)
-
-    // b marks their notifications read.
-    const { error: readErr } = await admin
+    const { data: rows } = await admin
       .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('user_id', b.id)
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'message')
+    expect(rows).toHaveLength(0)
+
+    // Each member has exactly one unread chat message (the other's).
+    const { data: bUnread } = await b.client.rpc('get_unread_notification_count')
+    expect(bUnread).toBe(1)
+    const { data: aUnread } = await a.client.rpc('get_unread_notification_count')
+    expect(aUnread).toBe(1)
+
+    // Reading the room advances last_read_message_at and clears the badge.
+    const { error: readErr } = await b.client.rpc('mark_cluster_read', {
+      p_cluster_id: clusterId,
+    })
     expect(readErr).toBeNull()
 
-    const { data: unread2 } = await b.client.rpc('get_unread_notification_count')
-    expect(unread2).toBe(0)
+    const { data: bUnread2 } = await b.client.rpc('get_unread_notification_count')
+    expect(bUnread2).toBe(0)
   })
 
-  it('hides notifications disabled in prefs', async () => {
+  it('hides chat unread when the messages pref is disabled', async () => {
     const a = await member('n-pref')
     const b = await member('n-pref2')
     const clusterId = await createCluster(admin, {
@@ -104,11 +117,34 @@ describe('notifications', () => {
     })
     expect(prefErr).toBeNull()
 
-    const { data: list } = await b.client.rpc('get_my_notifications')
-    expect(list).toHaveLength(0)
-
     const { data: unread } = await b.client.rpc('get_unread_notification_count')
     expect(unread).toBe(0)
+  })
+
+  it('mark_all_read clears event notifications and chat unread', async () => {
+    const a = await member('n-all-a')
+    const b = await member('n-all-b')
+    await admin.from('profiles').update({ display_name: 'Dana All' }).eq('id', b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // b receives both a mention event and one unread chat message.
+    await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hello @Dana All',
+    })
+
+    const { data: before } = await b.client.rpc('get_unread_notification_count')
+    expect(before).toBeGreaterThanOrEqual(2)
+
+    const { error } = await b.client.rpc('mark_all_read')
+    expect(error).toBeNull()
+
+    const { data: after } = await b.client.rpc('get_unread_notification_count')
+    expect(after).toBe(0)
   })
 
   it('a reaction to a message notifies its author', async () => {
@@ -145,21 +181,25 @@ describe('notifications', () => {
   it('a member cannot see another member notifications through RLS', async () => {
     const a = await member('n-rls')
     const b = await member('n-rls2')
+    await admin.from('profiles').update({ display_name: 'Cara RLS' }).eq('id', b.id)
     const clusterId = await createCluster(admin, {
       memberIds: [a.id, b.id],
       status: 'active',
     })
     clusterIds.push(clusterId)
 
-    // a messages the cluster; b (non-author) receives a notification.
-    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'hi' })
+    // a mentions b; b (non-author) receives a mention notification.
+    await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hi @Cara RLS',
+    })
 
     const { data: bNotifs } = await admin
       .from('notifications')
       .select('id')
       .eq('user_id', b.id)
       .eq('cluster_id', clusterId)
-      .eq('type', 'message')
+      .eq('type', 'mention')
     expect(bNotifs!.length).toBeGreaterThan(0)
 
     // a cannot read b's notification row (RLS: auth.uid() = user_id).

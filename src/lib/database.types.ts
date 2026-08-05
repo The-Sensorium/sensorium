@@ -39,6 +39,7 @@ export type Database = {
           cluster_id: string
           intro_completed_at: string | null
           joined_at: string
+          last_read_message_at: string
           left_at: string | null
           user_id: string
         }
@@ -46,6 +47,7 @@ export type Database = {
           cluster_id: string
           intro_completed_at?: string | null
           joined_at?: string
+          last_read_message_at?: string
           left_at?: string | null
           user_id: string
         }
@@ -53,6 +55,7 @@ export type Database = {
           cluster_id?: string
           intro_completed_at?: string | null
           joined_at?: string
+          last_read_message_at?: string
           left_at?: string | null
           user_id?: string
         }
@@ -974,6 +977,23 @@ export type Database = {
           onboarding_completed_at: string
         }[]
       }
+      get_my_clusters: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          introductions_completed_at: string
+          introductions_deadline: string
+          joined_at: string
+          matching_mode: Database["public"]["Enums"]["matching_mode"]
+          member_count: number
+          mode_label: string
+          name: string
+          queue_key: string
+          status: Database["public"]["Enums"]["cluster_status"]
+          updated_at: string
+        }[]
+      }
       get_my_matching_status: {
         Args: never
         Returns: {
@@ -1043,6 +1063,10 @@ export type Database = {
       }
       get_unread_notification_count: { Args: never; Returns: number }
       is_active_member: { Args: { p_cluster_id: string }; Returns: boolean }
+      is_mentioned: {
+        Args: { p_content: string; p_display_name: string }
+        Returns: boolean
+      }
       join_queue: {
         Args: {
           p_mode: Database["public"]["Enums"]["matching_mode"]
@@ -1058,6 +1082,8 @@ export type Database = {
         Args: { p_mode: Database["public"]["Enums"]["matching_mode"] }
         Returns: undefined
       }
+      mark_all_read: { Args: never; Returns: undefined }
+      mark_cluster_read: { Args: { p_cluster_id: string }; Returns: undefined }
       maybe_form_cluster: {
         Args: {
           p_mode: Database["public"]["Enums"]["matching_mode"]

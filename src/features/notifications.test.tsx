@@ -12,6 +12,7 @@ import {
   PREF_TOGGLES,
   timeAgo,
   useMarkAllNotificationsRead,
+  useMarkClusterRead,
   useMarkNotificationRead,
   useMyNotifications,
   useNotificationPrefs,
@@ -150,13 +151,22 @@ describe('hooks', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
   })
 
-  it('useMarkAllNotificationsRead filters unread for the user', async () => {
+  it('useMarkAllNotificationsRead clears events and chat via mark_all_read', async () => {
     const { result } = renderHook(() => useMarkAllNotificationsRead(), { wrapper })
     result.current.mutate()
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('notifications').eq).toHaveBeenCalledWith('user_id', 'u1')
-    expect(c.from('notifications').is).toHaveBeenCalledWith('read_at', null)
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('mark_all_read')
+  })
+
+  it('useMarkClusterRead advances the cluster read marker via RPC', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useMarkClusterRead(), { wrapper })
+    result.current.mutate('c1')
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('mark_cluster_read', {
+      p_cluster_id: 'c1',
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
   })
 
   it('useUpsertNotificationPrefs upserts with a conflict target', async () => {
