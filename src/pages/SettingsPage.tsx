@@ -316,7 +316,7 @@ function DeleteAccountModal({
         <div className="flex items-start gap-3 rounded-xl bg-error/5 p-4">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-error" strokeWidth={1.5} aria-hidden />
           <p className="text-sm leading-6 text-on-surface-variant">
-            This permanently deletes your profile, messages, moods, signals and memberships.
+            This permanently deletes your profile, messages, signals and memberships.
             This cannot be undone. To confirm, type <span className="font-semibold text-error">DELETE</span>.
           </p>
         </div>

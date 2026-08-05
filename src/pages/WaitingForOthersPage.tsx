@@ -2,14 +2,13 @@ import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router'
 import { CheckCircle2, Clock, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { CLUSTER_SIZE } from '../lib/constants'
 import {
   useCluster,
   useMyMembership,
   useIntroProgress,
 } from '../features/introductions'
 import { CountdownTimer } from '../components/CountdownTimer'
-
-const CLUSTER_SIZE = 8
 
 export function WaitingForOthersPage() {
   useDocumentTitle('Waiting for Others')

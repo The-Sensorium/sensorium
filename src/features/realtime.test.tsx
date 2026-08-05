@@ -88,16 +88,6 @@ describe('useClusterChannel', () => {
     expect(queryClient.getQueryData(['cluster-messages', 'c1'])).toEqual([{ id: 'm1', content: 'new' }])
   })
 
-  it('prepends a new mood and caps it at 100', () => {
-    renderHook(() => useClusterChannel('c1'), { wrapper })
-    queryClient.setQueryData(['cluster-moods', 'c1'], [{ user_id: 'u1', mood: 'ok', created_at: 't1' }])
-    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'moods', 'INSERT')
-    act(() => {
-      handler?.({ new: { user_id: 'u9', mood: 'great', created_at: 't2' } } as never)
-    })
-    expect(queryClient.getQueryData(['cluster-moods', 'c1'])).toHaveLength(2)
-  })
-
   it('routes a reaction INSERT to its cluster cache', async () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
     mockResult.value = { data: { cluster_id: 'c1' }, error: null }

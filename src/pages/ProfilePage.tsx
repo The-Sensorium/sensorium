@@ -3,17 +3,12 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import { ArrowLeft, Cake, Flag, Loader2, MapPin } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useClusterMembers } from '../features/matching'
-import {
-  useMemberMoods,
-  useMemberIntroAnswers,
-  useIntroQuestionMap,
-} from '../features/cluster'
+import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
 import { ReportModal } from '../components/ReportModal'
 import { countryName } from '../lib/countries'
-import { moodMeta } from '../lib/moods'
 
 export function ProfilePage() {
   useDocumentTitle('Profile')
@@ -30,7 +25,6 @@ export function ProfilePage() {
 
 function MemberProfile({ clusterId, userId }: { clusterId: string; userId: string }) {
   const members = useClusterMembers(clusterId)
-  const moods = useMemberMoods(clusterId, userId)
   const introAnswers = useMemberIntroAnswers(clusterId, userId)
   const questions = useIntroQuestionMap()
   const auth = useAuth()
@@ -114,30 +108,6 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
         clusterId={clusterId}
         target={{ id: member.id, name: member.display_name }}
       />
-
-      <section aria-label="Mood history" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-        <h2 className="font-display text-lg font-semibold text-on-surface">Mood history</h2>
-        {moods.isLoading ? (
-          <p className="mt-2 text-sm text-on-surface-variant">Loading…</p>
-        ) : (moods.data ?? []).length === 0 ? (
-          <p className="mt-2 text-sm text-on-surface-variant">
-            {member.display_name} hasn’t shared a mood yet.
-          </p>
-        ) : (
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {(moods.data ?? []).map((m, i) => (
-              <li
-                key={`${m.created_at}-${i}`}
-                className="flex items-center gap-1.5 rounded-pill bg-surface-container px-3 py-1.5 text-sm"
-                aria-label={moodMeta(m.mood).label}
-                title={moodMeta(m.mood).label}
-              >
-                <span aria-hidden>{moodMeta(m.mood).emoji}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
 
       <section aria-label="Introductions" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
         <h2 className="font-display text-lg font-semibold text-on-surface">Introductions</h2>

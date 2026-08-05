@@ -1,7 +1,9 @@
 import TextareaAutosize from 'react-textarea-autosize'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useDocumentTitle } from '../../lib/use-document-title'
+import { CLUSTER_SIZE } from '../../lib/constants'
 import {
   ArrowDown,
   ImagePlus,
@@ -26,11 +28,13 @@ import {
   type MentionMember,
 } from '../../features/mentions'
 import {
+  CHAT_PAGE_SIZE,
   useChatImageUrl,
   useClusterMessages,
   useClusterReactions,
   useDeleteMessage,
   useEditMessage,
+  useLoadEarlierMessages,
   useSendMessage,
   useToggleReaction,
   uploadChatImage,
@@ -68,7 +72,6 @@ const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 const MAX_SIGNAL_PROMPT = 300
-const ROOM_CAPACITY = 8
 
 const SIGNAL_STATUS: Record<SignalStatus, { label: string; className: string }> = {
   open: { label: 'Open', className: 'bg-primary/10 text-primary' },
@@ -165,7 +168,10 @@ export function RoomView() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
   const messages = useClusterMessages(clusterId)
-  const reactions = useClusterReactions(clusterId)
+  const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
+  const reactions = useClusterReactions(clusterId, loadedMessageIds)
+  const loadEarlier = useLoadEarlierMessages(clusterId)
+  const queryClient = useQueryClient()
   const signals = useClusterSignals(clusterId)
   const signalReplies = useSignalReplies(clusterId, null)
   const votes = useClusterVotes(clusterId)
@@ -190,12 +196,20 @@ export function RoomView() {
   const [signalPrompt, setSignalPrompt] = useState('')
   const [pinned, setPinned] = useState(true)
   const [newCount, setNewCount] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const exhaustedRef = useRef(false)
+  const prevOldestIdRef = useRef<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const typingTimer = useRef<number | null>(null)
   const pinnedRef = useRef(true)
   const lastLenRef = useRef<number | null>(null)
+  const anchorRef = useRef<{
+    surface: 'container' | 'page'
+    scrollTop: number
+    scrollHeight: number
+  } | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
   const [mentionIndex, setMentionIndex] = useState(0)
@@ -264,6 +278,9 @@ export function RoomView() {
     pinnedRef.current = true
     setPinned(true)
     setNewCount(0)
+    exhaustedRef.current = false
+    setHasMore(false)
+    prevOldestIdRef.current = null
   }, [clusterId])
 
   // Auto-follow the newest message while the user is near the bottom. Once they
@@ -308,6 +325,25 @@ export function RoomView() {
       else setNewCount((count) => count + (len - prev))
     }
   }, [messages.data])
+
+  // Offer "Load earlier" once the first page came back full (a full page means
+  // there may be older rows). The ref keeps it hidden after history is drained.
+  useEffect(() => {
+    if (exhaustedRef.current) return
+    if ((messages.data?.length ?? 0) >= CHAT_PAGE_SIZE) setHasMore(true)
+  }, [messages.data])
+
+  // Reactions are fetched for the loaded messages only. Refetch when the oldest
+  // loaded message changes (initial load or an earlier page prepended), but not
+  // when a new message is appended by the live channel — a fresh message can't
+  // have reactions yet, so refetching for every incoming message is wasted work.
+  useEffect(() => {
+    const oldestId = loadedMessageIds[0] ?? null
+    if (!oldestId) return
+    if (prevOldestIdRef.current === oldestId) return
+    prevOldestIdRef.current = oldestId
+    void queryClient.invalidateQueries({ queryKey: ['cluster-reactions', clusterId] })
+  }, [loadedMessageIds, clusterId, queryClient])
 
   useEffect(() => {
     return () => {
@@ -484,6 +520,59 @@ export function RoomView() {
     }
   }
 
+  // Prepend an earlier page. The length watch treats this as a non-event so the
+  // older messages don't count toward the "new messages" badge.
+  async function handleLoadEarlier() {
+    setError(null)
+    // Record which surface is scrollable and its offset *before* the merge, so
+    // we can re-anchor on the message the user is reading after content grows
+    // above it (see useLayoutEffect below).
+    const container = scrollRef.current
+    if (container && container.scrollHeight - container.clientHeight > 1) {
+      anchorRef.current = {
+        surface: 'container',
+        scrollTop: container.scrollTop,
+        scrollHeight: container.scrollHeight,
+      }
+    } else {
+      anchorRef.current = {
+        surface: 'page',
+        scrollTop: window.scrollY,
+        scrollHeight: document.documentElement.scrollHeight,
+      }
+    }
+    try {
+      const result = await loadEarlier.mutateAsync()
+      lastLenRef.current = (messages.data?.length ?? 0) + result.added
+      if (!result.hasMore) {
+        exhaustedRef.current = true
+        setHasMore(false)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load earlier messages.')
+      anchorRef.current = null
+    }
+  }
+
+  // After earlier messages are prepended, the timeline grows above the anchor
+  // point. Bump the scroll offset by the added height so the message the user
+  // was reading stays in place instead of jumping down into the new content.
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current
+    if (!anchor) return
+    anchorRef.current = null
+    const delta =
+      anchor.surface === 'container'
+        ? (scrollRef.current?.scrollHeight ?? anchor.scrollHeight) - anchor.scrollHeight
+        : document.documentElement.scrollHeight - anchor.scrollHeight
+    if (anchor.surface === 'container') {
+      const el = scrollRef.current
+      if (el) el.scrollTop = anchor.scrollTop + delta
+    } else if (delta !== 0) {
+      window.scrollTo(0, anchor.scrollTop + delta)
+    }
+  }, [messages.data])
+
   async function handleRaise() {
     const prompt = signalPrompt.trim()
     if (!prompt) return
@@ -520,7 +609,7 @@ export function RoomView() {
           <span className="min-w-0">
             <span className="block font-semibold">A spot just opened</span>
             <span className="block text-tertiary/70">
-              We're {members.data ? members.data.length : '…'} of {ROOM_CAPACITY}, finding a new member.
+              We're {members.data ? members.data.length : '…'} of {CLUSTER_SIZE}, finding a new member.
             </span>
           </span>
         </div>
@@ -537,6 +626,19 @@ export function RoomView() {
           Nothing here yet. Say hello to your cluster.
         </div>
       ) : (
+        <>
+        {hasMore && (
+          <div className="flex justify-center py-2">
+            <button
+              type="button"
+              onClick={() => void handleLoadEarlier()}
+              disabled={loadEarlier.isPending}
+              className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-surface px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+            >
+              {loadEarlier.isPending ? 'Loading earlier messages…' : 'Load earlier messages'}
+            </button>
+          </div>
+        )}
         <ul className="space-y-1" aria-label="Room timeline">
           {timeline.map((item, i) => {
             const prev = timeline[i - 1]
@@ -825,6 +927,7 @@ export function RoomView() {
             )
           })}
         </ul>
+        </>
       )}
       <div ref={endRef} aria-hidden />
       </div>
@@ -952,7 +1055,7 @@ export function RoomView() {
             }}
             placeholder="Write to your cluster…"
             maxLength={2000}
-            className="min-w-0 w-full flex-1 resize-none overflow-hidden rounded-pill border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm leading-5 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+            className="min-w-0 w-full flex-1 resize-none overflow-hidden rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm leading-5 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
           />
         </div>
         <button

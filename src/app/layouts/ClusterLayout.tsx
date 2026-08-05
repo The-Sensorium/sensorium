@@ -4,18 +4,14 @@ import { cn } from '../../lib/utils'
 import { useAuth } from '../auth-context'
 import { useCluster, useMyMembership } from '../../features/introductions'
 import { useClusterMembers } from '../../features/matching'
-import { useClusterMoods, useSetMood } from '../../features/cluster'
 import { useClusterChannel, usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
-import { MoodPicker } from '../../components/MoodPicker'
 import { ClusterRail } from '../../components/ClusterRail'
-import type { Mood } from '../../lib/moods'
 
 const SECTIONS = [
   { to: '', label: 'Room', end: true },
   { to: 'members', label: 'Members', end: false },
   { to: 'signals', label: 'Signals', end: false },
-  { to: 'pulse', label: 'Pulse', end: false },
   { to: 'votes', label: 'Votes', end: false },
   { to: 'settings', label: 'Settings', end: false },
 ]
@@ -31,8 +27,6 @@ export function ClusterLayout() {
   const cluster = useCluster(clusterId)
   const membership = useMyMembership(clusterId)
   const members = useClusterMembers(clusterId, clusterId !== '')
-  const moods = useClusterMoods(clusterId, clusterId !== '')
-  const setMood = useSetMood()
   const { online } = usePresence(clusterId)
 
   // One Postgres-Changes subscription for the whole cluster shell keeps the room,
@@ -60,16 +54,8 @@ export function ClusterLayout() {
     return <Navigate to={`/cluster/${clusterId}/waiting`} replace />
   }
 
-  const myLatest = (moods.data ?? [])
-    .filter((m) => userId && m.user_id === userId)
-    .at(0)?.mood ?? null
-
   const memberCount = (members.data ?? []).length
   const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
-
-  async function handleMood(mood: Mood) {
-    await setMood.mutateAsync({ clusterId, mood })
-  }
 
   return (
     <div
@@ -125,56 +111,50 @@ export function ClusterLayout() {
         </nav>
       </header>
 
-      {/* Presence strip - a quiet row of faces, then a mood emoji row. Only on the Room tab. */}
+      {/* Presence strip - a quiet row of faces. Only on the Room tab. */}
       {isRoom && (
         <section
           aria-label="Who is in the room"
-          className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft"
+          className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft"
         >
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h2 className="font-display text-sm font-semibold text-on-surface">
-            In the room now
-          </h2>
-          <span className="text-xs text-on-surface-variant">
-            {onlineCount} of {memberCount} here
-          </span>
-          <ul className="flex flex-wrap items-center gap-2">
-            {(members.data ?? []).map((m) => {
-              const isMe = m.id === userId
-              return (
-                <li key={m.id}>
-                  <Link
-                    to={`/profile/${m.id}?cluster=${clusterId}`}
-                    title={`${m.display_name}${isMe ? ' (you)' : ''}`}
-                    className="relative block"
-                  >
-                    <Avatar
-                      name={m.display_name}
-                      src={m.avatar_url}
-                      className={cn('h-8 w-8', isMe && 'ring-2 ring-primary')}
-                      textClassName="text-xs"
-                    />
-                    {online.has(m.id) || isMe ? (
-                      <span
-                        className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500"
-                        aria-hidden
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-display text-sm font-semibold text-on-surface">
+                In the room now
+              </h2>
+              <span className="text-xs text-on-surface-variant">
+                {onlineCount} of {memberCount} here
+              </span>
+            </div>
+            <ul className="flex flex-wrap items-center gap-2">
+              {(members.data ?? []).map((m) => {
+                const isMe = m.id === userId
+                return (
+                  <li key={m.id}>
+                    <Link
+                      to={`/profile/${m.id}?cluster=${clusterId}`}
+                      title={`${m.display_name}${isMe ? ' (you)' : ''}`}
+                      className="relative block"
+                    >
+                      <Avatar
+                        name={m.display_name}
+                        src={m.avatar_url}
+                        className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
+                        textClassName="text-xs"
                       />
-                    ) : null}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
-        <div className="mt-3 border-t border-outline-variant/60 pt-3">
-          <MoodPicker
-            compact
-            value={myLatest}
-            onChange={(mood) => void handleMood(mood)}
-            disabled={setMood.isPending}
-          />
-        </div>
-      </section>
+                      {online.has(m.id) || isMe ? (
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </section>
       )}
 
       {/* The room: conversation + side table on desktop. */}

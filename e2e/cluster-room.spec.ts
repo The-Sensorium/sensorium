@@ -84,11 +84,6 @@ test.describe('cluster room (seeded Aurora)', () => {
     await expect(page.getByText('No open votes right now.')).toBeVisible()
   })
 
-  test('pulse section renders the cluster pulse heading', async ({ page }) => {
-    await openSection(page, 'Pulse')
-    await expect(page.getByRole('heading', { name: 'Cluster pulse' })).toBeVisible()
-  })
-
   test('settings shows cluster details', async ({ page }) => {
     await openSection(page, 'Settings')
     await expect(page.getByRole('heading', { name: 'Cluster details' })).toBeVisible()

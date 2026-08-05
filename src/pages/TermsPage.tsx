@@ -14,7 +14,7 @@ export function TermsPage() {
       <Section title="1. The service">
         <p>
           Sensorium matches you into a cluster by birth date or location and provides tools for that
-          group to interact: chat, moods, signals for help, and votes. We may change, suspend, or
+          group to interact: chat, signals for help, and votes. We may change, suspend, or
           discontinue any feature at any time.
         </p>
       </Section>
