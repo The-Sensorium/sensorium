@@ -983,9 +983,10 @@ export function RoomView() {
           <button
             type="button"
             aria-label="Room actions"
+            aria-haspopup="menu"
             aria-expanded={composerOpen}
-            aria-controls="room-actions-menu"
-            disabled={uploading || raise.isPending}
+            aria-controls={composerOpen ? 'room-actions-menu' : undefined}
+            disabled={raise.isPending}
             onClick={(e) => {
               e.stopPropagation()
               setComposerOpen((open) => !open)
@@ -1097,7 +1098,7 @@ export function RoomView() {
           type="submit"
           disabled={!draft.trim() || send.isPending || uploading}
           aria-label="Send message"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary disabled:opacity-60 sm:h-11 sm:w-11"
+          className="grid h-10 w-10 shrink-0 place-items-center text-primary transition-colors hover:text-on-surface disabled:opacity-60 sm:h-11 sm:w-11"
         >
           {send.isPending ? (
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
