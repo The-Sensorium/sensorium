@@ -45,7 +45,7 @@ export function DiscoveryPage() {
 
       <div
         ref={listRef}
-        className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
+        className="flex flex-wrap gap-2"
         role="tablist"
         aria-label="Matching modes"
         onKeyDown={(e) => handleTabKey(e, activeIndex)}
@@ -61,7 +61,7 @@ export function DiscoveryPage() {
             tabIndex={active === mode.value ? 0 : -1}
             onClick={() => setActive(mode.value)}
             className={cn(
-              'shrink-0 rounded-pill border px-4 py-2 text-sm font-semibold transition-colors',
+              'rounded-pill border px-4 py-2 text-sm font-semibold transition-colors',
               active === mode.value
                 ? 'border-primary bg-primary text-on-primary'
                 : 'border-outline-variant/70 bg-surface text-on-surface-variant hover:bg-surface-container',
