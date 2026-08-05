@@ -127,12 +127,10 @@ function MentionText({
   content,
   members,
   clusterId,
-  own,
 }: {
   content: string
   members: MentionMember[]
   clusterId: string
-  own: boolean
 }) {
   const parts = parseMentions(content, members)
   return (
@@ -146,12 +144,7 @@ function MentionText({
             <Link
               to={`/profile/${part.id}?cluster=${clusterId}`}
               title={part.name}
-              className={cn(
-                'rounded px-1 py-0.5 font-semibold no-underline transition-colors',
-                own
-                  ? 'bg-on-primary/30 text-on-primary hover:bg-on-primary/45'
-                  : 'bg-primary text-on-primary hover:opacity-90',
-              )}
+              className="rounded px-1 py-0.5 font-semibold no-underline transition-colors bg-surface text-on-surface hover:bg-surface-container"
             >
               @{part.name}
             </Link>
@@ -792,7 +785,6 @@ export function RoomView() {
                             content={m.content ?? ''}
                             members={parseMembers}
                             clusterId={clusterId}
-                            own={mine}
                           />
                         )}
                         {!isEditing && m.edited_at && (
