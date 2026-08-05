@@ -1098,7 +1098,10 @@ export function RoomView() {
           type="submit"
           disabled={!draft.trim() || send.isPending || uploading}
           aria-label="Send message"
-          className="grid h-10 w-10 shrink-0 place-items-center text-primary transition-colors hover:text-on-surface disabled:opacity-60 sm:h-11 sm:w-11"
+          className={cn(
+            'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-container transition-colors disabled:opacity-60 sm:h-11 sm:w-11',
+            draft.trim() ? 'text-primary' : 'text-on-surface-variant',
+          )}
         >
           {send.isPending ? (
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
