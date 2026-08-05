@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   adminClient,
+  createCluster,
   createUser,
   onboardUser,
   cleanup,
@@ -201,5 +202,39 @@ describe('matching', () => {
     expect(birthYear.waiting).toBe(1)
     const exact = data.find((r: { mode: string }) => r.mode === 'exact_birthdate')
     expect(exact.joined).toBe(false)
+  })
+
+  it('get_my_clusters returns memberships with their active-member count', async () => {
+    const a = await onboarded('mc-a')
+    const b = await onboarded('mc-b')
+    const c = await onboarded('mc-c')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      name: 'Counted Cluster',
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data, error } = await a.client.rpc('get_my_clusters')
+    expect(error).toBeNull()
+    expect(data).toHaveLength(1)
+    expect(data![0].id).toBe(clusterId)
+    expect(data![0].name).toBe('Counted Cluster')
+    expect(data![0].member_count).toBe(3)
+    expect(data![0].status).toBe('active')
+
+    // member_count only counts active members: once b leaves, it drops to 2.
+    const { error: leaveErr } = await b.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+
+    const { data: afterLeave } = await a.client.rpc('get_my_clusters')
+    expect(afterLeave).toHaveLength(1)
+    expect(afterLeave![0].member_count).toBe(2)
+
+    // A member who leaves their own cluster no longer sees it at all.
+    const { data: bClusters } = await b.client.rpc('get_my_clusters')
+    expect(bClusters).toHaveLength(0)
   })
 })

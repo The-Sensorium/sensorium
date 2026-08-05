@@ -65,22 +65,37 @@ describe('matching', () => {
   })
 
   it('useMyClusters returns an empty list with no memberships', async () => {
+    mockResult.value = { data: [], error: null }
     const { result } = renderHook(() => useMyClusters(), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual([]))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_my_clusters')
   })
 
-  it('useMyClusters maps memberships to clusters sorted newest-first', async () => {
+  it('useMyClusters maps RPC rows to clusters with member counts', async () => {
     mockResult.value = {
       data: [
-        { cluster_id: 'c1', joined_at: '2026-01-02T00:00:00Z', clusters: { id: 'c1', name: 'A' } },
-        { cluster_id: 'c2', joined_at: '2026-01-01T00:00:00Z', clusters: { id: 'c2', name: 'B' } },
+        {
+          id: 'c1',
+          name: 'A',
+          matching_mode: 'exact_birthdate',
+          mode_label: 'Mode A',
+          queue_key: '2000-01-01',
+          status: 'active',
+          introductions_deadline: null,
+          introductions_completed_at: '2026-01-03T00:00:00Z',
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          joined_at: '2026-01-02T00:00:00Z',
+          member_count: 8,
+        },
       ],
       error: null,
     }
     const { result } = renderHook(() => useMyClusters(), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(result.current.data?.map((m) => m.cluster.id)).toEqual(['c1', 'c2'])
-    expect(result.current.data?.[0].memberCount).toBe(1)
+    expect(result.current.data?.map((m) => m.cluster.id)).toEqual(['c1'])
+    expect(result.current.data?.[0].memberCount).toBe(8)
+    expect(result.current.data?.[0].joinedAt).toBe('2026-01-02T00:00:00Z')
   })
 
   it('useClusterMembers fetches member profiles', async () => {

@@ -64,34 +64,27 @@ export function useMyClusters(enabled = true) {
       if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
 
-      const { data: memberships, error: mErr } = await supabase
-        .from('cluster_members')
-        .select('cluster_id, joined_at, clusters(*)')
-        .eq('user_id', userId)
-      if (mErr) throw mErr
+      // DB-side count via security-definer RPC (avoids a full-table scan of
+      // cluster_members that the previous client-side aggregate performed).
+      const { data, error } = await supabase.rpc('get_my_clusters')
+      if (error) throw error
 
-      const clusterIds = (memberships ?? []).map((m) => m.cluster_id)
-      if (clusterIds.length === 0) return [] as MyCluster[]
-
-      const { data: all, error: cErr } = await supabase
-        .from('cluster_members')
-        .select('cluster_id')
-        .is('left_at', null)
-      if (cErr) throw cErr
-
-      const counts = new Map<string, number>()
-      for (const row of all ?? []) {
-        counts.set(row.cluster_id, (counts.get(row.cluster_id) ?? 0) + 1)
-      }
-
-      return (memberships ?? [])
-        .filter((m) => m.clusters)
-        .map((m) => ({
-          cluster: m.clusters as unknown as Cluster,
-          joinedAt: m.joined_at,
-          memberCount: counts.get(m.cluster_id) ?? 1,
-        }))
-        .sort((a, b) => b.joinedAt.localeCompare(a.joinedAt))
+      return (data ?? []).map((row) => ({
+        cluster: {
+          id: row.id,
+          name: row.name,
+          matching_mode: row.matching_mode,
+          mode_label: row.mode_label,
+          queue_key: row.queue_key,
+          status: row.status,
+          introductions_deadline: row.introductions_deadline,
+          introductions_completed_at: row.introductions_completed_at,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+        } as Cluster,
+        joinedAt: row.joined_at,
+        memberCount: row.member_count,
+      }))
     },
   })
 }
