@@ -7,7 +7,6 @@ import type { Database } from '../lib/database.types'
 
 type Message = Database['public']['Tables']['messages']['Row']
 type Reaction = Database['public']['Tables']['message_reactions']['Row']
-type MoodRow = Database['public']['Tables']['moods']['Row']
 type Signal = Database['public']['Tables']['signals']['Row']
 type SignalReply = Database['public']['Tables']['signal_replies']['Row']
 type Vote = Database['public']['Tables']['votes']['Row']
@@ -88,7 +87,6 @@ export function useClusterChannel(clusterId: string | null) {
     const supabase = requireSupabase()
 
     const messagesKey = ['cluster-messages', clusterId]
-    const moodsKey = ['cluster-moods', clusterId]
     const signalsKey = ['cluster-signals', clusterId]
     const votesKey = ['cluster-votes', clusterId]
 
@@ -123,23 +121,6 @@ export function useClusterChannel(clusterId: string | null) {
           queryClient.setQueryData<Message[]>(messagesKey, (cur) =>
             cur ? cur.map((m) => (m.id === row.id ? row : m)) : cur,
           )
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'moods',
-          filter: `cluster_id=eq.${clusterId}`,
-        },
-        (payload) => {
-          const row = payload.new as MoodRow
-          queryClient.setQueryData<MoodRow[]>(moodsKey, (cur) => {
-            if (!cur || cur.some((m) => m.user_id === row.user_id && m.created_at === row.created_at))
-              return cur
-            return [row, ...cur].slice(0, 100)
-          })
         },
       )
       .on(

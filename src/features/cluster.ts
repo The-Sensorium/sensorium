@@ -2,11 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../app/auth-context'
 import type { Database } from '../lib/database.types'
 import { requireSupabase, type MatchingMode } from '../lib/supabase'
-import type { Mood } from '../lib/moods'
 import { prepareImage } from '../lib/image'
 
 type Message = Database['public']['Tables']['messages']['Row']
-type MoodRow = Database['public']['Tables']['moods']['Row']
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Reaction = Database['public']['Tables']['message_reactions']['Row']
 
@@ -131,50 +129,6 @@ export function useSendMessage() {
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['cluster-messages', variables.clusterId] })
-    },
-  })
-}
-
-/** All mood rows in a cluster (RLS: active members). Latest-per-user derived in views. */
-export function useClusterMoods(clusterId: string | null, enabled = true) {
-  return useQuery({
-    queryKey: ['cluster-moods', clusterId ?? 'none'],
-    enabled: enabled && clusterId !== null,
-    queryFn: async () => {
-      if (!clusterId) throw new Error('No cluster')
-      const supabase = requireSupabase()
-      const { data, error } = await supabase
-        .from('moods')
-        .select('user_id, cluster_id, mood, created_at')
-        .eq('cluster_id', clusterId)
-        .order('created_at', { ascending: false })
-        .limit(100)
-      if (error) throw error
-      return (data ?? []) as MoodRow[]
-    },
-  })
-}
-
-export function useSetMood() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({
-      clusterId,
-      mood,
-    }: {
-      clusterId: string
-      mood: Mood
-    }) => {
-      const supabase = requireSupabase()
-      const { error } = await supabase.rpc('set_mood', {
-        p_cluster_id: clusterId,
-        p_mood: mood,
-      })
-      if (error) throw error
-    },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ['cluster-moods', variables.clusterId] })
     },
   })
 }
@@ -319,27 +273,6 @@ export async function uploadChatImage(clusterId: string, file: File): Promise<st
   return path
 }
 
-/** A member's last N moods in a cluster (profile "mood history"). */
-export function useMemberMoods(clusterId: string | null, memberId: string | null, enabled = true) {
-  return useQuery({
-    queryKey: ['member-moods', clusterId ?? 'none', memberId ?? 'none'],
-    enabled: enabled && clusterId !== null && memberId !== null,
-    queryFn: async () => {
-      if (!clusterId || !memberId) throw new Error('No cluster or member')
-      const supabase = requireSupabase()
-      const { data, error } = await supabase
-        .from('moods')
-        .select('mood, created_at')
-        .eq('cluster_id', clusterId)
-        .eq('user_id', memberId)
-        .order('created_at', { ascending: false })
-        .limit(7)
-      if (error) throw error
-      return data ?? []
-    },
-  })
-}
-
 export function useLeaveCluster() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -427,5 +360,5 @@ export function useUpdateProfile() {
   })
 }
 
-export type { Message, MoodRow, Profile, Reaction }
+export type { Message, Profile, Reaction }
 export type { MatchingMode }

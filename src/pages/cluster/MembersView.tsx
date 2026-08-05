@@ -4,13 +4,11 @@ import { useDocumentTitle } from '../../lib/use-document-title'
 import { Cake, Flag, Loader2, MapPin } from 'lucide-react'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
-import { useClusterMoods } from '../../features/cluster'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { AvailabilityBadge } from '../../components/AvailabilityBadge'
 import { ReportModal } from '../../components/ReportModal'
 import { countryName } from '../../lib/countries'
-import { moodMeta, type Mood } from '../../lib/moods'
 
 export function MembersView() {
   useDocumentTitle('Members')
@@ -18,14 +16,8 @@ export function MembersView() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const members = useClusterMembers(clusterId)
-  const moods = useClusterMoods(clusterId)
   const { online } = usePresence(clusterId)
   const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null)
-
-  const latestByUser = new Map<string, Mood>()
-  for (const m of moods.data ?? []) {
-    if (!latestByUser.has(m.user_id)) latestByUser.set(m.user_id, m.mood)
-  }
 
   if (members.isLoading) {
     return (
@@ -47,7 +39,6 @@ export function MembersView() {
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {list.map((member) => {
-            const mood = latestByUser.get(member.id)
             const onlineNow = isOnline(member.id)
             return (
               <li key={member.id}>
@@ -83,15 +74,6 @@ export function MembersView() {
                           )}
                         </p>
                       </div>
-                      {mood && (
-                        <span
-                          className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-surface-container px-2.5 py-1 text-sm"
-                          aria-label={`Mood: ${moodMeta(mood).label}`}
-                          title={moodMeta(mood).label}
-                        >
-                          <span aria-hidden>{moodMeta(mood).emoji}</span>
-                        </span>
-                      )}
                     </div>
                   </Link>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">

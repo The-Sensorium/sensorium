@@ -16,7 +16,7 @@ export function PrivacyPolicyPage() {
           When you create an account we collect your email, display name, date of birth, country,
           and any details you add to your profile. If you enable Local matching, we store a coarse
           location (city area) and the matching radius you choose, never your precise coordinates.
-          We also record your activity on the service, such as messages, reactions, signals, moods,
+          We also record your activity on the service, such as messages, reactions, signals,
           votes, and notifications.
         </p>
         <p>
@@ -29,7 +29,7 @@ export function PrivacyPolicyPage() {
         <p>We use the data we collect to provide, personalize, and protect our service, including:</p>
         <ul className="list-disc space-y-1 pl-6">
           <li>creating and matching clusters based on birth date or location;</li>
-          <li>operating cluster chat, signals, moods, votes, and notifications;</li>
+          <li>operating cluster chat, signals, votes, and notifications;</li>
           <li>moderating content and responding to reports of misconduct;</li>
           <li>improving the product and keeping it secure.</li>
         </ul>
@@ -37,7 +37,7 @@ export function PrivacyPolicyPage() {
 
       <Section title="3. Data sharing">
         <p>
-          We do not sell your personal data. Within a cluster, your profile, mood, and answers to
+          We do not sell your personal data. Within a cluster, your profile and answers to
           the introduction phase are visible only to that cluster. Reports you submit are shared
           only with our moderation team.
         </p>

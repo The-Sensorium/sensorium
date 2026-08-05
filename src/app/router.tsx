@@ -20,7 +20,6 @@ import { RoomView } from '../pages/cluster/RoomView'
 import { MembersView } from '../pages/cluster/MembersView'
 import { SignalsView } from '../pages/cluster/SignalsView'
 import { SignalDetailPage } from '../pages/cluster/SignalDetailPage'
-import { PulseView } from '../pages/cluster/PulseView'
 import { VotesView } from '../pages/cluster/VotesView'
 import { SettingsView } from '../pages/cluster/SettingsView'
 import { OnboardingPage } from '../pages/onboarding/OnboardingPage'
@@ -83,7 +82,6 @@ export function AppRouter() {
               <Route path="members" element={<MembersView />} />
               <Route path="signals" element={<SignalsView />} />
               <Route path="signals/:signalId" element={<SignalDetailPage />} />
-              <Route path="pulse" element={<PulseView />} />
               <Route path="votes" element={<VotesView />} />
               <Route path="settings" element={<SettingsView />} />
             </Route>

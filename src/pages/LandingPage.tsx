@@ -7,7 +7,7 @@ const howItWorks = [
   { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose.' },
   { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.' },
   { step: '04', title: 'Complete Introductions', body: 'Answer five questions within 72 hours so everyone can connect.' },
-  { step: '05', title: 'Build Real Connections', body: 'Chat, share moods, raise signals, and grow together.' },
+  { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and grow together.' },
 ]
 
 const clusterTypes = [

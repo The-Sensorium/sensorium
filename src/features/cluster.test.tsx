@@ -15,9 +15,7 @@ import {
   useIntroQuestionMap,
   useLeaveCluster,
   useLoadEarlierMessages,
-  useMemberMoods,
   useSendMessage,
-  useSetMood,
   useToggleReaction,
   useUpdateProfile,
 } from './cluster'
@@ -144,16 +142,6 @@ describe('cluster', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-messages', 'c1'] })
   })
 
-  it('useSetMood calls set_mood with the mood', async () => {
-    const { result } = renderHook(() => useSetMood(), { wrapper })
-    result.current.mutate({ clusterId: 'c1', mood: 'great' as never })
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('set_mood', {
-      p_cluster_id: 'c1',
-      p_mood: 'great',
-    })
-  })
-
   it('useClusterReactions returns empty when no messages are loaded', async () => {
     const { result } = renderHook(() => useClusterReactions('c1', []), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual([]))
@@ -219,11 +207,6 @@ describe('cluster', () => {
     mockResult.value = { data: {}, error: null }
     const { result } = renderHook(() => useChatImageUrl('x'), { wrapper })
     await waitFor(() => expect(result.current.isError).toBe(true))
-  })
-
-  it('useMemberMoods is disabled until both ids exist', () => {
-    renderHook(() => useMemberMoods('c1', null), { wrapper })
-    expect(requireSupabaseMock).not.toHaveBeenCalled()
   })
 
   it('useIntroQuestionMap builds a prompt map', async () => {
