@@ -1,6 +1,7 @@
 import TextareaAutosize from 'react-textarea-autosize'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { CLUSTER_SIZE } from '../../lib/constants'
 import {
@@ -27,11 +28,13 @@ import {
   type MentionMember,
 } from '../../features/mentions'
 import {
+  CHAT_PAGE_SIZE,
   useChatImageUrl,
   useClusterMessages,
   useClusterReactions,
   useDeleteMessage,
   useEditMessage,
+  useLoadEarlierMessages,
   useSendMessage,
   useToggleReaction,
   uploadChatImage,
@@ -165,7 +168,10 @@ export function RoomView() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
   const messages = useClusterMessages(clusterId)
-  const reactions = useClusterReactions(clusterId)
+  const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
+  const reactions = useClusterReactions(clusterId, loadedMessageIds)
+  const loadEarlier = useLoadEarlierMessages(clusterId)
+  const queryClient = useQueryClient()
   const signals = useClusterSignals(clusterId)
   const signalReplies = useSignalReplies(clusterId, null)
   const votes = useClusterVotes(clusterId)
@@ -190,6 +196,9 @@ export function RoomView() {
   const [signalPrompt, setSignalPrompt] = useState('')
   const [pinned, setPinned] = useState(true)
   const [newCount, setNewCount] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const exhaustedRef = useRef(false)
+  const prevOldestIdRef = useRef<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -264,6 +273,9 @@ export function RoomView() {
     pinnedRef.current = true
     setPinned(true)
     setNewCount(0)
+    exhaustedRef.current = false
+    setHasMore(false)
+    prevOldestIdRef.current = null
   }, [clusterId])
 
   // Auto-follow the newest message while the user is near the bottom. Once they
@@ -308,6 +320,25 @@ export function RoomView() {
       else setNewCount((count) => count + (len - prev))
     }
   }, [messages.data])
+
+  // Offer "Load earlier" once the first page came back full (a full page means
+  // there may be older rows). The ref keeps it hidden after history is drained.
+  useEffect(() => {
+    if (exhaustedRef.current) return
+    if ((messages.data?.length ?? 0) >= CHAT_PAGE_SIZE) setHasMore(true)
+  }, [messages.data])
+
+  // Reactions are fetched for the loaded messages only. Refetch when the oldest
+  // loaded message changes (initial load or an earlier page prepended), but not
+  // when a new message is appended by the live channel — a fresh message can't
+  // have reactions yet, so refetching for every incoming message is wasted work.
+  useEffect(() => {
+    const oldestId = loadedMessageIds[0] ?? null
+    if (!oldestId) return
+    if (prevOldestIdRef.current === oldestId) return
+    prevOldestIdRef.current = oldestId
+    void queryClient.invalidateQueries({ queryKey: ['cluster-reactions', clusterId] })
+  }, [loadedMessageIds, clusterId, queryClient])
 
   useEffect(() => {
     return () => {
@@ -484,6 +515,22 @@ export function RoomView() {
     }
   }
 
+  // Prepend an earlier page. The length watch treats this as a non-event so the
+  // older messages don't count toward the "new messages" badge.
+  async function handleLoadEarlier() {
+    setError(null)
+    try {
+      const result = await loadEarlier.mutateAsync()
+      lastLenRef.current = (messages.data?.length ?? 0) + result.added
+      if (!result.hasMore) {
+        exhaustedRef.current = true
+        setHasMore(false)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load earlier messages.')
+    }
+  }
+
   async function handleRaise() {
     const prompt = signalPrompt.trim()
     if (!prompt) return
@@ -537,6 +584,19 @@ export function RoomView() {
           Nothing here yet. Say hello to your cluster.
         </div>
       ) : (
+        <>
+        {hasMore && (
+          <div className="flex justify-center py-2">
+            <button
+              type="button"
+              onClick={() => void handleLoadEarlier()}
+              disabled={loadEarlier.isPending}
+              className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-surface px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+            >
+              {loadEarlier.isPending ? 'Loading earlier messages…' : 'Load earlier messages'}
+            </button>
+          </div>
+        )}
         <ul className="space-y-1" aria-label="Room timeline">
           {timeline.map((item, i) => {
             const prev = timeline[i - 1]
@@ -825,6 +885,7 @@ export function RoomView() {
             )
           })}
         </ul>
+        </>
       )}
       <div ref={endRef} aria-hidden />
       </div>

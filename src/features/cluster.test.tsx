@@ -6,6 +6,7 @@ import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
 import { makeSupabaseClient, initialMockResult, type MockSupabaseResult } from '../test/supabase-client'
 import {
+  CHAT_PAGE_SIZE,
   useChatImageUrl,
   useClusterMessages,
   useClusterReactions,
@@ -13,6 +14,7 @@ import {
   useEditMessage,
   useIntroQuestionMap,
   useLeaveCluster,
+  useLoadEarlierMessages,
   useMemberMoods,
   useSendMessage,
   useSetMood,
@@ -55,11 +57,78 @@ describe('cluster', () => {
     useAuthMock.mockReturnValue({ state: 'signedIn', userId: 'u1', email: 'a@b.test' } as never)
   })
 
-  it('useClusterMessages fetches messages in ascending time order', async () => {
+  it('useClusterMessages fetches the latest page and returns it oldest-first', async () => {
+    mockResult.value = {
+      data: [
+        { id: 'm2', created_at: '2026-01-02T00:00:00Z' },
+        { id: 'm1', created_at: '2026-01-01T00:00:00Z' },
+      ],
+      error: null,
+    }
     const { result } = renderHook(() => useClusterMessages('c1'), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('messages').eq).toHaveBeenCalledWith('cluster_id', 'c1')
+    const from = c.from('messages')
+    expect(from.eq).toHaveBeenCalledWith('cluster_id', 'c1')
+    expect(from.order).toHaveBeenCalledWith('created_at', { ascending: false })
+    expect(from.limit).toHaveBeenCalledWith(CHAT_PAGE_SIZE)
+    expect(result.current.data?.map((m) => m.id)).toEqual(['m1', 'm2'])
+  })
+
+  it('useClusterMessages keeps earlier pages already in the cache across refetches', async () => {
+    queryClient.setQueryData(['cluster-messages', 'c1'], [
+      { id: 'm0', created_at: '2026-01-01T00:00:00Z' },
+      { id: 'm3', created_at: '2026-01-03T00:00:00Z' },
+    ])
+    mockResult.value = {
+      data: [
+        { id: 'm1', created_at: '2026-01-02T00:00:00Z' },
+        { id: 'm2', created_at: '2026-01-02T00:00:30Z' },
+        { id: 'm3', created_at: '2026-01-03T00:00:00Z' },
+      ],
+      error: null,
+    }
+    const { result } = renderHook(() => useClusterMessages('c1'), { wrapper })
+    // m0 precedes the fresh window so it survives the refetch; m3 is replaced,
+    // not duplicated.
+    await waitFor(() =>
+      expect(result.current.data?.map((m) => m.id)).toEqual(['m0', 'm1', 'm2', 'm3']),
+    )
+  })
+
+  it('useLoadEarlierMessages prepends an earlier page and reports hasMore', async () => {
+    queryClient.setQueryData(['cluster-messages', 'c1'], [
+      { id: 'm3', created_at: '2026-01-03T00:00:00Z' },
+    ])
+    mockResult.value = {
+      data: [
+        { id: 'm1', created_at: '2026-01-01T00:00:00Z' },
+        { id: 'm2', created_at: '2026-01-02T00:00:00Z' },
+      ],
+      error: null,
+    }
+    const { result } = renderHook(() => useLoadEarlierMessages('c1'), { wrapper })
+    result.current.mutate()
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    const c = requireSupabaseMock.mock.results[0].value
+    // inclusive cursor so messages sharing the oldest timestamp aren't skipped
+    expect(c.from('messages').lte).toHaveBeenCalledWith('created_at', '2026-01-03T00:00:00Z')
+    expect(queryClient.getQueryData(['cluster-messages', 'c1'])).toEqual([
+      { id: 'm1', created_at: '2026-01-01T00:00:00Z' },
+      { id: 'm2', created_at: '2026-01-02T00:00:00Z' },
+      { id: 'm3', created_at: '2026-01-03T00:00:00Z' },
+    ])
+    expect(result.current.data).toEqual({ added: 2, hasMore: false })
+  })
+
+  it('useLoadEarlierMessages skips the cursor when nothing is loaded yet', async () => {
+    mockResult.value = { data: [{ id: 'm1', created_at: 't1' }], error: null }
+    const { result } = renderHook(() => useLoadEarlierMessages('c1'), { wrapper })
+    result.current.mutate()
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.from('messages').lte).not.toHaveBeenCalled()
+    expect(result.current.data).toEqual({ added: 1, hasMore: false })
   })
 
   it('useSendMessage sends content through the RPC and invalidates', async () => {
@@ -85,9 +154,17 @@ describe('cluster', () => {
     })
   })
 
-  it('useClusterReactions returns empty when no messages exist', async () => {
-    const { result } = renderHook(() => useClusterReactions('c1'), { wrapper })
+  it('useClusterReactions returns empty when no messages are loaded', async () => {
+    const { result } = renderHook(() => useClusterReactions('c1', []), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual([]))
+  })
+
+  it('useClusterReactions queries only the loaded message ids', async () => {
+    mockResult.value = { data: [{ id: 'r1', message_id: 'm1' }], error: null }
+    const { result } = renderHook(() => useClusterReactions('c1', ['m1', 'm2']), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual([{ id: 'r1', message_id: 'm1' }]))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.from('message_reactions').in).toHaveBeenCalledWith('message_id', ['m1', 'm2'])
   })
 
   it('useToggleReaction deletes an existing reaction', async () => {
