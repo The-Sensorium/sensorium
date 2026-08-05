@@ -49,7 +49,7 @@ Sensorium is an open-source social platform that places you into a permanent gro
 
 ## Features
 
-- **Matching**: enter up to six queues (exact birth date, birth month and day, birth year and month, birth year, or local radius). A cluster forms when a mode reaches eight ready people.
+- **Matching**: enter up to five queues (exact birth date, birth month and day, birth year and month, birth year, or local radius). A cluster forms when a mode reaches eight ready people.
 - **Cluster chat**: realtime messaging, reactions, edits, image sharing, and presence. Who is here, who is typing, who is online.
 - **Introduction phase**: a five-question shared intro must be completed before the room opens, with a 72-hour deadline.
 - **Moods and pulse**: per-cluster mood, status, and availability, aggregated into a live pulse.

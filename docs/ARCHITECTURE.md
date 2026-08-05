@@ -73,7 +73,7 @@ flowchart TD
 - **Landing Page**: public marketing page with no auth required.
 - **Authentication**: signup, login, email verification, and password reset.
 - **Onboarding**: profile setup before the user can enter queues.
-- **Matching Queue**: the user opts into up to six matching modes; each queues them separately.
+- **Matching Queue**: the user opts into up to five matching modes; each queues them separately.
 - **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed.
 - **Introduction Phase**: a shared five-question intro must be completed within 72 hours before the room opens.
 - **Cluster Unlock**: once unlocked, members get chat, moods/pulse, Signals, votes, and notifications.
