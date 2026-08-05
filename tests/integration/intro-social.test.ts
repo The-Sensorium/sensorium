@@ -313,7 +313,32 @@ describe('introductions and social', () => {
     expect(error?.message).toContain('empty_message')
   })
 
-  it('send_message persists the message and notifies non-authors', async () => {
+  it('send_message enforces the database content length cap', async () => {
+    const a = await member('i-chat-len')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // Exactly 2000 chars is accepted.
+    const { data: okId, error: okErr } = await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'x'.repeat(2000),
+    })
+    expect(okErr).toBeNull()
+    expect(okId).toBeTruthy()
+
+    // 2001 chars violates messages_content_length.
+    const { error } = await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'x'.repeat(2001),
+    })
+    expect(error).not.toBeNull()
+    expect(error?.message).toMatch(/messages_content_length|check constraint/i)
+  })
+
+  it('send_message persists the message but writes no per-member rows', async () => {
     const [a, b, c] = [
       await member('i-chat-a'),
       await member('i-chat-b'),
@@ -340,12 +365,16 @@ describe('introductions and social', () => {
     expect(messages![0].author_id).toBe(a.id)
     expect(messages![0].content).toBe('Hello everyone')
 
+    // Chat unread is tracked via last_read_message_at, not notification rows.
     const { data: notifs } = await admin
       .from('notifications')
-      .select('user_id')
+      .select('id')
       .eq('cluster_id', clusterId)
       .eq('type', 'message')
-    expect(notifs?.map((n) => n.user_id).sort()).toEqual([b.id, c.id].sort())
+    expect(notifs).toHaveLength(0)
+
+    const { data: unread } = await b.client.rpc('get_unread_notification_count')
+    expect(unread).toBe(1)
   })
 
   it('send_message creates a mention notification', async () => {

@@ -90,6 +90,49 @@ describe('account and moderation', () => {
     expect(report?.status).toBe('pending')
   })
 
+  it('report_member rejects a duplicate open report, then allows one after actioning', async () => {
+    const a = await member('r-dup-a')
+    const b = await member('r-dup-b')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // First report succeeds.
+    const { data: firstId, error: firstErr } = await a.client.rpc('report_member', {
+      p_cluster_id: clusterId,
+      p_target_user_id: b.id,
+      p_reason: 'harassment',
+    })
+    expect(firstErr).toBeNull()
+    expect(firstId).toBeTruthy()
+
+    // While it is still pending/reviewing, a second same-pair report is rejected.
+    const { error: dupErr } = await a.client.rpc('report_member', {
+      p_cluster_id: clusterId,
+      p_target_user_id: b.id,
+      p_reason: 'harassment',
+    })
+    expect(dupErr?.message).toContain('duplicate_report')
+
+    // After the original is actioned (no longer open), a new report is allowed.
+    const { error: actionErr } = await admin
+      .from('reports')
+      .update({ status: 'dismissed' })
+      .eq('id', firstId)
+    expect(actionErr).toBeNull()
+
+    const { data: secondId, error: retryErr } = await a.client.rpc('report_member', {
+      p_cluster_id: clusterId,
+      p_target_user_id: b.id,
+      p_reason: 'spam',
+    })
+    expect(retryErr).toBeNull()
+    expect(secondId).not.toBe(firstId)
+    expect(secondId).toBeTruthy()
+  })
+
   it('a member cannot read another member profile via RLS', async () => {
     const a = await member('p-rls-a')
     const b = await member('p-rls-b')
