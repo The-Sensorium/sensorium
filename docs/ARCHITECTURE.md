@@ -158,7 +158,7 @@ Production and staging are always isolated: different Vercel environments, diffe
 
 The pipelines validate every branch and release changes in a controlled order. Three GitHub Actions workflows handle it; for the exact steps and secrets, see [`TECHNICAL.md`](TECHNICAL.md#ci-and-deployment).
 
-- **CI workflow**: runs on push/PR to `main` and `develop`, and on push to `feature/*`, `fix/*`, and `docs/*`. It runs lint, unit tests with a coverage gate, the production build, applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
+- **CI workflow**: runs on push/PR to `main` and `develop`, and on push to `feature/*`, `fix/*`, and `docs/*`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with a coverage gate, the production build, applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
 - **Staging migration workflow**: on merge/push to `develop`, applies pending migrations to the staging Supabase project. Feature branches never apply migrations directly; migration SQL is applied only once the PR lands on `develop`.
 - **Production migration workflow**: on merge/push to `main`, applies the same pending migrations to the production Supabase project.
 

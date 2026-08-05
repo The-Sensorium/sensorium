@@ -150,7 +150,7 @@ main
 
 Three workflows validate and deploy:
 
-- **`ci.yml`**: runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`. It runs lint, unit tests with the v8 coverage gate, the production build (artifact uploaded), applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
+- **`ci.yml`**: runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with the v8 coverage gate, the production build (artifact uploaded), applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
 - **`migrate-staging.yml`**: applies pending migrations to the **staging** Supabase project on merge/push to `develop`.
 - **`migrate-production.yml`**: applies the same migrations to the **production** Supabase project on merge/push to `main`.
 
