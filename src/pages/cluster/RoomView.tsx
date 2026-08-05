@@ -1,5 +1,5 @@
 import TextareaAutosize from 'react-textarea-autosize'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useLayoutEffect, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { useDocumentTitle } from '../../lib/use-document-title'
@@ -205,6 +205,11 @@ export function RoomView() {
   const typingTimer = useRef<number | null>(null)
   const pinnedRef = useRef(true)
   const lastLenRef = useRef<number | null>(null)
+  const anchorRef = useRef<{
+    surface: 'container' | 'page'
+    scrollTop: number
+    scrollHeight: number
+  } | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
   const [mentionIndex, setMentionIndex] = useState(0)
@@ -519,6 +524,23 @@ export function RoomView() {
   // older messages don't count toward the "new messages" badge.
   async function handleLoadEarlier() {
     setError(null)
+    // Record which surface is scrollable and its offset *before* the merge, so
+    // we can re-anchor on the message the user is reading after content grows
+    // above it (see useLayoutEffect below).
+    const container = scrollRef.current
+    if (container && container.scrollHeight - container.clientHeight > 1) {
+      anchorRef.current = {
+        surface: 'container',
+        scrollTop: container.scrollTop,
+        scrollHeight: container.scrollHeight,
+      }
+    } else {
+      anchorRef.current = {
+        surface: 'page',
+        scrollTop: window.scrollY,
+        scrollHeight: document.documentElement.scrollHeight,
+      }
+    }
     try {
       const result = await loadEarlier.mutateAsync()
       lastLenRef.current = (messages.data?.length ?? 0) + result.added
@@ -528,8 +550,28 @@ export function RoomView() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load earlier messages.')
+      anchorRef.current = null
     }
   }
+
+  // After earlier messages are prepended, the timeline grows above the anchor
+  // point. Bump the scroll offset by the added height so the message the user
+  // was reading stays in place instead of jumping down into the new content.
+  useLayoutEffect(() => {
+    const anchor = anchorRef.current
+    if (!anchor) return
+    anchorRef.current = null
+    const delta =
+      anchor.surface === 'container'
+        ? (scrollRef.current?.scrollHeight ?? anchor.scrollHeight) - anchor.scrollHeight
+        : document.documentElement.scrollHeight - anchor.scrollHeight
+    if (anchor.surface === 'container') {
+      const el = scrollRef.current
+      if (el) el.scrollTop = anchor.scrollTop + delta
+    } else if (delta !== 0) {
+      window.scrollTo(0, anchor.scrollTop + delta)
+    }
+  }, [messages.data])
 
   async function handleRaise() {
     const prompt = signalPrompt.trim()
