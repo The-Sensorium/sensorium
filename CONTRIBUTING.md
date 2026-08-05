@@ -29,7 +29,7 @@ Read these before opening an issue or a pull request. The recommended order is i
 
 ## Project overview
 
-Sensorium places each user into a permanent cluster of exactly eight people, matched by birth date or location. Clusters get realtime chat, an introduction phase, mood and pulse check-ins, Signals (requests for help), and community governance through votes. The frontend is a React 19 SPA (Vite + TypeScript + Tailwind v4) backed by Supabase (Postgres, Auth, Storage, Realtime). See the [README](README.md) for the full feature list and quick start.
+Sensorium places each user into a permanent cluster of exactly eight people, matched by birth date or location. Clusters get realtime chat, an introduction phase, availability check-ins, Signals (requests for help), and community governance through votes. The frontend is a React 19 SPA (Vite + TypeScript + Tailwind v4) backed by Supabase (Postgres, Auth, Storage, Realtime). See the [README](README.md) for the full feature list and quick start.
 
 ## Setting up a development environment
 

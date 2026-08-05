@@ -1,5 +1,5 @@
 import { cn } from '../lib/utils'
-import { availabilityMeta, type Availability } from '../lib/moods'
+import { availabilityMeta, type Availability } from '../lib/availability'
 
 export function AvailabilityBadge({
   value,

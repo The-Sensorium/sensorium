@@ -45,14 +45,14 @@
 
 ## About
 
-Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once you are matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat, mood and pulse check-ins, Signals (requests for help), and community governance through votes.
+Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once you are matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat, availability check-ins, Signals (requests for help), and community governance through votes.
 
 ## Features
 
 - **Matching**: enter up to five queues (exact birth date, birth month and day, birth year and month, birth year, or local radius). A cluster forms when a mode reaches eight ready people.
 - **Cluster chat**: realtime messaging, reactions, edits, image sharing, and presence. Who is here, who is typing, who is online.
 - **Introduction phase**: a five-question shared intro must be completed before the room opens, with a 72-hour deadline.
-- **Moods and pulse**: per-cluster mood, status, and availability, aggregated into a live pulse.
+- **Availability**: per-cluster availability status shown to members.
 - **Signals**: raise a request for help, reply in threads, and track open and resolved states.
 - **Governance**: votes for cluster renames and member replacement, invitation flows, and cooldowns.
 - **Notifications**: a per-cluster notification center with per-type preferences.
@@ -140,7 +140,7 @@ Only the anon key is used in the browser. All privileged operations run through 
 
 Sensorium has three test layers. `npm test`, `npm run test:coverage`, `npm run test:integration`, and `npm run test:e2e` run them; see [`CONTRIBUTING.md`](CONTRIBUTING.md#testing) for the full matrix and what each layer requires.
 
-- **Unit and component** (`npm test`): Vitest and React Testing Library run against pure logic (modes, moods, utils, onboarding validation) and components.
+- **Unit and component** (`npm test`): Vitest and React Testing Library run against pure logic (modes, availability, utils, onboarding validation) and components.
 - **Coverage gate** (`npm run test:coverage`): the unit suite measures `src/**` with v8 and enforces minimum thresholds so CI fails if coverage regresses. The gate is an enforced floor, not a target.
 - **Integration** (`npm run test:integration`): exercises the Supabase stack end-to-end (RPC functions, RLS, and `security definer` behavior) with fixtures created via service role and assertions through per-user anonymous clients. Requires a running local stack.
 - **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, settings, and notifications flows. They expect a seeded local Supabase stack and the demo account.

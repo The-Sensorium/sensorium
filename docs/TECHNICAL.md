@@ -45,7 +45,7 @@ sensorium/
 │  ├─ pages/              # route page components
 │  ├─ components/         # shared and feature components
 │  ├─ features/           # domain hooks, TanStack Query sources, realtime subscriptions
-│  ├─ lib/                # supabase client, typed database, modes, moods, theme, utils
+│  ├─ lib/                # supabase client, typed database, modes, availability, theme, utils
 │  └─ test/               # unit test helpers
 ├─ e2e/                   # Playwright E2E specs (golden path, cluster room, settings, notifications)
 ├─ tests/integration/     # Vitest integration suite against the local Supabase stack
@@ -84,7 +84,7 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 
 All schema lives in `supabase/migrations/` and is **order-dependent**. Migrations build on each other and are never edited after they have been applied; changes come as new ordered files on top.
 
-- **Core schema (0001-0010)**: enums, profiles, queues and clusters, chat, signals, moods and status, votes and member replacement, notifications, reports, and demo seed data.
+- **Core schema (0001-0010)**: enums, profiles, queues and clusters, chat, signals, status and availability, votes and member replacement, notifications, reports, and demo seed data.
 - **Functions (0011-0015)**: matching, intro and social helpers, vote and replacement functions, and the pg_cron schedule.
 - **Storage and permissions (0016-0020)**: storage buckets, grants, and fixes.
 - **Realtime (0021-0024)**: chat, signal replies, governance events, and notification payloads.
