@@ -144,7 +144,7 @@ function MentionText({
             <Link
               to={`/profile/${part.id}?cluster=${clusterId}`}
               title={part.name}
-              className="rounded px-1 py-0.5 font-semibold no-underline transition-colors bg-surface text-on-surface hover:bg-surface-container"
+              className="rounded-sm bg-primary/10 px-1 py-0.5 font-medium text-primary transition-colors hover:bg-primary/20"
             >
               @{part.name}
             </Link>
@@ -722,11 +722,9 @@ export function RoomView() {
                           isEditing
                             ? 'rounded-2xl border border-outline-variant/60 bg-surface p-2'
                             : cn(
-                                'rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-soft',
+                                'rounded-2xl bg-surface-low px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-soft',
                                 'whitespace-pre-wrap break-words',
-                                mine
-                                  ? 'rounded-br-md bg-primary text-on-primary'
-                                  : 'rounded-bl-md bg-surface-low text-on-surface',
+                                mine ? 'rounded-br-md' : 'rounded-bl-md',
                               )
                         }
                       >
