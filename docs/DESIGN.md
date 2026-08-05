@@ -157,7 +157,7 @@ The palette is inspired by the "Golden Hour" (the transition between day and nig
 - **Secondary (Cream/Parchment):** The foundational surface color. It is softer on the eyes than pure white, providing a tactile, organic feel.
 - **Tertiary (Deep Cocoa):** A muted warm brown used for tertiary containers and supporting text, keeping the warm tonal profile.
 - **Neutral (Warm Slate):** Used for secondary text (`on-surface-variant`), borders, and inactive states (`outline`/`outline-variant`).
-- **Status (semantic):** Mood and availability use Tailwind status colors rather than custom tokens: `emerald` for available, `amber` for busy, `red` for do-not-disturb. Error states use the Material `error` roles (`#ba1a1a` light, `#ffb4ab` dark).
+- **Status (semantic):** Availability uses Tailwind status colors rather than custom tokens: `emerald` for available, `amber` for busy, `red` for do-not-disturb. Error states use the Material `error` roles (`#ba1a1a` light, `#ffb4ab` dark).
 
 ## Dark Mode
 

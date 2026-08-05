@@ -45,7 +45,7 @@ The repository is organized so the frontend and backend live side by side, with 
 | `src/pages/` | One component per route/page, composed from shared and feature components. |
 | `src/components/` | Reusable UI: avatars, modals, cards, pickers, navigation chrome. |
 | `src/features/` | Domain logic: matching, cluster, introductions, signals, votes, notifications, moderation. One module per domain, with its hooks and tests. |
-| `src/lib/` | Shared utilities: the typed Supabase client, moods, modes, theme, geo/country data, and helpers. |
+| `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, and helpers. |
 | `supabase/migrations/` | The entire database schema as ordered SQL files (the single source of truth for the backend). |
 | `docs/` | Product, design, and technical documentation. |
 | `public/` | Static assets served as-is (favicons, logo). |
@@ -76,7 +76,7 @@ flowchart TD
 - **Matching Queue**: the user opts into up to five matching modes; each queues them separately.
 - **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed.
 - **Introduction Phase**: a shared five-question intro must be completed within 72 hours before the room opens.
-- **Cluster Unlock**: once unlocked, members get chat, moods/pulse, Signals, votes, and notifications.
+- **Cluster Unlock**: once unlocked, members get chat, availability, Signals, votes, and notifications.
 
 The routing guards in `src/app/` enforce this order: guests can't reach onboarding, un-onboarded users can't reach the app, and cluster features require membership.
 
@@ -94,7 +94,7 @@ Responsibilities are separated by layering:
 - **Pages** compose features and components. They contain routing-specific logic only.
 - **Feature modules** own one domain (e.g. matching). Each exposes data hooks, realtime subscriptions, and mutations. This is where business-facing frontend logic lives.
 - **Components** are reusable and mostly presentational, driven by props and the hooks they're given.
-- **Lib** holds pure utilities and cross-cutting concerns (theme, modes, moods, utils) with no page awareness.
+- **Lib** holds pure utilities and cross-cutting concerns (theme, modes, availability, utils) with no page awareness.
 
 This keeps components small and focused, prevents duplicated logic, and makes a feature findable by name.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AVAILABILITY, availabilityMeta } from './moods'
+import { AVAILABILITY, availabilityMeta } from './availability'
 
 describe('availability', () => {
   it('defines the three availability states', () => {

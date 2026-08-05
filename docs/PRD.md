@@ -84,16 +84,6 @@ If a selected matching mode doesn't have enough people to fill a cluster (for ex
 
 This preserves user intent. Some respondents in the beta form said they would rather wait a long time for a tighter match than be matched quickly with someone far from what they wanted.
 
-### Cluster Pulse
-
-A visualization of current cluster moods.
-
-Example:
-- ðŸ˜€ Great: 3
-- ðŸ™‚ Good: 2
-- ðŸ˜ Okay: 2
-- ðŸ˜” Low: 1
-
 ### Signals
 
 A way for a member to ask their cluster for help: advice, recommendations, feedback, accountability, or assistance with something specific. This is the closest the app gets to the show's core mechanic, where the cluster comes together and pools whatever skills or perspective each member has to help the one in need.
@@ -268,30 +258,6 @@ Deleted messages are removed for all users.
 Edited messages display an "edited" indicator.
 
 ---
-## Mood System
-
-Users may optionally select a mood.
-
-Options:
-- ðŸ˜€ Great
-- ðŸ™‚ Good
-- ðŸ˜ Okay
-- ðŸ˜” Low
-- ðŸ˜© Stressed
-
-Mood is visible to all cluster members.
-
-Open question: if a user is in multiple clusters, is mood shared globally across all of them, or set per cluster?
-
----
-## Mood History
-
-Profiles display recent mood history.
-
-Example:
-ðŸ˜€ ðŸ˜€ ðŸ™‚ ðŸ˜ ðŸ˜” ðŸ˜€ ðŸ™‚
-
----
 ## Status System
 
 Users may set a current status.
@@ -458,7 +424,6 @@ Primary
 
 Secondary
 - Messages per Cluster
-- Mood Updates per User
 - Daily Active Clusters
 - Cluster Replacement Rate
 - Introduction Completion Rate
@@ -821,8 +786,6 @@ Example
 
 8 Members
 23 Unread Messages
-
-Mood Pulse
 ```
 
 Example
@@ -1160,7 +1123,6 @@ Photo
 Display Name
 Country
 
-Mood
 Status
 Availability
 ```
@@ -1190,12 +1152,6 @@ Photo
 Display Name
 Country
 Bio
-```
-
-Mood History
-
-```text
-Last 7 Days
 ```
 
 Introduction Answers
@@ -1273,37 +1229,6 @@ Actions
 ```text
 Reply
 Mark Resolved (raiser only)
-```
-
----
-
-### 17. Pulse Tab
-
-Route
-
-```text
-Cluster > Pulse
-```
-
-Content
-
-```text
-Cluster Pulse
-```
-
-Charts
-
-```text
-ðŸ˜€ Great 3
-ðŸ™‚ Good 2
-ðŸ˜ Okay 2
-ðŸ˜” Low 1
-```
-
-Recent Mood Updates
-
-```text
-CodeNomad > ðŸ˜€
 ```
 
 ---
@@ -1436,12 +1361,6 @@ Add a New Mode
 Leave a Mode
 ```
 
-Mood
-
-```text
-Current Mood
-```
-
 Status
 
 ```text
@@ -1502,8 +1421,6 @@ Chat
 down
 Build Relationships
 down
-Mood Updates
-down
 Votes
 down
 Cluster Evolves
@@ -1524,8 +1441,7 @@ This section pulls together every open question flagged above, in one place, for
 3. Full date of birth at signup vs. birth year only. Is the added matching flexibility worth the extra friction?
 4. Should full date of birth be visible to other members, or kept private and only used internally for matching?
 5. Unified inbox across multiple clusters, or fully separate per cluster spaces?
-6. Is mood shared globally across all of a user's clusters, or set independently per cluster?
-7. Should individual blocking or muting exist alongside the vote to remove system, given safety was the top user concern?
-8. Is the 30 day leave cooldown still the right length now that users likely have other active clusters to fall back on?
-9. Should Signals support category tags, or stay freeform text only for v1?
-10. Should new Signals trigger a distinct notification, separate from regular chat activity?
+6. Should individual blocking or muting exist alongside the vote to remove system, given safety was the top user concern?
+7. Is the 30 day leave cooldown still the right length now that users likely have other active clusters to fall back on?
+8. Should Signals support category tags, or stay freeform text only for v1?
+9. Should new Signals trigger a distinct notification, separate from regular chat activity?

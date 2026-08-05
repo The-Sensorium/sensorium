@@ -9,7 +9,7 @@ import {
 } from './helpers'
 
 // Introduction phase + social functions: submit_intro_answers, the 72h deadline,
-// set_mood, raise_signal / reply_signal / set_signal_status, and send_message.
+// raise_signal / reply_signal / set_signal_status, and send_message.
 
 const ANSWERS = [1, 2, 3, 4, 5].map((question_id) => ({
   question_id,
@@ -157,46 +157,6 @@ describe('introductions and social', () => {
       .select('id')
       .eq('cluster_id', clusterId)
     expect(rounds!.length).toBeGreaterThan(0)
-  })
-
-  it('rejects set_mood for a non-member', async () => {
-    const a = await member('i-mood-a')
-    const outsider = await createUser(admin, 'i-mood-out')
-    userIds.push(outsider.id)
-    const clusterId = await createCluster(admin, {
-      memberIds: [a.id],
-      status: 'active',
-    })
-    clusterIds.push(clusterId)
-
-    const { error } = await outsider.client.rpc('set_mood', {
-      p_cluster_id: clusterId,
-      p_mood: 'good',
-    })
-    expect(error?.message).toContain('not_a_member')
-  })
-
-  it('set_mood records a mood row for a member', async () => {
-    const a = await member('i-mood-b')
-    const clusterId = await createCluster(admin, {
-      memberIds: [a.id],
-      status: 'active',
-    })
-    clusterIds.push(clusterId)
-
-    const { error } = await a.client.rpc('set_mood', {
-      p_cluster_id: clusterId,
-      p_mood: 'stressed',
-    })
-    expect(error).toBeNull()
-
-    const { data: moods } = await admin
-      .from('moods')
-      .select('mood')
-      .eq('cluster_id', clusterId)
-      .eq('user_id', a.id)
-    expect(moods).toHaveLength(1)
-    expect(moods![0].mood).toBe('stressed')
   })
 
   it('raise_signal creates the signal and notifies other members', async () => {

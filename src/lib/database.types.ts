@@ -347,45 +347,6 @@ export type Database = {
           },
         ]
       }
-      moods: {
-        Row: {
-          cluster_id: string
-          created_at: string
-          id: number
-          mood: Database["public"]["Enums"]["mood"]
-          user_id: string
-        }
-        Insert: {
-          cluster_id: string
-          created_at?: string
-          id?: never
-          mood: Database["public"]["Enums"]["mood"]
-          user_id: string
-        }
-        Update: {
-          cluster_id?: string
-          created_at?: string
-          id?: never
-          mood?: Database["public"]["Enums"]["mood"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "moods_cluster_id_fkey"
-            columns: ["cluster_id"]
-            isOneToOne: false
-            referencedRelation: "clusters"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "moods_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notification_prefs: {
         Row: {
           cluster_id: string
@@ -1121,13 +1082,6 @@ export type Database = {
         Args: { p_cluster_id: string; p_content?: string; p_image_url?: string }
         Returns: string
       }
-      set_mood: {
-        Args: {
-          p_cluster_id: string
-          p_mood: Database["public"]["Enums"]["mood"]
-        }
-        Returns: undefined
-      }
       set_signal_status: {
         Args: {
           p_signal_id: string
@@ -1168,7 +1122,6 @@ export type Database = {
         | "birth_month"
         | "birth_year"
         | "local"
-      mood: "great" | "good" | "okay" | "low" | "stressed"
       notification_type:
         | "message"
         | "mention"
@@ -1338,7 +1291,6 @@ export const Constants = {
         "birth_year",
         "local",
       ],
-      mood: ["great", "good", "okay", "low", "stressed"],
       notification_type: [
         "message",
         "mention",
