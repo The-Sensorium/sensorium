@@ -323,7 +323,7 @@ describe('governance and replacement', () => {
       .single()
 
     const { error } = await candidate.client.rpc('accept_invitation', {
-      p_invitation_id: invitationId.id,
+      p_invitation_id: invitationId!.id,
     })
     expect(error).toBeNull()
 
@@ -367,7 +367,7 @@ describe('governance and replacement', () => {
       .single()
 
     const { error } = await members[1].client.rpc('accept_invitation', {
-      p_invitation_id: invitation.id,
+      p_invitation_id: invitation!.id,
     })
     expect(error?.message).toContain('not_yours')
   })
@@ -389,7 +389,7 @@ describe('governance and replacement', () => {
       .select('id, user_id')
       .eq('cluster_id', clusterId)
       .single()
-    expect(inv1.user_id).toBe(c1.id)
+    expect(inv1!.user_id).toBe(c1.id)
 
     // A second candidate becomes available after the first is invited.
     const c2 = await member('g-dec2')
@@ -401,7 +401,7 @@ describe('governance and replacement', () => {
     expect(qErr).toBeNull()
 
     const { error } = await c1.client.rpc('decline_invitation', {
-      p_invitation_id: inv1.id,
+      p_invitation_id: inv1!.id,
     })
     expect(error).toBeNull()
 
@@ -411,7 +411,7 @@ describe('governance and replacement', () => {
       .eq('cluster_id', clusterId)
       .eq('status', 'pending')
       .single()
-    expect(inv2.user_id).toBe(c2.id)
+    expect(inv2!.user_id).toBe(c2.id)
 
     const { data: round } = await admin
       .from('replacement_rounds')

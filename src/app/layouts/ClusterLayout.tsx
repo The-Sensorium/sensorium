@@ -1,5 +1,5 @@
 import { Link, Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../auth-context'
 import { useCluster, useMyMembership } from '../../features/introductions'
@@ -9,11 +9,11 @@ import { Avatar } from '../../components/Avatar'
 import { ClusterRail } from '../../components/ClusterRail'
 
 const SECTIONS = [
-  { to: '', label: 'Room', end: true },
-  { to: 'members', label: 'Members', end: false },
-  { to: 'signals', label: 'Signals', end: false },
-  { to: 'votes', label: 'Votes', end: false },
-  { to: 'settings', label: 'Settings', end: false },
+  { to: '', label: 'Room', icon: MessageSquare, end: true },
+  { to: 'members', label: 'Members', icon: Users, end: false },
+  { to: 'signals', label: 'Signals', icon: MessageCircle, end: false },
+  { to: 'votes', label: 'Votes', icon: Scale, end: false },
+  { to: 'settings', label: 'Settings', icon: Settings, end: false },
 ]
 
 export function ClusterLayout() {
@@ -90,7 +90,7 @@ export function ClusterLayout() {
             </h1>
           </div>
         </div>
-        <nav aria-label="Room sections" className="flex gap-1 overflow-x-auto pb-2">
+        <nav aria-label="Room sections" className="flex gap-1 pb-2 lg:overflow-x-auto">
           {SECTIONS.map((section) => (
             <NavLink
               key={section.to}
@@ -98,13 +98,15 @@ export function ClusterLayout() {
               end={section.end}
               className={({ isActive }) =>
                 cn(
-                  'shrink-0 whitespace-nowrap border-b-2 px-2 py-1 text-sm transition-colors',
+                  'flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-medium transition-colors',
+                  'lg:flex-initial lg:flex-row lg:gap-1.5 lg:whitespace-nowrap lg:border-b-2 lg:px-2 lg:py-1 lg:text-sm',
                   isActive
-                    ? 'border-primary font-semibold text-on-surface'
-                    : 'border-transparent text-on-surface-variant hover:text-on-surface',
+                    ? 'text-primary lg:border-primary lg:font-semibold lg:text-on-surface'
+                    : 'text-on-surface-variant lg:border-transparent lg:hover:text-on-surface',
                 )
               }
             >
+              <section.icon className="h-5 w-5 shrink-0 lg:h-4 lg:w-4" strokeWidth={1.5} aria-hidden />
               {section.label}
             </NavLink>
           ))}
