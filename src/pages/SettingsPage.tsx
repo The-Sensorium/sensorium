@@ -29,6 +29,7 @@ export function SettingsPage() {
   const [status, setStatus] = useState(profile.data?.current_status ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
+  const [removeAvatarOpen, setRemoveAvatarOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const saveStatus = useUpdateProfile()
@@ -97,7 +98,7 @@ export function SettingsPage() {
           {profile.data?.avatar_url && (
             <button
               type="button"
-              onClick={() => void saveProfile.mutateAsync({ avatar_url: null })}
+              onClick={() => setRemoveAvatarOpen(true)}
               disabled={saveProfile.isPending}
               className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-error/40 hover:text-error disabled:opacity-60"
             >
@@ -224,6 +225,12 @@ export function SettingsPage() {
         onClose={() => setSignOutOpen(false)}
         onSignedOut={() => navigate('/auth/login')}
       />
+
+      <RemoveAvatarModal
+        open={removeAvatarOpen}
+        onClose={() => setRemoveAvatarOpen(false)}
+        onRemoved={() => setRemoveAvatarOpen(false)}
+      />
     </div>
   )
 }
@@ -280,6 +287,63 @@ function SignOutModal({
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Sign out
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function RemoveAvatarModal({
+  open,
+  onClose,
+  onRemoved,
+}: {
+  open: boolean
+  onClose: () => void
+  onRemoved: () => void
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+  const saveProfile = useUpdateProfile()
+
+  async function handleRemove() {
+    setError(null)
+    setPending(true)
+    try {
+      await saveProfile.mutateAsync({ avatar_url: null })
+      onRemoved()
+    } catch {
+      setError('Could not remove your photo. Please try again.')
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Remove photo?">
+      <div className="mt-4 space-y-4">
+        <p className="text-sm leading-6 text-on-surface-variant">
+          Your photo will be removed from your profile, and members will see your initials instead.
+        </p>
+        {error && <p className="text-sm text-error">{error}</p>}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={pending}
+            className="flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleRemove()}
+            disabled={pending}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            Remove photo
           </button>
         </div>
       </div>
