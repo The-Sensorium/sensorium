@@ -1055,7 +1055,7 @@ export function RoomView() {
             }}
             placeholder="Write to your cluster…"
             maxLength={2000}
-            className="min-w-0 w-full flex-1 resize-none overflow-hidden rounded-pill border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm leading-5 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+            className="min-w-0 w-full flex-1 resize-none overflow-hidden rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm leading-5 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
           />
         </div>
         <button

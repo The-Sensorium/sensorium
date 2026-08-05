@@ -65,11 +65,12 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      {/* Bottom nav - mobile only */}
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-outline-variant/60 bg-surface/95 backdrop-blur lg:hidden">
-        <ul className="mx-auto flex max-w-6xl items-center justify-around">
+      {/* Bottom nav - mobile only. Its height must match --bottom-nav-offset
+       (reserved in index.css) so sticky/fixed page furniture sits flush on it. */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 h-[var(--bottom-nav-offset)] border-t border-outline-variant/60 bg-surface/95 backdrop-blur lg:hidden">
+        <ul className="mx-auto flex h-full max-w-6xl items-center justify-around">
           {navItems.map((item) => (
-            <li key={item.to} className="flex-1">
+            <li key={item.to} className="flex h-full flex-1 items-center justify-center">
               {item.to === '/notifications' ? (
                 <NotificationBell variant="bottom" />
               ) : (
