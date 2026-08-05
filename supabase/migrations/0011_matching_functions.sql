@@ -128,11 +128,9 @@ begin
   values (v_user_id, p_mode, v_key)
   on conflict on constraint one_queue_per_mode do nothing;
 
-  select count(*) into v_count
-  from public.queue_entries q where q.mode = p_mode and q.queue_key = v_key;
-
-  perform public.maybe_form_cluster(p_mode, v_key);
-
+  -- The queue_entries_formation trigger (after insert) already runs
+  -- maybe_form_cluster under the same advisory lock, so an explicit call here
+  -- would only ever re-acquire it and find the count already below 8. Drop it.
   select count(*) into v_count
   from public.queue_entries q where q.mode = p_mode and q.queue_key = v_key;
 
