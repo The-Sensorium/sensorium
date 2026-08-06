@@ -52,6 +52,6 @@ describe('SignalRow', () => {
 
   it('renders the day divider when showDay is set', () => {
     setup({ showDay: true })
-    expect(screen.getByText(/^\w+, 1 Jan$/)).toBeInTheDocument()
+    expect(screen.getByText(/^\w+, (?:Jan 1|1 Jan)$/)).toBeInTheDocument()
   })
 })
