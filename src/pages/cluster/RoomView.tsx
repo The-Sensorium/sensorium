@@ -1,9 +1,8 @@
 import { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, Loader2, UserPlus } from 'lucide-react'
+import { ArrowDown, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
-import { CLUSTER_SIZE } from '../../lib/constants'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
@@ -23,7 +22,7 @@ import {
   type Reaction,
 } from '../../features/cluster'
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../features/signals'
-import { useClusterVotes, useReplacementRound, type Vote } from '../../features/votes'
+import { useClusterVotes, type Vote } from '../../features/votes'
 import { useMarkClusterRead } from '../../features/notifications'
 import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
@@ -56,7 +55,6 @@ export function RoomView() {
   const signalReplies = useSignalReplies(clusterId, null)
   const votes = useClusterVotes(clusterId)
   const members = useClusterMembers(clusterId)
-  const replacement = useReplacementRound(clusterId)
   const send = useSendMessage()
   const toggleReaction = useToggleReaction(clusterId)
   const editMessage = useEditMessage(clusterId)
@@ -382,22 +380,6 @@ export function RoomView() {
 
   return (
     <section aria-label="The room" className="flex min-h-0 flex-1 flex-col gap-4 lg:h-full">
-      {replacement.data && (
-        <div
-          role="status"
-          className="flex items-center gap-3 rounded-xl border border-tertiary/20 bg-tertiary-container/10 px-3 py-2.5 text-xs text-tertiary"
-        >
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tertiary-container/25">
-            <UserPlus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-semibold">A spot just opened</span>
-            <span className="block text-tertiary/70">
-              We're {members.data ? members.data.length : '…'} of {CLUSTER_SIZE}, finding a new member.
-            </span>
-          </span>
-        </div>
-      )}
       {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
        the timeline scrolls inside the container and the page never moves. */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
