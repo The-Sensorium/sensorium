@@ -9,6 +9,7 @@ import { TermsPage } from '../pages/TermsPage'
 import { HomePage } from '../pages/HomePage'
 import { ClustersPage } from '../pages/ClustersPage'
 import { DiscoveryPage } from '../pages/DiscoveryPage'
+import { DiscoveryModePage } from '../pages/DiscoveryModePage'
 import { QueuePage } from '../pages/QueuePage'
 import { ClusterCreatedPage } from '../pages/ClusterCreatedPage'
 import { IntroductionsPage } from '../pages/IntroductionsPage'
@@ -75,6 +76,7 @@ export function AppRouter() {
             <Route path="/home" element={<HomePage />} />
             <Route path="/clusters" element={<ClustersPage />} />
             <Route path="/discovery" element={<DiscoveryPage />} />
+            <Route path="/discovery/:modeId" element={<DiscoveryModePage />} />
             <Route path="/queue/:queueId" element={<QueuePage />} />
             <Route path="/cluster-created" element={<ClusterCreatedPage />} />
             <Route path="/cluster/:clusterId" element={<ClusterLayout />}>
