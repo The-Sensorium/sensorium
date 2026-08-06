@@ -25,25 +25,14 @@ test.describe('golden path (seeded)', () => {
     await expect(page.getByRole('heading', { name: /Welcome,/i })).toBeVisible()
   })
 
-  test('discovery tabs support roving keyboard navigation', async ({ page }) => {
+  test('discovery mode tiles link to their mode pages', async ({ page }) => {
     await page.goto('/discovery')
 
-    const exact = page.getByRole('tab', { name: 'Exact Birthdate' })
-    const next = page.getByRole('tab', { name: 'Birth Year + Month' })
-
-    await exact.focus()
-    await expect(exact).toHaveAttribute('aria-selected', 'true')
-
-    await page.keyboard.press('ArrowRight')
-    await expect(next).toHaveAttribute('aria-selected', 'true')
-    await expect(next).toBeFocused()
-
-    await page.keyboard.press('ArrowRight')
-    await page.keyboard.press('ArrowRight')
-    await expect(page.getByRole('tab', { name: 'Birth Year', exact: true })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    )
+    const modes = page.getByRole('region', { name: 'Matching modes' })
+    const exact = modes.getByRole('link', { name: /Exact Birthdate/i })
+    await expect(exact).toBeVisible()
+    await exact.click()
+    await expect(page).toHaveURL(/\/discovery\/exact_birthdate/)
   })
 
   test('a formed cluster room renders its timeline', async ({ page }) => {

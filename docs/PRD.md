@@ -404,17 +404,24 @@ Open question: with multiple simultaneous clusters, notification settings may ne
 ---
 ## Discovery
 
-Users may browse available matching modes and their queue status.
+Users browse available matching modes as tiles, one per mode. Selecting a mode opens its
+page (`/discovery/{mode}`) with the queue/join flow for that mode and a directory of the mode's
+active clusters.
 
-Visible:
+Discovery tiles show:
 - Matching Mode (Exact Birthdate, Birth Year + Month, Birth Month, Birth Year, Local)
-- Queue Count for relevant pool. For Local, the radius they've selected. For birth based modes, their relevant date grouping.
+- Number of active clusters currently in that mode
+
+A mode page shows:
+- Queue Count for the relevant pool. For Local, the radius they've selected. For birth based modes, their relevant date grouping.
+- Active clusters in that mode: cluster name, status, member count, and formation date only.
 
 Example:
 Birth Year + Month: 1996-March
 6 / 8 Waiting
 
-Users cannot see queue members.
+Users cannot see queue members, and neither the tiles nor the directory expose cluster
+introductions, messages, or membership — only name, status, member count, and formation date.
 
 ---
 ## Success Metrics

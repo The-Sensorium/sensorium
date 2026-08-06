@@ -23,7 +23,7 @@ const GET_STARTED_STEPS = [
     desc: 'Add a photo, bio and status so your cluster knows who you are.',
   },
   {
-    to: '/discovery?mode=local',
+    to: '/discovery/local',
     title: 'Set your local area',
     desc: 'Pick a radius and you’ll be matched with people nearby.',
   },
