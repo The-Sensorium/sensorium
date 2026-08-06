@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { requireSupabase } from '../lib/supabase'
 
-const AVATAR_TTL_SECONDS = 3600
+const AVATAR_TTL_SECONDS = 86400
 const AVATAR_STALE_MS = AVATAR_TTL_SECONDS * 1000 - 60_000 // refresh a minute before expiry
 
 /** Extract the storage path from a stored avatar value (full URL or bare path). */
