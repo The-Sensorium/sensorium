@@ -160,4 +160,103 @@ describe('RLS denial matrix', () => {
       .insert({ cluster_id: clusterId, content: 'anon spam' })
     expect(error).not.toBeNull()
   })
+
+  it('a non-member cannot react to a message, members can', async () => {
+    const { a, c, messageId } = await wireCluster()
+
+    // Outsider c: insert must be rejected by the membership check on the policy.
+    const { error: cErr } = await c.client
+      .from('message_reactions')
+      .insert({ message_id: messageId, user_id: c.id, emoji: 'like' })
+      .select('user_id')
+    expect(cErr).not.toBeNull()
+
+    // Positive control: active members can add and remove their own reactions.
+    const { error: aErr } = await a.client
+      .from('message_reactions')
+      .insert({ message_id: messageId, user_id: a.id, emoji: 'like' })
+      .select('user_id')
+    expect(aErr).toBeNull()
+
+    const { data: reactions } = await admin
+      .from('message_reactions')
+      .select('user_id, emoji')
+      .eq('message_id', messageId)
+    expect(reactions).toEqual([{ user_id: a.id, emoji: 'like' }])
+
+    const { error: delErr } = await a.client
+      .from('message_reactions')
+      .delete()
+      .eq('message_id', messageId)
+      .eq('user_id', a.id)
+    expect(delErr).toBeNull()
+
+    const { data: afterDelete } = await admin
+      .from('message_reactions')
+      .select('user_id')
+      .eq('message_id', messageId)
+    expect(afterDelete).toHaveLength(0)
+  })
+
+  it('open-vote responses are hidden from other members, revealed once closed', async () => {
+    const a = await member('rls-v-a')
+    const b = await member('rls-v-b')
+    const c = await member('rls-v-c')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // a starts a replacement vote against b; b and c cast yes.
+    const { data: voteId, error: startErr } = await a.client.rpc('start_replace_vote', {
+      p_cluster_id: clusterId,
+      p_target_member_id: b.id,
+    })
+    expect(startErr).toBeNull()
+    expect(voteId).toBeTruthy()
+    for (const m of [b, c]) {
+      const { error: ve } = await m.client.rpc('vote_on', {
+        p_vote_id: voteId,
+        p_choice: 'yes',
+      })
+      expect(ve).toBeNull()
+    }
+
+    // While open, a member only ever sees their own response.
+    const { data: bSees } = await b.client
+      .from('vote_responses')
+      .select('user_id, choice')
+      .eq('vote_id', voteId)
+    expect(bSees).toEqual([{ user_id: b.id, choice: 'yes' }])
+
+    const { data: aSees } = await a.client
+      .from('vote_responses')
+      .select('user_id, choice')
+      .eq('vote_id', voteId)
+    expect(aSees).toEqual([])
+
+    // Close the vote window and process it.
+    const { error: closeErr } = await admin
+      .from('votes')
+      .update({ closes_at: new Date(Date.now() - 1000).toISOString() })
+      .eq('id', voteId)
+    expect(closeErr).toBeNull()
+    const { error: procErr } = await a.client.rpc('close_expired_votes')
+    expect(procErr).toBeNull()
+
+    const { data: vote } = await admin
+      .from('votes')
+      .select('status')
+      .eq('id', voteId)
+      .single()
+    expect(vote?.status).toBe('closed')
+
+    // Once closed, every member sees all responses.
+    const { data: aSeesClosed } = await a.client
+      .from('vote_responses')
+      .select('user_id, choice')
+      .eq('vote_id', voteId)
+    expect(aSeesClosed).toHaveLength(2)
+  })
 })
