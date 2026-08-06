@@ -908,6 +908,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_clusters_by_mode: {
+        Args: { p_mode: Database["public"]["Enums"]["matching_mode"] }
+        Returns: {
+          created_at: string
+          id: string
+          matching_mode: Database["public"]["Enums"]["matching_mode"]
+          member_count: number
+          mode_label: string
+          name: string
+          status: Database["public"]["Enums"]["cluster_status"]
+        }[]
+      }
       get_intro_progress: {
         Args: { p_cluster_id: string }
         Returns: {
@@ -996,6 +1008,13 @@ export type Database = {
           expires_at: string
           id: string
           mode_label: string
+        }[]
+      }
+      get_public_cluster_counts: {
+        Args: never
+        Returns: {
+          cluster_count: number
+          mode: Database["public"]["Enums"]["matching_mode"]
         }[]
       }
       get_queue_count: {
