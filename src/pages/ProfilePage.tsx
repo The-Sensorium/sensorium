@@ -3,6 +3,7 @@ import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import { ArrowLeft, Cake, Flag, Loader2, MapPin } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useClusterMembers } from '../features/matching'
+import { usePresence } from '../features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
@@ -29,6 +30,8 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const questions = useIntroQuestionMap()
   const auth = useAuth()
   const isSelf = auth.state === 'signedIn' && auth.userId === userId
+  const { online } = usePresence(clusterId)
+  const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
 
   const member = (members.data ?? []).find((m) => m.id === userId)
@@ -81,7 +84,14 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
               )}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <AvailabilityBadge value={member.availability} />
+              {onlineNow ? (
+                <AvailabilityBadge value={member.availability} />
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
+                  <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
+                  Offline
+                </span>
+              )}
               {member.current_status && (
                 <span className="text-xs text-on-surface-variant">“{member.current_status}”</span>
               )}
