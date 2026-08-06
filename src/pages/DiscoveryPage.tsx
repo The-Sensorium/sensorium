@@ -18,7 +18,7 @@ export function DiscoveryPage() {
       <header className="pt-2">
         <h1 className="font-display text-3xl font-semibold text-on-surface">Discovery</h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          Browse every matching mode and see what’s out there. Pick a mode to check queues and
+          Browse every matching mode and see what's out there. Pick a mode to check queues and
           active clusters.
         </p>
       </header>
@@ -56,7 +56,7 @@ function ModeTile({
 }) {
   const stateLine = status
     ? status.cluster_id
-      ? 'You’re in a cluster'
+      ? 'You're in a cluster'
       : status.joined
         ? `${status.waiting} of ${CLUSTER_SIZE} waiting`
         : 'No queue yet'
