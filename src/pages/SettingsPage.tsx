@@ -54,7 +54,7 @@ export function SettingsPage() {
       const ext = prepared.name.split('.').pop()?.toLowerCase() || 'webp'
       const path = `${profile.data?.id ?? 'me'}/${Date.now()}.${ext}`
       const { data, error } = await supabase.storage.from('avatars').upload(path, prepared, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         upsert: false,
         contentType: prepared.type,
       })
