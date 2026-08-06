@@ -19,9 +19,24 @@ async function openRoom(page: Page) {
   await expect(page.getByRole('heading', { name: 'Aurora' })).toBeVisible()
 }
 
+// The mobile header sections menu renders below the lg breakpoint (1024px); the
+// desktop tab row renders at lg+. Both e2e projects use fixed devices, so the
+// viewport width decides deterministically without waiting on the UI to mount.
+function isDesktop(page: Page): boolean {
+  return (page.viewportSize()?.width ?? 0) >= 1024
+}
+
 async function openSection(page: Page, name: string) {
   await openRoom(page)
-  await page.getByRole('navigation', { name: 'Room sections' }).getByRole('link', { name }).click()
+  if (isDesktop(page)) {
+    await page.getByRole('navigation', { name: 'Room sections' }).getByRole('link', { name }).click()
+  } else {
+    await page.getByRole('button', { name: 'Cluster sections' }).click()
+    await page
+      .getByRole('menu', { name: 'Cluster sections' })
+      .getByRole('menuitem', { name })
+      .click()
+  }
 }
 
 test.describe('cluster room (seeded Aurora)', () => {
@@ -69,10 +84,21 @@ test.describe('cluster room (seeded Aurora)', () => {
 
   test('members section renders the member list', async ({ page }) => {
     await openSection(page, 'Members')
-    await expect(
-      page.getByRole('navigation', { name: 'Room sections' }).getByRole('link', { name: 'Members' }),
-    ).toHaveAttribute('aria-current', 'page')
-    await expect(page.getByText(/8 members|1 member|member/i)).toBeVisible()
+    if (isDesktop(page)) {
+      await expect(
+        page.getByRole('navigation', { name: 'Room sections' }).getByRole('link', { name: 'Members' }),
+      ).toHaveAttribute('aria-current', 'page')
+    } else {
+      await page.getByRole('button', { name: 'Cluster sections' }).click()
+      await expect(
+        page
+          .getByRole('menu', { name: 'Cluster sections' })
+          .getByRole('menuitem', { name: 'Members' }),
+      ).toHaveAttribute('aria-current', 'page')
+    }
+    const section = page.getByLabel('Members')
+    await expect(section).toBeVisible()
+    await expect(section.locator('a[href^="/profile/"]').first()).toBeVisible()
   })
 
   test('signals section renders its empty state', async ({ page }) => {
@@ -82,7 +108,7 @@ test.describe('cluster room (seeded Aurora)', () => {
 
   test('votes section renders its empty state', async ({ page }) => {
     await openSection(page, 'Votes')
-    await expect(page.getByText('No open votes right now.')).toBeVisible()
+    await expect(page.getByLabel('Votes').getByText('No open votes right now.')).toBeVisible()
   })
 
   test('settings shows cluster details', async ({ page }) => {

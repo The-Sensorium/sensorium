@@ -1,11 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router'
-import { ArrowLeft, Loader2, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
+import { ArrowLeft, Loader2, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { useAuth } from '../auth-context'
 import { useCluster, useMyMembership } from '../../features/introductions'
-import { useClusterMembers } from '../../features/matching'
-import { useClusterChannel, usePresence } from '../../features/realtime'
-import { Avatar } from '../../components/Avatar'
+import { useClusterChannel } from '../../features/realtime'
 import { ClusterRail } from '../../components/ClusterRail'
 
 const SECTIONS = [
@@ -19,19 +17,32 @@ const SECTIONS = [
 export function ClusterLayout() {
   const { clusterId = '' } = useParams()
   const { pathname } = useLocation()
-  const auth = useAuth()
-  const userId = auth.state === 'signedIn' ? auth.userId : null
   const isRoom = pathname === `/cluster/${clusterId}`
   const isSettings = pathname === `/cluster/${clusterId}/settings`
 
   const cluster = useCluster(clusterId)
   const membership = useMyMembership(clusterId)
-  const members = useClusterMembers(clusterId, clusterId !== '')
-  const { online } = usePresence(clusterId)
+  const [sectionsOpen, setSectionsOpen] = useState(false)
 
   // One Postgres-Changes subscription for the whole cluster shell keeps the room,
   // signals and votes surfaces live while they are mounted (RLS scopes the events).
   useClusterChannel(clusterId)
+
+  // Close the mobile sections menu on outside click / Escape.
+  useEffect(() => {
+    function dismiss() {
+      setSectionsOpen(false)
+    }
+    function onKey(e: globalThis.KeyboardEvent) {
+      if (e.key === 'Escape') dismiss()
+    }
+    document.addEventListener('click', dismiss)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', dismiss)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [])
 
   if (cluster.isLoading || membership.isLoading) {
     return (
@@ -54,15 +65,12 @@ export function ClusterLayout() {
     return <Navigate to={`/cluster/${clusterId}/waiting`} replace />
   }
 
-  const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
-
   return (
     <div
       className={cn(
         'mx-auto w-full max-w-6xl',
         isRoom
-          ? 'flex flex-col gap-4 lg:h-[calc(100dvh_-_7.5rem)]'
+          ? 'flex h-[calc(100dvh_-_5.5rem_-_var(--bottom-nav-offset))] flex-col gap-4 lg:h-[calc(100dvh_-_7.5rem)]'
           : 'space-y-4',
       )}
     >
@@ -82,15 +90,57 @@ export function ClusterLayout() {
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           </Link>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-primary">
+            <p className="hidden truncate text-[11px] font-semibold uppercase tracking-wide text-primary sm:block">
               {cluster.data.mode_label}
             </p>
             <h1 className="truncate font-display text-lg font-semibold text-on-surface">
               {cluster.data.name}
             </h1>
           </div>
+          {/* Mobile-only sections menu: the chat keeps the whole band to itself
+              and the other sections live behind this menu. Desktop keeps the
+              tab row below. */}
+          <div className="relative shrink-0 lg:hidden">
+            <button
+              type="button"
+              aria-label="Cluster sections"
+              aria-haspopup="menu"
+              aria-expanded={sectionsOpen}
+              aria-controls={sectionsOpen ? 'cluster-sections-menu' : undefined}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSectionsOpen((open) => !open)
+              }}
+              className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+            >
+              <Menu className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            </button>
+            {sectionsOpen && (
+              <div
+                id="cluster-sections-menu"
+                role="menu"
+                aria-label="Cluster sections"
+                className="absolute right-0 top-full z-40 mt-2 flex w-48 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-lift"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {SECTIONS.map((section) => (
+                  <NavLink
+                    key={section.to}
+                    to={`/cluster/${clusterId}${section.to ? `/${section.to}` : ''}`}
+                    end={section.end}
+                    role="menuitem"
+                    onClick={() => setSectionsOpen(false)}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                  >
+                    <section.icon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                    {section.label}
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <nav aria-label="Room sections" className="flex gap-1 pb-2 lg:overflow-x-auto">
+        <nav aria-label="Room sections" className="hidden gap-1 pb-2 lg:flex lg:overflow-x-auto">
           {SECTIONS.map((section) => (
             <NavLink
               key={section.to}
@@ -113,60 +163,19 @@ export function ClusterLayout() {
         </nav>
       </header>
 
-      {/* Presence strip - a quiet row of faces. Only on the Room tab. */}
-      {isRoom && (
-        <section
-          aria-label="Who is in the room"
-          className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft"
-        >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-display text-sm font-semibold text-on-surface">
-                In the room now
-              </h2>
-              <span className="text-xs text-on-surface-variant">
-                {onlineCount} of {memberCount} here
-              </span>
-            </div>
-            <ul className="flex flex-wrap items-center gap-2">
-              {(members.data ?? []).map((m) => {
-                const isMe = m.id === userId
-                return (
-                  <li key={m.id}>
-                    <Link
-                      to={`/profile/${m.id}?cluster=${clusterId}`}
-                      title={`${m.display_name}${isMe ? ' (you)' : ''}`}
-                      className="relative block"
-                    >
-                      <Avatar
-                        name={m.display_name}
-                        src={m.avatar_url}
-                        className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
-                        textClassName="text-xs"
-                      />
-                      {online.has(m.id) || isMe ? (
-                        <span
-                          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        </section>
-      )}
-
       {/* The room: conversation + side table on desktop. */}
       <div
         className={cn(
-          'lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6',
-          isRoom ? 'lg:min-h-0 lg:flex-1' : 'lg:items-start',
+          'flex min-h-0 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-6',
+          isRoom ? 'flex-1 lg:min-h-0' : 'lg:items-start',
         )}
       >
-        <div className={cn('room-view-in min-w-0', isRoom && 'lg:h-full lg:min-h-0')}>
+        <div
+          className={cn(
+            'room-view-in min-w-0',
+            isRoom && 'flex min-h-0 flex-1 flex-col lg:h-full',
+          )}
+        >
           <Outlet />
         </div>
         {!isSettings && (

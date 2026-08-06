@@ -20,8 +20,18 @@ export default defineConfig({
   },
   projects: [
     {
+      // Both projects share one seeded local DB, and notifications.spec.ts
+      // mutates (clears + reseeds) shared rows. They therefore must run
+      // sequentially rather than in parallel — `npm run test:e2e` invokes
+      // playwright once per project to avoid cross-project state races.
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      // Mobile emulation (Pixel 7) exercises the mobile-only chrome: the fixed
+      // bottom nav, the room's internal scroll band, and the sticky composer.
+      name: 'mobile-chromium',
+      use: { ...devices['Pixel 7'] },
     },
   ],
   webServer: {

@@ -18,7 +18,7 @@ async function uploadAvatar(userId: string, file: File): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
   const path = `${userId}/${Date.now()}.${ext}`
   const { data, error } = await supabase.storage.from('avatars').upload(path, file, {
-    cacheControl: '3600',
+    cacheControl: '31536000',
     upsert: false,
     contentType: file.type,
   })
