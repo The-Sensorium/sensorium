@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
-import { Cake, Flag, Loader2, MapPin } from 'lucide-react'
+import { Cake, Flag, Loader2, MapPin, UserPlus } from 'lucide-react'
+import { CLUSTER_SIZE } from '../../lib/constants'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
+import { useReplacementRound } from '../../features/votes'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { AvailabilityBadge } from '../../components/AvailabilityBadge'
@@ -17,6 +19,7 @@ export function MembersView() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const members = useClusterMembers(clusterId)
   const { online } = usePresence(clusterId)
+  const replacement = useReplacementRound(clusterId)
   const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null)
 
   if (members.isLoading) {
@@ -32,6 +35,22 @@ export function MembersView() {
 
   return (
     <section aria-label="Members" className="space-y-4">
+      {replacement.data && (
+        <div
+          role="status"
+          className="flex items-center gap-3 rounded-xl border border-tertiary/20 bg-tertiary-container/10 px-3 py-2.5 text-xs text-tertiary"
+        >
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tertiary-container/25">
+            <UserPlus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold">A spot just opened</span>
+            <span className="block text-tertiary/70">
+              We're {list.length} of {CLUSTER_SIZE}, finding a new member.
+            </span>
+          </span>
+        </div>
+      )}
       {list.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">
           No members yet.
