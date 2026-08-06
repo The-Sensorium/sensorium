@@ -12,6 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test --project=chromium && playwright test --project=mobile-chromium",
+    "check:release": "node scripts/check-release-merge.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "preview": "vite preview"
   },
