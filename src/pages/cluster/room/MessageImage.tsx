@@ -14,7 +14,7 @@ export function MessageImage({ path, alt }: { path: string; alt: string }) {
       src={src}
       alt={alt}
       loading="lazy"
-      className="max-h-72 w-full rounded-xl object-cover"
+      className="aspect-[4/3] h-auto w-full rounded-xl object-cover"
     />
   )
 }

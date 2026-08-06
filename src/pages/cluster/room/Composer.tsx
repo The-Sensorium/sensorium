@@ -172,7 +172,7 @@ export function Composer({
     <>
       {error && <p className="text-sm text-error">{error}</p>}
       <form
-        className="sticky bottom-[var(--bottom-nav-offset)] flex shrink-0 items-end gap-2 border-t border-outline-variant/60 bg-background py-3 lg:static"
+        className="flex shrink-0 items-end gap-2 border-t border-outline-variant/60 bg-background py-3"
         onSubmit={(e) => {
           e.preventDefault()
           void handleSend()
