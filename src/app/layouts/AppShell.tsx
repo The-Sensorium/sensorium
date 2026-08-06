@@ -61,7 +61,7 @@ export function AppShell() {
       </header>
 
       {/* Main content */}
-      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-6 pb-24 pt-6 md:pb-8">
+      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-6 pb-24 pt-6 overscroll-contain md:pb-8">
         <Outlet />
       </main>
 

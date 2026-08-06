@@ -38,7 +38,18 @@ test.describe('golden path (seeded)', () => {
   test('a formed cluster room renders its timeline', async ({ page }) => {
     await page.goto('/home')
     await page.getByRole('link', { name: /Aurora/i }).first().click()
-    await expect(page.getByRole('link', { name: 'Members' })).toBeVisible()
     await expect(page.getByPlaceholder('Write to your cluster…')).toBeVisible()
+    // Desktop shows the section tabs; mobile hides them behind the header menu.
+    // The lg breakpoint (1024px) decides which one rendered; both e2e projects
+    // use fixed devices, so this never races the UI mounting.
+    const usesMenu = (page.viewportSize()?.width ?? 0) < 1024
+    const menuButton = page.getByRole('button', { name: 'Cluster sections' })
+    if (usesMenu) {
+      await expect(menuButton).toBeVisible()
+    } else {
+      await expect(
+        page.getByRole('navigation', { name: 'Room sections' }).getByRole('link', { name: 'Members' }),
+      ).toBeVisible()
+    }
   })
 })

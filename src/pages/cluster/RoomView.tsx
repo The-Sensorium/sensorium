@@ -1,12 +1,14 @@
 import { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, Loader2, UserPlus } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { CLUSTER_SIZE } from '../../lib/constants'
+import { cn } from '../../lib/utils'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
 import type { MentionMember } from '../../features/mentions'
+import { Avatar } from '../../components/Avatar'
 import {
   CHAT_PAGE_SIZE,
   useClusterMessages,
@@ -61,7 +63,10 @@ export function RoomView() {
   const deleteMessage = useDeleteMessage(clusterId)
   const raise = useRaiseSignal(clusterId)
   const markRead = useMarkClusterRead()
-  const { typing, signalTyping, resetTyping } = usePresence(clusterId)
+  const { typing, signalTyping, resetTyping, online } = usePresence(clusterId)
+
+  const memberCount = (members.data ?? []).length
+  const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -145,8 +150,8 @@ export function RoomView() {
 
   // Auto-follow the newest message while the user is near the bottom. Once they
   // scroll up to read, stop following and count what arrives instead. The room
-  // scrolls inside its timeline on desktop (lg+); on smaller screens the whole
-  // page scrolls. Read whichever surface is actually scrollable.
+  // is a fixed-height band on every screen size, so the timeline always scrolls
+  // inside its container. Read whichever surface is actually scrollable.
   useEffect(() => {
     const container = scrollRef.current
     function onScroll() {
@@ -376,7 +381,7 @@ export function RoomView() {
         : null
 
   return (
-    <section aria-label="The room" className="flex min-h-0 flex-col gap-4 lg:h-full">
+    <section aria-label="The room" className="flex min-h-0 flex-1 flex-col gap-4 lg:h-full">
       {replacement.data && (
         <div
           role="status"
@@ -393,9 +398,54 @@ export function RoomView() {
           </span>
         </div>
       )}
-      {/* Scroll surface: the timeline scrolls inside the room on desktop; on
-       small screens the whole page scrolls instead. */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
+       the timeline scrolls inside the container and the page never moves. */}
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {/* Presence strip - a quiet row of faces. Lives at the top of the
+         timeline so it scrolls out of the way while reading, leaving the chat
+         the full room band. */}
+        <section
+          aria-label="Who is in the room"
+          className="mb-3 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft"
+        >
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-display text-sm font-semibold text-on-surface">
+                In the room now
+              </h2>
+              <span className="text-xs text-on-surface-variant">
+                {onlineCount} of {memberCount} here
+              </span>
+            </div>
+            <ul className="flex flex-wrap items-center gap-2">
+              {(members.data ?? []).map((m) => {
+                const isMe = m.id === userId
+                return (
+                  <li key={m.id}>
+                    <Link
+                      to={`/profile/${m.id}?cluster=${clusterId}`}
+                      title={`${m.display_name}${isMe ? ' (you)' : ''}`}
+                      className="relative block"
+                    >
+                      <Avatar
+                        name={m.display_name}
+                        src={m.avatar_url}
+                        className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
+                        textClassName="text-xs"
+                      />
+                      {online.has(m.id) || isMe ? (
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </section>
         {messages.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the room…
@@ -500,7 +550,7 @@ export function RoomView() {
             setPinned(true)
             setNewCount(0)
           }}
-          className="fixed bottom-[calc(var(--bottom-nav-offset)+5rem)] left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
+          className="fixed bottom-[calc(var(--bottom-nav-offset)+6.5rem)] left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
         >
           <ArrowDown className="h-4 w-4" strokeWidth={2} aria-hidden />
           {newCount} new message{newCount === 1 ? '' : 's'}
