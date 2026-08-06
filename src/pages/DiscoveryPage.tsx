@@ -56,7 +56,7 @@ function ModeTile({
 }) {
   const stateLine = status
     ? status.cluster_id
-      ? 'You're in a cluster'
+      ? "You're in a cluster"
       : status.joined
         ? `${status.waiting} of ${CLUSTER_SIZE} waiting`
         : 'No queue yet'
