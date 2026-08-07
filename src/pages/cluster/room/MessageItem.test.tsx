@@ -125,4 +125,13 @@ describe('MessageItem', () => {
     setup({ message: makeMessage({ edited_at: '2026-01-01T13:00:00Z' }) })
     expect(screen.getByLabelText('edited')).toHaveTextContent('(edited)')
   })
+
+  it('renders a GIF message without cropping the source image', () => {
+    setup({ message: makeMessage({ content: 'gif:https://cdn.example/large.gif' }) })
+    const img = screen.getByAltText('GIF')
+    expect(img).toHaveAttribute('src', 'https://cdn.example/large.gif')
+    expect(img.className).toContain('object-contain')
+    expect(img.className).not.toContain('object-cover')
+    expect(img.className).not.toContain('aspect-video')
+  })
 })
