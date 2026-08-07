@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { ImagePlus, Loader2, Megaphone, Plus, Send } from 'lucide-react'
+import { Film, ImagePlus, Loader2, Megaphone, Plus, Send } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import {
@@ -8,6 +8,8 @@ import {
   parseMentionQuery,
   type MentionMember,
 } from '../../../features/mentions'
+import { type Gif } from '../../../features/gifs'
+import { GifPicker } from './GifPicker'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -23,6 +25,7 @@ export function Composer({
   onStopTyping,
   onSend,
   onSendImage,
+  onSendGif,
   onOpenSignal,
 }: {
   members: MentionMember[]
@@ -35,9 +38,11 @@ export function Composer({
   onStopTyping(): void
   onSend(content: string): Promise<void>
   onSendImage(file: File): Promise<void>
+  onSendGif(gif: Gif): Promise<void>
   onOpenSignal(): void
 }) {
   const [draft, setDraft] = useState('')
+  const [gifOpen, setGifOpen] = useState(false)
   const [composerOpen, setComposerOpen] = useState(false)
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
   const [mentionIndex, setMentionIndex] = useState(0)
@@ -66,6 +71,7 @@ export function Composer({
   useEffect(() => {
     function dismiss() {
       setComposerOpen(false)
+      setGifOpen(false)
     }
     function onKey(e: globalThis.KeyboardEvent) {
       if (e.key === 'Escape') dismiss()
@@ -141,6 +147,17 @@ export function Composer({
     }
   }
 
+  async function handleSendGif(gif: Gif) {
+    onError(null)
+    onStopTyping()
+    setGifOpen(false)
+    try {
+      await onSendGif(gif)
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Could not send that GIF. Try again.')
+    }
+  }
+
   async function handleFile(file: File | undefined) {
     if (!file) return
     onError(null)
@@ -172,12 +189,15 @@ export function Composer({
     <>
       {error && <p className="text-sm text-error">{error}</p>}
       <form
-        className="flex shrink-0 items-end gap-2 border-t border-outline-variant/60 bg-background py-3"
+        className="relative flex shrink-0 items-end gap-2 border-t border-outline-variant/60 bg-background py-3"
         onSubmit={(e) => {
           e.preventDefault()
           void handleSend()
         }}
       >
+        {gifOpen && (
+          <GifPicker pending={pending} onSelect={(gif) => void handleSendGif(gif)} />
+        )}
         <input
           ref={fileRef}
           type="file"
@@ -229,6 +249,18 @@ export function Composer({
                 className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
               >
                 <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Send an image
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={uploading}
+                onClick={() => {
+                  setComposerOpen(false)
+                  setGifOpen(true)
+                }}
+                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              >
+                <Film className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Send a GIF
               </button>
               <button
                 type="button"
