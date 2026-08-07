@@ -204,7 +204,12 @@ export function MessageItem({
                 </span>
               )
             ) : gifUrl ? (
-              <img src={gifUrl} alt="GIF" className="aspect-video h-auto w-full rounded-xl object-cover" />
+              <img
+                src={gifUrl}
+                alt="GIF"
+                loading="lazy"
+                className="aspect-video h-auto w-full rounded-xl object-cover"
+              />
             ) : (
               <MentionText
                 content={message.content ?? ''}

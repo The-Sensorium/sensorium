@@ -121,6 +121,8 @@ Security lives in the database, not in the client. The browser holds only the pu
 |---|---|---|
 | `VITE_SUPABASE_URL` | yes | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | yes | public anon (publishable) key |
+| `VITE_KLIPY_APP_KEY` | no | KLIPY app key that enables the cluster chat GIF picker |
+| `VITE_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`); useful for pointing at a mirror in non-production |
 
 Only the anon key is used in the browser. All privileged operations run through Postgres RPC functions guarded by Row Level Security. No secrets ship in the client.
 

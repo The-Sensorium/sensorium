@@ -26,6 +26,7 @@ import { useClusterVotes, type Vote } from '../../features/votes'
 import { useMarkClusterRead } from '../../features/notifications'
 import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
+import { type Gif } from '../../features/gifs'
 import { MessageItem } from './room/MessageItem'
 import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { SignalRow } from './room/SignalRow'
@@ -263,6 +264,11 @@ export function RoomView() {
     if (!clusterId) return
     const path = await uploadChatImage(clusterId, file)
     await send.mutateAsync({ clusterId, content: null, imageUrl: path })
+  }
+
+  async function persistSendGif(gif: Gif) {
+    if (!clusterId) return
+    await send.mutateAsync({ clusterId, content: `gif:${gif.url}` })
   }
 
   async function handleToggleReaction(messageId: string, emoji: string) {
@@ -556,6 +562,7 @@ export function RoomView() {
         onStopTyping={resetTyping}
         onSend={persistSend}
         onSendImage={persistSendImage}
+        onSendGif={persistSendGif}
         onOpenSignal={() => setSignalOpen(true)}
       />
 
