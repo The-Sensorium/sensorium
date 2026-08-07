@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
-import { Cake, Flag, Loader2, MapPin, UserPlus } from 'lucide-react'
+import { Cake, Loader2, MapPin, UserPlus } from 'lucide-react'
 import { CLUSTER_SIZE } from '../../lib/constants'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
@@ -9,7 +8,6 @@ import { useReplacementRound } from '../../features/votes'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { AvailabilityBadge } from '../../components/AvailabilityBadge'
-import { ReportModal } from '../../components/ReportModal'
 import { countryName } from '../../lib/countries'
 
 export function MembersView() {
@@ -20,7 +18,6 @@ export function MembersView() {
   const members = useClusterMembers(clusterId)
   const { online } = usePresence(clusterId)
   const replacement = useReplacementRound(clusterId)
-  const [reportTarget, setReportTarget] = useState<{ id: string; name: string } | null>(null)
 
   if (members.isLoading) {
     return (
@@ -111,17 +108,6 @@ export function MembersView() {
                         </span>
                       ) : null}
                     </div>
-                    <button
-                      type="button"
-                      aria-label={`Report ${member.display_name}`}
-                      onClick={() =>
-                        setReportTarget({ id: member.id, name: member.display_name })
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:border-error/50 hover:text-error"
-                    >
-                      <Flag className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-                      Report
-                    </button>
                   </div>
                 </div>
               </li>
@@ -129,13 +115,6 @@ export function MembersView() {
           })}
         </ul>
       )}
-
-      <ReportModal
-        open={reportTarget !== null}
-        onClose={() => setReportTarget(null)}
-        clusterId={clusterId}
-        target={reportTarget ?? { id: '', name: '' }}
-      />
     </section>
   )
 }
