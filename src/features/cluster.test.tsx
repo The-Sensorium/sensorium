@@ -138,8 +138,21 @@ describe('cluster', () => {
       p_cluster_id: 'c1',
       p_content: 'hi',
       p_image_url: 'x/y.png',
+      p_reply_to_id: undefined,
     })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-messages', 'c1'] })
+  })
+
+  it('useSendMessage forwards the reply target', async () => {
+    const { result } = renderHook(() => useSendMessage(), { wrapper })
+    result.current.mutate({ clusterId: 'c1', content: 'hi', replyToId: 'p1' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('send_message', {
+      p_cluster_id: 'c1',
+      p_content: 'hi',
+      p_image_url: undefined,
+      p_reply_to_id: 'p1',
+    })
   })
 
   it('useClusterReactions returns empty when no messages are loaded', async () => {

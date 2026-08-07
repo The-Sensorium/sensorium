@@ -15,6 +15,7 @@ import {
   useDeleteMessage,
   useEditMessage,
   useLoadEarlierMessages,
+  useReplyTargets,
   useSendMessage,
   useToggleReaction,
   uploadChatImage,
@@ -72,6 +73,7 @@ export function RoomView() {
   const [editDraft, setEditDraft] = useState('')
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [pickerFor, setPickerFor] = useState<string | null>(null)
+  const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
   const [pinned, setPinned] = useState(true)
@@ -96,6 +98,65 @@ export function RoomView() {
     }
     return map
   }, [members.data])
+
+  const loadedById = useMemo(() => {
+    const map = new Map<string, Message>()
+    for (const m of messages.data ?? []) map.set(m.id, m)
+    return map
+  }, [messages.data])
+
+  // A reply can point at a message that scrolled out of the loaded window; fetch
+  // any parents we don't already have and merge them into the lookup.
+  const missingParentIds = useMemo(
+    () =>
+      (messages.data ?? [])
+        .map((m) => m.reply_to_id)
+        .filter((id): id is string => Boolean(id))
+        .filter((id) => !loadedById.has(id)),
+    [messages.data, loadedById],
+  )
+  const replyTargets = useReplyTargets(clusterId, missingParentIds)
+  const replyById = useMemo(() => {
+    const map = new Map<string, Message>(loadedById)
+    for (const [id, m] of replyTargets.data ?? []) map.set(id, m)
+    return map
+  }, [loadedById, replyTargets.data])
+
+  function replyPreview(
+    target:
+      | {
+          author_id: string
+          content: string | null
+          image_url: string | null
+          deleted_at: string | null
+        }
+      | null
+      | undefined,
+  ): { authorName: string; preview: string } | undefined {
+    // A deleted parent is hidden from the timeline, so its quote shouldn't
+    // surface either - treat it like a missing target (fallback rendering).
+    if (!target || target.deleted_at) return undefined
+    const authorName = memberMap.get(target.author_id)?.display_name ?? 'Member'
+    const preview = target.content?.startsWith('gif:')
+      ? 'GIF'
+      : target.image_url
+        ? 'Image'
+        : (target.content ?? '')
+    return { authorName, preview }
+  }
+
+  function startReply(m: Message) {
+    setMenuFor(null)
+    setPickerFor(null)
+    setReplyTo(m)
+  }
+
+  const replyParentInfo = (() => {
+    if (!replyTo) return null
+    const info = replyPreview(replyTo)
+    return info ? { id: replyTo.id, ...info } : null
+  })()
+  const cancelReply = () => setReplyTo(null)
 
   // All members, used to render mention chips in the timeline (others can mention you).
   const parseMembers = useMemo<MentionMember[]>(() => {
@@ -145,6 +206,7 @@ export function RoomView() {
     exhaustedRef.current = false
     setHasMore(false)
     prevOldestIdRef.current = null
+    setReplyTo(null)
   }, [clusterId])
 
   // Auto-follow the newest message while the user is near the bottom. Once they
@@ -257,18 +319,21 @@ export function RoomView() {
 
   async function persistSend(content: string) {
     if (!clusterId) return
-    await send.mutateAsync({ clusterId, content })
+    await send.mutateAsync({ clusterId, content, replyToId: replyTo?.id ?? undefined })
+    setReplyTo(null)
   }
 
   async function persistSendImage(file: File) {
     if (!clusterId) return
     const path = await uploadChatImage(clusterId, file)
-    await send.mutateAsync({ clusterId, content: null, imageUrl: path })
+    await send.mutateAsync({ clusterId, content: null, imageUrl: path, replyToId: replyTo?.id ?? undefined })
+    setReplyTo(null)
   }
 
   async function persistSendGif(gif: Gif) {
     if (!clusterId) return
-    await send.mutateAsync({ clusterId, content: `gif:${gif.url}` })
+    await send.mutateAsync({ clusterId, content: `gif:${gif.url}`, replyToId: replyTo?.id ?? undefined })
+    setReplyTo(null)
   }
 
   async function handleToggleReaction(messageId: string, emoji: string) {
@@ -480,6 +545,7 @@ export function RoomView() {
                       editPending={editMessage.isPending}
                       menuOpen={menuFor === m.id}
                       pickerOpen={pickerFor === m.id}
+                      replyParent={replyPreview(replyById.get(m.reply_to_id ?? ''))}
                       onEditDraftChange={setEditDraft}
                       onSaveEdit={() => void saveEdit()}
                       onCancelEdit={() => setEditingId(null)}
@@ -487,6 +553,7 @@ export function RoomView() {
                       onTogglePicker={() => setPickerFor(pickerFor === m.id ? null : m.id)}
                       onEdit={startEdit}
                       onDelete={(messageId) => void remove(messageId)}
+                      onReply={startReply}
                       onToggleReaction={(messageId, emoji) =>
                         void handleToggleReaction(messageId, emoji)
                       }
@@ -557,6 +624,7 @@ export function RoomView() {
         pending={send.isPending}
         raisePending={raise.isPending}
         error={error}
+        replyTo={replyParentInfo ?? null}
         onError={setError}
         onTyping={signalTyping}
         onStopTyping={resetTyping}
@@ -564,6 +632,7 @@ export function RoomView() {
         onSendImage={persistSendImage}
         onSendGif={persistSendGif}
         onOpenSignal={() => setSignalOpen(true)}
+        onCancelReply={cancelReply}
       />
 
       <RaiseSignalModal

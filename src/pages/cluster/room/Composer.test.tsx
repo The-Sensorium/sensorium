@@ -26,11 +26,13 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
     pending: false,
     raisePending: false,
     error: null,
+    replyTo: null,
     onError: vi.fn(),
     onTyping: vi.fn(),
     onStopTyping: vi.fn(),
     onSend: vi.fn().mockResolvedValue(undefined),
     onSendImage: vi.fn().mockResolvedValue(undefined),
+    onCancelReply: vi.fn(),
     onOpenSignal: vi.fn(),
   }
   const props = { ...base, ...overrides }
@@ -41,11 +43,13 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
       pending={props.pending}
       raisePending={props.raisePending}
       error={props.error}
+      replyTo={props.replyTo}
       onError={props.onError}
       onTyping={props.onTyping}
       onStopTyping={props.onStopTyping}
       onSend={props.onSend}
       onSendImage={props.onSendImage}
+      onCancelReply={props.onCancelReply}
       onOpenSignal={props.onOpenSignal}
     />,
   )
@@ -112,5 +116,15 @@ describe('Composer', () => {
     await waitFor(() =>
       expect(props.onError).toHaveBeenCalledWith('Only JPG, PNG, WebP and GIF images are supported.'),
     )
+  })
+
+  it('shows the replying banner with the target and cancels it', async () => {
+    const { props } = setup({
+      replyTo: { id: 'm1', authorName: 'Alice Blue', preview: 'Hello world' },
+    })
+    await waitFor(() => expect(screen.getByText('Replying to Alice Blue')).toBeInTheDocument())
+    expect(screen.getByText('Hello world')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel reply' }))
+    expect(props.onCancelReply).toHaveBeenCalledTimes(1)
   })
 })

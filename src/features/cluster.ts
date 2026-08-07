@@ -113,16 +113,19 @@ export function useSendMessage() {
       clusterId,
       content,
       imageUrl,
+      replyToId,
     }: {
       clusterId: string
       content: string | null
       imageUrl?: string
+      replyToId?: string
     }) => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('send_message', {
         p_cluster_id: clusterId,
         p_content: content ?? undefined,
         p_image_url: imageUrl ?? undefined,
+        p_reply_to_id: replyToId ?? undefined,
       })
       if (error) throw error
       return data as string
@@ -153,6 +156,31 @@ export function useClusterReactions(clusterId: string | null, messageIds?: strin
         .in('message_id', ids)
       if (error) throw error
       return (data ?? []) as Reaction[]
+    },
+  })
+}
+
+/**
+ * Messages referenced by reply_to_id that aren't already in the room's loaded
+ * window (a reply can point at an older message that scrolled out of the first
+ * page). Bounded to the missing ids; returns a map so callers can merge it with
+ * the loaded messages and render a reply preview.
+ */
+export function useReplyTargets(clusterId: string | null, parentIds: string[]) {
+  return useQuery({
+    queryKey: ['cluster-reply-targets', clusterId ?? 'none', [...parentIds].sort()],
+    enabled: clusterId !== null && parentIds.length > 0,
+    queryFn: async () => {
+      if (!clusterId) throw new Error('No cluster')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .in('id', parentIds)
+      if (error) throw error
+      const map = new Map<string, Message>()
+      for (const m of data ?? []) map.set(m.id, m as Message)
+      return map
     },
   })
 }
@@ -213,6 +241,7 @@ export function useEditMessage(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-messages', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['cluster-reply-targets', clusterId] })
       }
     },
   })
@@ -234,6 +263,7 @@ export function useDeleteMessage(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-messages', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['cluster-reply-targets', clusterId] })
       }
     },
   })
