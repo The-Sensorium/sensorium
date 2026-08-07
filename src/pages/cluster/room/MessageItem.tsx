@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
@@ -35,7 +36,7 @@ export function MessageItem({
 }: {
   message: Message
   mine: boolean
-  author: { display_name: string; avatar_url: string | null } | undefined
+  author: { id: string; display_name: string; avatar_url: string | null } | undefined
   reactions: Reaction[]
   myReactionKeys: ReadonlySet<string>
   members: MentionMember[]
@@ -64,16 +65,32 @@ export function MessageItem({
       {showDay && <DayDivider iso={message.created_at} />}
       <div
         className={cn(
-          'flex items-end gap-2 py-1',
+          'flex items-start gap-2 py-1',
           mine ? 'flex-row-reverse' : 'flex-row',
         )}
       >
-        <Avatar
-          name={author?.display_name ?? 'Member'}
-          src={author?.avatar_url}
-          className="h-7 w-7"
-          textClassName="text-xs"
-        />
+        {author ? (
+          <Link
+            to={`/profile/${author.id}?cluster=${clusterId}`}
+            title={author.display_name}
+            className="mt-6 shrink-0"
+          >
+            <Avatar
+              name={author.display_name}
+              src={author.avatar_url}
+              className="h-7 w-7"
+              textClassName="text-xs"
+            />
+          </Link>
+        ) : (
+          <span title="Member" className="mt-6 shrink-0">
+            <Avatar
+              name="Member"
+              className="h-7 w-7"
+              textClassName="text-xs"
+            />
+          </span>
+        )}
         <div className={cn('max-w-[78%] sm:max-w-[70%]', mine ? 'items-end' : 'items-start')}>
           <p
             className={cn(
