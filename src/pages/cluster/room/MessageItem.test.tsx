@@ -42,6 +42,7 @@ function setup(overrides: Partial<Parameters<typeof MessageItem>[0]> = {}) {
     editPending: false,
     menuOpen: false,
     pickerOpen: false,
+    replyParent: undefined,
     onEditDraftChange: vi.fn(),
     onSaveEdit: vi.fn(),
     onCancelEdit: vi.fn(),
@@ -49,6 +50,7 @@ function setup(overrides: Partial<Parameters<typeof MessageItem>[0]> = {}) {
     onTogglePicker: vi.fn(),
     onEdit: vi.fn(),
     onDelete: vi.fn(),
+    onReply: vi.fn(),
     onToggleReaction: vi.fn(),
   }
   const props = { ...base, ...overrides }
@@ -133,5 +135,20 @@ describe('MessageItem', () => {
     expect(img.className).toContain('object-contain')
     expect(img.className).not.toContain('object-cover')
     expect(img.className).not.toContain('aspect-video')
+  })
+
+  it('shows a quoted preview of the message it replies to', () => {
+    setup({
+      message: makeMessage({ id: 'm2', reply_to_id: 'm1' }),
+      replyParent: { authorName: 'Bob Green', preview: 'Original question' },
+    })
+    expect(screen.getByText('Bob Green')).toBeInTheDocument()
+    expect(screen.getByText('Original question')).toBeInTheDocument()
+  })
+
+  it('wires the reply action', async () => {
+    const { props } = setup()
+    await userEvent.click(screen.getByRole('button', { name: 'Reply' }))
+    expect(props.onReply).toHaveBeenCalledWith(props.message)
   })
 })

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router'
+import { Navigate, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Loader2, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useCluster, useMyMembership } from '../../features/introductions'
@@ -16,7 +16,8 @@ const SECTIONS = [
 
 export function ClusterLayout() {
   const { clusterId = '' } = useParams()
-  const { pathname } = useLocation()
+  const { pathname, key } = useLocation()
+  const navigate = useNavigate()
   const isRoom = pathname === `/cluster/${clusterId}`
   const isSettings = pathname === `/cluster/${clusterId}/settings`
 
@@ -89,13 +90,14 @@ export function ClusterLayout() {
         )}
       >
         <div className="flex items-center gap-2 py-3">
-          <Link
-            to="/home"
-            aria-label="Back to home"
+          <button
+            type="button"
+            aria-label="Go back"
+            onClick={() => (key === 'default' ? navigate('/clusters', { replace: true }) : navigate(-1))}
             className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-          </Link>
+          </button>
           <div className="min-w-0 flex-1">
             <p className="hidden truncate text-[11px] font-semibold uppercase tracking-wide text-primary sm:block">
               {cluster.data.mode_label}

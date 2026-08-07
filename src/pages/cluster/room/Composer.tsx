@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { Film, ImagePlus, Loader2, Megaphone, Plus, Send } from 'lucide-react'
+import { CornerUpLeft, Film, ImagePlus, Loader2, Megaphone, Plus, Send, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import {
@@ -20,6 +20,7 @@ export function Composer({
   pending,
   raisePending,
   error,
+  replyTo,
   onError,
   onTyping,
   onStopTyping,
@@ -27,12 +28,14 @@ export function Composer({
   onSendImage,
   onSendGif,
   onOpenSignal,
+  onCancelReply,
 }: {
   members: MentionMember[]
   selfId: string | null
   pending: boolean
   raisePending: boolean
   error: string | null
+  replyTo: { id: string; authorName: string; preview: string } | null
   onError(message: string | null): void
   onTyping(): void
   onStopTyping(): void
@@ -40,6 +43,7 @@ export function Composer({
   onSendImage(file: File): Promise<void>
   onSendGif(gif: Gif): Promise<void>
   onOpenSignal(): void
+  onCancelReply(): void
 }) {
   const [draft, setDraft] = useState('')
   const [gifOpen, setGifOpen] = useState(false)
@@ -195,6 +199,25 @@ export function Composer({
           void handleSend()
         }}
       >
+        {replyTo && (
+          <div className="absolute inset-x-0 bottom-full mb-2 flex items-center gap-2 rounded-2xl border border-outline-variant/60 bg-surface px-3 py-2 shadow-soft">
+            <span aria-hidden>
+              <CornerUpLeft className="h-4 w-4 text-on-surface-variant" strokeWidth={1.5} />
+            </span>
+            <div className="min-w-0 flex-1 text-xs leading-tight">
+              <span className="font-semibold text-on-surface">Replying to {replyTo.authorName}</span>
+              <span className="block truncate text-on-surface-variant">{replyTo.preview}</span>
+            </div>
+            <button
+              type="button"
+              aria-label="Cancel reply"
+              onClick={onCancelReply}
+              className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+            >
+              <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            </button>
+          </div>
+        )}
         {gifOpen && (
           <GifPicker pending={pending} onSelect={(gif) => void handleSendGif(gif)} />
         )}
