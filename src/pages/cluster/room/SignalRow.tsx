@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { Megaphone } from 'lucide-react'
 import { DayDivider } from './DayDivider'
 import { dateTimeFormatter } from './format'
+import { Avatar } from '../../../components/Avatar'
 import type { Signal, SignalStatus } from '../../../features/signals'
 
 const SIGNAL_STATUS: Record<SignalStatus, { label: string; className: string }> = {
@@ -32,8 +33,19 @@ export function SignalRow({
         to={`/cluster/${clusterId}/signals/${signal.id}`}
         className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-low/60 px-3 py-2.5 transition-colors hover:border-outline/60"
       >
-        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tertiary-container/25 text-tertiary">
-          <Megaphone className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+        <span className="mt-0.5 shrink-0">
+          {author?.avatar_url ? (
+            <Avatar
+              name={author?.display_name ?? 'Member'}
+              src={author.avatar_url}
+              className="h-6 w-6"
+              textClassName="text-[10px]"
+            />
+          ) : (
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-tertiary-container/25 text-tertiary">
+              <Megaphone className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+            </span>
+          )}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block line-clamp-2 text-sm leading-5 text-on-surface">
