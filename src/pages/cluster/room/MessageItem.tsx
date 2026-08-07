@@ -208,7 +208,7 @@ export function MessageItem({
                 src={gifUrl}
                 alt="GIF"
                 loading="lazy"
-                className="aspect-video h-auto w-full rounded-xl object-cover"
+                className="max-h-80 w-full rounded-xl object-contain"
               />
             ) : (
               <MentionText
