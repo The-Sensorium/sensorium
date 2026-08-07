@@ -1098,7 +1098,12 @@ export type Database = {
         Returns: string
       }
       send_message: {
-        Args: { p_cluster_id: string; p_content?: string; p_image_url?: string }
+        Args: {
+          p_cluster_id: string
+          p_content?: string
+          p_image_url?: string
+          p_reply_to_id?: string
+        }
         Returns: string
       }
       set_signal_status: {

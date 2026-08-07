@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
+import { CornerUpLeft, Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import { DayDivider } from './DayDivider'
@@ -25,6 +25,7 @@ export function MessageItem({
   editPending,
   menuOpen,
   pickerOpen,
+  replyParent,
   onEditDraftChange,
   onSaveEdit,
   onCancelEdit,
@@ -32,6 +33,7 @@ export function MessageItem({
   onTogglePicker,
   onEdit,
   onDelete,
+  onReply,
   onToggleReaction,
 }: {
   message: Message
@@ -47,6 +49,7 @@ export function MessageItem({
   editPending: boolean
   menuOpen: boolean
   pickerOpen: boolean
+  replyParent: { authorName?: string; preview: string } | undefined
   onEditDraftChange(value: string): void
   onSaveEdit(): void
   onCancelEdit(): void
@@ -54,6 +57,7 @@ export function MessageItem({
   onTogglePicker(): void
   onEdit(message: Message): void
   onDelete(messageId: string): void
+  onReply(message: Message): void
   onToggleReaction(messageId: string, emoji: string): void
 }) {
   const grouped = new Map<string, number>()
@@ -155,6 +159,23 @@ export function MessageItem({
                   )
             }
           >
+            {!isEditing && message.reply_to_id && (
+              <div className="mb-1.5 flex items-start gap-1.5 rounded-xl bg-surface-container/50 px-2.5 py-1.5 text-xs leading-tight">
+                <CornerUpLeft
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-on-surface-variant"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+                <div className="min-w-0">
+                  <span className="font-semibold text-on-surface-variant">
+                    {replyParent?.authorName ?? 'Member'}
+                  </span>{' '}
+                  <span className="text-on-surface-variant/80">
+                    {replyParent?.preview ?? 'message'}
+                  </span>
+                </div>
+              </div>
+            )}
             {isEditing ? (
               <div className="flex items-end gap-2">
                 <textarea
@@ -230,6 +251,14 @@ export function MessageItem({
               mine ? 'justify-end' : 'justify-start',
             )}
           >
+            <button
+              type="button"
+              aria-label="Reply"
+              onClick={() => onReply(message)}
+              className="grid h-7 w-7 place-items-center rounded-full border border-outline-variant/60 bg-surface text-sm text-on-surface-variant transition-colors hover:bg-surface-container"
+            >
+              <CornerUpLeft className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+            </button>
             {[...grouped.entries()].map(([emoji, count]) => (
               <button
                 key={emoji}
