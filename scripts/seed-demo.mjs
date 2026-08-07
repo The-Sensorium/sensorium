@@ -398,7 +398,9 @@ async function ensureCluster(admin, spec) {
     const person = personFor(spec.members[i])
     const userId = await ensureUser(admin, person.email, person)
     await ensureMembership(admin, clusterId, userId)
-    if (!active && i < introductionsDone) {
+    // Active clusters were unlocked by their roster, so every member has a
+    // completed intro; in the introductions phase only the first N have.
+    if (active || i < introductionsDone) {
       await admin
         .from('cluster_members')
         .update({ intro_completed_at: new Date().toISOString() })
