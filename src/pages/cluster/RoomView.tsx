@@ -89,9 +89,9 @@ export function RoomView() {
   } | null>(null)
 
   const memberMap = useMemo(() => {
-    const map = new Map<string, { display_name: string; avatar_url: string | null }>()
+    const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
     for (const m of members.data ?? []) {
-      map.set(m.id, { display_name: m.display_name, avatar_url: m.avatar_url })
+      map.set(m.id, { id: m.id, display_name: m.display_name, avatar_url: m.avatar_url })
     }
     return map
   }, [members.data])
