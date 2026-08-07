@@ -60,9 +60,16 @@ export function ClusterLayout() {
     )
   }
 
-  // Intro phase still running → waiting screen (the room is locked).
+  // Intro phase still running → waiting screen (the room is locked); it bounces
+  // this member to the form if their own intro is still pending.
   if (!cluster.data.introductions_completed_at) {
     return <Navigate to={`/cluster/${clusterId}/waiting`} replace />
+  }
+
+  // Cluster already unlocked but this member joined later (via replacement)
+  // without completing their intro — make them finish before entering the room.
+  if (!membership.data.intro_completed_at) {
+    return <Navigate to={`/cluster/${clusterId}/introductions`} replace />
   }
 
   return (

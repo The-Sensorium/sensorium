@@ -125,6 +125,61 @@ describe('introductions and social', () => {
     expect(unlocked).toHaveLength(2)
   })
 
+  it('marks a replacement complete in an active cluster without re-unlocking or re-notifying', async () => {
+    const original = await member('i-late-a')
+    const replacement = await member('i-late-b')
+    const clusterId = await createCluster(admin, {
+      memberIds: [original.id, replacement.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // The original roster already unlocked the cluster; the replacement joined
+    // later via the invitation flow with their own intro still pending.
+    const { error: markErr } = await admin
+      .from('cluster_members')
+      .update({ intro_completed_at: new Date().toISOString() })
+      .eq('cluster_id', clusterId)
+      .eq('user_id', original.id)
+    expect(markErr).toBeNull()
+
+    const { data: before } = await admin
+      .from('clusters')
+      .select('status, introductions_completed_at')
+      .eq('id', clusterId)
+      .single()
+    expect(before?.status).toBe('active')
+
+    const { error } = await replacement.client.rpc('submit_intro_answers', {
+      p_cluster_id: clusterId,
+      p_answers: ANSWERS,
+    })
+    expect(error).toBeNull()
+
+    const { data: memberRow } = await admin
+      .from('cluster_members')
+      .select('intro_completed_at')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', replacement.id)
+      .single()
+    expect(memberRow?.intro_completed_at).not.toBeNull()
+
+    const { data: after } = await admin
+      .from('clusters')
+      .select('status, introductions_completed_at')
+      .eq('id', clusterId)
+      .single()
+    expect(after?.status).toBe('active')
+    expect(after?.introductions_completed_at).toEqual(before?.introductions_completed_at)
+
+    const { data: unlocked } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'unlocked')
+    expect(unlocked).toHaveLength(0)
+  })
+
   it('check_intro_deadlines removes non-completers and starts a replacement', async () => {
     const completer = await member('i-dl-a')
     const slacker = await member('i-dl-b')
