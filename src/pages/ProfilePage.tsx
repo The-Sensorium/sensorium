@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
-import { ArrowLeft, Cake, Flag, Loader2, MapPin } from 'lucide-react'
+import { ArrowLeft, Cake, Loader2, MapPin } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useClusterMembers } from '../features/matching'
 import { usePresence } from '../features/realtime'
@@ -8,7 +7,6 @@ import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
-import { ReportModal } from '../components/ReportModal'
 import { countryName } from '../lib/countries'
 
 export function ProfilePage() {
@@ -32,7 +30,6 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const isSelf = auth.state === 'signedIn' && auth.userId === userId
   const { online } = usePresence(clusterId)
   const onlineNow = online.has(userId) || isSelf
-  const [reportOpen, setReportOpen] = useState(false)
 
   const member = (members.data ?? []).find((m) => m.id === userId)
 
@@ -97,27 +94,9 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
               )}
             </div>
           </div>
-          {!isSelf && (
-            <button
-              type="button"
-              onClick={() => setReportOpen(true)}
-              aria-label={`Report ${member.display_name}`}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-pill border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:border-error/50 hover:text-error"
-            >
-              <Flag className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-              Report
-            </button>
-          )}
         </div>
         {member.bio && <p className="mt-4 text-sm leading-6 text-on-surface-variant">{member.bio}</p>}
       </header>
-
-      <ReportModal
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        clusterId={clusterId}
-        target={{ id: member.id, name: member.display_name }}
-      />
 
       <section aria-label="Introductions" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
         <h2 className="font-display text-lg font-semibold text-on-surface">Introductions</h2>
