@@ -46,9 +46,10 @@ export function SignalDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
 
-  const nameById = new Map((members.data ?? []).map((m) => [m.id, m.display_name]))
+  const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
   const s = (signals.data ?? []).find((x) => x.id === signalId)
   const isRaiser = !!s && s.author_id === userId
+  const raiser = s ? memberById.get(s.author_id) : undefined
 
   async function handleReply() {
     const trimmed = draft.trim()
@@ -108,12 +109,13 @@ export function SignalDetailPage() {
       <article className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Avatar
-            name={nameById.get(s.author_id) ?? 'Member'}
+            name={raiser?.display_name ?? 'Member'}
+            src={raiser?.avatar_url}
             className="h-6 w-6"
             textClassName="text-xs"
           />
           <span className="text-sm font-semibold text-on-surface">
-            {nameById.get(s.author_id) ?? 'Member'}
+            {raiser?.display_name ?? 'Member'}
           </span>
           {isRaiser && <span className="text-xs text-on-surface-variant">(you)</span>}
           <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(s.created_at))}</span>
@@ -125,7 +127,7 @@ export function SignalDetailPage() {
         {s.resolved_at && (
           <p className="mt-2 text-xs text-on-surface-variant">
             Resolved {timeAgo.format(new Date(s.resolved_at))}
-            {s.resolved_by ? ` by ${nameById.get(s.resolved_by) ?? 'a member'}` : ''}
+            {s.resolved_by ? ` by ${memberById.get(s.resolved_by)?.display_name ?? 'a member'}` : ''}
           </p>
         )}
 
@@ -164,12 +166,13 @@ export function SignalDetailPage() {
               <li key={r.id} className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
                 <div className="flex items-center gap-2">
                   <Avatar
-                    name={nameById.get(r.author_id) ?? 'Member'}
+                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                    src={memberById.get(r.author_id)?.avatar_url}
                     className="h-5 w-5"
                     textClassName="text-[10px]"
                   />
                   <span className="text-sm font-semibold text-on-surface">
-                    {nameById.get(r.author_id) ?? 'Member'}
+                    {memberById.get(r.author_id)?.display_name ?? 'Member'}
                   </span>
                   <span className="text-xs text-on-surface-variant">
                     · {timeAgo.format(new Date(r.created_at))}
