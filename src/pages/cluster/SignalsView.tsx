@@ -40,7 +40,7 @@ export function SignalsView() {
   const [prompt, setPrompt] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  const nameById = new Map((members.data ?? []).map((m) => [m.id, m.display_name]))
+  const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
   const replyCount = new Map<string, number>()
   for (const r of replies.data ?? []) {
     replyCount.set(r.signal_id, (replyCount.get(r.signal_id) ?? 0) + 1)
@@ -99,7 +99,7 @@ export function SignalsView() {
                     <SignalCard
                       key={s.id}
                       signal={s}
-                      nameById={nameById}
+                      memberById={memberById}
                       replyCount={replyCount.get(s.id) ?? 0}
                       isMine={s.author_id === userId}
                     />
@@ -122,7 +122,7 @@ export function SignalsView() {
                       <SignalCard
                         key={s.id}
                         signal={s}
-                        nameById={nameById}
+                        memberById={memberById}
                         replyCount={replyCount.get(s.id) ?? 0}
                         isMine={s.author_id === userId}
                         compact
@@ -185,19 +185,20 @@ export function SignalsView() {
 
 function SignalCard({
   signal,
-  nameById,
+  memberById,
   replyCount,
   isMine,
   compact = false,
 }: {
   signal: Signal
-  nameById: Map<string, string>
+  memberById: Map<string, { display_name: string; avatar_url: string | null }>
   replyCount: number
   isMine: boolean
   compact?: boolean
 }) {
   const { clusterId = '' } = useParams()
   const meta = statusMeta[signal.status]
+  const author = memberById.get(signal.author_id)
   return (
     <li>
       <Link
@@ -209,12 +210,13 @@ function SignalCard({
       >
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Avatar
-            name={nameById.get(signal.author_id) ?? 'Member'}
+            name={author?.display_name ?? 'Member'}
+            src={author?.avatar_url}
             className="h-5 w-5"
             textClassName="text-[10px]"
           />
           <span className="text-sm font-medium text-on-surface">
-            {nameById.get(signal.author_id) ?? 'Member'}
+            {author?.display_name ?? 'Member'}
           </span>
           {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}
           <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(signal.created_at))}</span>
