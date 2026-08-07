@@ -9,7 +9,7 @@ vi.mock('../../../features/avatars', () => ({
   useAvatarUrl: () => ({ data: undefined }),
 }))
 
-const author = { display_name: 'Alice Blue', avatar_url: null }
+const author = { id: 'a1', display_name: 'Alice Blue', avatar_url: null }
 
 function makeMessage(overrides: Partial<Message> = {}): Message {
   return {
@@ -65,6 +65,16 @@ describe('MessageItem', () => {
     setup()
     expect(screen.getByText('Alice Blue')).toBeInTheDocument()
     expect(screen.getByText('Hello world')).toBeInTheDocument()
+  })
+
+  it('links the avatar to the author profile', () => {
+    setup()
+    expect(screen.getByTitle('Alice Blue')).toHaveAttribute('href', '/profile/a1?cluster=c1')
+  })
+
+  it('shows a fallback avatar when the author is unknown', () => {
+    setup({ author: undefined })
+    expect(screen.getByTitle('Member')).toBeInTheDocument()
   })
 
   it('labels the current user message as You', () => {
