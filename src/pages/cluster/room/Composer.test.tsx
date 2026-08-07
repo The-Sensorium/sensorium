@@ -8,6 +8,12 @@ vi.mock('../../../features/avatars', () => ({
   useAvatarUrl: () => ({ data: undefined }),
 }))
 
+vi.mock('../../../features/gifs', () => ({
+  gifSearchEnabled: true,
+  useSearchGifs: () => ({ data: [], isPending: false, error: null }),
+  useTrendingGifs: () => ({ data: [], isPending: false, error: null }),
+}))
+
 const members: MentionMember[] = [
   { id: 'r1', display_name: 'Rio Mendez', avatar_url: null },
   { id: 'r2', display_name: 'Alice Blue', avatar_url: null },
@@ -84,6 +90,17 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Raise a signal' }))
     expect(props.onOpenSignal).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not submit the message when Enter is pressed in the GIF search box', async () => {
+    const { props } = setup()
+    await userEvent.type(input(), 'hello')
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Send a GIF' }))
+    const search = screen.getByRole('searchbox', { name: 'Search GIFs' })
+    await userEvent.type(search, 'puppy{Enter}')
+    expect(props.onSend).not.toHaveBeenCalled()
+    expect(search).toHaveValue('puppy')
   })
 
   it('rejects an unsupported image with an error via onError', async () => {
