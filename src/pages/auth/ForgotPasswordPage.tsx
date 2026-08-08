@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
+import { toErrorMessage } from '../../lib/error'
 
 export function ForgotPasswordPage() {
   useDocumentTitle('Forgot Password')
@@ -22,7 +23,7 @@ export function ForgotPasswordPage() {
       if (error) throw error
       setSent(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
       setSubmitting(false)
     }

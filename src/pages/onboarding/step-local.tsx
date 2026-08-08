@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Loader2, MapPin } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
+import { toErrorMessage } from '../../lib/error'
 import { LOCAL_RADII, type LocalRadius, type OnboardingDraft } from './draft'
 
 interface Props {
@@ -26,7 +27,7 @@ export function StepLocal({ draft, patch }: Props) {
         shareLocation: true,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Couldn’t determine your location.')
+      setError(toErrorMessage(err, 'Couldn’t determine your location.'))
       patch({ shareLocation: false, coordinates: null, localArea: null, localLabel: null })
     } finally {
       setLocating(false)

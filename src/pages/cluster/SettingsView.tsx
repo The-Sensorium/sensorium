@@ -6,6 +6,7 @@ import { useCluster } from '../../features/introductions'
 import { useClusterMembers } from '../../features/matching'
 import { useLeaveCluster } from '../../features/cluster'
 import { modeInfo } from '../../lib/modes'
+import { toErrorMessage } from '../../lib/error'
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -21,13 +22,16 @@ export function SettingsView() {
   const members = useClusterMembers(clusterId)
   const leave = useLeaveCluster()
   const [confirming, setConfirming] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
 
   async function handleLeave() {
     if (!clusterId) return
+    setLeaveError(null)
     try {
       await leave.mutateAsync(clusterId)
       navigate('/home')
-    } catch {
+    } catch (err) {
+      setLeaveError(toErrorMessage(err, 'Could not leave the cluster. Please try again.'))
       setConfirming(false)
     }
   }
@@ -115,6 +119,9 @@ export function SettingsView() {
             <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             Leave cluster
           </button>
+        )}
+        {leaveError && (
+          <p role="alert" className="mt-3 text-sm text-error">{leaveError}</p>
         )}
       </div>
     </section>

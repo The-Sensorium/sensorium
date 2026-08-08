@@ -8,6 +8,7 @@ import type { MatchingMode } from '../../lib/modes'
 import { LOCAL_RADII, type LocalRadius } from '../onboarding/draft'
 import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
+import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
 import { useProfile } from '../../lib/use-profile'
 
@@ -135,7 +136,7 @@ function JoinCard({
         )}
       </div>
       {join.isError && (
-        <p className="mt-3 text-sm text-error">{joinError(join.error)}</p>
+        <p className="mt-3 text-sm text-error">{joinQueueErrorMessage(join.error)}</p>
       )}
     </div>
   )
@@ -229,7 +230,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
       }
       onDone?.()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Couldn’t determine your location.')
+      setError(toErrorMessage(err, 'Couldn’t determine your location.'))
     } finally {
       setLocating(false)
       setSaving(false)
@@ -247,7 +248,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         .eq('id', auth.userId)
       if (error) throw error
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Couldn’t update your radius.')
+      setError(toErrorMessage(err, 'Couldn’t update your radius.'))
     }
   }
 
@@ -323,23 +324,4 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
       )}
     </div>
   )
-}
-
-function joinError(error: unknown): string {
-  // PostgrestError carries the RPC message on `.message` but is not an Error
-  // instance, so read the property instead of relying on instanceof.
-  const raw =
-    typeof error === 'object' && error !== null && 'message' in error
-      ? String((error as { message: unknown }).message ?? '')
-      : error instanceof Error
-        ? error.message
-        : String(error ?? '')
-  const message = raw.toLowerCase()
-  if (message.includes('cooldown')) return 'You recently left a cluster in this mode. Please wait for the cooldown to end.'
-  if (message.includes('location_not_set') || message.includes('local radius'))
-    return 'Set your local radius first, then try again.'
-  if (message.includes('already_in_cluster')) return 'You’re already in a cluster for this mode.'
-  if (message.includes('already_in_queue')) return 'You’re already waiting in this queue.'
-  if (message.includes('complete onboarding')) return 'Complete onboarding before joining a queue.'
-  return 'Something went wrong while joining. Please try again.'
 }
