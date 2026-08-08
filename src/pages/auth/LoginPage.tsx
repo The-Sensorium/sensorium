@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
+import { toErrorMessage } from '../../lib/error'
 
 export function LoginPage() {
   useDocumentTitle('Log In')
@@ -20,7 +21,7 @@ export function LoginPage() {
       if (error) throw error
       // RequireGuest redirects to /home once the session is set.
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
       setSubmitting(false)
     }

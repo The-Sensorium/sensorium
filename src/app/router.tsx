@@ -4,6 +4,7 @@ import { PublicLayout } from './layouts/PublicLayout'
 import { ClusterLayout } from './layouts/ClusterLayout'
 import { RequireAuth, RequireGuest, RequireOnboarded } from './guards'
 import { LandingPage } from '../pages/LandingPage'
+import { NotFoundPage } from '../pages/NotFoundPage'
 import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage'
 import { TermsPage } from '../pages/TermsPage'
 import { HomePage } from '../pages/HomePage'
@@ -96,7 +97,7 @@ export function AppRouter() {
         </Route>
 
         {/* Fallback */}
-        <Route path="*" element={<LandingPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )

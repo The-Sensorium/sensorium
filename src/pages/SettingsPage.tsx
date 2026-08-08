@@ -7,6 +7,7 @@ import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
 import { requireSupabase } from '../lib/supabase'
 import { prepareImage } from '../lib/image'
+import { toErrorMessage } from '../lib/error'
 import { useMyClusters } from '../features/matching'
 import { useUpdateProfile } from '../features/cluster'
 import { useDeleteAccount } from '../features/moderation'
@@ -32,8 +33,7 @@ export function SettingsPage() {
   const [removeAvatarOpen, setRemoveAvatarOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
-  const saveStatus = useUpdateProfile()
-  const saveProfile = useUpdateProfile()
+  const updateProfile = useUpdateProfile()
 
   async function handleAvatar(file: File | undefined) {
     if (!file) return
@@ -59,9 +59,9 @@ export function SettingsPage() {
         contentType: prepared.type,
       })
       if (error) throw error
-      await saveProfile.mutateAsync({ avatar_url: data.path })
+      await updateProfile.mutateAsync({ avatar_url: data.path })
     } catch (err) {
-      setAvatarError(err instanceof Error ? err.message : 'Couldn’t upload your photo.')
+      setAvatarError(toErrorMessage(err, 'Couldn’t upload your photo.'))
     } finally {
       setAvatarUploading(false)
     }
@@ -99,7 +99,7 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={() => setRemoveAvatarOpen(true)}
-              disabled={saveProfile.isPending}
+              disabled={updateProfile.isPending}
               aria-label="Remove photo"
               className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-error/40 hover:text-error disabled:opacity-60"
             >
@@ -114,7 +114,7 @@ export function SettingsPage() {
           className="mt-5 space-y-4"
           onSubmit={(e) => {
             e.preventDefault()
-            void saveProfile.mutateAsync({
+            void updateProfile.mutateAsync({
               display_name: name.trim() || undefined,
               bio: bio.trim() || null,
             })
@@ -143,15 +143,15 @@ export function SettingsPage() {
             />
             <span className="mt-1 block text-right text-xs text-on-surface-variant">{bio.length}/500</span>
           </label>
-          {saveProfile.isError && (
-            <p role="alert" className="text-sm text-error">Couldn’t save your profile. Please try again.</p>
+          {updateProfile.isError && (
+            <p role="alert" className="text-sm text-error">Couldn’t save your changes. Please try again.</p>
           )}
           <button
             type="submit"
-            disabled={saveProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? ''))}
+            disabled={updateProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? ''))}
             className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
-            {saveProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save changes
           </button>
         </form>
@@ -169,7 +169,7 @@ export function SettingsPage() {
           className="mt-4 flex flex-wrap items-center gap-2"
           onSubmit={(e) => {
             e.preventDefault()
-            void saveStatus.mutateAsync({ current_status: status.trim() || null })
+            void updateProfile.mutateAsync({ current_status: status.trim() || null })
           }}
         >
           <input
@@ -182,10 +182,10 @@ export function SettingsPage() {
           />
           <button
             type="submit"
-            disabled={saveStatus.isPending || status.trim() === (profile.data?.current_status ?? '')}
+            disabled={updateProfile.isPending || status.trim() === (profile.data?.current_status ?? '')}
             className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
-            {saveStatus.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save
           </button>
         </form>
@@ -306,13 +306,13 @@ function RemoveAvatarModal({
 }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
-  const saveProfile = useUpdateProfile()
+  const updateProfile = useUpdateProfile()
 
   async function handleRemove() {
     setError(null)
     setPending(true)
     try {
-      await saveProfile.mutateAsync({ avatar_url: null })
+      await updateProfile.mutateAsync({ avatar_url: null })
       onRemoved()
     } catch {
       setError('Could not remove your photo. Please try again.')
@@ -435,7 +435,7 @@ function NotificationPreferences() {
     setPrefError(null)
     upsert
       .mutateAsync({ clusterId, toggles: current })
-      .catch((err: unknown) => setPrefError(err instanceof Error ? err.message : 'Couldn’t save your preferences.'))
+      .catch((err: unknown) => setPrefError(toErrorMessage(err, 'Couldn’t save your preferences.')))
       .finally(() => setPending((p) => ({ ...p, [`${clusterId}:${key}`]: undefined })))
   }
 

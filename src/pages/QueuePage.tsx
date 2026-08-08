@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useMyQueueKeys, useLeaveQueue } from '../features/matching'
 import { modeInfo, isMatchingMode } from '../lib/modes'
+import { toErrorMessage } from '../lib/error'
 import { QueueProgress } from '../components/QueueCard'
 
 export function QueuePage() {
@@ -56,7 +57,7 @@ export function QueuePage() {
       await leave.mutateAsync(current.mode)
       navigate('/home')
     } catch (err) {
-      setLeaveError(err instanceof Error ? err.message : 'Could not leave the queue. Try again.')
+      setLeaveError(toErrorMessage(err, 'Could not leave the queue. Try again.'))
     }
   }
 

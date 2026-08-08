@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ImagePlus, Loader2, X } from 'lucide-react'
 import { requireSupabase } from '../../lib/supabase'
 import { prepareImage } from '../../lib/image'
+import { toErrorMessage } from '../../lib/error'
 import { useAvatarUrl } from '../../features/avatars'
 import type { OnboardingDraft } from './draft'
 
@@ -48,7 +49,7 @@ export function StepCustomization({ userId, draft, patch }: Props) {
       const url = await uploadAvatar(userId, prepared)
       patch({ photo: prepared, avatarUrl: url })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Couldn’t upload your photo.')
+      setError(toErrorMessage(err, 'Couldn’t upload your photo.'))
     } finally {
       setUploading(false)
     }

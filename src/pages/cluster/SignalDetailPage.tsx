@@ -45,6 +45,7 @@ export function SignalDetailPage() {
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [confirmResolve, setConfirmResolve] = useState(false)
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
   const s = (signals.data ?? []).find((x) => x.id === signalId)
@@ -70,6 +71,7 @@ export function SignalDetailPage() {
     setError(null)
     try {
       await setStatus.mutateAsync({ signalId: s.id, status: next })
+      setConfirmResolve(false)
     } catch {
       setStatusError('Something went wrong updating the status.')
     }
@@ -132,15 +134,50 @@ export function SignalDetailPage() {
         )}
 
         {isRaiser && nextStatus && (
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-outline-variant/60 pt-4">
-            <button
-              type="button"
-              onClick={() => void handleStatus(nextStatus)}
-              disabled={setStatus.isPending}
-              className="rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
-            >
-              {nextStatus === 'in_progress' ? 'Mark in progress' : 'Mark resolved'}
-            </button>
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-outline-variant/60 pt-4">
+            {nextStatus === 'resolved' && confirmResolve ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleStatus('resolved')}
+                  disabled={setStatus.isPending}
+                  className="inline-flex items-center gap-2 rounded-pill bg-error px-4 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+                >
+                  {setStatus.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                  Confirm resolve
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setConfirmResolve(false)
+                    setStatusError(null)
+                  }}
+                  disabled={setStatus.isPending}
+                  className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  if (nextStatus === 'resolved') {
+                    setStatusError(null)
+                    setConfirmResolve(true)
+                  } else void handleStatus(nextStatus)
+                }}
+                disabled={setStatus.isPending}
+                className={cn(
+                  'rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60',
+                  nextStatus === 'resolved'
+                    ? 'border border-error/40 text-error hover:bg-error/5'
+                    : 'bg-primary text-on-primary hover:bg-primary-container',
+                )}
+              >
+                {nextStatus === 'in_progress' ? 'Mark in progress' : 'Mark resolved'}
+              </button>
+            )}
             {statusError && (
               <p role="alert" className="text-xs text-error">
                 {statusError}
