@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { ThemeProvider } from '../lib/theme-provider'
 import { AuthContext, type AuthStatus } from './auth-context'
+import { isPermanentQueryError } from '../lib/query-retry'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -10,12 +11,9 @@ const queryClient = new QueryClient({
       staleTime: 30_000,
       refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
-        // Client errors (4xx) won't recover on retry; transient failures get up
-        // to two retries before the error surfaces to the UI.
-        if (typeof error === 'object' && error !== null && 'status' in error) {
-          const status = (error as { status?: unknown }).status
-          if (typeof status === 'number' && status >= 400 && status < 500) return false
-        }
+        // Permanent client errors (RLS denials, PostgREST permission codes)
+        // won't recover on retry; transient failures get up to two retries.
+        if (isPermanentQueryError(error)) return false
         return failureCount < 2
       },
     },

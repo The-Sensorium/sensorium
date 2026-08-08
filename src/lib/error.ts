@@ -13,7 +13,7 @@ export function toErrorMessage(error: unknown, fallback: string): string {
 export function joinQueueErrorMessage(error: unknown): string {
   const message = toErrorMessage(error, '').toLowerCase()
   if (message.includes('cooldown')) {
-    return 'You recently left a cluster in this mode. Please wait for the cooldown to end.'
+    return 'You recently left a cluster in this mode. A 30-day cooldown is active.'
   }
   if (message.includes('location_not_set') || message.includes('location not set') || message.includes('local radius')) {
     return 'Set your local radius first, then try again.'
