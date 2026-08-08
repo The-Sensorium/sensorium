@@ -15,6 +15,7 @@ import {
 } from '../features/votes'
 import { QueueCard } from '../components/QueueCard'
 import { ClusterCard } from '../components/ClusterCard'
+import { toErrorMessage } from '../lib/error'
 
 const GET_STARTED_STEPS = [
   {
@@ -47,7 +48,9 @@ export function HomePage() {
 
   const firstName = profile.data?.display_name?.split(' ')[0]
   const inviteError =
-    (acceptInvite.error as Error | null)?.message ?? (declineInvite.error as Error | null)?.message ?? null
+    toErrorMessage(acceptInvite.error, '') ||
+    toErrorMessage(declineInvite.error, '') ||
+    null
 
   const loading = clusters.isLoading || queues.isLoading || invitations.isLoading
   const hasClusters = (clusters.data?.length ?? 0) > 0

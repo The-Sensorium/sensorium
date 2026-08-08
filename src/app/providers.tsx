@@ -9,6 +9,15 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 30_000,
       refetchOnWindowFocus: false,
+      retry: (failureCount, error) => {
+        // Client errors (4xx) won't recover on retry; transient failures get up
+        // to two retries before the error surfaces to the UI.
+        if (typeof error === 'object' && error !== null && 'status' in error) {
+          const status = (error as { status?: unknown }).status
+          if (typeof status === 'number' && status >= 400 && status < 500) return false
+        }
+        return failureCount < 2
+      },
     },
   },
 })

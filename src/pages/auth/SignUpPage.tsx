@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
+import { toErrorMessage } from '../../lib/error'
 
 export function SignUpPage() {
   useDocumentTitle('Sign Up')
@@ -36,7 +37,7 @@ export function SignUpPage() {
       sessionStorage.setItem('sensorium:signup-email', email)
       setDone(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
       setSubmitting(false)
     }

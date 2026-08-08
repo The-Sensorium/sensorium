@@ -25,6 +25,7 @@ import {
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../features/signals'
 import { useClusterVotes, type Vote } from '../../features/votes'
 import { useMarkClusterRead } from '../../features/notifications'
+import { toErrorMessage } from '../../lib/error'
 import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
@@ -341,7 +342,7 @@ export function RoomView() {
     try {
       await toggleReaction.mutateAsync({ messageId, emoji })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not react to that message.')
+      setError(toErrorMessage(e, 'Could not react to that message.'))
     }
   }
 
@@ -359,7 +360,7 @@ export function RoomView() {
       await editMessage.mutateAsync({ messageId: editingId, content })
       setEditingId(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not edit your message.')
+      setError(toErrorMessage(e, 'Could not edit your message.'))
     }
   }
 
@@ -369,7 +370,7 @@ export function RoomView() {
     try {
       await deleteMessage.mutateAsync(messageId)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete your message.')
+      setError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
 
@@ -402,7 +403,7 @@ export function RoomView() {
         setHasMore(false)
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load earlier messages.')
+      setError(toErrorMessage(e, 'Could not load earlier messages.'))
       anchorRef.current = null
     }
   }
@@ -435,7 +436,7 @@ export function RoomView() {
       setSignalOpen(false)
       setSignalPrompt('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not raise your signal. Try again.')
+      setError(toErrorMessage(e, 'Could not raise your signal. Try again.'))
     }
   }
 

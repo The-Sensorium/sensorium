@@ -7,6 +7,7 @@ import { requireSupabase } from '../../lib/supabase'
 import { useProfile, profileKey } from '../../lib/use-profile'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { modeInfo } from '../../lib/modes'
+import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { StepProfile } from './step-profile'
 import { StepCustomization } from './step-customization'
 import { StepModes } from './step-modes'
@@ -109,7 +110,7 @@ export function OnboardingPage() {
           p_mode: mode,
           p_radius_km: draft.radiusKm ?? undefined,
         })
-        if (joinError) failed.push(`${modeInfo(mode).label}: ${joinErrorMessage(joinError.message)}`)
+        if (joinError) failed.push(`${modeInfo(mode).label}: ${joinQueueErrorMessage(joinError)}`)
       }
 
       if (failed.length > 0) {
@@ -128,7 +129,7 @@ export function OnboardingPage() {
       await queryClient.invalidateQueries({ queryKey: profileKey(userId) })
       navigate('/home', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      setError(toErrorMessage(err, 'Something went wrong.'))
       setSubmitting(false)
     }
   }
@@ -195,14 +196,4 @@ export function OnboardingPage() {
       </main>
     </div>
   )
-}
-
-function joinErrorMessage(raw: string): string {
-  const message = raw.toLowerCase()
-  if (message.includes('cooldown')) return 'a 30-day cooldown is active for that mode'
-  if (message.includes('already_in_cluster') || message.includes('already in a cluster'))
-    return 'you’re already in a cluster for that mode'
-  if (message.includes('location_not_set') || message.includes('location not set'))
-    return 'location details are missing'
-  return raw
 }
