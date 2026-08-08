@@ -155,4 +155,44 @@ describe('SignalDetailPage', () => {
       expect(screen.getByText('Something went wrong updating the status.')).toBeInTheDocument(),
     )
   })
+
+  it('requires confirmation before resolving and calls the status mutation only on confirm', async () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'm1' })
+    hooks.useClusterSignals.mockReturnValue(queryStub([{ ...signal, status: 'in_progress' }]))
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Mark resolved' }))
+    expect(setStatus.mutateAsync).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm resolve' }))
+    await waitFor(() =>
+      expect(setStatus.mutateAsync).toHaveBeenCalledWith({ signalId: 's1', status: 'resolved' }),
+    )
+  })
+
+  it('cancelling resolve keeps the status unchanged', () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'm1' })
+    hooks.useClusterSignals.mockReturnValue(queryStub([{ ...signal, status: 'in_progress' }]))
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Mark resolved' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(setStatus.mutateAsync).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Mark resolved' })).toBeInTheDocument()
+  })
+
+  it('keeps the confirm state and shows an error when resolving fails', async () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'm1' })
+    hooks.useClusterSignals.mockReturnValue(queryStub([{ ...signal, status: 'in_progress' }]))
+    hooks.useSetSignalStatus.mockReturnValue({
+      mutateAsync: vi.fn().mockRejectedValue(new Error('nope')),
+      isPending: false,
+    })
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Mark resolved' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm resolve' }))
+    await waitFor(() =>
+      expect(screen.getByText('Something went wrong updating the status.')).toBeInTheDocument(),
+    )
+    expect(screen.getByRole('button', { name: 'Confirm resolve' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByText('Something went wrong updating the status.')).not.toBeInTheDocument()
+  })
 })

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { CornerUpLeft, Film, ImagePlus, Loader2, Megaphone, Plus, Send, X } from 'lucide-react'
+import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Plus, Send, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import {
@@ -284,7 +284,7 @@ export function Composer({
                 }}
                 className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
               >
-                <Film className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Send a GIF
+                <ImagePlay className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Send a GIF
               </button>
               <button
                 type="button"
