@@ -90,6 +90,7 @@ export function OnboardingPage() {
             id: userId,
             email: userEmail ?? '',
             display_name: draft.displayName.trim(),
+            pronouns: draft.pronouns.trim() || null,
             dob: draft.dob,
             country_code: draft.countryCode,
             bio: draft.bio.trim() || null,

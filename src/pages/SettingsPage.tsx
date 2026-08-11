@@ -20,6 +20,7 @@ import {
 } from '../features/notifications'
 import { Avatar } from '../components/Avatar'
 import { Modal } from '../components/Modal'
+import { PronounSelect } from '../components/PronounSelect'
 
 export function SettingsPage() {
   useDocumentTitle('Settings')
@@ -27,6 +28,7 @@ export function SettingsPage() {
   const profile = useProfile()
   const [name, setName] = useState(profile.data?.display_name ?? '')
   const [bio, setBio] = useState(profile.data?.bio ?? '')
+  const [pronouns, setPronouns] = useState(profile.data?.pronouns ?? '')
   const [status, setStatus] = useState(profile.data?.current_status ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
@@ -117,6 +119,7 @@ export function SettingsPage() {
             void updateProfile.mutateAsync({
               display_name: name.trim() || undefined,
               bio: bio.trim() || null,
+              pronouns: pronouns.trim() || null,
             })
           }}
         >
@@ -131,6 +134,10 @@ export function SettingsPage() {
               className="mt-1.5 w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             />
           </label>
+          <div className="block">
+            <span className="text-sm font-semibold text-on-surface">Pronouns</span>
+            <PronounSelect value={pronouns} onChange={setPronouns} />
+          </div>
           <label className="block">
             <span className="text-sm font-semibold text-on-surface">Bio</span>
             <textarea
@@ -148,7 +155,7 @@ export function SettingsPage() {
           )}
           <button
             type="submit"
-            disabled={updateProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? ''))}
+            disabled={updateProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? '') && pronouns.trim() === (profile.data?.pronouns ?? ''))}
             className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
             {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
