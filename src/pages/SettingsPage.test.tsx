@@ -47,6 +47,7 @@ const profile = {
   email: 'ally@example.com',
   bio: 'Hello there',
   current_status: 'busy',
+  pronouns: 'she/her',
   avatar_url: null,
 }
 
@@ -97,6 +98,47 @@ describe('SettingsPage', () => {
       expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
         display_name: 'Ally Updated',
         bio: 'Hello there',
+        pronouns: 'she/her',
+      }),
+    )
+  })
+
+  it('saves pronouns', async () => {
+    renderPage()
+    fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: 'they/them' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    await waitFor(() =>
+      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
+        display_name: 'Ally',
+        bio: 'Hello there',
+        pronouns: 'they/them',
+      }),
+    )
+  })
+
+  it('saves custom pronouns from the free-text option', async () => {
+    renderPage()
+    fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: '__custom__' } })
+    fireEvent.change(screen.getByLabelText('Custom pronouns'), { target: { value: 'ze/zir' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    await waitFor(() =>
+      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
+        display_name: 'Ally',
+        bio: 'Hello there',
+        pronouns: 'ze/zir',
+      }),
+    )
+  })
+
+  it('clears pronouns when set to "Don’t share"', async () => {
+    renderPage()
+    fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    await waitFor(() =>
+      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
+        display_name: 'Ally',
+        bio: 'Hello there',
+        pronouns: null,
       }),
     )
   })

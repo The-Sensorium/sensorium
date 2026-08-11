@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellRing, ImageMinus, ImagePlus, Loader2, LogOut, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, Loader2, LogOut, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -21,12 +21,28 @@ import {
 import { Avatar } from '../components/Avatar'
 import { Modal } from '../components/Modal'
 
+const PRONOUN_PRESETS = ['she/her', 'he/him', 'they/them', 'she/they', 'he/they', 'any pronouns'] as const
+type PronounPreset = (typeof PRONOUN_PRESETS)[number]
+const PRONOUN_CUSTOM = '__custom__'
+
 export function SettingsPage() {
   useDocumentTitle('Settings')
   const navigate = useNavigate()
   const profile = useProfile()
   const [name, setName] = useState(profile.data?.display_name ?? '')
   const [bio, setBio] = useState(profile.data?.bio ?? '')
+  const initialPronouns = profile.data?.pronouns ?? ''
+  const [pronounMode, setPronounMode] = useState<PronounPreset | '' | typeof PRONOUN_CUSTOM>(
+    PRONOUN_PRESETS.includes(initialPronouns as PronounPreset)
+      ? (initialPronouns as PronounPreset)
+      : initialPronouns
+        ? PRONOUN_CUSTOM
+        : '',
+  )
+  const [customPronouns, setCustomPronouns] = useState(
+    PRONOUN_PRESETS.includes(initialPronouns as PronounPreset) ? '' : initialPronouns,
+  )
+  const pronouns = pronounMode === PRONOUN_CUSTOM ? customPronouns : pronounMode
   const [status, setStatus] = useState(profile.data?.current_status ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
@@ -117,6 +133,7 @@ export function SettingsPage() {
             void updateProfile.mutateAsync({
               display_name: name.trim() || undefined,
               bio: bio.trim() || null,
+              pronouns: pronouns.trim() || null,
             })
           }}
         >
@@ -131,6 +148,42 @@ export function SettingsPage() {
               className="mt-1.5 w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             />
           </label>
+          <label className="block">
+            <span className="text-sm font-semibold text-on-surface">Pronouns</span>
+            <div className="relative">
+              <select
+                value={pronounMode}
+                onChange={(e) => setPronounMode(e.target.value as PronounPreset | '' | typeof PRONOUN_CUSTOM)}
+                className="mt-1.5 w-full appearance-none rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 pr-10 text-sm text-on-surface focus:border-primary focus:outline-none"
+              >
+                <option value="">Don’t share</option>
+                {PRONOUN_PRESETS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+                <option value={PRONOUN_CUSTOM}>Something else</option>
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant"
+                strokeWidth={1.5}
+                aria-hidden
+              />
+            </div>
+          </label>
+          {pronounMode === PRONOUN_CUSTOM && (
+            <label className="block">
+              <span className="text-sm font-semibold text-on-surface">Custom pronouns</span>
+              <input
+                type="text"
+                value={customPronouns}
+                maxLength={40}
+                onChange={(e) => setCustomPronouns(e.target.value)}
+                placeholder="e.g. ze/zir, any pronouns"
+                className="mt-1.5 w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
+              />
+            </label>
+          )}
           <label className="block">
             <span className="text-sm font-semibold text-on-surface">Bio</span>
             <textarea
@@ -148,7 +201,7 @@ export function SettingsPage() {
           )}
           <button
             type="submit"
-            disabled={updateProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? ''))}
+            disabled={updateProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? '') && pronouns.trim() === (profile.data?.pronouns ?? ''))}
             className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
             {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

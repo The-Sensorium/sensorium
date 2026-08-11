@@ -466,6 +466,7 @@ export type Database = {
           local_radius_km: number | null
           longitude: number | null
           onboarding_completed_at: string | null
+          pronouns: string | null
           updated_at: string
         }
         Insert: {
@@ -487,6 +488,7 @@ export type Database = {
           local_radius_km?: number | null
           longitude?: number | null
           onboarding_completed_at?: string | null
+          pronouns?: string | null
           updated_at?: string
         }
         Update: {
@@ -508,6 +510,7 @@ export type Database = {
           local_radius_km?: number | null
           longitude?: number | null
           onboarding_completed_at?: string | null
+          pronouns?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -948,6 +951,7 @@ export type Database = {
           display_name: string
           id: string
           onboarding_completed_at: string
+          pronouns: string
         }[]
       }
       get_my_clusters: {
