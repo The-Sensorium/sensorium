@@ -7,6 +7,7 @@ import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
+import { PronounBadge } from '../components/PronounBadge'
 import { countryName } from '../lib/countries'
 
 export function ProfilePage() {
@@ -66,7 +67,12 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             <h1 className="truncate font-display text-2xl font-semibold text-on-surface">
               {member.display_name}
             </h1>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-surface-variant">
+            {member.pronouns && (
+              <div className="mt-1.5">
+                <PronounBadge pronouns={member.pronouns} />
+              </div>
+            )}
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-surface-variant">
               {member.country_code && (
                 <span className="inline-flex items-center gap-1.5">
                   <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />

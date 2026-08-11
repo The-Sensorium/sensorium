@@ -28,6 +28,7 @@ const member = {
   country_code: 'US',
   birth_year: 1990,
   current_status: 'Deep in a book',
+  pronouns: 'they/them',
   availability: 'available',
 }
 
@@ -70,6 +71,7 @@ describe('MembersView', () => {
     expect(screen.getByText('Bo')).toBeInTheDocument()
     expect(screen.getByText('United States')).toBeInTheDocument()
     expect(screen.getByText('1990')).toBeInTheDocument()
+    expect(screen.getByText('they/them')).toBeInTheDocument()
     expect(screen.getByText('“Deep in a book”')).toBeInTheDocument()
   })
 

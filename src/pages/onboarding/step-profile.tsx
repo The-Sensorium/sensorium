@@ -1,4 +1,5 @@
 import { COUNTRIES } from '../../lib/countries'
+import { PronounSelect } from '../../components/PronounSelect'
 import { MIN_AGE, type OnboardingDraft } from './draft'
 
 interface Props {
@@ -33,6 +34,15 @@ export function StepProfile({ draft, patch }: Props) {
           className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
       </label>
+
+      <div className="block">
+        <span className="text-sm font-semibold text-on-surface">Pronouns</span>
+        <PronounSelect
+          value={draft.pronouns}
+          onChange={(pronouns) => patch({ pronouns })}
+          fieldClassName="rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
 
       <label className="block">
         <span className="text-sm font-semibold text-on-surface">Date of birth</span>

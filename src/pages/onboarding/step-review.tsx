@@ -29,6 +29,7 @@ export function StepReview({ draft }: Props) {
 
       <dl className="divide-y divide-outline-variant/60 rounded-xl bg-surface px-5">
         <Row label="Display name" value={draft.displayName.trim()} />
+        {draft.pronouns.trim() && <Row label="Pronouns" value={draft.pronouns.trim()} />}
         <Row
           label="Date of birth"
           value={age !== null ? `${draft.dob} (age ${age})` : draft.dob}

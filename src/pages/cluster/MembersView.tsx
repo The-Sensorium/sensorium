@@ -8,6 +8,7 @@ import { useReplacementRound } from '../../features/votes'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { AvailabilityBadge } from '../../components/AvailabilityBadge'
+import { PronounBadge } from '../../components/PronounBadge'
 import { countryName } from '../../lib/countries'
 
 export function MembersView() {
@@ -75,7 +76,12 @@ export function MembersView() {
                         <p className="truncate text-sm font-semibold text-on-surface">
                           {member.display_name}
                         </p>
-                        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 truncate text-xs text-on-surface-variant">
+                        {member.pronouns && (
+                          <div className="mt-1">
+                            <PronounBadge pronouns={member.pronouns} />
+                          </div>
+                        )}
+                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 truncate text-xs text-on-surface-variant">
                           {member.country_code && (
                             <span className="inline-flex items-center gap-1">
                               <MapPin className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
