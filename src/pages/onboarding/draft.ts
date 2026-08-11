@@ -5,6 +5,7 @@ export type LocalRadius = (typeof LOCAL_RADII)[number]
 
 export interface OnboardingDraft {
   displayName: string
+  pronouns: string
   dob: string
   countryCode: string
   photo: File | null
@@ -20,6 +21,7 @@ export interface OnboardingDraft {
 
 export const EMPTY_DRAFT: OnboardingDraft = {
   displayName: '',
+  pronouns: '',
   dob: '',
   countryCode: '',
   photo: null,
