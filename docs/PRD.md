@@ -253,9 +253,23 @@ Users can:
 - Edit messages
 - Delete messages
 - React to messages
+- See who has read their messages (read receipts)
 
 Deleted messages are removed for all users.
 Edited messages display an "edited" indicator.
+
+### Read receipts
+
+Receipts are sender-only and revealed on demand: the author opens the `⋯` menu
+on one of their messages, taps **Info**, and sees a dialog listing who has seen
+it ("Seen by") and who hasn't ("Not seen yet").
+
+They are based on a **read watermark**, not per-message tracking: a member counts
+as having seen a message once they have caught up past it in the room (the same
+position that clears their unread chat badge). This means "seen" means "was
+caught up to at least this point in the chat", not "opened this exact message".
+A member who joined after the message was sent will read as having seen it. The
+dialog updates live while open as members read.
 
 ---
 ## Status System
