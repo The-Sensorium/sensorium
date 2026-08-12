@@ -31,6 +31,15 @@ describe('seenByMembers', () => {
   it('carries the avatar through for rendering', () => {
     expect(seenByMembers(message, members).find((m) => m.id === 'u4')?.avatar_url).toBe('avatar.png')
   })
+
+  it('carries the read watermark through for seen members', () => {
+    expect(seenByMembers(message, members).find((m) => m.id === 'u2')?.read_at).toBe('2026-01-01T11:00:00Z')
+  })
+
+  it('sorts seen members by most recent read time first, regardless of input order', () => {
+    const unordered = [members[3], members[2], members[1]]
+    expect(seenByMembers(message, unordered).map((m) => m.id)).toEqual(['u2', 'u4'])
+  })
 })
 
 describe('notSeenByMembers', () => {
@@ -44,5 +53,9 @@ describe('notSeenByMembers', () => {
 
   it('excludes the author', () => {
     expect(notSeenByMembers(message, members).some((m) => m.id === 'a1')).toBe(false)
+  })
+
+  it('has no read time for members who have not seen it', () => {
+    expect(notSeenByMembers(message, members).every((m) => m.read_at === null)).toBe(true)
   })
 })
