@@ -77,15 +77,28 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 
 Room members each carry a read watermark, `cluster_members.last_read_message_at`
 (migration 0038), maintained by `mark_cluster_read` / `mark_all_read` and cleared
-on join. `get_member_profiles` (0048) exposes it to active members, so
-`useClusterMembers` rows already carry `last_read_message_at`.
+on join. It drives unread counts. The watermark is a cursor — it advances to
+`now()` on every read — so it is **not** the read time shown in receipts.
+
+Per-message read times live in `message_reads` (0049): one immutable
+`(message_id, user_id, read_at)` row is written the first time a member's
+watermark passes a message (inside `mark_cluster_read` / `mark_all_read`, same
+transaction as the watermark advance). Both the backfill and every later
+`mark_cluster_read` only record reads for messages sent after a member joined
+(`created_at > joined_at`), so a member who joins after a message was sent is
+listed under "Not seen yet" for it permanently — they were never present to read
+it. Backfilled read times use the member's watermark as a frozen approximation
+of their first read, not the true first-read instant (the live path records
+`now()` exactly). `get_message_reads` (0049) exposes a message's readers to its
+active members, guarded like `get_member_profiles`.
 
 When a sender taps **Info** on their message (`RoomView` → `MessageInfoModal`),
-the dialog derives seen/not-seen lists from the member query via the pure helpers
-in `src/pages/cluster/room/seen-by.ts`: a member has "seen" a message when their
-watermark `>=` the message's `created_at` (author excluded). The existing
-`cluster_members` UPDATE realtime handler refetches the member query, so an open
-dialog updates live; receipts are watermark-based, not per-message.
+`useMessageReads` fetches `get_message_reads` for that message; the pure helpers
+in `src/pages/cluster/room/seen-by.ts` split readers into the seen list and the
+remaining active members (author excluded) into the not-seen list. Every
+`mark_cluster_read` also bumps the watermark, so the existing `cluster_members`
+UPDATE realtime handler invalidates `['message-reads', clusterId]` and an open
+dialog updates live — while each member's read time stays frozen at first read.
 
 ## Frontend Patterns
 
