@@ -159,7 +159,7 @@ describe('usePresence', () => {
     useAuthMock.mockReturnValue({ state: 'signedIn', userId: 'u1', email: 'a@b.test' } as never)
   })
 
-  it("broadcasts typing via the user's channel track", () => {
+  it("broadcasts typing via the user's channel track", async () => {
     const { client, track } = presenceClient()
     requireSupabaseMock.mockReset()
     requireSupabaseMock.mockReturnValue(client as never)
@@ -176,7 +176,66 @@ describe('usePresence', () => {
     expect(track).toHaveBeenCalledWith({ user_id: 'u1', typing: false })
 
     unmount()
-    expect(client.removeChannel).toHaveBeenCalled()
+    // Teardown is deferred by a tick so a StrictMode remount can re-attach first.
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('re-broadcasts the latest typing state when the channel (re)subscribes', async () => {
+    const { client, channel, track } = presenceClient()
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const { result } = renderHook(() => usePresence('c1'), { wrapper })
+
+    const subscribeCb = channel.subscribe.mock.calls[0][0] as (status: string) => Promise<void> | void
+
+    act(() => {
+      result.current.signalTyping()
+    })
+    expect(track).toHaveBeenLastCalledWith({ user_id: 'u1', typing: true })
+
+    // A re-subscribe (StrictMode remount or socket reconnect) must re-broadcast
+    // the current typing state, not fall back to the initial `false`.
+    await act(async () => {
+      await subscribeCb('SUBSCRIBED')
+    })
+    expect(track).toHaveBeenLastCalledWith({ user_id: 'u1', typing: true })
+
+    act(() => {
+      result.current.resetTyping()
+    })
+    await act(async () => {
+      await subscribeCb('SUBSCRIBED')
+    })
+    expect(track).toHaveBeenLastCalledWith({ user_id: 'u1', typing: false })
+  })
+
+  it('only tracks typing on state transitions, not per keystroke', async () => {
+    const { client, track } = presenceClient()
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const { result, unmount } = renderHook(() => usePresence('c-dedupe'), { wrapper })
+
+    act(() => {
+      result.current.signalTyping()
+      result.current.signalTyping()
+      result.current.signalTyping()
+    })
+    expect(track).toHaveBeenCalledTimes(1)
+    expect(track).toHaveBeenCalledWith({ user_id: 'u1', typing: true })
+
+    act(() => {
+      result.current.resetTyping()
+    })
+    expect(track).toHaveBeenCalledTimes(2)
+    expect(track).toHaveBeenLastCalledWith({ user_id: 'u1', typing: false })
+
+    act(() => {
+      result.current.resetTyping()
+    })
+    expect(track).toHaveBeenCalledTimes(2)
+
+    unmount()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
   })
 
   it('returns without subscribing when there is no user', () => {
