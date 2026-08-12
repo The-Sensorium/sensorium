@@ -242,6 +242,9 @@ export function useClusterChannel(clusterId: string | null) {
         () => {
           // A leave sets left_at (UPDATE); refresh the count so the room reflects it live.
           void queryClient.invalidateQueries({ queryKey: ['cluster-members', clusterId] })
+          // A read advances last_read_message_at; refresh any open receipt dialog
+          // (its per-message read rows are the source, so invalidate those too).
+          void queryClient.invalidateQueries({ queryKey: ['message-reads', clusterId] })
         },
       )
       .on(

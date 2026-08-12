@@ -16,6 +16,9 @@ const hooks = vi.hoisted(() => ({
   CHAT_PAGE_SIZE: 3,
   messages: { data: [] as Message[], isLoading: false },
   reactions: { data: [] as Array<{ id: string; message_id: string; user_id: string; emoji: string }> },
+  messageReads: {
+    data: [] as Array<{ id: string; display_name: string; avatar_url: string | null; read_at: string }>,
+  },
   replyTargets: { data: [] as Array<[string, Message]> },
   loadEarlier: {
     mutateAsync: vi.fn().mockResolvedValue({ added: 0, hasMore: false }),
@@ -63,6 +66,7 @@ vi.mock('../../features/cluster', () => ({
   useClusterReactions: () => hooks.reactions,
   useLoadEarlierMessages: () => hooks.loadEarlier,
   useReplyTargets: () => hooks.replyTargets,
+  useMessageReads: () => hooks.messageReads,
   useSendMessage: () => hooks.send,
   useToggleReaction: () => hooks.toggleReaction,
   useEditMessage: () => hooks.editMessage,
@@ -142,6 +146,7 @@ let queryClient: QueryClient
 function resetHooks() {
   hooks.messages = { data: [], isLoading: false }
   hooks.reactions = { data: [] }
+  hooks.messageReads = { data: [] }
   hooks.replyTargets = { data: [] }
   hooks.loadEarlier = {
     mutateAsync: vi.fn().mockResolvedValue({ added: 0, hasMore: false }),
@@ -380,10 +385,8 @@ describe('RoomView timeline', () => {
         created_at: '2026-01-01T10:00:00Z',
       }),
     ]
-    hooks.members.data = [
-      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
-      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
-      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+    hooks.messageReads.data = [
+      { id: 'u2', display_name: 'Bo', avatar_url: null, read_at: '2026-01-01T11:00:00Z' },
     ]
     renderRoom()
 
@@ -405,11 +408,6 @@ describe('RoomView timeline', () => {
     hooks.messages.data = [
       msg({ id: 'm1', author_id: 'u1', content: 'my message', created_at: '2026-01-01T10:00:00Z' }),
     ]
-    hooks.members.data = [
-      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
-      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
-      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
-    ]
     renderRoom()
 
     await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
@@ -424,11 +422,6 @@ describe('RoomView timeline', () => {
     hooks.messages.data = [
       msg({ id: 'm1', author_id: 'u1', content: 'my message', created_at: '2026-01-01T10:00:00Z' }),
     ]
-    hooks.members.data = [
-      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
-      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
-      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
-    ]
 
     const { rerender } = renderRoom()
     await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
@@ -437,10 +430,8 @@ describe('RoomView timeline', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Message info' })
     expect(within(dialog).getByRole('region', { name: 'Not seen yet' }).textContent).toContain('Bo')
 
-    hooks.members.data = [
-      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
-      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
-      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+    hooks.messageReads.data = [
+      { id: 'u2', display_name: 'Bo', avatar_url: null, read_at: '2026-01-01T11:00:00Z' },
     ]
     rerender(makeUi())
 

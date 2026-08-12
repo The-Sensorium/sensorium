@@ -132,6 +132,17 @@ describe('useClusterChannel', () => {
     })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-members', 'c1'] })
   })
+
+  it('invalidates members and message reads when a member update advances a read', () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'cluster_members', 'UPDATE')
+    act(() => {
+      handler?.({} as never)
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-members', 'c1'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['message-reads', 'c1'] })
+  })
 })
 
 describe('usePresence', () => {
