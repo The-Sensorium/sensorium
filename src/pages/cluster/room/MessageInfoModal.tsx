@@ -1,8 +1,6 @@
 import { Link } from 'react-router'
-import { CheckCheck } from 'lucide-react'
 import { Modal } from '../../../components/Modal'
 import { Avatar } from '../../../components/Avatar'
-import { dateTimeFormatter } from './format'
 import type { SeenByMember } from './seen-by'
 
 function MemberList({
@@ -23,18 +21,10 @@ function MemberList({
         <li key={m.id}>
           <Link
             to={`/profile/${m.id}?cluster=${clusterId}`}
-            className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-surface-container"
+            className="inline-flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-surface-container"
           >
             <Avatar name={m.display_name} src={m.avatar_url} className="h-8 w-8" textClassName="text-sm" />
-            <span className="min-w-0 flex-1 truncate text-sm font-semibold text-on-surface">
-              {m.display_name}
-            </span>
-            {m.read_at && (
-              <span className="flex shrink-0 items-center gap-1 text-xs text-on-surface-variant">
-                <CheckCheck className="h-3.5 w-3.5 text-primary" strokeWidth={2} aria-hidden />
-                {dateTimeFormatter.format(new Date(m.read_at))}
-              </span>
-            )}
+            <span className="text-sm font-semibold text-on-surface">{m.display_name}</span>
           </Link>
         </li>
       ))}
