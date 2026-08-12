@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -35,9 +35,9 @@ const hooks = vi.hoisted(() => ({
   markRead: { mutate: vi.fn() },
   members: {
     data: [
-      { id: 'u1', display_name: 'Ally', avatar_url: null },
-      { id: 'u2', display_name: 'Bo', avatar_url: null },
-      { id: 'u3', display_name: 'Cy', avatar_url: null },
+      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
+      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
+      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
     ],
     isLoading: false,
   },
@@ -158,9 +158,9 @@ function resetHooks() {
   hooks.markRead = { mutate: vi.fn() }
   hooks.members = {
     data: [
-      { id: 'u1', display_name: 'Ally', avatar_url: null },
-      { id: 'u2', display_name: 'Bo', avatar_url: null },
-      { id: 'u3', display_name: 'Cy', avatar_url: null },
+      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
+      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
+      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
     ],
     isLoading: false,
   }
@@ -369,5 +369,82 @@ describe('RoomView timeline', () => {
         replyToId: 'm1',
       }),
     )
+  })
+
+  it('reveals who has seen a message via the Info action', async () => {
+    hooks.messages.data = [
+      msg({
+        id: 'm1',
+        author_id: 'u1',
+        content: 'my message',
+        created_at: '2026-01-01T10:00:00Z',
+      }),
+    ]
+    hooks.members.data = [
+      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
+      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
+      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+    ]
+    renderRoom()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Info' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Message info' })
+    expect(within(dialog).getByRole('region', { name: 'Seen by' }).textContent).toContain('Bo')
+    expect(within(dialog).getByRole('region', { name: 'Not seen yet' }).textContent).toContain('Cy')
+  })
+
+  it('does not offer the Info action on other members messages', () => {
+    hooks.messages.data = [msg({ id: 'm1', author_id: 'u2', content: 'their message' })]
+    renderRoom()
+    expect(screen.queryByRole('button', { name: 'Message actions' })).not.toBeInTheDocument()
+  })
+
+  it('shows the empty seen state when no one has read the message', async () => {
+    hooks.messages.data = [
+      msg({ id: 'm1', author_id: 'u1', content: 'my message', created_at: '2026-01-01T10:00:00Z' }),
+    ]
+    hooks.members.data = [
+      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
+      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+    ]
+    renderRoom()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Info' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Message info' })
+    expect(within(dialog).getByText('No one has seen it yet.')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Everyone has seen it.')).not.toBeInTheDocument()
+  })
+
+  it('updates the info dialog live as members read', async () => {
+    hooks.messages.data = [
+      msg({ id: 'm1', author_id: 'u1', content: 'my message', created_at: '2026-01-01T10:00:00Z' }),
+    ]
+    hooks.members.data = [
+      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
+      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+    ]
+
+    const { rerender } = renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Info' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Message info' })
+    expect(within(dialog).getByRole('region', { name: 'Not seen yet' }).textContent).toContain('Bo')
+
+    hooks.members.data = [
+      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
+      { id: 'u2', display_name: 'Bo', avatar_url: null, last_read_message_at: '2026-01-01T11:00:00Z' },
+      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T09:00:00Z' },
+    ]
+    rerender(makeUi())
+
+    expect(within(dialog).getByRole('region', { name: 'Seen by' }).textContent).toContain('Bo')
+    expect(within(dialog).getByRole('region', { name: 'Not seen yet' }).textContent).not.toContain('Bo')
   })
 })

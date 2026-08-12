@@ -50,6 +50,7 @@ function setup(overrides: Partial<Parameters<typeof MessageItem>[0]> = {}) {
     onTogglePicker: vi.fn(),
     onEdit: vi.fn(),
     onDelete: vi.fn(),
+    onShowInfo: vi.fn(),
     onReply: vi.fn(),
     onToggleReaction: vi.fn(),
   }
@@ -103,6 +104,7 @@ describe('MessageItem', () => {
 
   it('shows the action menu only for my messages', () => {
     setup({ mine: true, menuOpen: true })
+    expect(screen.getByRole('menuitem', { name: 'Info' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument()
   })
@@ -113,6 +115,12 @@ describe('MessageItem', () => {
     expect(props.onEdit).toHaveBeenCalledWith(props.message)
     await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
     expect(props.onDelete).toHaveBeenCalledWith('m1')
+  })
+
+  it('wires the info action', async () => {
+    const { props } = setup({ mine: true, menuOpen: true })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Info' }))
+    expect(props.onShowInfo).toHaveBeenCalledWith(props.message)
   })
 
   it('shows the inline edit textarea when editing', async () => {
