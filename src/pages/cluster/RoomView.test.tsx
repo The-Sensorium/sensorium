@@ -286,16 +286,17 @@ describe('RoomView timeline', () => {
     expect(screen.queryByRole('button', { name: 'Jump to 1 new message' })).not.toBeInTheDocument()
   })
 
-  it('labels typing members in the room', () => {
+  it('shows a typing bubble for a member who is typing', () => {
     hooks.presence.typing = new Set(['u2'])
     renderRoom()
-    expect(screen.getByText('Bo is typing…')).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Bo is typing…' })).toBeInTheDocument()
   })
 
-  it('summarizes multiple typing members', () => {
+  it('shows one typing bubble per typing member', () => {
     hooks.presence.typing = new Set(['u2', 'u3'])
     renderRoom()
-    expect(screen.getByText('Several people are typing…')).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Bo is typing…' })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Cy is typing…' })).toBeInTheDocument()
   })
 
   it('renders the presence strip with member links and counts', () => {
