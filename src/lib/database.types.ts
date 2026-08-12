@@ -950,6 +950,7 @@ export type Database = {
           current_status: string
           display_name: string
           id: string
+          last_read_message_at: string
           onboarding_completed_at: string
           pronouns: string
         }[]

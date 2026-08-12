@@ -30,6 +30,8 @@ import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
 import { MessageItem } from './room/MessageItem'
+import { MessageInfoModal } from './room/MessageInfoModal'
+import { notSeenByMembers, seenByMembers } from './room/seen-by'
 import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { TypingBubble } from './room/TypingBubble'
 import { SignalRow } from './room/SignalRow'
@@ -75,6 +77,7 @@ export function RoomView() {
   const [editDraft, setEditDraft] = useState('')
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [pickerFor, setPickerFor] = useState<string | null>(null)
+  const [infoFor, setInfoFor] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
@@ -194,6 +197,22 @@ export function RoomView() {
     }
     return map
   }, [signalReplies.data])
+
+  // Read receipts for the message whose Info action was tapped. Derives from
+  // members.data, which the cluster_members UPDATE realtime handler refreshes,
+  // so an open dialog updates in place as members read.
+  const infoMessage = useMemo(
+    () => (infoFor ? (messages.data ?? []).find((m) => m.id === infoFor) ?? null : null),
+    [infoFor, messages.data],
+  )
+  const infoSeen = useMemo(
+    () => (infoMessage ? seenByMembers(infoMessage, members.data ?? []) : []),
+    [infoMessage, members.data],
+  )
+  const infoNotSeen = useMemo(
+    () => (infoMessage ? notSeenByMembers(infoMessage, members.data ?? []) : []),
+    [infoMessage, members.data],
+  )
 
   function scrollToEnd() {
     endRef.current?.scrollIntoView({ block: 'end' })
@@ -351,6 +370,12 @@ export function RoomView() {
     setMenuFor(null)
     setEditingId(m.id)
     setEditDraft(m.content ?? '')
+  }
+
+  function showInfo(m: Message) {
+    setMenuFor(null)
+    setPickerFor(null)
+    setInfoFor(m.id)
   }
 
   async function saveEdit() {
@@ -555,6 +580,7 @@ export function RoomView() {
                       onCancelEdit={() => setEditingId(null)}
                       onToggleMenu={() => setMenuFor(menuFor === m.id ? null : m.id)}
                       onTogglePicker={() => setPickerFor(pickerFor === m.id ? null : m.id)}
+                      onShowInfo={showInfo}
                       onEdit={startEdit}
                       onDelete={(messageId) => void remove(messageId)}
                       onReply={startReply}
@@ -654,6 +680,14 @@ export function RoomView() {
         onPromptChange={setSignalPrompt}
         onClose={() => setSignalOpen(false)}
         onRaise={() => void handleRaise()}
+      />
+
+      <MessageInfoModal
+        open={infoFor !== null}
+        onClose={() => setInfoFor(null)}
+        clusterId={clusterId}
+        seen={infoSeen}
+        notSeen={infoNotSeen}
       />
     </section>
   )

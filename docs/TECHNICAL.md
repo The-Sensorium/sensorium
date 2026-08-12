@@ -73,6 +73,20 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `avatars.ts` | avatar signed URLs and storage paths |
 | `mentions.ts` | mention parsing and linkification |
 
+### Chat read receipts
+
+Room members each carry a read watermark, `cluster_members.last_read_message_at`
+(migration 0038), maintained by `mark_cluster_read` / `mark_all_read` and cleared
+on join. `get_member_profiles` (0048) exposes it to active members, so
+`useClusterMembers` rows already carry `last_read_message_at`.
+
+When a sender taps **Info** on their message (`RoomView` → `MessageInfoModal`),
+the dialog derives seen/not-seen lists from the member query via the pure helpers
+in `src/pages/cluster/room/seen-by.ts`: a member has "seen" a message when their
+watermark `>=` the message's `created_at` (author excluded). The existing
+`cluster_members` UPDATE realtime handler refetches the member query, so an open
+dialog updates live; receipts are watermark-based, not per-message.
+
 ## Frontend Patterns
 
 - **Routing**: declarative routes in `src/app/router.tsx`, with layout components (`AppShell`, `PublicLayout`, `ClusterLayout`) and guard components that redirect based on auth and onboarding state.

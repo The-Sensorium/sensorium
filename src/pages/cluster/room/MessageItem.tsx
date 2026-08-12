@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { CornerUpLeft, Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
+import { CornerUpLeft, Info, Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import { DayDivider } from './DayDivider'
@@ -31,6 +31,7 @@ export function MessageItem({
   onCancelEdit,
   onToggleMenu,
   onTogglePicker,
+  onShowInfo,
   onEdit,
   onDelete,
   onReply,
@@ -55,6 +56,7 @@ export function MessageItem({
   onCancelEdit(): void
   onToggleMenu(): void
   onTogglePicker(): void
+  onShowInfo(message: Message): void
   onEdit(message: Message): void
   onDelete(messageId: string): void
   onReply(message: Message): void
@@ -132,18 +134,32 @@ export function MessageItem({
               <button
                 type="button"
                 role="menuitem"
-                onClick={() => onEdit(message)}
+                aria-label="Info"
+                onClick={() => onShowInfo(message)}
                 className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
               >
-                <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden /> Edit
+                <Info className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                <span className="hidden sm:inline">Info</span>
               </button>
               <button
                 type="button"
                 role="menuitem"
+                aria-label="Edit"
+                onClick={() => onEdit(message)}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                aria-label="Delete"
                 onClick={() => onDelete(message.id)}
                 className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50"
               >
-                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden /> Delete
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                <span className="hidden sm:inline">Delete</span>
               </button>
             </div>
           )}
