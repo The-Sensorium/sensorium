@@ -275,6 +275,7 @@ interface PresenceEntry {
   userId: string
   online: Set<string>
   typing: Set<string>
+  broadcastTyping: boolean
   refresh: () => void
   listeners: Set<(state: ClusterPresence) => void>
 }
@@ -296,7 +297,14 @@ export function usePresence(clusterId: string | null) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const [presence, setPresence] = useState<ClusterPresence>({ online: new Set(), typing: new Set() })
-  const channelRef = useRef<RealtimeChannel | null>(null)
+  // The shared presence channel for this cluster lives in the module-level
+  // `presenceStore`. Its `broadcastTyping` flag holds the last typing state this
+  // client broadcast so a (re)subscribe re-broadcasts it, not the initial
+  // `false` - otherwise typing is lost across a StrictMode remount or socket
+  // reconnect. The flag lives on the entry (not a per-hook ref) because any
+  // instance may create the shared channel, and its subscribe callback must read
+  // the state that *this* client is broadcasting regardless of who created it.
+  const entryRef = useRef<PresenceEntry | null>(null)
 
   useEffect(() => {
     if (!clusterId || !userId) return
@@ -310,6 +318,7 @@ export function usePresence(clusterId: string | null) {
         userId,
         online: new Set(),
         typing: new Set(),
+        broadcastTyping: false,
         refresh: () => {},
         listeners: new Set(),
       }
@@ -330,18 +339,19 @@ export function usePresence(clusterId: string | null) {
       }
       entry.refresh = refresh
       presenceStore.set(clusterId, entry)
-      channelRef.current = channel
 
       channel
         .on('presence', { event: 'sync' }, refresh)
         .on('presence', { event: 'join' }, refresh)
         .on('presence', { event: 'leave' }, refresh)
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') await channel.track({ user_id: entry!.userId, typing: false })
+          if (status === 'SUBSCRIBED') {
+            await channel.track({ user_id: entry!.userId, typing: entry!.broadcastTyping })
+          }
         })
-    } else {
-      channelRef.current = entry.channel
     }
+
+    entryRef.current = entry
 
     const listener = (state: ClusterPresence) => setPresence(state)
     entry.listeners.add(listener)
@@ -350,24 +360,35 @@ export function usePresence(clusterId: string | null) {
     return () => {
       entry!.listeners.delete(listener)
       if (entry!.listeners.size === 0) {
-        supabase.removeChannel(entry!.channel)
-        presenceStore.delete(clusterId)
-        channelRef.current = null
+        // Defer tearing down the shared channel by a tick: React StrictMode (dev)
+        // synchronously re-runs the effect after cleanup, and that re-run re-adds
+        // a listener before the timer fires. Without this the channel briefly goes
+        // through join/leave/join, which can make the server drop later presence
+        // tracks. A real unmount is unaffected (the timer fires a hair later).
+        window.setTimeout(() => {
+          const current = presenceStore.get(clusterId)
+          if (current === entry && current.listeners.size === 0) {
+            supabase.removeChannel(current.channel)
+            presenceStore.delete(clusterId)
+          }
+        }, 0)
       }
     }
   }, [clusterId, userId])
 
   const signalTyping = useCallback(() => {
-    const channel = channelRef.current
-    if (!channel || !userId) return
-    void channel.track({ user_id: userId, typing: true })
-  }, [userId])
+    const entry = entryRef.current
+    if (!entry || entry.broadcastTyping) return
+    entry.broadcastTyping = true
+    void entry.channel.track({ user_id: entry.userId, typing: true })
+  }, [])
 
   const resetTyping = useCallback(() => {
-    const channel = channelRef.current
-    if (!channel || !userId) return
-    void channel.track({ user_id: userId, typing: false })
-  }, [userId])
+    const entry = entryRef.current
+    if (!entry || !entry.broadcastTyping) return
+    entry.broadcastTyping = false
+    void entry.channel.track({ user_id: entry.userId, typing: false })
+  }, [])
 
   return { online: presence.online, typing: presence.typing, signalTyping, resetTyping }
 }

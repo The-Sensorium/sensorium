@@ -31,6 +31,7 @@ import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
 import { MessageItem } from './room/MessageItem'
 import { RaiseSignalModal } from './room/RaiseSignalModal'
+import { TypingBubble } from './room/TypingBubble'
 import { SignalRow } from './room/SignalRow'
 import { VoteRow } from './room/VoteRow'
 
@@ -440,15 +441,17 @@ export function RoomView() {
     }
   }
 
-  const typingNames = [...typing]
-    .map((id) => memberMap.get(id)?.display_name)
-    .filter(Boolean) as string[]
-  const typingLabel =
-    typingNames.length === 1
-      ? `${typingNames[0]} is typing…`
-      : typingNames.length > 1
-        ? 'Several people are typing…'
-        : null
+  const typingMembers = [...typing]
+    .map((id) => memberMap.get(id))
+    .filter((m): m is NonNullable<typeof m> => Boolean(m))
+
+  // Keep the view pinned when a typing bubble appears or another member joins in
+  // while the user is at the bottom, so the indicator lands in view instead of
+  // below the fold. No-op while scrolled up (like the "jump to latest" affordance).
+  const typingKey = [...typing].sort().join(',')
+  useEffect(() => {
+    if (typingMembers.length > 0 && pinnedRef.current) scrollToEnd()
+  }, [typingKey, typingMembers.length])
 
   return (
     <section aria-label="The room" className="flex min-h-0 flex-1 flex-col gap-4 lg:h-full">
@@ -593,6 +596,19 @@ export function RoomView() {
             </ul>
           </>
         )}
+        {typingMembers.length > 0 && (
+          <ul aria-label="Typing in the room" className="space-y-1">
+            {typingMembers.map((m) => (
+              <TypingBubble
+                key={m.id}
+                name={m.display_name}
+                avatarUrl={m.avatar_url}
+                clusterId={clusterId}
+                userId={m.id}
+              />
+            ))}
+          </ul>
+        )}
         <div ref={endRef} aria-hidden />
       </div>
 
@@ -611,12 +627,6 @@ export function RoomView() {
           <ArrowDown className="h-4 w-4" strokeWidth={2} aria-hidden />
           {newCount} new message{newCount === 1 ? '' : 's'}
         </button>
-      )}
-
-      {typingLabel && (
-        <p className="text-xs text-on-surface-variant" aria-live="polite">
-          {typingLabel}
-        </p>
       )}
 
       <Composer
