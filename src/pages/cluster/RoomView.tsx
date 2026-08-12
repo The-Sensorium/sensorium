@@ -15,7 +15,6 @@ import {
   useDeleteMessage,
   useEditMessage,
   useLoadEarlierMessages,
-  useMessageReads,
   useReplyTargets,
   useSendMessage,
   useToggleReaction,
@@ -199,26 +198,20 @@ export function RoomView() {
     return map
   }, [signalReplies.data])
 
-  // Read receipts for the message whose Info action was tapped. read_at comes
-  // from message_reads (0049), a per-message timestamp frozen on first read, so
-  // an open dialog updates as members read without their times marching to the
-  // current clock. Realtime refresh rides the cluster_members UPDATE handler.
+  // Read receipts for the message whose Info action was tapped. Derives from
+  // members.data, which the cluster_members UPDATE realtime handler refreshes,
+  // so an open dialog updates in place as members read.
   const infoMessage = useMemo(
     () => (infoFor ? (messages.data ?? []).find((m) => m.id === infoFor) ?? null : null),
     [infoFor, messages.data],
   )
-  const messageReads = useMessageReads(clusterId, infoMessage?.id ?? null)
-  const readIds = useMemo(
-    () => new Set((messageReads.data ?? []).map((r) => r.id)),
-    [messageReads.data],
-  )
   const infoSeen = useMemo(
-    () => (infoMessage ? seenByMembers(messageReads.data ?? [], infoMessage.author_id) : []),
-    [infoMessage, messageReads.data],
+    () => (infoMessage ? seenByMembers(infoMessage, members.data ?? []) : []),
+    [infoMessage, members.data],
   )
   const infoNotSeen = useMemo(
-    () => (infoMessage ? notSeenByMembers(infoMessage, members.data ?? [], readIds) : []),
-    [infoMessage, members.data, readIds],
+    () => (infoMessage ? notSeenByMembers(infoMessage, members.data ?? []) : []),
+    [infoMessage, members.data],
   )
 
   function scrollToEnd() {

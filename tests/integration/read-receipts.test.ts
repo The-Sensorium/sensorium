@@ -9,10 +9,8 @@ import {
 } from './helpers'
 
 // Read receipts: get_member_profiles now exposes each active member's
-// last_read_message_at watermark (0048), and get_message_reads (0049) exposes
-// immutable per-message read timestamps, so a member can see who has caught up
-// to a message and *when* they first read it. The members-only guard must stay
-// intact.
+// last_read_message_at watermark (0048), so a member can see who has caught up
+// to a message. The members-only guard must stay intact.
 
 describe('read receipts', () => {
   const admin = adminClient()
@@ -122,64 +120,6 @@ describe('read receipts', () => {
 
     const { data, error } = await outsider.client.rpc('get_member_profiles', {
       p_cluster_id: clusterId,
-    })
-    expect(error).toBeNull()
-    expect(data).toHaveLength(0)
-  })
-
-  it('freezes a reader\'s per-message read time once recorded (does not march to now)', async () => {
-    const a = await member('rr-stable-a')
-    const b = await member('rr-stable-b')
-    const clusterId = await createCluster(admin, {
-      memberIds: [a.id, b.id],
-      status: 'active',
-    })
-    clusterIds.push(clusterId)
-
-    const { data: messageId } = await a.client.rpc('send_message', {
-      p_cluster_id: clusterId,
-      p_content: 'freeze me',
-    })
-
-    await b.client.rpc('mark_cluster_read', { p_cluster_id: clusterId })
-    await new Promise((resolve) => setTimeout(resolve, 20))
-
-    const { data: first, error } = await a.client.rpc('get_message_reads', {
-      p_message_id: messageId,
-    })
-    expect(error).toBeNull()
-    expect(first).toHaveLength(1)
-    expect(first![0].id).toBe(b.id)
-    const frozenReadAt = first![0].read_at
-
-    // b keeps the room open and reads again; their watermark advances but the
-    // per-message read time must not.
-    await b.client.rpc('mark_cluster_read', { p_cluster_id: clusterId })
-
-    const { data: second } = await a.client.rpc('get_message_reads', {
-      p_message_id: messageId,
-    })
-    expect(second![0].read_at).toBe(frozenReadAt)
-  })
-
-  it('hides message reads from a signed-in non-member', async () => {
-    const a = await member('rr-read-gate-a')
-    const b = await member('rr-read-gate-b')
-    const outsider = await member('rr-read-gate-out')
-    const clusterId = await createCluster(admin, {
-      memberIds: [a.id, b.id],
-      status: 'active',
-    })
-    clusterIds.push(clusterId)
-
-    const { data: messageId } = await a.client.rpc('send_message', {
-      p_cluster_id: clusterId,
-      p_content: 'guarded',
-    })
-    await b.client.rpc('mark_cluster_read', { p_cluster_id: clusterId })
-
-    const { data, error } = await outsider.client.rpc('get_message_reads', {
-      p_message_id: messageId,
     })
     expect(error).toBeNull()
     expect(data).toHaveLength(0)

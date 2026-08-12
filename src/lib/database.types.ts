@@ -260,39 +260,6 @@ export type Database = {
           },
         ]
       }
-      message_reads: {
-        Row: {
-          message_id: string
-          read_at: string
-          user_id: string
-        }
-        Insert: {
-          message_id: string
-          read_at?: string
-          user_id: string
-        }
-        Update: {
-          message_id?: string
-          read_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "message_reads_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "message_reads_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       messages: {
         Row: {
           author_id: string
@@ -986,15 +953,6 @@ export type Database = {
           last_read_message_at: string
           onboarding_completed_at: string
           pronouns: string
-        }[]
-      }
-      get_message_reads: {
-        Args: { p_message_id: string }
-        Returns: {
-          avatar_url: string | null
-          display_name: string
-          id: string
-          read_at: string
         }[]
       }
       get_my_clusters: {

@@ -7,7 +7,6 @@ import { prepareImage } from '../lib/image'
 type Message = Database['public']['Tables']['messages']['Row']
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Reaction = Database['public']['Tables']['message_reactions']['Row']
-export type MessageRead = Database['public']['Functions']['get_message_reads']['Returns'][number]
 
 export const CHAT_PAGE_SIZE = 100
 
@@ -157,25 +156,6 @@ export function useClusterReactions(clusterId: string | null, messageIds?: strin
         .in('message_id', ids)
       if (error) throw error
       return (data ?? []) as Reaction[]
-    },
-  })
-}
-
-/**
- * Members who read a message, with the immutable per-message read time
- * (message_reads, 0049). The room calls this for the message in the Info dialog;
- * the cluster_members UPDATE realtime handler invalidates it as members read.
- */
-export function useMessageReads(clusterId: string | null, messageId: string | null) {
-  return useQuery({
-    queryKey: ['message-reads', clusterId ?? 'none', messageId ?? 'none'],
-    enabled: clusterId !== null && messageId !== null,
-    queryFn: async () => {
-      if (!clusterId || !messageId) throw new Error('No cluster or message')
-      const supabase = requireSupabase()
-      const { data, error } = await supabase.rpc('get_message_reads', { p_message_id: messageId })
-      if (error) throw error
-      return (data ?? []) as MessageRead[]
     },
   })
 }
