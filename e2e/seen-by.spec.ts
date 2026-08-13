@@ -76,10 +76,10 @@ test.describe('seen-by read receipts (two members)', () => {
     // "Seen by" with a read timestamp. The debounced read (400ms) -> RPC ->
     // realtime cluster_members broadcast -> refetch chain needs headroom on slow
     // stacks, so give these assertions a generous timeout.
-    await expect(seenRegion(diya).getByRole('link', { name: /Rio Mendez/ }), {
+    await expect(seenRegion(diya).getByRole('link', { name: /Rio Mendez/ })).toBeVisible({
       timeout: 15_000,
-    }).toBeVisible()
-    await expect(seenRegion(diya), { timeout: 15_000 }).toContainText(/[AP]M|\d{1,2}:\d{2}/)
+    })
+    await expect(seenRegion(diya)).toContainText(/[AP]M|\d{1,2}:\d{2}/, { timeout: 15_000 })
     await expect(notSeenRegion(diya).getByRole('link', { name: 'Rio Mendez' })).toHaveCount(0)
 
     await diyaCtx.close()
@@ -104,9 +104,9 @@ test.describe('seen-by read receipts (two members)', () => {
 
     // Rio opens Info on his own message: diya is the reader, rio is not listed.
     await openInfo(rio, text)
-    await expect(seenRegion(rio).getByRole('link', { name: 'Diya Sharma' }), {
+    await expect(seenRegion(rio).getByRole('link', { name: 'Diya Sharma' })).toBeVisible({
       timeout: 15_000,
-    }).toBeVisible()
+    })
     await expect(seenRegion(rio).getByRole('link', { name: 'Rio Mendez' })).toHaveCount(0)
 
     await diyaCtx.close()
