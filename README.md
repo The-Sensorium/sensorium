@@ -143,7 +143,7 @@ Sensorium has three test layers. `npm test`, `npm run test:coverage`, `npm run t
 - **Unit and component** (`npm test`): Vitest and React Testing Library run against pure logic (modes, availability, utils, onboarding validation) and components.
 - **Coverage gate** (`npm run test:coverage`): the unit suite measures `src/**` with v8 and enforces minimum thresholds so CI fails if coverage regresses. The gate is an enforced floor, not a target.
 - **Integration** (`npm run test:integration`): exercises the Supabase stack end-to-end (RPC functions, RLS, and `security definer` behavior) with fixtures created via service role and assertions through per-user anonymous clients. Requires a running local stack.
-- **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, settings, and notifications flows. They expect a seeded local Supabase stack and the demo account.
+- **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, settings, notifications, and multi-user read receipts. They expect a seeded local Supabase stack and the two demo accounts.
 
 ## Environments
 

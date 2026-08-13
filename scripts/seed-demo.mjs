@@ -2,7 +2,8 @@
 // discovery/matching state is visible: clusters across all five matching modes,
 // in both active and introductions phases, with varied member counts. The E2E
 // golden path is preserved: diya@demo.example stays an active member of the
-// 8-person "Aurora" cluster alongside rio@demo.example (mention autocomplete).
+// 8-person "Aurora" cluster alongside rio@demo.example, who is both a mention
+// target and a second fully usable login for multi-user E2E flows (read receipts).
 //
 // Idempotent: safe to run repeatedly (e.g. after `supabase db reset`). Users and
 // clusters are looked up by email/name and reused; only missing rows are added.
@@ -87,8 +88,9 @@ const DEMO = {
   queueKey: '1996-07-12',
 }
 
-// A second member of the Aurora cluster so mention autocomplete (and other
-// member-dependent flows) have someone to mention in a fresh CI database.
+// A second member of the Aurora cluster and a second usable login so mention
+// autocomplete and other multi-user member-dependent flows (e.g. read receipts)
+// have a real second actor to drive in a fresh CI database.
 const DEMO_MEMBER = {
   email: process.env.E2E_MEMBER_EMAIL ?? 'rio@demo.example',
   password: DEMO_PASSWORD,
@@ -480,6 +482,14 @@ async function seed() {
     .from('profiles')
     .update({ onboarding_completed_at: new Date().toISOString() })
     .eq('id', userId)
+
+  // Rio is a fully usable second login, so member-dependent E2E flows (mention
+  // autocomplete, read receipts) have a real second actor to drive.
+  const rioId = await ensureUser(admin, DEMO_MEMBER.email, DEMO_MEMBER)
+  await admin
+    .from('profiles')
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq('id', rioId)
 
   for (const spec of CLUSTERS) {
     await ensureCluster(admin, spec)
