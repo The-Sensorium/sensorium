@@ -24,25 +24,6 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue" alt="License: GPL-3.0" />
 </p>
 
-<div align="center">
-  <table>
-    <tr>
-      <th>Environment</th>
-      <th>URL</th>
-    </tr>
-    <tr>
-      <td><b>Production</b></td>
-      <td><a href="https://www.thesensorium.online">www.thesensorium.online</a></td>
-    </tr>
-    <tr>
-      <td><b>Preview</b></td>
-      <td><a href="https://preview.thesensorium.online">preview.thesensorium.online</a></td>
-    </tr>
-  </table>
-</div>
-
----
-
 ## About
 
 Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once you are matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat, availability check-ins, Signals (requests for help), and community governance through votes.
