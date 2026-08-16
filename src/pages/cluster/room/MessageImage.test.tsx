@@ -14,6 +14,9 @@ describe('MessageImage', () => {
     const img = screen.getByRole('img', { name: 'a photo' })
     expect(img).toHaveAttribute('src', 'signed://img')
     expect(img).toHaveAttribute('loading', 'lazy')
+    expect(img.className).toContain('object-contain')
+    expect(img.className).not.toContain('object-cover')
+    expect(img.className).not.toContain('aspect-')
   })
 
   it('shows the unavailable fallback while there is no URL yet', () => {
