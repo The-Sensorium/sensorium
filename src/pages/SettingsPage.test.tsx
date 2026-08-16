@@ -12,6 +12,7 @@ const hooks = vi.hoisted(() => ({
   useNotificationPrefs: vi.fn(),
   useUpsertNotificationPrefs: vi.fn(),
   useAvatarUrl: vi.fn(),
+  deleteAvatarObject: vi.fn(),
   requireSupabase: vi.fn(),
   prepareImage: vi.fn(),
 }))
@@ -20,7 +21,7 @@ vi.mock('../lib/use-profile', () => ({ useProfile: hooks.useProfile }))
 vi.mock('../features/cluster', () => ({ useUpdateProfile: hooks.useUpdateProfile }))
 vi.mock('../features/moderation', () => ({ useDeleteAccount: hooks.useDeleteAccount }))
 vi.mock('../features/matching', () => ({ useMyClusters: hooks.useMyClusters }))
-vi.mock('../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, deleteAvatarObject: hooks.deleteAvatarObject }))
 vi.mock('../lib/supabase', () => ({ requireSupabase: hooks.requireSupabase }))
 vi.mock('../lib/image', () => ({ prepareImage: hooks.prepareImage }))
 vi.mock('../features/notifications', () => {
@@ -73,6 +74,7 @@ describe('SettingsPage', () => {
     hooks.useNotificationPrefs.mockReturnValue({ data: [], isLoading: false, isError: false })
     hooks.useUpsertNotificationPrefs.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue({}) })
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
+    hooks.deleteAvatarObject.mockResolvedValue(undefined)
     hooks.requireSupabase.mockReturnValue({
       auth: { signOut: vi.fn().mockResolvedValue({ error: null }) },
       storage: {

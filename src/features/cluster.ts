@@ -267,18 +267,25 @@ export function useEditMessage(clusterId: string | null) {
   })
 }
 
-/** Soft-delete own message: author-only RLS update of deleted_at. */
+/** Soft-delete own message: author-only RLS update of deleted_at. The message's
+ * image (if any) becomes unreachable once the row is hidden, so remove the object
+ * from chat-images too (member-scoped delete, migration 0050). The image path
+ * comes from the updated row itself rather than the query cache, so a cache
+ * miss can't skip the reclaim. */
 export function useDeleteMessage(clusterId: string | null) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (messageId: string) => {
       const supabase = requireSupabase()
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', messageId)
+        .select('image_url')
       if (error) throw error
+      const imageUrl = (data?.[0] as { image_url: string | null } | undefined)?.image_url ?? null
+      if (imageUrl) await deleteChatImage(imageUrl).catch(() => {})
     },
     onSuccess: () => {
       if (clusterId) {
@@ -291,6 +298,32 @@ export function useDeleteMessage(clusterId: string | null) {
 
 const CHAT_IMAGE_TTL_SECONDS = 3600
 const CHAT_IMAGE_STALE_MS = CHAT_IMAGE_TTL_SECONDS * 1000 - 60_000 // refresh a minute before expiry
+
+/** Recover the storage path of a chat image from a stored value (URL or bare path). */
+export function chatImageStoragePath(stored: string | null | undefined): string | null {
+  if (!stored) return null
+  if (!stored.includes('/')) return stored
+  const marker = '/chat-images/'
+  const idx = stored.indexOf(marker)
+  if (idx !== -1) {
+    const raw = stored.slice(idx + marker.length).split('?')[0].split('#')[0]
+    try {
+      return decodeURIComponent(raw)
+    } catch {
+      return raw
+    }
+  }
+  return stored
+}
+
+/** Delete a chat-image object (member scoped by the 0050 storage policy). */
+export async function deleteChatImage(stored: string | null | undefined): Promise<void> {
+  const path = chatImageStoragePath(stored)
+  if (!path) return
+  const supabase = requireSupabase()
+  const { error } = await supabase.storage.from('chat-images').remove([path])
+  if (error) throw error
+}
 
 /** A short-lived signed URL for a chat-image, refreshed before it expires. */
 export function useChatImageUrl(path: string) {

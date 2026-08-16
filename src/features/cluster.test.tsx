@@ -7,6 +7,8 @@ import { requireSupabase } from '../lib/supabase'
 import { makeSupabaseClient, initialMockResult, type MockSupabaseResult } from '../test/supabase-client'
 import {
   CHAT_PAGE_SIZE,
+  chatImageStoragePath,
+  deleteChatImage,
   useChatImageUrl,
   useClusterMessages,
   useClusterReactions,
@@ -205,6 +207,35 @@ describe('cluster', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const c = requireSupabaseMock.mock.results[0].value
     expect(c.from('messages').update).toHaveBeenCalledWith({ deleted_at: expect.any(String) })
+  })
+
+  it('useDeleteMessage reclaims the image object of a soft-deleted message', async () => {
+    mockResult.value = { data: [{ id: 'm1', image_url: 'c1/a.png' }], error: null }
+    const { result } = renderHook(() => useDeleteMessage('c1'), { wrapper })
+    result.current.mutate('m1')
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.storage.from).toHaveBeenCalledWith('chat-images')
+    expect(c.storage.from('chat-images').remove).toHaveBeenCalledWith(['c1/a.png'])
+  })
+
+  it('deleteChatImage removes a bare storage path', async () => {
+    await deleteChatImage('c1/a.png')
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.storage.from('chat-images').remove).toHaveBeenCalledWith(['c1/a.png'])
+  })
+
+  it('deleteChatImage no-ops on null and extracts a signed-URL path', async () => {
+    await deleteChatImage(null)
+    expect(requireSupabaseMock).not.toHaveBeenCalled()
+    await deleteChatImage('https://project.supabase.co/storage/v1/object/sign/chat-images/c1%2Fa.png?token=x')
+    expect(requireSupabaseMock.mock.results[0].value.storage.from('chat-images').remove).toHaveBeenCalledWith(['c1/a.png'])
+  })
+
+  it('chatImageStoragePath passes bare paths through and strips signed-URL noise', () => {
+    expect(chatImageStoragePath('c1/a.png')).toBe('c1/a.png')
+    expect(chatImageStoragePath('')).toBeNull()
+    expect(chatImageStoragePath(null)).toBeNull()
   })
 
   it('useChatImageUrl resolves a signed URL from storage', async () => {

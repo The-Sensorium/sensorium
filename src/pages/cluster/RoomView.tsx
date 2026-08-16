@@ -20,6 +20,7 @@ import {
   useSendMessage,
   useToggleReaction,
   uploadChatImage,
+  deleteChatImage,
   type Message,
   type Reaction,
 } from '../../features/cluster'
@@ -354,8 +355,15 @@ export function RoomView() {
   async function persistSendImage(file: File) {
     if (!clusterId) return
     const path = await uploadChatImage(clusterId, file)
-    await send.mutateAsync({ clusterId, content: null, imageUrl: path, replyToId: replyTo?.id ?? undefined })
-    setReplyTo(null)
+    try {
+      await send.mutateAsync({ clusterId, content: null, imageUrl: path, replyToId: replyTo?.id ?? undefined })
+      setReplyTo(null)
+    } catch (e) {
+      // The upload succeeded but the message never landed — reclaim the object so
+      // a straggling image isn't left behind (member-scoped delete, migration 0050).
+      await deleteChatImage(path).catch(() => {})
+      throw e
+    }
   }
 
   async function persistSendGif(gif: Gif) {
