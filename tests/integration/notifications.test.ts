@@ -12,6 +12,17 @@ import {
 // including chat unread via last_read_message_at), mark_cluster_read /
 // mark_all_read, pref filtering, and the reaction trigger notification.
 
+type MyNotificationRow = {
+  id: string
+  type: string
+  cluster_id: string | null
+  title: string
+  body: string | null
+  payload: Record<string, unknown> | null
+  read_at: string | null
+  created_at: string
+}
+
 describe('notifications', () => {
   const admin = adminClient()
   const userIds: string[] = []
@@ -55,11 +66,59 @@ describe('notifications', () => {
 
     const { data, error } = await b.client.rpc('get_my_notifications')
     expect(error).toBeNull()
-    expect(data?.length).toBe(2)
-    expect(data![0].title).toContain('mentioned you')
+    // 2 mention rows + 1 synthesized chat entry for the unread messages.
+    expect(data?.length).toBe(3)
+    const rows = (data ?? []) as MyNotificationRow[]
+    const mentions = rows.filter((n) => n.type === 'mention')
+    const chat = rows.filter((n) => n.type === 'message')
+    expect(mentions).toHaveLength(2)
+    for (const m of mentions) expect(m.title).toContain('mentioned you')
+    expect(chat).toHaveLength(1)
+    expect(chat[0]!.title).toBe('Integration User sent a message')
+    expect(chat[0]!.body ?? '').toContain('Hey @Briana Mention')
 
     const { data: mine } = await a.client.rpc('get_my_notifications')
     expect(mine).toHaveLength(0)
+  })
+
+  it('surfaces unread chat in the center until the cluster is marked read', async () => {
+    const a = await member('n-center-a')
+    const b = await member('n-center-b')
+    await admin.from('profiles').update({ display_name: 'Casey Chat' }).eq('id', a.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // Plain chat (no mention) appears as a synthesized `message` entry carrying
+    // the sender's name, not just an unread-badge number.
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'plain hello' })
+
+    let { data } = await b.client.rpc('get_my_notifications')
+    expect(data).toHaveLength(1)
+    expect(data![0].type).toBe('message')
+    expect(data![0].title).toBe('Casey Chat sent a message')
+    expect(data![0].body).toBe('plain hello')
+    expect(data![0].read_at).toBeNull()
+
+    // A photo-only message previews as [Photo].
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_image_url: 'chat-images/demo.png' })
+    const { data: again } = await b.client.rpc('get_my_notifications')
+    expect(again).toHaveLength(1)
+    expect(again![0].body).toBe('[Photo]')
+
+    // A GIF message previews as [GIF], not the raw gif: URL.
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'gif:https://media.tenor.com/x.gif' })
+    const { data: gif } = await b.client.rpc('get_my_notifications')
+    expect(gif).toHaveLength(1)
+    expect(gif![0].body).toBe('[GIF]')
+
+    // Opening the room advances the watermark and clears the entry.
+    const { error } = await b.client.rpc('mark_cluster_read', { p_cluster_id: clusterId })
+    expect(error).toBeNull()
+    const { data: after } = await b.client.rpc('get_my_notifications')
+    expect(after).toHaveLength(0)
   })
 
   it('chat messages count as unread until the cluster is marked read', async () => {
@@ -119,6 +178,10 @@ describe('notifications', () => {
 
     const { data: unread } = await b.client.rpc('get_unread_notification_count')
     expect(unread).toBe(0)
+
+    // The messages pref also hides the synthesized chat entry from the center.
+    const { data: list } = await b.client.rpc('get_my_notifications')
+    expect(list ?? []).toHaveLength(0)
   })
 
   it('mark_all_read clears event notifications and chat unread', async () => {
