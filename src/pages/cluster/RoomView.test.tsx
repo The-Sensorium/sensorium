@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -29,6 +29,7 @@ const hooks = vi.hoisted(() => ({
   editMessage: { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false },
   deleteMessage: { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false },
   uploadChatImage: vi.fn(),
+  deleteChatImage: vi.fn(),
   signals: { data: [] as Signal[], isLoading: false },
   signalReplies: {
     data: [] as Array<{ id: string; signal_id: string; author_id: string; content: string; created_at: string }>,
@@ -73,6 +74,7 @@ vi.mock('../../features/cluster', () => ({
   useDeleteMessage: () => hooks.deleteMessage,
   useChatImageUrl: () => ({ data: undefined }),
   uploadChatImage: hooks.uploadChatImage,
+  deleteChatImage: hooks.deleteChatImage,
 }))
 vi.mock('../../features/signals', () => ({
   useClusterSignals: () => hooks.signals,
@@ -374,6 +376,20 @@ describe('RoomView timeline', () => {
         replyToId: 'm1',
       }),
     )
+  })
+
+  it('reclaims an uploaded chat image when the send fails', async () => {
+    hooks.uploadChatImage.mockResolvedValue('c1/up.png')
+    hooks.send = { mutateAsync: vi.fn().mockRejectedValue(new Error('send boom')), isPending: false }
+    renderRoom()
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement | null
+    expect(fileInput).not.toBeNull()
+    fireEvent.change(fileInput as HTMLInputElement, {
+      target: { files: [new File(['x'], 'up.png', { type: 'image/png' })] },
+    })
+
+    await waitFor(() => expect(hooks.deleteChatImage).toHaveBeenCalledWith('c1/up.png'))
   })
 
   it('reveals who has seen a message via the Info action', async () => {

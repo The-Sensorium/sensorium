@@ -16,7 +16,7 @@ export function makeSupabaseClient(ref: { value: MockSupabaseResult }) {
     const ship: Record<string, unknown> = {
       then: (resolve: (v: unknown) => void) => resolve(ref.value),
     }
-    for (const m of ['select', 'eq', 'in', 'order', 'maybeSingle', 'single', 'limit', 'lt', 'gt', 'lte', 'gte', 'update', 'upsert', 'insert', 'delete', 'is', 'throwOnError']) {
+    for (const m of ['select', 'eq', 'in', 'order', 'maybeSingle', 'single', 'limit', 'lt', 'gt', 'lte', 'gte', 'update', 'upsert', 'insert', 'delete', 'is', 'not', 'throwOnError']) {
       ship[m] = vi.fn(() => ship)
     }
     return ship
@@ -29,6 +29,7 @@ export function makeSupabaseClient(ref: { value: MockSupabaseResult }) {
   const storageBucket = {
     createSignedUrl: vi.fn(() => Promise.resolve(ref.value)),
     upload: vi.fn(() => Promise.resolve(ref.value)),
+    remove: vi.fn(() => Promise.resolve(ref.value)),
   }
   return {
     from: vi.fn(() => sharedChain),

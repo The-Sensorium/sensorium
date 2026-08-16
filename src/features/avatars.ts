@@ -22,6 +22,15 @@ export function avatarStoragePath(stored: string | null | undefined): string | n
   return stored
 }
 
+/** Delete an avatar object (owner scoped by the 0050 storage policy). */
+export async function deleteAvatarObject(stored: string | null | undefined): Promise<void> {
+  const path = avatarStoragePath(stored)
+  if (!path) return
+  const supabase = requireSupabase()
+  const { error } = await supabase.storage.from('avatars').remove([path])
+  if (error) throw error
+}
+
 /** A short-lived signed URL for an avatar, refreshed before it expires. */
 export function useAvatarUrl(stored: string | null | undefined) {
   const path = avatarStoragePath(stored)

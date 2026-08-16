@@ -3,7 +3,7 @@ import { ImagePlus, Loader2, X } from 'lucide-react'
 import { requireSupabase } from '../../lib/supabase'
 import { prepareImage } from '../../lib/image'
 import { toErrorMessage } from '../../lib/error'
-import { useAvatarUrl } from '../../features/avatars'
+import { useAvatarUrl, deleteAvatarObject } from '../../features/avatars'
 import type { OnboardingDraft } from './draft'
 
 interface Props {
@@ -47,6 +47,8 @@ export function StepCustomization({ userId, draft, patch }: Props) {
     try {
       const prepared = await prepareImage(file, { maxDimension: 512 })
       const url = await uploadAvatar(userId, prepared)
+      // Reclaim a photo uploaded earlier in this session before it is replaced.
+      await deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
       patch({ photo: prepared, avatarUrl: url })
     } catch (err) {
       setError(toErrorMessage(err, 'Couldn’t upload your photo.'))
@@ -92,7 +94,10 @@ export function StepCustomization({ userId, draft, patch }: Props) {
               <button
                 type="button"
                 aria-label="Remove photo"
-                onClick={() => patch({ photo: null, avatarUrl: null })}
+                onClick={() => {
+                  void deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
+                  patch({ photo: null, avatarUrl: null })
+                }}
                 className="flex h-9 w-9 items-center justify-center rounded-pill text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
               >
                 <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />

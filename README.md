@@ -24,25 +24,6 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue" alt="License: GPL-3.0" />
 </p>
 
-<div align="center">
-  <table>
-    <tr>
-      <th>Environment</th>
-      <th>URL</th>
-    </tr>
-    <tr>
-      <td><b>Production</b></td>
-      <td><a href="https://www.thesensorium.online">www.thesensorium.online</a></td>
-    </tr>
-    <tr>
-      <td><b>Preview</b></td>
-      <td><a href="https://preview.thesensorium.online">preview.thesensorium.online</a></td>
-    </tr>
-  </table>
-</div>
-
----
-
 ## About
 
 Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once you are matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat, availability check-ins, Signals (requests for help), and community governance through votes.
@@ -143,7 +124,7 @@ Sensorium has three test layers. `npm test`, `npm run test:coverage`, `npm run t
 - **Unit and component** (`npm test`): Vitest and React Testing Library run against pure logic (modes, availability, utils, onboarding validation) and components.
 - **Coverage gate** (`npm run test:coverage`): the unit suite measures `src/**` with v8 and enforces minimum thresholds so CI fails if coverage regresses. The gate is an enforced floor, not a target.
 - **Integration** (`npm run test:integration`): exercises the Supabase stack end-to-end (RPC functions, RLS, and `security definer` behavior) with fixtures created via service role and assertions through per-user anonymous clients. Requires a running local stack.
-- **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, settings, and notifications flows. They expect a seeded local Supabase stack and the demo account.
+- **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, settings, notifications, and multi-user read receipts. They expect a seeded local Supabase stack and the two demo accounts.
 
 ## Environments
 

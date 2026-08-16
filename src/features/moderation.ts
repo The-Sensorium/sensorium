@@ -1,6 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '../app/auth-context'
 import type { Database } from '../lib/database.types'
 import { requireSupabase } from '../lib/supabase'
+import { deleteAvatarObject } from './avatars'
+import { deleteChatImage } from './cluster'
 
 export type ReportReason = Database['public']['Enums']['report_reason']
 
@@ -43,13 +46,39 @@ export function useReportMember() {
   })
 }
 
-/** Delete the signed-in user's account (cascades to all owned rows). */
+/** Delete the signed-in user's account (cascades to all owned rows). Storage
+ * objects live outside the database cascade, so the user's avatar and every
+ * chat image they authored are reclaimed up front (owner/member-scoped deletes,
+ * migration 0050) before the account row is removed. This ordering is required:
+ * delete_my_account departs the user from every cluster first, and the
+ * chat-images delete policy demands active membership, so reclamation would be
+ * blocked if it ran after the RPC. */
 export function useDeleteAccount() {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async () => {
+      if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', userId)
+        .maybeSingle()
+      await deleteAvatarObject(profile?.avatar_url ?? null).catch(() => {})
+
+      const { data: images } = await supabase
+        .from('messages')
+        .select('image_url')
+        .eq('author_id', userId)
+        .not('image_url', 'is', null)
+      for (const row of images ?? []) {
+        await deleteChatImage(row.image_url).catch(() => {})
+      }
+
       const { error } = await supabase.rpc('delete_my_account')
       if (error) throw error
       await supabase.auth.signOut()

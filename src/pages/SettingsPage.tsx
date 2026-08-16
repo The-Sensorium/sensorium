@@ -10,6 +10,7 @@ import { prepareImage } from '../lib/image'
 import { toErrorMessage } from '../lib/error'
 import { useMyClusters } from '../features/matching'
 import { useUpdateProfile } from '../features/cluster'
+import { deleteAvatarObject } from '../features/avatars'
 import { useDeleteAccount } from '../features/moderation'
 import {
   PREF_LABELS,
@@ -62,6 +63,9 @@ export function SettingsPage() {
       })
       if (error) throw error
       await updateProfile.mutateAsync({ avatar_url: data.path })
+      // Reclaim the superseded object (owner-scoped delete, migration 0050). The
+      // new avatar is already persisted, so a failed cleanup must not block it.
+      await deleteAvatarObject(profile.data?.avatar_url ?? null).catch(() => {})
     } catch (err) {
       setAvatarError(toErrorMessage(err, 'Couldn’t upload your photo.'))
     } finally {
@@ -238,6 +242,7 @@ export function SettingsPage() {
         open={removeAvatarOpen}
         onClose={() => setRemoveAvatarOpen(false)}
         onRemoved={() => setRemoveAvatarOpen(false)}
+        avatarUrl={profile.data?.avatar_url ?? null}
       />
     </div>
   )
@@ -306,10 +311,12 @@ function RemoveAvatarModal({
   open,
   onClose,
   onRemoved,
+  avatarUrl,
 }: {
   open: boolean
   onClose: () => void
   onRemoved: () => void
+  avatarUrl: string | null
 }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -320,6 +327,8 @@ function RemoveAvatarModal({
     setPending(true)
     try {
       await updateProfile.mutateAsync({ avatar_url: null })
+      // Reclaim the object behind the removed photo (owner-scoped delete).
+      await deleteAvatarObject(avatarUrl).catch(() => {})
       onRemoved()
     } catch {
       setError('Could not remove your photo. Please try again.')
