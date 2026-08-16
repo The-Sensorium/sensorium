@@ -18,6 +18,7 @@ export function useMyNotifications(enabled = true) {
   return useQuery({
     queryKey: ['notifications', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_my_notifications')
@@ -91,9 +92,14 @@ export function useMarkAllNotificationsRead() {
   })
 }
 
-/** Mark the caller's chat read in one cluster (advances last_read_message_at). */
+/**
+ * Mark the caller's chat read in one cluster (advances last_read_message_at).
+ * Chat is surfaced in the notifications center as synthesized `message` entries
+ * (migration 0051), so advancing the watermark must refresh that list too.
+ */
 export function useMarkClusterRead() {
   const queryClient = useQueryClient()
+  const key = useNotificationsQueryKeys()
 
   return useMutation({
     mutationFn: async (clusterId: string) => {
@@ -103,6 +109,7 @@ export function useMarkClusterRead() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+      if (key) void queryClient.invalidateQueries({ queryKey: key })
     },
   })
 }
