@@ -167,6 +167,7 @@ describe('hooks', () => {
       p_cluster_id: 'c1',
     })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
   })
 
   it('useUpsertNotificationPrefs upserts with a conflict target', async () => {
