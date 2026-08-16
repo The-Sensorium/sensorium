@@ -11,8 +11,10 @@ import {
 } from './helpers'
 
 // Storage hardening: the chat-images and avatars buckets are private, anon has
-// no read or sign access, active members can sign chat-image URLs, and any
-// authenticated user can read avatars.
+// no read or sign access, active members can sign chat-image URLs, any
+// authenticated user can read avatars, and delete access is scoped like write
+// access (avatars: own folder only; chat-images: active members of the cluster,
+// migration 0050) so superseded objects can actually be reclaimed.
 
 describe('storage security', () => {
   const admin = adminClient()
@@ -159,5 +161,112 @@ describe('storage security', () => {
       .from('avatars')
       .upload(path, TINY_PNG, { contentType: 'image/png' })
     expect(error).not.toBeNull()
+  })
+
+  it('an owner can delete their own avatar object but not another owner’s', async () => {
+    const a = await member('s-del-a')
+    const b = await member('s-del-b')
+
+    const aPath = `${a.id}/${crypto.randomUUID()}.png`
+    const { error: upErr } = await a.client.storage
+      .from('avatars')
+      .upload(aPath, TINY_PNG, { contentType: 'image/png' })
+    expect(upErr).toBeNull()
+
+    const bPath = `${b.id}/${crypto.randomUUID()}.png`
+    const { error: bUpErr } = await b.client.storage
+      .from('avatars')
+      .upload(bPath, TINY_PNG, { contentType: 'image/png' })
+    expect(bUpErr).toBeNull()
+
+    // a can delete their own folder…
+    const { error: delOwn } = await a.client.storage.from('avatars').remove([aPath])
+    expect(delOwn).toBeNull()
+
+    // …but not b's. The storage API reports blocked deletes as an empty
+    // result (no error), so the guarantee is that b's object survives.
+    const { error: delOther } = await a.client.storage.from('avatars').remove([bPath])
+    expect(delOther).toBeNull()
+
+    // b can still read their own after a's failed attempt.
+    const { data, error } = await b.client.storage
+      .from('avatars')
+      .createSignedUrl(bPath, 60)
+    expect(error).toBeNull()
+    expect(data?.signedUrl).toBeTruthy()
+  })
+
+  it('an active member can delete a chat image in their cluster and an outsider cannot', async () => {
+    const a = await member('s-delimg-a')
+    const b = await member('s-delimg-b')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const path = `${clusterId}/${crypto.randomUUID()}.png`
+    const { error: upErr } = await a.client.storage
+      .from('chat-images')
+      .upload(path, TINY_PNG, { contentType: 'image/png' })
+    expect(upErr).toBeNull()
+
+    // A non-member cannot delete it. Blocked deletes come back as an empty
+    // result (no error); the guarantee is that the object survives.
+    const outsider = await createUser(admin, 's-delimg-out')
+    userIds.push(outsider.id)
+    const { error: delOutside } = await outsider.client.storage
+      .from('chat-images')
+      .remove([path])
+    expect(delOutside).toBeNull()
+
+    // The object is still there after the blocked attempt.
+    const { data: stillThere } = await b.client.storage
+      .from('chat-images')
+      .createSignedUrl(path, 60)
+    expect(stillThere?.signedUrl).toBeTruthy()
+
+    // A fellow active member can delete it.
+    const { error: delMember } = await b.client.storage.from('chat-images').remove([path])
+    expect(delMember).toBeNull()
+
+    // The object is gone: signing now fails.
+    const { data, error } = await b.client.storage
+      .from('chat-images')
+      .createSignedUrl(path, 60)
+    expect(error).not.toBeNull()
+    expect(data).toBeNull()
+  })
+
+  it('an ex-member cannot delete a chat image after leaving', async () => {
+    const a = await member('s-delleft-a')
+    const b = await member('s-delleft-b')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const path = `${clusterId}/${crypto.randomUUID()}.png`
+    const { error: upErr } = await a.client.storage
+      .from('chat-images')
+      .upload(path, TINY_PNG, { contentType: 'image/png' })
+    expect(upErr).toBeNull()
+
+    const { error: leaveErr } = await b.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+
+    // An ex-member cannot delete it: blocked deletes return an empty result
+    // (no error), so the guarantee is the object survives.
+    const { error: delErr } = await b.client.storage.from('chat-images').remove([path])
+    expect(delErr).toBeNull()
+
+    // The image is still there for the remaining active member.
+    const { data: stillThere } = await a.client.storage
+      .from('chat-images')
+      .createSignedUrl(path, 60)
+    expect(stillThere?.signedUrl).toBeTruthy()
   })
 })
