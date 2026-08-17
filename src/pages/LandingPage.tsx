@@ -1,21 +1,22 @@
 import { Link } from 'react-router'
+import { Cake, Calendar, CalendarCheck, CalendarDays, HeartHandshake, MapPin, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { ThemeToggle } from '../components/theme-toggle'
 
 const howItWorks = [
-  { step: '01', title: 'Choose How You Want to Match', body: 'Pick from birth date or location-based matching modes.' },
-  { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose.' },
-  { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.' },
-  { step: '04', title: 'Complete Introductions', body: 'Answer five questions within 72 hours so everyone can connect.' },
-  { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and grow together.' },
+  { step: '01', title: 'Choose How You Want to Match', body: 'Pick from birth date or location-based matching modes.', icon: SlidersHorizontal },
+  { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose.', icon: UserPlus },
+  { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.', icon: Users },
+  { step: '04', title: 'Complete Introductions', body: 'Answer five questions within 72 hours so everyone can connect.', icon: MessageSquareText },
+  { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and grow together.', icon: HeartHandshake },
 ]
 
 const clusterTypes = [
-  { title: 'Exact Birthdate', detail: 'Born on the same day, month, and year' },
-  { title: 'Birth Year + Month', detail: 'Born in the same month and year' },
-  { title: 'Birth Month', detail: 'Born in the same month, any year' },
-  { title: 'Birth Year', detail: 'Born in the same year, any month' },
-  { title: 'Local', detail: 'Within a radius you choose' },
+  { title: 'Exact Birthdate', detail: 'Born on the same day, month, and year', icon: Cake },
+  { title: 'Birth Year + Month', detail: 'Born in the same month and year', icon: CalendarDays },
+  { title: 'Birth Month', detail: 'Born in the same month, any year', icon: Calendar },
+  { title: 'Birth Year', detail: 'Born in the same year, any month', icon: CalendarCheck },
+  { title: 'Local', detail: 'Within a radius you choose', icon: MapPin },
 ]
 
 const faqs = [
@@ -65,8 +66,13 @@ export function LandingPage() {
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {howItWorks.map((item) => (
               <article key={item.step} className="rounded-2xl bg-surface-lowest p-6 shadow-soft">
-                <span className="font-display text-sm font-semibold text-primary">{item.step}</span>
-                <h3 className="mt-3 text-xl font-semibold">{item.title}</h3>
+                <div className="flex items-center justify-between">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <item.icon className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                  </span>
+                  <span className="font-display text-sm font-semibold text-primary">{item.step}</span>
+                </div>
+                <h3 className="mt-4 text-xl font-semibold">{item.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-on-surface-variant">{item.body}</p>
               </article>
             ))}
@@ -80,7 +86,8 @@ export function LandingPage() {
         <ul className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {clusterTypes.map((c) => (
             <li key={c.title} className="rounded-2xl border border-outline-variant/60 bg-surface-lowest p-6 shadow-soft">
-              <h3 className="font-display text-lg font-semibold">{c.title}</h3>
+              <c.icon className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+              <h3 className="mt-3 font-display text-lg font-semibold">{c.title}</h3>
               <p className="mt-1 text-sm text-on-surface-variant">{c.detail}</p>
             </li>
           ))}
