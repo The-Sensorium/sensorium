@@ -72,7 +72,10 @@ export function QueuePage() {
       </button>
 
       <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">{info.label}</p>
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+          <info.icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+          {info.label}
+        </p>
         <h1 className="mt-1 font-display text-2xl font-semibold text-on-surface">{entry.queue_key}</h1>
         <span className="mt-2 inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
           Matching mode

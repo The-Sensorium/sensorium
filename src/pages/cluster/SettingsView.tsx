@@ -23,6 +23,7 @@ export function SettingsView() {
   const leave = useLeaveCluster()
   const [confirming, setConfirming] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
+  const MatchedByIcon = cluster.data ? modeInfo(cluster.data.matching_mode).icon : Compass
 
   async function handleLeave() {
     if (!clusterId) return
@@ -50,7 +51,7 @@ export function SettingsView() {
           </div>
           <div className="flex items-center justify-between gap-4">
             <dt className="flex items-center gap-2 text-on-surface-variant">
-              <Compass className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+              <MatchedByIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
               Matched by
             </dt>
             <dd className="text-right font-medium text-on-surface">

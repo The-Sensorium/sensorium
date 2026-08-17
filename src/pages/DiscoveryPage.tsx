@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { ArrowRight } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { CLUSTER_SIZE } from '../lib/constants'
 import { MATCHING_MODES } from '../lib/modes'
@@ -30,6 +31,7 @@ export function DiscoveryPage() {
             value={mode.value}
             label={mode.label}
             detail={mode.detail}
+            icon={mode.icon}
             count={counts.isLoading ? undefined : (countByMode.get(mode.value) ?? 0)}
             status={status.data?.find((r) => r.mode === mode.value)}
           />
@@ -45,12 +47,14 @@ function ModeTile({
   value,
   label,
   detail,
+  icon: Icon,
   count,
   status,
 }: {
   value: string
   label: string
   detail: string
+  icon: LucideIcon
   count: number | undefined
   status: { cluster_id: string | null; joined: boolean; waiting: number } | undefined
 }) {
@@ -68,7 +72,10 @@ function ModeTile({
       className="group block min-w-0 rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft transition-shadow hover:shadow-lift"
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">{label}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Icon className="h-5 w-5 shrink-0 text-primary" strokeWidth={1.5} aria-hidden />
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">{label}</p>
+        </div>
         <span className="shrink-0 rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
           {count === undefined ? '…' : `${count} ${count === 1 ? 'cluster' : 'clusters'}`}
         </span>

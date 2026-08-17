@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
-import { Cake, Calendar, CalendarCheck, CalendarDays, HeartHandshake, MapPin, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
+import { ArrowRight, HeartHandshake, LogIn, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { ThemeToggle } from '../components/theme-toggle'
+import { MATCHING_MODES } from '../lib/modes'
 
 const howItWorks = [
   { step: '01', title: 'Choose How You Want to Match', body: 'Pick from birth date or location-based matching modes.', icon: SlidersHorizontal },
@@ -9,14 +10,6 @@ const howItWorks = [
   { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.', icon: Users },
   { step: '04', title: 'Complete Introductions', body: 'Answer five questions within 72 hours so everyone can connect.', icon: MessageSquareText },
   { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and grow together.', icon: HeartHandshake },
-]
-
-const clusterTypes = [
-  { title: 'Exact Birthdate', detail: 'Born on the same day, month, and year', icon: Cake },
-  { title: 'Birth Year + Month', detail: 'Born in the same month and year', icon: CalendarDays },
-  { title: 'Birth Month', detail: 'Born in the same month, any year', icon: Calendar },
-  { title: 'Birth Year', detail: 'Born in the same year, any month', icon: CalendarCheck },
-  { title: 'Local', detail: 'Within a radius you choose', icon: MapPin },
 ]
 
 const faqs = [
@@ -46,14 +39,16 @@ export function LandingPage() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             to="/auth/signup"
-            className="rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            className="inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
           >
             Join Sensorium
+            <ArrowRight className="h-4 w-4" strokeWidth={2} aria-hidden />
           </Link>
           <Link
             to="/auth/login"
-            className="rounded-pill border border-outline px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            className="inline-flex items-center gap-2 rounded-pill border border-outline px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
+            <LogIn className="h-4 w-4" strokeWidth={2} aria-hidden />
             Sign In
           </Link>
         </div>
@@ -84,10 +79,10 @@ export function LandingPage() {
       <section className="mx-auto max-w-6xl px-6 py-16">
         <h2 className="text-3xl font-semibold">Cluster Types</h2>
         <ul className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {clusterTypes.map((c) => (
-            <li key={c.title} className="rounded-2xl border border-outline-variant/60 bg-surface-lowest p-6 shadow-soft">
+          {MATCHING_MODES.map((c) => (
+            <li key={c.value} className="rounded-2xl border border-outline-variant/60 bg-surface-lowest p-6 shadow-soft">
               <c.icon className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
-              <h3 className="mt-3 font-display text-lg font-semibold">{c.title}</h3>
+              <h3 className="mt-3 font-display text-lg font-semibold">{c.label}</h3>
               <p className="mt-1 text-sm text-on-surface-variant">{c.detail}</p>
             </li>
           ))}
