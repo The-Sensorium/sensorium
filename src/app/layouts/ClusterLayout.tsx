@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Loader2, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { modeInfo } from '../../lib/modes'
 import { useCluster, useMyMembership } from '../../features/introductions'
 import { useClusterChannel } from '../../features/realtime'
 import { ClusterRail } from '../../components/ClusterRail'
@@ -73,6 +74,8 @@ export function ClusterLayout() {
     return <Navigate to={`/cluster/${clusterId}/introductions`} replace />
   }
 
+  const ModeIcon = modeInfo(cluster.data.matching_mode).icon
+
   return (
     <div
       className={cn(
@@ -99,8 +102,9 @@ export function ClusterLayout() {
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="hidden truncate text-[11px] font-semibold uppercase tracking-wide text-primary sm:block">
-              {cluster.data.mode_label}
+            <p className="hidden items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary sm:flex">
+              <ModeIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+              <span className="truncate">{cluster.data.mode_label}</span>
             </p>
             <h1 className="truncate font-display text-lg font-semibold text-on-surface">
               {cluster.data.name}
