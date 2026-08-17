@@ -53,6 +53,9 @@ export function StepModes({ draft, patch }: Props) {
                 >
                   <Check className="h-4 w-4" strokeWidth={2} aria-hidden />
                 </span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container text-primary">
+                  <mode.icon className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                </span>
                 <span className="flex-1">
                   <span className="block text-sm font-semibold text-on-surface">{mode.label}</span>
                   <span className="block text-xs text-on-surface-variant">{mode.detail}</span>
