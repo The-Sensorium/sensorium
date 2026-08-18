@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { ArrowRight, HeartHandshake, LogIn, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
+import { HeartHandshake, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { ThemeToggle } from '../components/theme-toggle'
 import { MATCHING_MODES } from '../lib/modes'
@@ -39,16 +39,14 @@ export function LandingPage() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             to="/auth/signup"
-            className="inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            className="inline-flex items-center rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
           >
             Join Sensorium
-            <ArrowRight className="h-4 w-4" strokeWidth={2} aria-hidden />
           </Link>
           <Link
             to="/auth/login"
-            className="inline-flex items-center gap-2 rounded-pill border border-outline px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            className="inline-flex items-center rounded-pill border border-outline px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
-            <LogIn className="h-4 w-4" strokeWidth={2} aria-hidden />
             Sign In
           </Link>
         </div>
