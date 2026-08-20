@@ -4,7 +4,7 @@ import { LegalLayout, Section } from './legal/LegalLayout'
 export function TermsPage() {
   useDocumentTitle('Terms of Service')
   return (
-    <LegalLayout title="Terms of Service" updated="August 2, 2026">
+    <LegalLayout title="Terms of Service" updated="August 20, 2026">
       <p>
         These Terms govern your use of Sensorium, a social platform that places you into a permanent
         group of eight people (“clusters”). By signing up you agree to these Terms. You must be at
@@ -46,14 +46,33 @@ export function TermsPage() {
         </p>
       </Section>
 
-      <Section title="5. Termination">
+      <Section title="5. Moderation and enforcement">
+        <p>
+          Members can report other members or specific messages. A report is reviewed by our
+          moderation team, who may dismiss it or take action. Actions we may take include hiding or
+          restoring a reported message, issuing a warning, suspending an account for up to 7 days,
+          or permanently banning an account. Permanent bans are applied by administrators.
+        </p>
+        <p>
+          If your account is suspended or banned, you can sign in to a restricted-account screen
+          that shows your status and any suspension expiry. If you believe a decision is wrong, you
+          can appeal by contacting{' '}
+          <a className="text-primary underline" href="mailto:support@sensorium.app">
+            support@sensorium.app
+          </a>
+          . If your message is hidden or your account is warned or suspended, we notify you in the
+          app.
+        </p>
+      </Section>
+
+      <Section title="6. Termination">
         <p>
           You can leave a cluster or delete your account at any time from Settings. We may also
           suspend or terminate accounts for a breach of these Terms or to protect the community.
         </p>
       </Section>
 
-      <Section title="6. Disclaimers">
+      <Section title="7. Disclaimers">
         <p>
           The service is provided “as is” and “as available.” To the extent permitted by law, we
           disclaim warranties about reliability, fitness, or uninterrupted availability, and our
@@ -61,7 +80,7 @@ export function TermsPage() {
         </p>
       </Section>
 
-      <Section title="7. Changes & contact">
+      <Section title="8. Changes & contact">
         <p>
           We may update these Terms, and the current version always applies; continued use after a
           change means you accept them. Questions?{' '}

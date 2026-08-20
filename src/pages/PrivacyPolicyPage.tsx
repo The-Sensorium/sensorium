@@ -4,7 +4,7 @@ import { LegalLayout, Section } from './legal/LegalLayout'
 export function PrivacyPolicyPage() {
   useDocumentTitle('Privacy Policy')
   return (
-    <LegalLayout title="Privacy Policy" updated="August 2, 2026">
+    <LegalLayout title="Privacy Policy" updated="August 20, 2026">
       <p>
         Sensorium connects you with a small, permanent group of people (a “cluster”). This policy
         explains what personal data we collect, why, and the choices you have. You must be at least
@@ -49,6 +49,14 @@ export function PrivacyPolicyPage() {
           account. You can delete your account at any time from Settings, which removes your
           profile, memberships, and the content you own. Some records may be retained where required
           by law or to investigate reported abuse.
+        </p>
+        <p>
+          Moderation records, including reports and the actions taken on them, are retained for up
+          to 24 months so we can keep our community safe. If you delete your account, we remove the
+          personal identifiers from those records rather than destroy the audit trail. When a
+          message is hidden or your account is warned or suspended, we notify you in the app; a
+          permanent ban ends your access, so it is communicated through the affected account's
+          restricted screen instead.
         </p>
       </Section>
 

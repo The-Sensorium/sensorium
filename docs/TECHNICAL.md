@@ -69,7 +69,7 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `signals.ts` | request-for-help threads |
 | `votes.ts` | governance votes and cooldowns |
 | `notifications.ts` | user notifications |
-| `moderation.ts` | reporting |
+| `moderation.ts` | reporting, moderation queue and case actions, account restriction status |
 | `avatars.ts` | avatar signed URLs and storage paths |
 | `mentions.ts` | mention parsing and linkification |
 
@@ -116,6 +116,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Storage and permissions (0016-0020)**: storage buckets, grants, and fixes.
 - **Realtime (0021-0024)**: chat, signal replies, governance events, and notification payloads.
 - **Hardening (0025-0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
+- **Moderation and platform roles (0052-0066)**: platform access primitives (`user_roles`, `account_restrictions`, `moderation_actions`), reports queue and claim/release/resolve workflow, content enforcement (hide/restore), warnings, temporary suspensions and permanent bans, platform role administration, staff status guards, and moderation workflow guards (claim locks, action-close-report, report validation, restriction lift no-ops). See [`ROLE_BASED_ACCESS_PLAN.md`](ROLE_BASED_ACCESS_PLAN.md) for the access model.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
@@ -136,7 +137,7 @@ The browser obtains a signed URL with a short TTL, uses it to render the image, 
 
 ## Auth
 
-Authentication uses Supabase Auth with email and password. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028).
+Authentication uses Supabase Auth with email and password. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028). Moderation records survive deletion but are anonymized, because `reports`, `moderation_actions`, `account_restrictions`, and `user_roles` reference profiles with `on delete set null` (0052-0053).
 
 ## Security
 

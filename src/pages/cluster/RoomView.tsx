@@ -38,6 +38,7 @@ import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { TypingBubble } from './room/TypingBubble'
 import { SignalRow } from './room/SignalRow'
 import { VoteRow } from './room/VoteRow'
+import { ReportModal } from '../../components/ReportModal'
 
 type TimelineItem =
   | { kind: 'message'; data: Message }
@@ -80,6 +81,7 @@ export function RoomView() {
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [pickerFor, setPickerFor] = useState<string | null>(null)
   const [infoFor, setInfoFor] = useState<string | null>(null)
+  const [reportFor, setReportFor] = useState<Message | null>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
@@ -290,7 +292,7 @@ export function RoomView() {
 
   // Reactions are fetched for the loaded messages only. Refetch when the oldest
   // loaded message changes (initial load or an earlier page prepended), but not
-  // when a new message is appended by the live channel — a fresh message can't
+  // when a new message is appended by the live channel: a fresh message can't
   // have reactions yet, so refetching for every incoming message is wasted work.
   useEffect(() => {
     const oldestId = loadedMessageIds[0] ?? null
@@ -359,7 +361,7 @@ export function RoomView() {
       await send.mutateAsync({ clusterId, content: null, imageUrl: path, replyToId: replyTo?.id ?? undefined })
       setReplyTo(null)
     } catch (e) {
-      // The upload succeeded but the message never landed — reclaim the object so
+      // The upload succeeded but the message never landed: reclaim the object so
       // a straggling image isn't left behind (member-scoped delete, migration 0050).
       await deleteChatImage(path).catch(() => {})
       throw e
@@ -391,6 +393,12 @@ export function RoomView() {
     setMenuFor(null)
     setPickerFor(null)
     setInfoFor(m.id)
+  }
+
+  function startReport(m: Message) {
+    setMenuFor(null)
+    setPickerFor(null)
+    setReportFor(m)
   }
 
   async function saveEdit() {
@@ -599,6 +607,7 @@ export function RoomView() {
                       onEdit={startEdit}
                       onDelete={(messageId) => void remove(messageId)}
                       onReply={startReply}
+                      onReport={startReport}
                       onToggleReaction={(messageId, emoji) =>
                         void handleToggleReaction(messageId, emoji)
                       }
@@ -704,6 +713,19 @@ export function RoomView() {
         seen={infoSeen}
         notSeen={infoNotSeen}
       />
+
+      {reportFor && (
+        <ReportModal
+          open
+          onClose={() => setReportFor(null)}
+          clusterId={clusterId}
+          target={{
+            id: reportFor.author_id,
+            name: memberMap.get(reportFor.author_id)?.display_name ?? 'Member',
+          }}
+          messageId={reportFor.id}
+        />
+      )}
     </section>
   )
 }

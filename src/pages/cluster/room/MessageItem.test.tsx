@@ -53,6 +53,7 @@ function setup(overrides: Partial<Parameters<typeof MessageItem>[0]> = {}) {
     onShowInfo: vi.fn(),
     onReply: vi.fn(),
     onToggleReaction: vi.fn(),
+    onReport: vi.fn(),
   }
   const props = { ...base, ...overrides }
   render(
@@ -102,11 +103,25 @@ describe('MessageItem', () => {
     expect(screen.getByRole('button', { name: 'React ❤️' })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('shows the action menu only for my messages', () => {
+  it('shows edit and delete actions on my messages', () => {
     setup({ mine: true, menuOpen: true })
     expect(screen.getByRole('menuitem', { name: 'Info' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Edit' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument()
+  })
+
+  it('shows only Report on other members messages', () => {
+    setup({ mine: false, menuOpen: true })
+    expect(screen.getByRole('menuitem', { name: 'Report' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Info' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
+  it('wires the report action on other members messages', async () => {
+    const { props } = setup({ mine: false, menuOpen: true })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Report' }))
+    expect(props.onReport).toHaveBeenCalledWith(props.message)
   })
 
   it('wires edit and delete actions', async () => {

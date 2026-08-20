@@ -2,7 +2,7 @@
  * Decide whether a query error should be retried by the global QueryClient.
  *
  * `PostgrestError` (the type every Supabase query throws) has no HTTP `status`
- * field — only `code` (PostgREST `PGRST3xx` or Postgres SQLSTATE such as
+ * field: only `code` (PostgREST `PGRST3xx` or Postgres SQLSTATE such as
  * `42501`). Permanent client errors never recover on retry; transient network
  * failures and 5xx-class errors should still get the retry budget.
  */

@@ -365,7 +365,7 @@ Name changes require a cluster vote.
 
 ### Reporting
 
-Users may report other members.
+Users may report other members and can attach a specific message to a report.
 
 Reasons:
 - Harassment
@@ -374,7 +374,53 @@ Reasons:
 - Inappropriate Content
 - Other
 
-Reports are reviewed by platform moderators.
+Only one open report may target the same member at a time. Reports are reviewed by platform moderators.
+
+---
+### Moderation Queue
+
+Reports enter a shared queue reviewed by moderators and admins.
+
+- An open (unclaimed) report can be claimed by any moderator or admin; claiming locks the case to that assignee.
+- A claimed report can be released back to the queue.
+- Report statuses: `pending` (open, unclaimed), `reviewing` (claimed), `actioned` (resolved with an enforcement action), and `dismissed` (reviewed and closed without action).
+
+---
+### Enforcement Actions
+
+Reviewing a report, a moderator can:
+
+- Dismiss it when no action is warranted.
+- Hide or restore the reported message. Hiding is reversible; content is never permanently deleted by moderation in this release.
+- Issue a warning to the member.
+- Suspend the member's account temporarily, up to 7 days; the member is restricted until the suspension expires.
+- Administrators can also permanently ban an account. A ban revokes all platform roles, removes the member from active clusters (starting the normal replacement process), and restricts the account permanently.
+
+Moderators cannot take enforcement action against other moderators or admins, and an admin cannot ban or de-role the last remaining active admin.
+
+---
+### Account Restrictions
+
+- Suspended and banned accounts can sign in only to a restricted-account screen, where they can see their status and any suspension expiry, sign out, delete their account, or contact support to appeal.
+- A suspended account keeps its cluster memberships so the member returns automatically when the suspension expires.
+- A permanent ban has no expiry.
+
+---
+### Notification to Affected Users
+
+- Members receive an in-app moderation notice when their message is hidden or their account is warned or suspended.
+- Banned accounts cannot use the app, so no in-app notice is sent; the restriction is shown on the restricted-account screen.
+- Reporters are not notified in this release when a report they submitted is resolved, and no report-history screen is shipped yet. A future report-history view may show only the current status and a generic final outcome: never internal notes, staff identity, or enforcement detail.
+
+---
+### Audit Log
+
+Every claim, release, dismissal, enforcement action, and platform role change is recorded. The audit log is readable by administrators.
+
+---
+### Retention
+
+Reports, internal notes, evidence metadata, and audit actions are retained for 24 months. When a user deletes their account, personal identifiers are detached from these moderation records rather than the audit trail being destroyed.
 
 ---
 ### NSFW Policy

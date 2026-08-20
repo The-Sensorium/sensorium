@@ -25,11 +25,13 @@ export function useReportMember() {
       targetUserId,
       reason,
       details,
+      messageId,
     }: {
       clusterId: string
       targetUserId: string
       reason: ReportReason
       details?: string
+      messageId?: string
     }) => {
       const supabase = requireSupabase()
       const { error } = await supabase.rpc('report_member', {
@@ -37,6 +39,7 @@ export function useReportMember() {
         p_target_user_id: targetUserId,
         p_reason: reason,
         p_details: details ?? undefined,
+        p_message_id: messageId ?? undefined,
       })
       if (error) throw error
     },

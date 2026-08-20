@@ -63,7 +63,7 @@ export function StepLocal({ draft, patch }: Props) {
           )}
           {draft.shareLocation
             ? draft.localLabel
-              ? `Within ${draft.radiusKm ?? '–'} km of ${draft.localLabel}`
+              ? `Within ${draft.radiusKm ?? '-'} km of ${draft.localLabel}`
               : 'Location shared'
             : locating
               ? 'Finding your location…'

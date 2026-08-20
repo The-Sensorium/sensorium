@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { CornerUpLeft, Info, Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
+import { CornerUpLeft, Flag, Info, Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import { DayDivider } from './DayDivider'
@@ -36,6 +36,7 @@ export function MessageItem({
   onDelete,
   onReply,
   onToggleReaction,
+  onReport,
 }: {
   message: Message
   mine: boolean
@@ -61,6 +62,7 @@ export function MessageItem({
   onDelete(messageId: string): void
   onReply(message: Message): void
   onToggleReaction(messageId: string, emoji: string): void
+  onReport(message: Message): void
 }) {
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
@@ -110,19 +112,17 @@ export function MessageItem({
             <span className="text-on-surface-variant/60">
               {timeFormatter.format(new Date(message.created_at))}
             </span>
-            {mine && (
-              <button
-                type="button"
-                aria-label="Message actions"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onToggleMenu()
-                }}
-                className="grid h-6 w-6 place-items-center rounded-full text-on-surface-variant/60 transition-colors hover:bg-surface-container hover:text-on-surface"
-              >
-                <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-              </button>
-            )}
+            <button
+              type="button"
+              aria-label="Message actions"
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleMenu()
+              }}
+              className="grid h-6 w-6 place-items-center rounded-full text-on-surface-variant/60 transition-colors hover:bg-surface-container hover:text-on-surface"
+            >
+              <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            </button>
           </p>
 
           {menuOpen && (
@@ -131,36 +131,51 @@ export function MessageItem({
               role="menu"
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                type="button"
-                role="menuitem"
-                aria-label="Info"
-                onClick={() => onShowInfo(message)}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
-              >
-                <Info className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-                <span className="hidden sm:inline">Info</span>
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                aria-label="Edit"
-                onClick={() => onEdit(message)}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
-              >
-                <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-                <span className="hidden sm:inline">Edit</span>
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                aria-label="Delete"
-                onClick={() => onDelete(message.id)}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50"
-              >
-                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-                <span className="hidden sm:inline">Delete</span>
-              </button>
+              {mine ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-label="Info"
+                    onClick={() => onShowInfo(message)}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                  >
+                    <Info className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                    <span className="hidden sm:inline">Info</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-label="Edit"
+                    onClick={() => onEdit(message)}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                  >
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                    <span className="hidden sm:inline">Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-label="Delete"
+                    onClick={() => onDelete(message.id)}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                    <span className="hidden sm:inline">Delete</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  role="menuitem"
+                  aria-label="Report"
+                  onClick={() => onReport(message)}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50"
+                >
+                  <Flag className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                  <span className="hidden sm:inline">Report</span>
+                </button>
+              )}
             </div>
           )}
 

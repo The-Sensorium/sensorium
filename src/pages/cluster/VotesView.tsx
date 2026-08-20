@@ -521,7 +521,7 @@ function PastVoteCard({
               {castCount} {castCount === 1 ? 'vote' : 'votes'} cast
             </span>
             <span className="inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1">
-              quorum {result?.quorum ?? '–'}
+              quorum {result?.quorum ?? '-'}
             </span>
           </>
         ) : (
@@ -535,7 +535,7 @@ function PastVoteCard({
               {result?.no ?? 0}
             </span>
             <span className="inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1">
-              {result?.cast ?? castCount}/{result?.quorum ?? '–'} cast
+              {result?.cast ?? castCount}/{result?.quorum ?? '-'} cast
             </span>
           </>
         )}
