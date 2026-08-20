@@ -66,7 +66,7 @@ describe('RLS denial matrix', () => {
       .from('messages')
       .select('id')
       .eq('cluster_id', clusterId)
-    // anon either gets a GRANT denial (42501) or an empty RLS-filtered set —
+    // anon either gets a GRANT denial (42501) or an empty RLS-filtered set:
     // either way the seeded message must not be visible.
     expect((anonRows ?? []).some((r) => r.id === messageId)).toBe(false)
 

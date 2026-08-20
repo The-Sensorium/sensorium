@@ -5,7 +5,7 @@ import { requireSupabase, type MatchingMode } from '../lib/supabase'
 /**
  * One cluster shown in the public discovery directory. Only non-sensitive
  * fields (name, mode, status, member count) leak past RLS via the
- * security-definer RPC — introductions, messages, and membership stay private.
+ * security-definer RPC: introductions, messages, and membership stay private.
  */
 export type ClusterTile =
   Database['public']['Functions']['get_clusters_by_mode']['Returns'][number]

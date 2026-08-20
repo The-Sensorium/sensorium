@@ -69,7 +69,7 @@ export function ClusterLayout() {
   }
 
   // Cluster already unlocked but this member joined later (via replacement)
-  // without completing their intro — make them finish before entering the room.
+  // without completing their intro: make them finish before entering the room.
   if (!membership.data.intro_completed_at) {
     return <Navigate to={`/cluster/${clusterId}/introductions`} replace />
   }

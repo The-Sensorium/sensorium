@@ -47,7 +47,7 @@ export function SettingsView() {
               <Tag className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
               Name
             </dt>
-            <dd className="truncate text-right font-medium text-on-surface">{cluster.data?.name ?? '–'}</dd>
+            <dd className="truncate text-right font-medium text-on-surface">{cluster.data?.name ?? '-'}</dd>
           </div>
           <div className="flex items-center justify-between gap-4">
             <dt className="flex items-center gap-2 text-on-surface-variant">
@@ -55,7 +55,7 @@ export function SettingsView() {
               Matched by
             </dt>
             <dd className="text-right font-medium text-on-surface">
-              {cluster.data ? modeInfo(cluster.data.matching_mode).label : '–'}
+              {cluster.data ? modeInfo(cluster.data.matching_mode).label : '-'}
             </dd>
           </div>
           <div className="flex items-center justify-between gap-4">
@@ -75,7 +75,7 @@ export function SettingsView() {
               Formed
             </dt>
             <dd className="text-right font-medium text-on-surface">
-              {cluster.data ? dateFormatter.format(new Date(cluster.data.created_at)) : '–'}
+              {cluster.data ? dateFormatter.format(new Date(cluster.data.created_at)) : '-'}
             </dd>
           </div>
         </dl>

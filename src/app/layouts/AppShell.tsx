@@ -4,6 +4,7 @@ import { cn } from '../../lib/utils'
 import { useAuth } from '../auth-context'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { NotificationBell } from '../../components/NotificationBell'
+import { SwitchRoleButton } from '../../components/SwitchRoleButton'
 import { useNotificationsChannel } from '../../features/notifications'
 
 const navItems = [
@@ -55,6 +56,7 @@ export function AppShell() {
             )}
           </nav>
           <div className="flex items-center gap-2">
+            <SwitchRoleButton />
             <ThemeToggle />
           </div>
         </div>

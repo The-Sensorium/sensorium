@@ -3,7 +3,7 @@ const RESIZABLE = new Set(['image/jpeg', 'image/png', 'image/webp'])
 export interface PrepareImageOptions {
   /** Longest edge, in px, that the image is downscaled to. */
   maxDimension?: number
-  /** WebP encode quality, 0–1. */
+  /** WebP encode quality, 0-1. */
   quality?: number
 }
 

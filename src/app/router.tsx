@@ -1,8 +1,18 @@
-import { BrowserRouter, Outlet, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router'
 import { AppShell } from './layouts/AppShell'
 import { PublicLayout } from './layouts/PublicLayout'
 import { ClusterLayout } from './layouts/ClusterLayout'
-import { RequireAuth, RequireGuest, RequireOnboarded } from './guards'
+import { ModeratorLayout } from './layouts/ModeratorLayout'
+import { AdminLayout } from './layouts/AdminLayout'
+import {
+  RequireAuth,
+  RequireGuest,
+  RequireOnboarded,
+  RequireActiveAccount,
+  RequireCapability,
+  RequireSessionRole,
+  SessionRoleEntry,
+} from './guards'
 import { LandingPage } from '../pages/LandingPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage'
@@ -25,6 +35,12 @@ import { SignalDetailPage } from '../pages/cluster/SignalDetailPage'
 import { VotesView } from '../pages/cluster/VotesView'
 import { SettingsView } from '../pages/cluster/SettingsView'
 import { OnboardingPage } from '../pages/onboarding/OnboardingPage'
+import { SessionRolePage } from '../pages/SessionRolePage'
+import { RestrictedAccountPage } from '../pages/RestrictedAccountPage'
+import { ModerationQueuePage } from '../pages/staff/ModerationQueuePage'
+import { ModerationCasePage } from '../pages/staff/ModerationCasePage'
+import { ModerationRolesPage } from '../pages/staff/ModerationRolesPage'
+import { ModerationAuditPage } from '../pages/staff/ModerationAuditPage'
 import { SignUpPage } from '../pages/auth/SignUpPage'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { VerifyEmailPage } from '../pages/auth/VerifyEmailPage'
@@ -72,8 +88,30 @@ export function AppRouter() {
 
         {/* Authenticated */}
         <Route element={<RequireAuth><Outlet /></RequireAuth>}>
+          <Route path="/entry" element={<SessionRoleEntry />} />
+          <Route
+            path="/select-role"
+            element={
+              <RequireActiveAccount>
+                <SessionRolePage />
+              </RequireActiveAccount>
+            }
+          />
+          <Route path="/restricted" element={<RestrictedAccountPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route element={<RequireOnboarded><AppShell /></RequireOnboarded>}>
+
+          {/* Member shell */}
+          <Route
+            element={
+              <RequireActiveAccount>
+                <RequireSessionRole role="member">
+                  <RequireOnboarded>
+                    <AppShell />
+                  </RequireOnboarded>
+                </RequireSessionRole>
+              </RequireActiveAccount>
+            }
+          >
             <Route path="/home" element={<HomePage />} />
             <Route path="/clusters" element={<ClustersPage />} />
             <Route path="/discovery" element={<DiscoveryPage />} />
@@ -93,6 +131,42 @@ export function AppRouter() {
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* Moderator shell */}
+          <Route
+            element={
+              <RequireActiveAccount>
+                <RequireSessionRole role="moderator">
+                  <RequireCapability capability="can_moderate">
+                    <ModeratorLayout />
+                  </RequireCapability>
+                </RequireSessionRole>
+              </RequireActiveAccount>
+            }
+          >
+            <Route path="/moderator" element={<Navigate to="/moderator/reports" replace />} />
+            <Route path="/moderator/reports" element={<ModerationQueuePage />} />
+            <Route path="/moderator/reports/:reportId" element={<ModerationCasePage />} />
+          </Route>
+
+          {/* Admin shell */}
+          <Route
+            element={
+              <RequireActiveAccount>
+                <RequireSessionRole role="admin">
+                  <RequireCapability capability="can_manage_roles">
+                    <AdminLayout />
+                  </RequireCapability>
+                </RequireSessionRole>
+              </RequireActiveAccount>
+            }
+          >
+            <Route path="/admin" element={<Navigate to="/admin/reports" replace />} />
+            <Route path="/admin/reports" element={<ModerationQueuePage />} />
+            <Route path="/admin/reports/:reportId" element={<ModerationCasePage />} />
+            <Route path="/admin/roles" element={<ModerationRolesPage />} />
+            <Route path="/admin/audit" element={<ModerationAuditPage />} />
           </Route>
         </Route>
 

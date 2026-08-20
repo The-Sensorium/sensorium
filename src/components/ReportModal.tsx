@@ -4,16 +4,27 @@ import { cn } from '../lib/utils'
 import { Modal } from './Modal'
 import { REPORT_REASONS, useReportMember, type ReportReason } from '../features/moderation'
 
+const REPORT_ERRORS: Record<string, string> = {
+  duplicate_report: 'You already have an open report against this member.',
+  cannot_report_self: 'You cannot report yourself.',
+  message_not_reportable: 'That message can no longer be reported.',
+  not_a_member: 'Both you and the member you are reporting must be active in this cluster.',
+  details_too_long: 'The details are too long. Please keep them under 2000 characters.',
+  account_inactive: 'Your account is restricted right now and cannot submit reports.',
+}
+
 export function ReportModal({
   open,
   onClose,
   clusterId,
   target,
+  messageId,
 }: {
   open: boolean
   onClose: () => void
   clusterId: string
   target: { id: string; name: string }
+  messageId?: string
 }) {
   const [reason, setReason] = useState<ReportReason | null>(null)
   const [details, setDetails] = useState('')
@@ -25,8 +36,9 @@ export function ReportModal({
       setReason(null)
       setDetails('')
       setError(null)
+      report.reset()
     }
-  }, [open])
+  }, [open, report])
 
   async function handleSubmit() {
     if (!reason) return
@@ -37,9 +49,14 @@ export function ReportModal({
         targetUserId: target.id,
         reason,
         details: details.trim() || undefined,
+        messageId,
       })
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (e) {
+      const raw =
+        e instanceof Error ? e.message : typeof e === 'object' && e !== null && 'message' in e
+          ? String((e as { message: unknown }).message)
+          : ''
+      setError(REPORT_ERRORS[raw] ?? 'Something went wrong. Please try again.')
       return
     }
   }
@@ -97,7 +114,7 @@ export function ReportModal({
               value={details}
               onChange={(e) => setDetails(e.target.value)}
               rows={3}
-              maxLength={500}
+              maxLength={2000}
               placeholder="Anything that helps our moderators understand the issue…"
               className="mt-2 w-full resize-none rounded-xl border border-outline-variant/60 bg-surface-container/50 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
             />

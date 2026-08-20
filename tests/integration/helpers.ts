@@ -14,7 +14,6 @@ interface StackConfig {
   anonKey: string
   serviceRole: string
 }
-
 let config: StackConfig | null = null
 
 function stackStatus(): Record<string, string> {
@@ -190,3 +189,18 @@ export const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
 )
+
+/** Give a user a platform role directly (service role, bypasses RLS). */
+export async function assignPlatformRole(
+  admin: SupabaseClient,
+  userId: string,
+  role: 'moderator' | 'admin',
+  reason = 'integration test setup',
+): Promise<void> {
+  const { error } = await admin.from('user_roles').insert({
+    user_id: userId,
+    role,
+    grant_reason: reason,
+  })
+  if (error) throw error
+}

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { ThemeProvider } from '../lib/theme-provider'
 import { AuthContext, type AuthStatus } from './auth-context'
+import { SessionRoleProvider } from './session-role-provider'
 import { isPermanentQueryError } from '../lib/query-retry'
 
 const queryClient = new QueryClient({
@@ -66,7 +67,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <SupabaseProvider>{children}</SupabaseProvider>
+        <SupabaseProvider>
+          <SessionRoleProvider>{children}</SessionRoleProvider>
+        </SupabaseProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )
