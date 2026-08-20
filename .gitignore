@@ -20,6 +20,9 @@ dist-ssr
 # Supabase local CLI
 supabase/.temp/
 
+# Edge function local secrets (RESEND_API_KEY etc.) - never commit
+supabase/functions/.env
+
 # Testing
 coverage
 test-results/

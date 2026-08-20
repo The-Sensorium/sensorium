@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router'
-import { Flag, ScrollText, UserCog } from 'lucide-react'
+import { Flag, MessageSquareWarning, ScrollText, UserCog } from 'lucide-react'
 import { useAuth } from '../auth-context'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
@@ -8,6 +8,7 @@ import { useNotificationsChannel } from '../../features/notifications'
 
 const navItems: readonly StaffNavItem[] = [
   { to: '/admin/reports', label: 'Reports', icon: Flag },
+  { to: '/admin/appeals', label: 'Appeals', icon: MessageSquareWarning },
   { to: '/admin/roles', label: 'Roles', icon: UserCog },
   { to: '/admin/audit', label: 'Audit', icon: ScrollText },
 ] as const

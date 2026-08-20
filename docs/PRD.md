@@ -410,7 +410,23 @@ Moderators cannot take enforcement action against other moderators or admins, an
 
 - Members receive an in-app moderation notice when their message is hidden or their account is warned or suspended.
 - Banned accounts cannot use the app, so no in-app notice is sent; the restriction is shown on the restricted-account screen.
-- Reporters are not notified in this release when a report they submitted is resolved, and no report-history screen is shipped yet. A future report-history view may show only the current status and a generic final outcome: never internal notes, staff identity, or enforcement detail.
+- Reporters receive an email confirmation when their report is submitted and a generic outcome when it is resolved (dismissed or actioned). The outcome email never contains internal notes, staff identity, or enforcement detail.
+- Enforcement actions are also emailed to the affected member (warning, suspension, ban, lift, hidden message). No report-history screen is shipped yet; a future report-history view may show only the current status and a generic final outcome.
+
+---
+### Email Notifications
+
+- All product email is outbound-only and sent from a single sender: `no-reply@thesensorium.online`. There is no inbox, no `mailto:` support in this release, and no Reply-To address.
+- The catalog covers moderation and appeal lifecycles: report confirmation, report resolution, warning issued, message hidden, account suspended, account banned, restriction lifted, appeal received, appeal resolved.
+- Emails are queued in the database and delivered by a scheduled Edge Function; the app never sends email from the browser.
+- Restricted accounts can reach the appeal page from the emails they receive and from the restricted-account screen.
+
+---
+### Appeals
+
+- A suspended or banned account may submit one in-app appeal (`/appeal`) explaining why a decision should be reconsidered. An active account cannot appeal; a lapsed suspension counts as active, so it cannot.
+- Appeals are reviewed and decided by administrators only. Granting an appeal lifts the restriction and restores the account; rejecting keeps it.
+- The appellant receives the admin's response by email; the origin of the restriction (moderator identity or internal notes) is never shared.
 
 ---
 ### Audit Log

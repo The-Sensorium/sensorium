@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { RequireAuth, RequireGuest, RequireOnboarded, RequireActiveAccount, RequireCapability, RequireSessionRole, SessionRoleEntry } from './guards'
+import { RequireAuth, RequireGuest, RequireOnboarded, RequireActiveAccount, RequireCapability, RequireRestricted, RequireSessionRole, SessionRoleEntry } from './guards'
 import { useAuth } from './auth-context'
 import { useProfile } from '../lib/use-profile'
 import { useSessionRole } from './session-role-context'
@@ -378,5 +378,35 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMyAccess).mockReturnValue(accessStates.suspended)
     renderGuarded(<SessionRoleEntry />)
     expect(screen.getByText('restricted page')).toBeInTheDocument()
+  })
+})
+
+describe('RequireRestricted', () => {
+  beforeEach(() => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.member)
+  })
+
+  it('renders children for a suspended account', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.suspended)
+    renderGuarded(<RequireRestricted>appeal</RequireRestricted>)
+    expect(screen.getByText('appeal')).toBeInTheDocument()
+  })
+
+  it('renders children for a banned account', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.banned)
+    renderGuarded(<RequireRestricted>appeal</RequireRestricted>)
+    expect(screen.getByText('appeal')).toBeInTheDocument()
+  })
+
+  it('redirects an active account to /home', () => {
+    renderGuarded(<RequireRestricted>appeal</RequireRestricted>)
+    expect(screen.getByText('home page')).toBeInTheDocument()
+  })
+
+  it('shows a spinner while access is loading', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.loading)
+    const { container } = renderGuarded(<RequireRestricted>appeal</RequireRestricted>)
+    expect(container.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.queryByText('appeal')).not.toBeInTheDocument()
   })
 })

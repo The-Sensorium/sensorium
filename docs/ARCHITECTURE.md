@@ -44,9 +44,10 @@ The repository is organized so the frontend and backend live side by side, with 
 | `src/app/` | The app skeleton: router, providers, auth context, access guards, and page layouts. |
 | `src/pages/` | One component per route/page, composed from shared and feature components. |
 | `src/components/` | Reusable UI: avatars, modals, cards, pickers, navigation chrome. |
-| `src/features/` | Domain logic: matching, cluster, introductions, signals, votes, notifications, moderation. One module per domain, with its hooks and tests. |
+| `src/features/` | Domain logic: matching, cluster, introductions, signals, votes, notifications, moderation, appeals. One module per domain, with its hooks and tests. |
 | `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, and helpers. |
 | `supabase/migrations/` | The entire database schema as ordered SQL files (the single source of truth for the backend). |
+| `supabase/functions/` | Edge Functions. `send-emails` drains the outbound email queue and forwards to Resend. |
 | `docs/` | Product, design, and technical documentation. |
 | `public/` | Static assets served as-is (favicons, logo). |
 | `tests/integration/` | Backend integration suite that exercises RLS and RPC behavior against a local Supabase stack. |
@@ -77,8 +78,9 @@ flowchart TD
 - **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed.
 - **Introduction Phase**: a shared five-question intro must be completed within 72 hours before the room opens.
 - **Cluster Unlock**: once unlocked, members get chat, availability, Signals, votes, and notifications.
+- **Restriction & Appeal**: a moderated suspension/ban shows on the restricted-account screen, where the member may open one in-app appeal (`/appeal`). Admins review the queue (`/admin/appeals`) and decide; the outcome emails the appellant and lifts the restriction when accepted.
 
-The routing guards in `src/app/` enforce this order: guests can't reach onboarding, un-onboarded users can't reach the app, and cluster features require membership.
+The routing guards in `src/app/` enforce this order: guests can't reach onboarding, un-onboarded users can't reach the app, and cluster features require membership. Restricted accounts reach only the appeal page until restored.
 
 ## 4. Frontend Architecture
 
@@ -108,7 +110,8 @@ There is no application server. Supabase provides every backend service, and the
 - **RPC Functions**: privileged operations are exposed as Postgres functions (often `security definer`) and called via `.rpc()`. This is how the frontend performs actions it isn't allowed to do with direct row writes.
 - **Storage**: private buckets for chat images and avatars. Files are served through short-lived signed URLs, never through public object URLs.
 - **Realtime**: the SPA subscribes to database changes (chat, presence, notifications) and reacts live.
-- **Scheduled Jobs**: pg_cron runs database functions on a schedule (e.g. expiring stale signals, rebalancing membership).
+- **Scheduled Jobs**: pg_cron runs database functions on a schedule (e.g. expiring stale signals, rebalancing membership, pumping the email outbox).
+- **Edge Functions**: `send-emails` is invoked by the cron-driven outbox pump — and only by it, guarded by a shared secret. It claims queued `outbound_emails` rows under the service-role key and forwards them to Resend. The DB is the source of truth; the function is a stateless worker.
 
 The important mental model: **security lives in the database, not in the client**. The browser is untrusted; RLS and RPC functions are the enforcement point.
 

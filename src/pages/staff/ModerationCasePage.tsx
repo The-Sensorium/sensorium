@@ -295,7 +295,7 @@ export function ModerationCasePage() {
                 <button
                   type="button"
                   onClick={() => setBan((b) => !b)}
-                  className="inline-flex items-center gap-1.5 rounded-pill bg-error px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90"
+                  className="inline-flex items-center gap-1.5 rounded-pill bg-error px-4 py-2 text-sm font-semibold text-on-error transition-colors hover:opacity-90"
                 >
                   <Ban className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                   {ban ? 'Cancel ban' : 'Permanently ban'}
@@ -343,7 +343,7 @@ export function ModerationCasePage() {
                   type="button"
                   onClick={() => run(restrict, { p_user_id: data.target_user_id, p_status: 'banned', p_reason: actionArgs(), p_report_id: data.id })}
                   disabled={accountBusy || !actionArgs()}
-                  className="mt-2 rounded-pill bg-error px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-40"
+                  className="mt-2 rounded-pill bg-error px-4 py-2 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-40"
                 >
                   Confirm permanent ban
                 </button>

@@ -10,6 +10,7 @@ import {
   RequireOnboarded,
   RequireActiveAccount,
   RequireCapability,
+  RequireRestricted,
   RequireSessionRole,
   SessionRoleEntry,
 } from './guards'
@@ -37,6 +38,9 @@ import { SettingsView } from '../pages/cluster/SettingsView'
 import { OnboardingPage } from '../pages/onboarding/OnboardingPage'
 import { SessionRolePage } from '../pages/SessionRolePage'
 import { RestrictedAccountPage } from '../pages/RestrictedAccountPage'
+import { AppealPage } from '../pages/AppealPage'
+import { AdminAppealsPage } from '../pages/staff/AdminAppealsPage'
+import { AdminAppealCasePage } from '../pages/staff/AdminAppealCasePage'
 import { ModerationQueuePage } from '../pages/staff/ModerationQueuePage'
 import { ModerationCasePage } from '../pages/staff/ModerationCasePage'
 import { ModerationRolesPage } from '../pages/staff/ModerationRolesPage'
@@ -98,6 +102,14 @@ export function AppRouter() {
             }
           />
           <Route path="/restricted" element={<RestrictedAccountPage />} />
+          <Route
+            path="/appeal"
+            element={
+              <RequireRestricted>
+                <AppealPage />
+              </RequireRestricted>
+            }
+          />
           <Route path="/onboarding" element={<OnboardingPage />} />
 
           {/* Member shell */}
@@ -165,6 +177,8 @@ export function AppRouter() {
             <Route path="/admin" element={<Navigate to="/admin/reports" replace />} />
             <Route path="/admin/reports" element={<ModerationQueuePage />} />
             <Route path="/admin/reports/:reportId" element={<ModerationCasePage />} />
+            <Route path="/admin/appeals" element={<AdminAppealsPage />} />
+            <Route path="/admin/appeals/:appealId" element={<AdminAppealCasePage />} />
             <Route path="/admin/roles" element={<ModerationRolesPage />} />
             <Route path="/admin/audit" element={<ModerationAuditPage />} />
           </Route>
