@@ -168,6 +168,19 @@ function SessionRoleResolver({ access }: { access: MyAccessRow }) {
 }
 
 /**
+ * Blocks active/signed-out accounts from the appeal page. Only restricted
+ * accounts (suspended or banned) belong here; everyone else bounces to /home.
+ */
+export function RequireRestricted({ children }: { children: ReactNode }) {
+  const access = useMyAccess()
+
+  if (access.isLoading) return <LoadingScreen />
+  if (access.isError || !access.data) return <AccessErrorScreen onRetry={() => void access.refetch()} />
+  if (access.data.account_status === 'active') return <Navigate to="/home" replace />
+  return <>{children}</>
+}
+
+/**
  * Blocks access to post-onboarding routes until the user has completed
  * onboarding (`profiles.onboarding_completed_at` set). Redirects to /onboarding.
  */

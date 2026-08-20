@@ -89,6 +89,66 @@ export type Database = {
           },
         ]
       }
+      appeals: {
+        Row: {
+          appealed_expires_at: string | null
+          appealed_reason: string
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          details: string
+          id: string
+          response: string | null
+          status: Database["public"]["Enums"]["appeal_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          appealed_expires_at?: string | null
+          appealed_reason: string
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          details: string
+          id?: string
+          response?: string | null
+          status?: Database["public"]["Enums"]["appeal_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          appealed_expires_at?: string | null
+          appealed_reason?: string
+          appealed_status?: Database["public"]["Enums"]["account_status"]
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          details?: string
+          id?: string
+          response?: string | null
+          status?: Database["public"]["Enums"]["appeal_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appeals_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appeals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cluster_members: {
         Row: {
           cluster_id: string
@@ -166,6 +226,33 @@ export type Database = {
           name?: string
           queue_key?: string
           status?: Database["public"]["Enums"]["cluster_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_settings: {
+        Row: {
+          app_url: string
+          edge_url: string | null
+          enabled: boolean
+          id: boolean
+          secret: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_url?: string
+          edge_url?: string | null
+          enabled?: boolean
+          id?: boolean
+          secret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_url?: string
+          edge_url?: string | null
+          enabled?: boolean
+          id?: boolean
+          secret?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -592,6 +679,56 @@ export type Database = {
           },
           {
             foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outbound_emails: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          params: Json
+          recipient_email: string
+          sent_at: string | null
+          status: string
+          template: Database["public"]["Enums"]["outbound_email_template"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          params?: Json
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+          template: Database["public"]["Enums"]["outbound_email_template"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          params?: Json
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+          template?: Database["public"]["Enums"]["outbound_email_template"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbound_emails_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -1126,6 +1263,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      app_url: { Args: never; Returns: string }
       assert_account_can_write: { Args: never; Returns: undefined }
       assert_can_manage_roles: { Args: never; Returns: undefined }
       assert_can_moderate: { Args: never; Returns: undefined }
@@ -1144,6 +1282,15 @@ export type Database = {
         Args: { p_report_id: string }
         Returns: undefined
       }
+      claim_outbound_emails: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          params: Json
+          recipient_email: string
+          template: Database["public"]["Enums"]["outbound_email_template"]
+        }[]
+      }
       close_expired_votes: { Args: never; Returns: undefined }
       close_report_as_actioned: {
         Args: {
@@ -1156,11 +1303,27 @@ export type Database = {
       }
       cluster_unlocked: { Args: { p_cluster_id: string }; Returns: boolean }
       create_invitation: { Args: { p_round_id: string }; Returns: undefined }
+      decide_appeal: {
+        Args: {
+          p_accept: boolean
+          p_appeal_id: string
+          p_note: string
+        }
+        Returns: undefined
+      }
       decline_invitation: {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
       delete_my_account: { Args: never; Returns: undefined }
+      enqueue_email: {
+        Args: {
+          p_params?: Json
+          p_template: Database["public"]["Enums"]["outbound_email_template"]
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       expire_invitations: { Args: never; Returns: undefined }
       fn_candidate_eligible: {
         Args: {
@@ -1189,6 +1352,25 @@ export type Database = {
         Returns: string
       }
       fn_quorum: { Args: { p_active: number }; Returns: number }
+      get_admin_appeal: {
+        Args: { p_appeal_id: string }
+        Returns: {
+          appealed_expires_at: string | null
+          appealed_reason: string
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          created_at: string
+          current_account_status: Database["public"]["Enums"]["account_status"]
+          current_restriction_expires_at: string | null
+          current_restriction_reason: string | null
+          decided_at: string | null
+          details: string
+          display_name: string | null
+          id: string
+          response: string | null
+          status: Database["public"]["Enums"]["appeal_status"]
+          user_id: string | null
+        }[]
+      }
       get_candidate_profiles: {
         Args: { p_round_id: string }
         Returns: {
@@ -1335,6 +1517,20 @@ export type Database = {
           restriction_expires_at: string | null
           roles: string[]
           user_id: string
+        }[]
+      }
+      get_my_appeal: {
+        Args: never
+        Returns: {
+          appealed_expires_at: string | null
+          appealed_reason: string
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          created_at: string
+          decided_at: string | null
+          details: string
+          id: string
+          response: string | null
+          status: Database["public"]["Enums"]["appeal_status"]
         }[]
       }
       get_my_clusters: {
@@ -1487,6 +1683,25 @@ export type Database = {
         Returns: undefined
       }
       lift_expired_suspensions: { Args: never; Returns: undefined }
+      list_appeals_page: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_status?: Database["public"]["Enums"]["appeal_status"]
+        }
+        Returns: {
+          appealed_reason: string
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          created_at: string
+          decided_at: string | null
+          details: string
+          display_name: string
+          id: string
+          response: string | null
+          status: Database["public"]["Enums"]["appeal_status"]
+          user_id: string
+        }[]
+      }
       list_platform_roles: {
         Args: {
           p_include_revoked?: boolean
@@ -1529,6 +1744,10 @@ export type Database = {
       }
       mark_all_read: { Args: never; Returns: undefined }
       mark_cluster_read: { Args: { p_cluster_id: string }; Returns: undefined }
+      mark_outbound_email: {
+        Args: { p_error?: string; p_id: string; p_status: string }
+        Returns: undefined
+      }
       maybe_form_cluster: {
         Args: {
           p_mode: Database["public"]["Enums"]["matching_mode"]
@@ -1545,10 +1764,12 @@ export type Database = {
         Returns: boolean
       }
       progress_replacements: { Args: never; Returns: undefined }
+      pump_outbound_emails: { Args: never; Returns: undefined }
       raise_signal: {
         Args: { p_cluster_id: string; p_prompt: string }
         Returns: string
       }
+      recover_stuck_sending: { Args: never; Returns: undefined }
       release_moderation_report: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -1625,6 +1846,7 @@ export type Database = {
         Returns: string
       }
       start_replacement: { Args: { p_cluster_id: string }; Returns: string }
+      submit_appeal: { Args: { p_details: string }; Returns: string }
       submit_intro_answers: {
         Args: { p_answers: Json; p_cluster_id: string }
         Returns: undefined
@@ -1636,6 +1858,7 @@ export type Database = {
     }
     Enums: {
       account_status: "active" | "suspended" | "banned"
+      appeal_status: "submitted" | "resolved"
       availability: "available" | "busy" | "dnd"
       cluster_status: "introductions" | "active" | "archived"
       image_moderation_status: "pending" | "approved" | "rejected"
@@ -1660,6 +1883,7 @@ export type Database = {
         | "ban_lifted"
         | "role_granted"
         | "role_revoked"
+        | "appeal_decided"
       notification_type:
         | "message"
         | "mention"
@@ -1673,6 +1897,16 @@ export type Database = {
         | "unlocked"
         | "queue_update"
         | "moderation_notice"
+      outbound_email_template:
+        | "message-hidden"
+        | "warning-issued"
+        | "account-suspended"
+        | "account-banned"
+        | "restriction-lifted"
+        | "report-received"
+        | "report-resolved"
+        | "appeal-received"
+        | "appeal-resolved"
       platform_role: "moderator" | "admin"
       replacement_status:
         | "selecting_candidates"
@@ -1821,6 +2055,7 @@ export const Constants = {
   public: {
     Enums: {
       account_status: ["active", "suspended", "banned"],
+      appeal_status: ["submitted", "resolved"],
       availability: ["available", "busy", "dnd"],
       cluster_status: ["introductions", "active", "archived"],
       image_moderation_status: ["pending", "approved", "rejected"],
@@ -1846,6 +2081,7 @@ export const Constants = {
         "ban_lifted",
         "role_granted",
         "role_revoked",
+        "appeal_decided",
       ],
       notification_type: [
         "message",
@@ -1860,6 +2096,17 @@ export const Constants = {
         "unlocked",
         "queue_update",
         "moderation_notice",
+      ],
+      outbound_email_template: [
+        "message-hidden",
+        "warning-issued",
+        "account-suspended",
+        "account-banned",
+        "restriction-lifted",
+        "report-received",
+        "report-resolved",
+        "appeal-received",
+        "appeal-resolved",
       ],
       platform_role: ["moderator", "admin"],
       replacement_status: [

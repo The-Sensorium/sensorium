@@ -45,3 +45,36 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_DB_PASSWORD: ${{ secrets.SUPABASE_STAGING_DB_PASSWORD }}
+
+      - name: Deploy send-emails edge function to staging
+        run: npx supabase functions deploy send-emails --project-ref "$SUPABASE_STAGING_PROJECT_ID" --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
+
+      - name: Set email secrets on staging edge function
+        run: >-
+          npx supabase secrets set
+          --project-ref "$SUPABASE_STAGING_PROJECT_ID"
+          RESEND_API_KEY="$RESEND_API_KEY"
+          RESEND_FROM="no-reply@thesensorium.online"
+          SENSORIUM_EMAIL_SECRET="$SENSORIUM_EMAIL_SECRET"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          SENSORIUM_EMAIL_SECRET: ${{ secrets.SENSORIUM_EMAIL_SECRET }}
+
+      - name: Point the DB cron at the staging edge function
+        run: >-
+          npx supabase db query --linked
+          "update public.email_settings
+             set edge_url = 'https://$SUPABASE_STAGING_PROJECT_ID.functions.supabase.co/send-emails',
+                 secret = '$SENSORIUM_EMAIL_SECRET',
+                 app_url = 'https://preview.thesensorium.online',
+                 enabled = true,
+                 updated_at = now();"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
+          SENSORIUM_EMAIL_SECRET: ${{ secrets.SENSORIUM_EMAIL_SECRET }}

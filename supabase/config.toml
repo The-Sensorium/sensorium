@@ -384,6 +384,12 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
+# The email delivery worker is invoked synchronously by the database cron (via
+# pg_net) with a shared-secret header, not with a user JWT, so JWT verification
+# is off and the function authenticates the caller itself.
+[functions.send-emails]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

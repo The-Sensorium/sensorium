@@ -294,5 +294,9 @@ export function formatError(error: unknown): string {
   if (message.includes('report_target_mismatch'))
     return 'That action does not match the account reported in this case.'
   if (message.includes('report_not_open')) return 'That report is already closed.'
+  if (message.includes('appeal_not_found')) return 'That appeal could not be found.'
+  if (message.includes('appeal_already_resolved')) return 'That appeal has already been decided.'
+  if (message.includes('response_required')) return 'A response for the appellant is required.'
+  if (message.includes('response_too_long')) return 'Responses are limited to 2,000 characters.'
   return message
 }
