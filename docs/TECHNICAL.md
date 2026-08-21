@@ -39,7 +39,8 @@ sensorium/
 ├─ docs/                  # product, design, and architecture documentation
 ├─ supabase/
 │  ├─ config.toml         # local Supabase stack configuration
-│  └─ migrations/         # order-dependent SQL: schema, RLS, functions, cron
+│  ├─ migrations/         # order-dependent SQL: schema, RLS, functions, cron
+│  └─ functions/          # Edge Functions (send-emails + shared templates)
 ├─ src/
 │  ├─ app/                # router, providers, guards, auth context, layouts
 │  ├─ pages/              # route page components
@@ -69,9 +70,14 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `signals.ts` | request-for-help threads |
 | `votes.ts` | governance votes and cooldowns |
 | `notifications.ts` | user notifications |
-| `moderation.ts` | reporting |
+| `moderation.ts` | reporting, moderation queue and case actions, account restriction status |
 | `avatars.ts` | avatar signed URLs and storage paths |
 | `mentions.ts` | mention parsing and linkification |
+| `appeals.ts` | in-app appeals (restricted users) and the admin appeal queue |
+
+### Email pipeline
+
+Email is outbound-only and queued in the DB. `outbound_emails` rows are written by enforcement/appeal RPC functions in the same transaction as the action; a pg_cron job (`pump_outbound_emails`) POSTs batches to the `send-emails` Edge Function (guarded by a shared secret against `SENSORIUM_EMAIL_SECRET`), which claims rows, renders a template, forwards to Resend, and marks each row sent/failed. `recover_stuck_sending` re-queues rows stuck in `sending`. The `anon`/`authenticated` roles hold no grants on `outbound_emails` or `email_settings`; only `service_role` (and postgres for cron) touch them. See `docs/EMAIL_NOTIFICATIONS_APPEALS_PLAN.md` for the full design.
 
 ### Chat read receipts
 
@@ -116,6 +122,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Storage and permissions (0016-0020)**: storage buckets, grants, and fixes.
 - **Realtime (0021-0024)**: chat, signal replies, governance events, and notification payloads.
 - **Hardening (0025-0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
+- **Moderation and platform roles (0052-0066)**: platform access primitives (`user_roles`, `account_restrictions`, `moderation_actions`), reports queue and claim/release/resolve workflow, content enforcement (hide/restore), warnings, temporary suspensions and permanent bans, platform role administration, staff status guards, and moderation workflow guards (claim locks, action-close-report, report validation, restriction lift no-ops). See [`ROLE_BASED_ACCESS_PLAN.md`](ROLE_BASED_ACCESS_PLAN.md) for the access model.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
@@ -136,7 +143,7 @@ The browser obtains a signed URL with a short TTL, uses it to render the image, 
 
 ## Auth
 
-Authentication uses Supabase Auth with email and password. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028).
+Authentication uses Supabase Auth with email and password. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028). Moderation records survive deletion but are anonymized, because `reports`, `moderation_actions`, `account_restrictions`, and `user_roles` reference profiles with `on delete set null` (0052-0053).
 
 ## Security
 
@@ -152,6 +159,15 @@ Security lives in the database, not in the client. The browser holds only the pu
 | `VITE_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`); useful for pointing at a mirror in non-production |
 
 Only the anon key is used in the browser. All privileged operations run through Postgres RPC functions guarded by Row Level Security. No secrets ship in the client.
+
+Server-side email secrets live only in the `send-emails` Edge Function environment and the matching `email_settings` DB row seeded by the migration workflows:
+
+| Variable | Environment | Used by |
+|---|---|---|
+| `RESEND_API_KEY` | staging + prod, edge fn env | `send-emails` → Resend |
+| `RESEND_FROM` | `no-reply@thesensorium.online` | `send-emails` sender |
+| `SENSORIUM_EMAIL_SECRET` | shared, per environment | DB cron header vs edge fn check |
+| `SENSORIUM_APP_URL` | staging / prod | seed of `email_settings.app_url` (cron CTA links) |
 
 ## Local Development
 
@@ -180,8 +196,8 @@ main
 Three workflows validate and deploy:
 
 - **`ci.yml`**: runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with the v8 coverage gate, the production build (artifact uploaded), applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
-- **`migrate-staging.yml`**: applies pending migrations to the **staging** Supabase project on merge/push to `develop`.
-- **`migrate-production.yml`**: applies the same migrations to the **production** Supabase project on merge/push to `main`.
+- **`migrate-staging.yml`**: applies pending migrations to the **staging** Supabase project on merge/push to `develop`, then deploys `send-emails` + sets its secrets and points the DB cron at the staging Edge Function.
+- **`migrate-production.yml`**: applies the same migrations to the **production** Supabase project on merge/push to `main`, and does the same edge-function/secret/cron wiring for production.
 
 ### Deployments
 
@@ -200,6 +216,8 @@ The migration workflows are environment-aware and expect the following repositor
 | `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (shared by both environments) |
 | `SUPABASE_PROD_PROJECT_ID` | Production Supabase project reference |
 | `SUPABASE_PROD_DB_PASSWORD` | Production database password for `db push` |
+| `RESEND_API_KEY` | Resend API key for the `send-emails` edge function |
+| `SENSORIUM_EMAIL_SECRET` | shared secret between the production DB cron and the edge function |
 
 **Staging**
 
@@ -208,6 +226,10 @@ The migration workflows are environment-aware and expect the following repositor
 | `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (reused) |
 | `SUPABASE_STAGING_PROJECT_ID` | Staging Supabase project reference |
 | `SUPABASE_STAGING_DB_PASSWORD` | Staging database password for `db push` |
+| `RESEND_API_KEY` | Resend API key for the `send-emails` edge function |
+| `SENSORIUM_EMAIL_SECRET` | shared secret between the staging DB cron and the edge function |
+
+`RESEND_API_KEY` and `SENSORIUM_EMAIL_SECRET` are also required for production (same layout as the production table above, using the prod project ref).
 
 ## Scripts
 

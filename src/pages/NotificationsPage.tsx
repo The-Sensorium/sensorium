@@ -10,6 +10,7 @@ import {
   MailOpen,
   MessageSquare,
   PartyPopper,
+  ShieldCheck,
   UserPlus,
   Users,
   Vote,
@@ -38,6 +39,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   replacement: UserPlus,
   unlocked: LockOpen,
   queue_update: Users,
+  moderation_notice: ShieldCheck,
 }
 
 export function NotificationsPage() {

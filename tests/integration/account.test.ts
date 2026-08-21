@@ -207,9 +207,9 @@ describe('account and moderation', () => {
   it('delete_my_account cannot be used to delete an account without a session', async () => {
     const a = await member('del-anon')
     const anon = anonClient()
-    // The RPC is security definer; for anon it matches no row and no-ops.
+    // The RPC is security definer and fail-closed; anon must be rejected.
     const { error } = await anon.rpc('delete_my_account')
-    expect(error).toBeNull()
+    expect(error?.message).toBe('not_authenticated')
 
     // The account still exists.
     const { data: user } = await admin.auth.admin.getUserById(a.id)

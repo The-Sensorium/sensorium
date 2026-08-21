@@ -14,7 +14,6 @@ interface StackConfig {
   anonKey: string
   serviceRole: string
 }
-
 let config: StackConfig | null = null
 
 function stackStatus(): Record<string, string> {
@@ -170,6 +169,11 @@ export async function cleanup(
       .from('reports')
       .delete()
       .or(`reporter_id.in.(${userIds.join(',')}),target_user_id.in.(${userIds.join(',')})`)
+    // Outbox and appeal rows outlive their users (user_id nulls on delete), so
+    // clear the whole tables — they only hold rows created by tests on the
+    // integration stack.
+    await admin.from('outbound_emails').delete().not('recipient_email', 'is', null)
+    await admin.from('appeals').delete().not('id', 'is', null)
   }
   if (clusterIds.length) {
     const { error } = await admin.from('clusters').delete().in('id', clusterIds)
@@ -190,3 +194,18 @@ export const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
 )
+
+/** Give a user a platform role directly (service role, bypasses RLS). */
+export async function assignPlatformRole(
+  admin: SupabaseClient,
+  userId: string,
+  role: 'moderator' | 'admin',
+  reason = 'integration test setup',
+): Promise<void> {
+  const { error } = await admin.from('user_roles').insert({
+    user_id: userId,
+    role,
+    grant_reason: reason,
+  })
+  if (error) throw error
+}

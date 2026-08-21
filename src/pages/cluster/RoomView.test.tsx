@@ -414,10 +414,15 @@ describe('RoomView timeline', () => {
     expect(within(dialog).getByRole('region', { name: 'Not seen yet' }).textContent).toContain('Cy')
   })
 
-  it('does not offer the Info action on other members messages', () => {
+  it('offers only Report on other members messages', async () => {
     hooks.messages.data = [msg({ id: 'm1', author_id: 'u2', content: 'their message' })]
     renderRoom()
-    expect(screen.queryByRole('button', { name: 'Message actions' })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    expect(screen.getByRole('menuitem', { name: 'Report' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Info' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
   it('shows the empty seen state when no one has read the message', async () => {
