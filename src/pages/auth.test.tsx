@@ -102,7 +102,12 @@ describe('LoginPage', () => {
     renderRoute(<LoginPage />)
     await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
-    await waitFor(() => expect(auth.signInWithOAuth).toHaveBeenCalledWith({ provider: 'google' }))
+    await waitFor(() =>
+      expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: { redirectTo: expect.stringContaining('/entry') },
+      }),
+    )
   })
 })
 
@@ -162,7 +167,12 @@ describe('SignUpPage', () => {
     renderRoute(<SignUpPage />)
     await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
 
-    await waitFor(() => expect(auth.signInWithOAuth).toHaveBeenCalledWith({ provider: 'google' }))
+    await waitFor(() =>
+      expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: { redirectTo: expect.stringContaining('/entry') },
+      }),
+    )
   })
 })
 
