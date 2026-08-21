@@ -14,6 +14,20 @@
 //   http://127.0.0.1:54321 + a key discovered from the running CLI stack.
 //
 // Usage: npm run seed:demo
+//
+// ── Bootstrap Admin ──────────────────────────────────────────────────────────
+// Roles (admin/moderator) are NOT seeded. To grant an admin role on any
+// environment (local or staging), run this SQL in the Supabase dashboard
+// SQL editor (service_role context) after the user has signed up:
+//
+//   insert into public.user_roles (user_id, role, granted_by, grant_reason)
+//   select id, 'admin', null, 'bootstrap admin'
+//   from public.profiles
+//   where email = '<your-email>'
+//   on conflict (user_id, role) where revoked_at is null do nothing;
+//
+// For local dev the seed script below also grants admin to diya@demo.example
+// automatically.
 
 import { createClient } from '@supabase/supabase-js'
 import { execSync } from 'node:child_process'
@@ -482,6 +496,22 @@ async function seed() {
     .from('profiles')
     .update({ onboarding_completed_at: new Date().toISOString() })
     .eq('id', userId)
+
+  // Grant admin to the primary demo user so the /admin UI is usable locally.
+  const { data: existingRole } = await admin
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('role', 'admin')
+    .is('revoked_at', null)
+    .maybeSingle()
+  if (!existingRole) {
+    await admin.from('user_roles').insert({
+      user_id: userId,
+      role: 'admin',
+      grant_reason: 'seeded demo admin',
+    })
+  }
 
   // Rio is a fully usable second login, so member-dependent E2E flows (mention
   // autocomplete, read receipts) have a real second actor to drive.
