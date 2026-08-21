@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router'
-import { ArrowRight, ArrowUpRight, Check, Loader2, Shield, ShieldCheck, User } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, Check, Info, Loader2, Shield, ShieldCheck, User } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useAuth } from '../app/auth-context'
 import { useSessionRole } from '../app/session-role-context'
@@ -82,6 +82,12 @@ export function SessionRolePage() {
               </div>
             ) : (
               <ul className="mt-10 grid gap-4 sm:grid-cols-2" aria-label="Available workspaces">
+                {available.some((r) => r === 'moderator' || r === 'admin') && (
+                  <li className="col-span-full flex items-start gap-3 rounded-2xl border border-outline-variant/40 bg-surface-container/60 p-4 text-sm leading-6 text-on-surface-variant lg:hidden">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.5} aria-hidden />
+                    Use desktop for the best moderation experience.
+                  </li>
+                )}
                 {available.map((role) => {
                   const Icon = ROLE_ICONS[role]
                   return (
