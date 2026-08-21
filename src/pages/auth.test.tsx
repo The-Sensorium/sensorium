@@ -15,6 +15,7 @@ const requireSupabaseMock = vi.mocked(requireSupabase)
 
 interface AuthStub {
   signInWithPassword: ReturnType<typeof vi.fn>
+  signInWithOAuth: ReturnType<typeof vi.fn>
   signUp: ReturnType<typeof vi.fn>
   resetPasswordForEmail: ReturnType<typeof vi.fn>
   resend: ReturnType<typeof vi.fn>
@@ -27,6 +28,7 @@ function stubClient(overrides: Partial<AuthStub> = {}): {
 } {
   const auth: AuthStub = {
     signInWithPassword: vi.fn(async () => ({ data: null, error: null })),
+    signInWithOAuth: vi.fn(async () => ({ data: null, error: null })),
     signUp: vi.fn(async () => ({ data: null, error: null })),
     resetPasswordForEmail: vi.fn(async () => ({ data: null, error: null })),
     resend: vi.fn(async () => ({ data: null, error: null })),
@@ -91,6 +93,22 @@ describe('LoginPage', () => {
       '/auth/forgot-password',
     )
   })
+
+  it('calls signInWithOAuth when the Google button is clicked', async () => {
+    const { client, auth } = stubClient()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<LoginPage />)
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
+
+    await waitFor(() =>
+      expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: { redirectTo: expect.stringContaining('/entry') },
+      }),
+    )
+  })
 })
 
 describe('SignUpPage', () => {
@@ -138,6 +156,22 @@ describe('SignUpPage', () => {
     )
     await waitFor(() =>
       expect(screen.getByText('Verify your email address')).toBeInTheDocument(),
+    )
+  })
+
+  it('calls signInWithOAuth when the Google button is clicked', async () => {
+    const { client, auth } = stubClient()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<SignUpPage />)
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }))
+
+    await waitFor(() =>
+      expect(auth.signInWithOAuth).toHaveBeenCalledWith({
+        provider: 'google',
+        options: { redirectTo: expect.stringContaining('/entry') },
+      }),
     )
   })
 })
