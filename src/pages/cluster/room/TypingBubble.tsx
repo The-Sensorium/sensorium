@@ -21,7 +21,7 @@ export function TypingBubble({
       >
         <Avatar name={name} src={avatarUrl} className="h-7 w-7" textClassName="text-xs" />
       </Link>
-      <div className="flex items-center rounded-2xl rounded-bl-md bg-surface-low px-4 py-3 shadow-soft">
+      <div className="flex items-center rounded-2xl rounded-bl-md bg-surface-container px-4 py-3 shadow-soft">
         <span className="flex items-center gap-1" aria-hidden>
           {[0, 1, 2].map((i) => (
             <span

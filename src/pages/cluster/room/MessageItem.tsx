@@ -184,7 +184,7 @@ export function MessageItem({
               isEditing
                 ? 'rounded-2xl border border-outline-variant/60 bg-surface p-2'
                 : cn(
-                    'rounded-2xl bg-surface-low px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-soft',
+                    'rounded-2xl bg-surface-container px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-soft',
                     'whitespace-pre-wrap break-words',
                     mine ? 'rounded-br-md' : 'rounded-bl-md',
                   )

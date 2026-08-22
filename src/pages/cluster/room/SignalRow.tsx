@@ -31,7 +31,7 @@ export function SignalRow({
       {showDay && <DayDivider iso={signal.created_at} />}
       <Link
         to={`/cluster/${clusterId}/signals/${signal.id}`}
-        className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-low/60 px-3 py-2.5 transition-colors hover:border-outline/60"
+        className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-container px-3 py-2.5 transition-colors hover:border-outline/60"
       >
         <span className="mt-0.5 shrink-0">
           {author?.avatar_url ? (
