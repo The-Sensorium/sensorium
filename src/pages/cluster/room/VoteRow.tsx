@@ -37,7 +37,7 @@ export function VoteRow({
       {showDay && <DayDivider iso={vote.created_at} />}
       <Link
         to={`/cluster/${clusterId}/votes`}
-        className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-low/60 px-3 py-2.5 transition-colors hover:border-outline/60"
+        className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-container px-3 py-2.5 transition-colors hover:border-outline/60"
       >
         <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
           <Scale className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
