@@ -74,7 +74,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const answers = introAnswers.data ?? []
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-3 md:space-y-4">
       <Link
         to={`/cluster/${clusterId}/members`}
         className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
@@ -84,25 +84,23 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
       </Link>
 
       {/* ── Profile Header ─────────────────────────────────── */}
-      <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-        <div className="flex flex-col gap-5 md:flex-row">
+      <div className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft md:p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:gap-5">
           {/* Left: profile info */}
-          <div className="flex flex-1 items-start gap-4">
+          <div className="flex flex-1 items-start gap-3 md:gap-4">
             <Avatar
               name={member.display_name}
               src={member.avatar_url}
-              className="h-[88px] w-[88px]"
+              className="h-20 w-20 md:h-[88px] md:w-[88px]"
             />
             <div className="min-w-0 flex-1">
-              <h1 className="truncate font-display text-xl font-semibold text-on-surface">
-                {member.display_name}
-              </h1>
-              {member.pronouns && (
-                <div className="mt-1">
-                  <PronounBadge pronouns={member.pronouns} />
-                </div>
-              )}
-              <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-on-surface-variant">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <h1 className="truncate font-display text-xl font-semibold text-on-surface">
+                  {member.display_name}
+                </h1>
+                {member.pronouns && <PronounBadge pronouns={member.pronouns} />}
+              </div>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
                 {member.country_code && (
                   <span className="inline-flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
@@ -121,7 +119,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                   </span>
                 )}
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {onlineNow ? (
                   <AvailabilityBadge value={member.availability} />
                 ) : (
@@ -137,39 +135,39 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                 )}
               </div>
               {member.bio && (
-                <p className="mt-2.5 text-sm leading-5 text-on-surface-variant">{member.bio}</p>
+                <p className="mt-1.5 text-sm leading-5 text-on-surface-variant">{member.bio}</p>
               )}
             </div>
           </div>
 
           {/* Right: cluster context */}
           {cluster && (
-            <div className="shrink-0 border-t border-outline-variant/40 pt-4 md:w-52 md:border-t-0 md:border-l md:pt-0 md:pl-5">
+            <div className="shrink-0 border-t border-outline-variant/40 pt-3 md:w-52 md:border-t-0 md:border-l md:pt-0 md:pl-5">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-primary">
                 Your cluster
               </h2>
-              <p className="mt-2 text-sm font-medium text-on-surface">
+              <p className="mt-1.5 text-sm font-medium text-on-surface">
                 {cluster.cluster.name}
               </p>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-on-surface-variant">
-                <Users className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                {cluster.memberCount} / 8 members
+              <p className="mt-1 flex items-center gap-3 text-xs text-on-surface-variant">
+                <span className="inline-flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                  {cluster.memberCount} / 8 members
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                  {new Date(cluster.joinedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
               </p>
-              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-on-surface-variant">
-                <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                Member since{' '}
-                {new Date(cluster.joinedAt).toLocaleDateString('en-US', {
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </p>
-
             </div>
           )}
         </div>
 
         {!isSelf && (
-          <div className="mt-4 flex items-center gap-2 border-t border-outline-variant/40 pt-4">
+          <div className="mt-3 flex items-center gap-2 border-t border-outline-variant/40 pt-3 md:mt-4 md:pt-4">
             <Link
               to={`/cluster/${clusterId}`}
               className={cn(
