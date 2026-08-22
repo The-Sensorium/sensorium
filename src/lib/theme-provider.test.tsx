@@ -55,13 +55,13 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
-  it('defaults to system mode when nothing is stored', () => {
+  it('defaults to light mode when nothing is stored', () => {
     render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,
     )
-    expect(screen.getByRole('button')).toHaveTextContent('mode=system')
+    expect(screen.getByRole('button')).toHaveTextContent('mode=light')
   })
 
   it('persists a mode change and updates the class', async () => {
@@ -78,6 +78,7 @@ describe('ThemeProvider', () => {
 
   it('listens to system preference changes', () => {
     const { setMatches } = installMatchMedia(false)
+    localStorage.setItem('sensorium:theme', 'system')
     render(
       <ThemeProvider>
         <Probe />
