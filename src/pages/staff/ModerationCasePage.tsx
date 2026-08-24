@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 import { ArrowLeft, Ban, Loader2, ShieldAlert } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import {
@@ -24,6 +24,8 @@ function has(access: ReturnType<typeof useMyAccess>['data'], cap: Capability) {
 export function ModerationCasePage() {
   useDocumentTitle('Report case')
   const { reportId } = useParams<{ reportId: string }>()
+  const { pathname } = useLocation()
+  const backPath = pathname.replace(/\/[^/]+$/, '')
   const report = useModerationReport(reportId)
   const messageQuery = useModeratedMessage(reportId)
   const access = useMyAccess()
@@ -98,7 +100,7 @@ export function ModerationCasePage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3">
-          <Link to=".." className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container">
+          <Link to={backPath} className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container">
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           </Link>
           <div>

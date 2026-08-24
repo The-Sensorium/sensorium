@@ -9,6 +9,7 @@ import {
   COMMENT_CONTENT_MAX,
   POSTS_PAGE_SIZE,
   postImageStoragePath,
+  sortPostsForFeed,
   useClusterPostComments,
   useClusterPostLikes,
   useClusterPosts,
@@ -27,6 +28,7 @@ import {
   useToggleCommentLike,
   useTogglePostLike,
   useUserPosts,
+  type Post,
 } from './posts'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
@@ -61,6 +63,30 @@ describe('posts', () => {
   it('exports pagination and length constants', () => {
     expect(POSTS_PAGE_SIZE).toBe(30)
     expect(COMMENT_CONTENT_MAX).toBe(1000)
+  })
+
+  it('sortPostsForFeed keeps the original order for "new"', () => {
+    const posts = [
+      { id: 'b', created_at: '2026-01-02Z' },
+      { id: 'a', created_at: '2026-01-01Z' },
+    ] as Post[]
+    expect(sortPostsForFeed(posts, 'new', () => ({ likes: 0, comments: 0 }))).toBe(posts)
+  })
+
+  it('sortPostsForFeed ranks "top" by likes + comments, newest on ties', () => {
+    const posts = [
+      { id: 'low', created_at: '2026-01-01Z' },
+      { id: 'mid', created_at: '2026-01-02Z' },
+      { id: 'high', created_at: '2026-01-03Z' },
+      { id: 'tie1', created_at: '2026-01-04Z' },
+      { id: 'tie2', created_at: '2026-01-05Z' },
+    ] as Post[]
+    const engagement = (p: { id: string }) => ({
+      likes: p.id === 'high' ? 10 : 0,
+      comments: p.id === 'mid' ? 1 : 0,
+    })
+    const result = sortPostsForFeed(posts, 'top', engagement)
+    expect(result.map((p) => p.id)).toEqual(['high', 'mid', 'tie2', 'tie1', 'low'])
   })
 
   it('useClusterPosts fetches a cluster’s posts newest-first', async () => {
