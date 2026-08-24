@@ -25,7 +25,7 @@ export function GifPicker({
 
   return (
     <div
-      className="absolute bottom-full left-0 z-30 mb-2 flex w-full max-w-sm flex-col gap-2 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift"
+      className="absolute bottom-full left-0 z-30 mb-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift"
       onClick={(e) => e.stopPropagation()}
     >
       <input
