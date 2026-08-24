@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Check, Copy, Flag, Heart, Loader2, MessageSquare, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
@@ -8,6 +8,7 @@ import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
+import { cn } from '../lib/utils'
 
 const timeAgo = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -37,7 +38,9 @@ export function PostCard({
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const isMine = post.author_id === userId
 
+  const wrapRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuAbove, setMenuAbove] = useState(false)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(post.content ?? '')
   const [titleDraft, setTitleDraft] = useState(post.title ?? '')
@@ -56,6 +59,17 @@ export function PostCard({
     }
     setCopied(true)
     window.setTimeout(() => setCopied(false), 2000)
+  }
+
+  function toggleMenu() {
+    const wrap = wrapRef.current
+    if (wrap) {
+      const rect = wrap.getBoundingClientRect()
+      setMenuAbove(rect.top > window.innerHeight - rect.bottom)
+    } else {
+      setMenuAbove(false)
+    }
+    setMenuOpen((o) => !o)
   }
 
   async function handleEdit() {
@@ -121,13 +135,13 @@ export function PostCard({
           {commentCount}
         </Link>
 
-        <div className="relative ml-auto">
+        <div ref={wrapRef} className="relative ml-auto">
           <button
             type="button"
             aria-label="Post actions"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((o) => !o)}
+            onClick={toggleMenu}
             className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
           >
             <MoreVertical className="h-4 w-4" strokeWidth={1.5} aria-hidden />
@@ -144,7 +158,10 @@ export function PostCard({
               <div
                 role="menu"
                 aria-label="Post actions"
-                className="absolute right-0 top-full z-20 mt-1 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-lift"
+                className={cn(
+                  'absolute right-0 z-20 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-lift',
+                  menuAbove ? 'bottom-full mb-2' : 'top-full mt-1',
+                )}
               >
                 <button
                   type="button"
