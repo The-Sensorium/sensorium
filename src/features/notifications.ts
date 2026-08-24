@@ -264,7 +264,7 @@ export function notificationTarget(
     case 'cluster_formed':
       return clusterId ? { to: `/cluster/${clusterId}/introductions` } : { to: '/home' }
     case 'queue_update':
-      return { to: '/discovery' }
+      return { to: '/clusters' }
     default:
       return clusterId ? { to: `/cluster/${clusterId}` } : null
   }

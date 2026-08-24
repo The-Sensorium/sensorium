@@ -74,7 +74,7 @@ describe('notificationTarget', () => {
 
   it('links invitations and queue updates', () => {
     expect(notificationTarget(n('invitation_received', 'c1'))).toEqual({ to: '/home' })
-    expect(notificationTarget(n('queue_update', 'c1'))).toEqual({ to: '/discovery' })
+    expect(notificationTarget(n('queue_update', 'c1'))).toEqual({ to: '/clusters' })
   })
 
   it('falls back to the cluster, or null when unmappable and clusterless', () => {
