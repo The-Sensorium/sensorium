@@ -210,27 +210,39 @@ export function CommentThread({
             {error && <p className="mt-1 text-xs text-error">{error}</p>}
           </div>
           <div className="mt-2 flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="Attach image"
-              onClick={() => fileRef.current?.click()}
-              className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
-            >
-              <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="Add a GIF"
-              aria-haspopup="dialog"
-              aria-expanded={gifOpen}
-              onClick={(e) => {
-                e.stopPropagation()
-                setGifOpen((o) => !o)
-              }}
-              className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
-            >
-              <ImagePlay className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Attach image"
+                onClick={() => fileRef.current?.click()}
+                className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+              >
+                <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              </button>
+              <button
+                type="button"
+                aria-label="Add a GIF"
+                aria-haspopup="dialog"
+                aria-expanded={gifOpen}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setGifOpen((o) => !o)
+                }}
+                className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+              >
+                <ImagePlay className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+              </button>
+              {gifOpen && (
+                <GifPicker
+                  pending={create.isPending}
+                  onSelect={(g) => {
+                    setGif(g)
+                    setFile(null)
+                    setGifOpen(false)
+                  }}
+                />
+              )}
+            </div>
             <button
               type="submit"
               disabled={!hasContent || create.isPending}
@@ -244,16 +256,6 @@ export function CommentThread({
               Comment
             </button>
           </div>
-          {gifOpen && (
-            <GifPicker
-              pending={create.isPending}
-              onSelect={(g) => {
-                setGif(g)
-                setFile(null)
-                setGifOpen(false)
-              }}
-            />
-          )}
         </div>
         <input
           ref={fileRef}
