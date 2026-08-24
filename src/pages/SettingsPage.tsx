@@ -384,7 +384,16 @@ function NotificationPreferences() {
   }
 
   function toggle(clusterId: string, key: PrefToggle, value: boolean) {
-    const current = { messages: false, mentions: false, reactions: false, votes: false, invitations: false, signals: false }
+    const current: Record<PrefToggle, boolean> = {
+      messages: false,
+      mentions: false,
+      reactions: false,
+      votes: false,
+      invitations: false,
+      signals: false,
+      post_comment: false,
+      post_like: false,
+    }
     const existing = byCluster.get(clusterId)
     for (const t of PREF_TOGGLES) current[t] = existing?.[t] ?? true
     current[key] = value

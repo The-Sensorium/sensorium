@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { Modal } from './Modal'
 import { REPORT_REASONS, useReportMember, type ReportReason } from '../features/moderation'
+import { useReportComment, useReportPost } from '../features/posts'
 
 const REPORT_ERRORS: Record<string, string> = {
   duplicate_report: 'You already have an open report against this member.',
@@ -19,38 +20,57 @@ export function ReportModal({
   clusterId,
   target,
   messageId,
+  contentTarget,
 }: {
   open: boolean
   onClose: () => void
   clusterId: string
   target: { id: string; name: string }
   messageId?: string
+  contentTarget?: { kind: 'post' | 'comment'; id: string }
 }) {
   const [reason, setReason] = useState<ReportReason | null>(null)
   const [details, setDetails] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const report = useReportMember()
+  const reportMember = useReportMember()
+  const reportPost = useReportPost(clusterId)
+  const reportComment = useReportComment(clusterId)
+  const active =
+    contentTarget?.kind === 'post' ? reportPost : contentTarget?.kind === 'comment' ? reportComment : reportMember
+  const resetRef = useRef(false)
 
   useEffect(() => {
-    if (open) {
-      setReason(null)
-      setDetails('')
-      setError(null)
-      report.reset()
+    if (!open) {
+      resetRef.current = false
+      return
     }
-  }, [open, report])
+    if (resetRef.current) return
+    resetRef.current = true
+    setReason(null)
+    setDetails('')
+    setError(null)
+    reportMember.reset()
+    reportPost.reset()
+    reportComment.reset()
+  }, [open, reportMember, reportPost, reportComment])
 
   async function handleSubmit() {
     if (!reason) return
     setError(null)
     try {
-      await report.mutateAsync({
-        clusterId,
-        targetUserId: target.id,
-        reason,
-        details: details.trim() || undefined,
-        messageId,
-      })
+      if (contentTarget?.kind === 'post') {
+        await reportPost.mutateAsync({ postId: contentTarget.id, reason, details: details.trim() || undefined })
+      } else if (contentTarget?.kind === 'comment') {
+        await reportComment.mutateAsync({ commentId: contentTarget.id, reason, details: details.trim() || undefined })
+      } else {
+        await reportMember.mutateAsync({
+          clusterId,
+          targetUserId: target.id,
+          reason,
+          details: details.trim() || undefined,
+          messageId,
+        })
+      }
     } catch (e) {
       const raw =
         e instanceof Error ? e.message : typeof e === 'object' && e !== null && 'message' in e
@@ -62,13 +82,14 @@ export function ReportModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Report member">
-      {report.isSuccess ? (
+    <Modal open={open} onClose={onClose} title={contentTarget ? `Report ${contentTarget.kind}` : 'Report member'}>
+      {active.isSuccess ? (
         <div className="mt-4 flex flex-col items-center gap-2 rounded-xl bg-surface-container/50 px-4 py-6 text-center">
           <CheckCircle2 className="h-8 w-8 text-primary" strokeWidth={1.5} aria-hidden />
           <p className="text-sm font-semibold text-on-surface">Report submitted</p>
           <p className="text-sm text-on-surface-variant">
-            Thanks. Our moderators will review your report about {target.name}.
+            Thanks. Our moderators will review your report
+            {contentTarget ? ` about this ${contentTarget.kind}` : ` about ${target.name}`}.
           </p>
         </div>
       ) : (
@@ -80,7 +101,7 @@ export function ReportModal({
           }}
         >
           <p className="text-sm text-on-surface-variant">
-            Why are you reporting {target.name}?
+            Why are you reporting{contentTarget ? ` this ${contentTarget.kind}` : ` ${target.name}`}?
           </p>
           <fieldset className="space-y-2">
             <legend className="sr-only">Report reason</legend>
@@ -124,10 +145,10 @@ export function ReportModal({
 
           <button
             type="submit"
-            disabled={!reason || report.isPending}
+            disabled={!reason || active.isPending}
             className="inline-flex w-full items-center justify-center gap-2 rounded-pill bg-error px-5 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-50"
           >
-            {report.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {active.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Submit report
           </button>
         </form>

@@ -105,7 +105,7 @@ describe('timeAgo', () => {
 
 describe('pref constants', () => {
   it('exposes the full toggle set and labels', () => {
-    expect(PREF_TOGGLES).toHaveLength(6)
+    expect(PREF_TOGGLES).toHaveLength(8)
     expect(PREF_LABELS.votes).toBe('Votes & replacements')
   })
 })

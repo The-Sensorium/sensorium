@@ -16,7 +16,7 @@ export function makeSupabaseClient(ref: { value: MockSupabaseResult }) {
     const ship: Record<string, unknown> = {
       then: (resolve: (v: unknown) => void) => resolve(ref.value),
     }
-    for (const m of ['select', 'eq', 'in', 'order', 'maybeSingle', 'single', 'limit', 'lt', 'gt', 'lte', 'gte', 'update', 'upsert', 'insert', 'delete', 'is', 'not', 'throwOnError']) {
+    for (const m of ['select', 'eq', 'in', 'order', 'maybeSingle', 'single', 'limit', 'lt', 'gt', 'lte', 'gte', 'update', 'upsert', 'insert', 'delete', 'is', 'not', 'throwOnError', 'or']) {
       ship[m] = vi.fn(() => ship)
     }
     return ship

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
-import { Compass, Home, Settings, Users } from 'lucide-react'
+import { Compass, Home, Newspaper, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../auth-context'
 import { ThemeToggle } from '../../components/theme-toggle'
@@ -9,6 +9,7 @@ import { useNotificationsChannel } from '../../features/notifications'
 
 const navItems = [
   { to: '/home', label: 'Home', icon: Home },
+  { to: '/posts', label: 'Posts', icon: Newspaper },
   { to: '/discovery', label: 'Discovery', icon: Compass },
   { to: '/notifications', label: 'Notifications', icon: undefined },
   { to: '/clusters', label: 'Clusters', icon: Users },
