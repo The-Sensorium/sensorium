@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { PostCard } from './PostCard'
 import type { Post } from '../features/posts'
@@ -113,11 +113,24 @@ describe('PostCard', () => {
     )
   })
 
-  it('deletes the post from the menu', async () => {
+  it('asks for confirmation before deleting the post', async () => {
     setup()
     fireEvent.click(screen.getByRole('button', { name: 'Post actions' }))
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Delete post?' })
+    expect(deleteMutate).not.toHaveBeenCalled()
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(deleteMutate).toHaveBeenCalledWith('p1'))
+  })
+
+  it('cancels the delete confirmation without deleting', async () => {
+    setup()
+    fireEvent.click(screen.getByRole('button', { name: 'Post actions' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Delete post?' })
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Delete post?' })).not.toBeInTheDocument())
+    expect(deleteMutate).not.toHaveBeenCalled()
   })
 
   it('offers Report (not Edit/Delete) for another author and opens the report modal', async () => {

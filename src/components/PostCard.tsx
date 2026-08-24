@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Check, Copy, Flag, Heart, Loader2, MessageSquare, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
@@ -8,6 +8,7 @@ import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
+import { cn } from '../lib/utils'
 
 const timeAgo = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -24,6 +25,7 @@ export function PostCard({
   likedByMe,
   commentCount,
   onLike,
+  onDeleted,
 }: {
   post: Post
   clusterId: string
@@ -32,12 +34,17 @@ export function PostCard({
   likedByMe: boolean
   commentCount: number
   onLike: (postId: string) => void
+  onDeleted?: () => void
 }) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const isMine = post.author_id === userId
 
+  const wrapRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuAbove, setMenuAbove] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(post.content ?? '')
   const [titleDraft, setTitleDraft] = useState(post.title ?? '')
@@ -56,6 +63,28 @@ export function PostCard({
     }
     setCopied(true)
     window.setTimeout(() => setCopied(false), 2000)
+  }
+
+  function toggleMenu() {
+    const wrap = wrapRef.current
+    if (wrap) {
+      const rect = wrap.getBoundingClientRect()
+      setMenuAbove(rect.top > window.innerHeight - rect.bottom)
+    } else {
+      setMenuAbove(false)
+    }
+    setMenuOpen((o) => !o)
+  }
+
+  async function handleDelete() {
+    setDeleteError(null)
+    try {
+      await del.mutateAsync(post.id)
+      setConfirmOpen(false)
+      onDeleted?.()
+    } catch (e) {
+      setDeleteError(toErrorMessage(e, 'Could not delete your post. Try again.'))
+    }
   }
 
   async function handleEdit() {
@@ -121,13 +150,13 @@ export function PostCard({
           {commentCount}
         </Link>
 
-        <div className="relative ml-auto">
+        <div ref={wrapRef} className="relative ml-auto">
           <button
             type="button"
             aria-label="Post actions"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((o) => !o)}
+            onClick={toggleMenu}
             className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
           >
             <MoreVertical className="h-4 w-4" strokeWidth={1.5} aria-hidden />
@@ -144,7 +173,10 @@ export function PostCard({
               <div
                 role="menu"
                 aria-label="Post actions"
-                className="absolute right-0 top-full z-20 mt-1 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-lift"
+                className={cn(
+                  'absolute right-0 z-20 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-lift',
+                  menuAbove ? 'bottom-full mb-2' : 'top-full mt-1',
+                )}
               >
                 <button
                   type="button"
@@ -177,17 +209,11 @@ export function PostCard({
                       role="menuitem"
                       onClick={() => {
                         setMenuOpen(false)
-                        void del.mutateAsync(post.id)
+                        setConfirmOpen(true)
                       }}
-                      disabled={del.isPending}
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/10 disabled:opacity-60"
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/10"
                     >
-                      {del.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                      )}
-                      Delete
+                      <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Delete
                     </button>
                   </>
                 ) : (
@@ -208,6 +234,38 @@ export function PostCard({
           )}
         </div>
       </div>
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => {
+          if (!del.isPending) setConfirmOpen(false)
+        }}
+        title="Delete post?"
+      >
+        <p className="mt-3 text-sm text-on-surface-variant">
+          This permanently deletes your post along with its comments. This action can't be undone.
+        </p>
+        {deleteError && <p className="mt-3 text-sm text-error">{deleteError}</p>}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmOpen(false)}
+            disabled={del.isPending}
+            className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            disabled={del.isPending}
+            className="inline-flex items-center gap-2 rounded-pill bg-error px-4 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+          >
+            {del.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {del.isPending ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </Modal>
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Edit post">
         <form
