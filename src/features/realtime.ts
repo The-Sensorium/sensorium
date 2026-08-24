@@ -118,10 +118,14 @@ async function patchPostComment(
     .maybeSingle()
   if (error || !data) return
   const clusterId = data.cluster_id
-  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], (cur) => {
+  // Feed reads ['post-comments', clusterId, 'all']; the detail page reads
+  // ['post-comments', clusterId, postId], so patch both to keep them in sync.
+  const insert = (cur?: PostCommentRealtime[]) => {
     if (!cur || cur.some((c) => c.id === comment.id)) return cur
     return [...cur, comment].sort((a, b) => a.created_at.localeCompare(b.created_at))
-  })
+  }
+  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], insert)
+  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, comment.post_id], insert)
 }
 
 /** Route a comment-like INSERT/DELETE to the cache of the cluster its comment belongs to. */

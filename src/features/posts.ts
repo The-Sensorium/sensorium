@@ -19,9 +19,31 @@ const byNewest = (a: Post, b: Post) =>
 const byOldest = (a: PostComment, b: PostComment) =>
   a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
 
+export type PostSort = 'new' | 'top'
+
+/** Reorder a loaded feed slice for display. "top" ranks a post by likes + comments
+ * (client-side: the data is already fetched) and falls back to newest on ties. */
+export function sortPostsForFeed(
+  posts: Post[],
+  sort: PostSort,
+  engagement: (post: Post) => { likes: number; comments: number },
+): Post[] {
+  if (sort === 'new') return posts
+  return [...posts].sort((a, b) => {
+    const rank = (p: Post) => {
+      const e = engagement(p)
+      return e.likes + e.comments
+    }
+    const diff = rank(b) - rank(a)
+    return diff !== 0 ? diff : byNewest(a, b)
+  })
+}
+
 /** Posts of one cluster, newest first (RLS: active members of an unlocked cluster).
  * A refetch returns the newest page but merge-preserves any earlier pages already
- * loaded via useLoadEarlierPosts, so cache invalidations don't truncate the feed. */
+ * loaded via useLoadEarlierPosts, so cache invalidations don't truncate the feed.
+ * Posts inside the freshly-fetched window that are no longer returned (soft-deleted
+ * or moderation-hidden, so RLS hides them) are pruned instead of resurrected. */
 export function useClusterPosts(clusterId: string | null, enabled = true) {
   const queryClient = useQueryClient()
   return useQuery({
@@ -39,9 +61,19 @@ export function useClusterPosts(clusterId: string | null, enabled = true) {
         .limit(POSTS_PAGE_SIZE)
       if (error) throw error
       const fresh = ((data ?? []) as Post[]).sort(byNewest)
+      if (fresh.length === 0) return fresh
+      const freshIds = new Set(fresh.map((p) => p.id))
+      const cutoff = fresh[fresh.length - 1]
       const existing = queryClient.getQueryData<Post[]>(['cluster-posts', clusterId]) ?? []
       const byId = new Map<string, Post>()
-      for (const p of [...existing, ...fresh]) byId.set(p.id, p)
+      for (const p of existing) {
+        // Posts older than the fresh page live in an earlier page; keep them (we
+        // cannot tell from this fetch whether they still exist). Posts at/after the
+        // cutoff must appear in fresh; if they don't, RLS no longer returns them.
+        if (byNewest(p, cutoff) <= 0 && !freshIds.has(p.id)) continue
+        byId.set(p.id, p)
+      }
+      for (const p of fresh) byId.set(p.id, p)
       return [...byId.values()].sort(byNewest)
     },
   })

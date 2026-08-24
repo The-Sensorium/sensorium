@@ -9,6 +9,8 @@ const REPORT_ERRORS: Record<string, string> = {
   duplicate_report: 'You already have an open report against this member.',
   cannot_report_self: 'You cannot report yourself.',
   message_not_reportable: 'That message can no longer be reported.',
+  post_not_reportable: 'That post can no longer be reported.',
+  comment_not_reportable: 'That comment can no longer be reported.',
   not_a_member: 'Both you and the member you are reporting must be active in this cluster.',
   details_too_long: 'The details are too long. Please keep them under 2000 characters.',
   account_inactive: 'Your account is restricted right now and cannot submit reports.',

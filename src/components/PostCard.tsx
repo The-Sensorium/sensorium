@@ -243,7 +243,7 @@ export function PostCard({
         title="Delete post?"
       >
         <p className="mt-3 text-sm text-on-surface-variant">
-          This permanently deletes your post along with its comments. This action can't be undone.
+          This removes your post from the cluster. This action can't be undone.
         </p>
         {deleteError && <p className="mt-3 text-sm text-error">{deleteError}</p>}
         <div className="mt-6 flex justify-end gap-2">

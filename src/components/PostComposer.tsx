@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ImagePlay, ImagePlus, Loader2, Send, X } from 'lucide-react'
+import { ImagePlay, ImagePlus, Loader2, Plus, Send, X } from 'lucide-react'
 import { GifPicker } from '../pages/cluster/room/GifPicker'
 import { useCreatePost, uploadPostImage, POST_CONTENT_MAX, POST_TITLE_MAX } from '../features/posts'
 import type { Gif } from '../features/gifs'
@@ -22,8 +22,14 @@ export function PostComposer({
   const [gif, setGif] = useState<Gif | null>(null)
   const [gifOpen, setGifOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
   const create = useCreatePost(clusterId)
+
+  useEffect(() => {
+    if (open) bodyRef.current?.focus()
+  }, [open])
 
   useEffect(() => {
     function dismiss() {
@@ -74,6 +80,20 @@ export function PostComposer({
 
   const hasContent = Boolean(draft.trim() || file || gif)
 
+  if (!open) {
+    return (
+      <button
+        type="button"
+        aria-label="New post"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
+      >
+        <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+        New post
+      </button>
+    )
+  }
+
   return (
     <form
       className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft"
@@ -91,6 +111,7 @@ export function PostComposer({
         className="w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm font-semibold text-on-surface outline-none transition-colors placeholder:font-normal placeholder:text-on-surface-variant/60 focus:border-primary"
       />
       <textarea
+        ref={bodyRef}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows={3}
@@ -169,18 +190,32 @@ export function PostComposer({
             />
           )}
         </div>
-        <button
-          type="submit"
-          disabled={!hasContent || create.isPending}
-          className="ml-auto inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
-        >
-          {create.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Send className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-          )}
-          {create.isPending ? 'Posting...' : 'Post'}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            disabled={create.isPending}
+            onClick={() => {
+              setOpen(false)
+              setGifOpen(false)
+              setError(null)
+            }}
+            className="rounded-pill px-3 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!hasContent || create.isPending}
+            className="inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            {create.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Send className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            )}
+            {create.isPending ? 'Posting...' : 'Post'}
+          </button>
+        </div>
       </div>
       <input
         ref={fileRef}

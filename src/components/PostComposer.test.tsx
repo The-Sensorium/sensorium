@@ -22,14 +22,49 @@ function setup() {
   render(<PostComposer clusterId="c1" />)
 }
 
+function openComposer() {
+  fireEvent.click(screen.getByRole('button', { name: 'New post' }))
+}
+
 describe('PostComposer', () => {
+  it('is collapsed to a trigger button until opened', () => {
+    setup()
+    expect(screen.getByRole('button', { name: 'New post' })).toBeVisible()
+    expect(screen.queryByRole('textbox', { name: 'Post title' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: 'New post' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Post' })).not.toBeInTheDocument()
+  })
+
+  it('expands to the full composer when the trigger is clicked', () => {
+    setup()
+    openComposer()
+    expect(screen.queryByRole('button', { name: 'New post' })).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'New post' })).toBeVisible()
+    expect(screen.getByRole('textbox', { name: 'Post title' })).toBeVisible()
+  })
+
+  it('collapses back to the trigger on Cancel and keeps the draft', () => {
+    setup()
+    openComposer()
+    fireEvent.change(screen.getByRole('textbox', { name: 'New post' }), {
+      target: { value: 'Half-typed' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('textbox', { name: 'New post' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New post' })).toBeVisible()
+    openComposer()
+    expect(screen.getByRole('textbox', { name: 'New post' })).toHaveValue('Half-typed')
+  })
+
   it('disables Post until there is content', () => {
     setup()
+    openComposer()
     expect(screen.getByRole('button', { name: 'Post' })).toBeDisabled()
   })
 
   it('posts text content through the create mutation', async () => {
     setup()
+    openComposer()
     fireEvent.change(screen.getByRole('textbox', { name: 'New post' }), {
       target: { value: 'Check this out' },
     })
@@ -46,6 +81,7 @@ describe('PostComposer', () => {
 
   it('posts an optional title', async () => {
     setup()
+    openComposer()
     fireEvent.change(screen.getByRole('textbox', { name: 'Post title' }), {
       target: { value: 'My heading' },
     })

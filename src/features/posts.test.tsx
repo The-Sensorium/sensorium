@@ -9,6 +9,7 @@ import {
   COMMENT_CONTENT_MAX,
   POSTS_PAGE_SIZE,
   postImageStoragePath,
+  sortPostsForFeed,
   useClusterPostComments,
   useClusterPostLikes,
   useClusterPosts,
@@ -27,6 +28,7 @@ import {
   useToggleCommentLike,
   useTogglePostLike,
   useUserPosts,
+  type Post,
 } from './posts'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
@@ -63,6 +65,30 @@ describe('posts', () => {
     expect(COMMENT_CONTENT_MAX).toBe(1000)
   })
 
+  it('sortPostsForFeed keeps the original order for "new"', () => {
+    const posts = [
+      { id: 'b', created_at: '2026-01-02Z' },
+      { id: 'a', created_at: '2026-01-01Z' },
+    ] as Post[]
+    expect(sortPostsForFeed(posts, 'new', () => ({ likes: 0, comments: 0 }))).toBe(posts)
+  })
+
+  it('sortPostsForFeed ranks "top" by likes + comments, newest on ties', () => {
+    const posts = [
+      { id: 'low', created_at: '2026-01-01Z' },
+      { id: 'mid', created_at: '2026-01-02Z' },
+      { id: 'high', created_at: '2026-01-03Z' },
+      { id: 'tie1', created_at: '2026-01-04Z' },
+      { id: 'tie2', created_at: '2026-01-05Z' },
+    ] as Post[]
+    const engagement = (p: { id: string }) => ({
+      likes: p.id === 'high' ? 10 : 0,
+      comments: p.id === 'mid' ? 1 : 0,
+    })
+    const result = sortPostsForFeed(posts, 'top', engagement)
+    expect(result.map((p) => p.id)).toEqual(['high', 'mid', 'tie2', 'tie1', 'low'])
+  })
+
   it('useClusterPosts fetches a cluster’s posts newest-first', async () => {
     mockResult.value = {
       data: [
@@ -77,6 +103,26 @@ describe('posts', () => {
     expect(c.from('posts').eq).toHaveBeenCalledWith('cluster_id', 'c1')
     expect(c.from('posts').order).toHaveBeenCalledWith('created_at', { ascending: false })
     expect(result.current.data?.map((p) => p.id)).toEqual(['p2', 'p1'])
+  })
+
+  it('useClusterPosts prunes removed posts but keeps earlier-page ones', async () => {
+    const mk = (id: string, created_at: string) => ({ id, created_at })
+    const olderPage = mk('old', '2026-01-01T00:00:00Z')
+    const removed = mk('removed', '2026-02-15T00:00:00Z')
+    const cutoff = mk('cut', '2026-01-31T00:00:00Z')
+    const newer = Array.from({ length: POSTS_PAGE_SIZE - 1 }, (_, i) =>
+      mk(`n${i}`, `2026-03-${String(i + 1).padStart(2, '0')}T00:00:00Z`),
+    )
+    const fresh = [cutoff, ...newer]
+    queryClient.setQueryData(['cluster-posts', 'c1'], [olderPage, removed, ...fresh])
+    mockResult.value = { data: fresh, error: null }
+
+    const { result } = renderHook(() => useClusterPosts('c1'), { wrapper })
+    await waitFor(() => expect(result.current.data?.some((p) => p.id === removed.id)).toBe(false))
+    const ids = result.current.data?.map((p) => p.id) ?? []
+    expect(ids).toContain(olderPage.id)
+    expect(ids).not.toContain(removed.id)
+    expect(ids).toHaveLength(fresh.length + 1)
   })
 
   it('useClusterPosts is disabled without a cluster', async () => {

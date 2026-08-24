@@ -24,6 +24,9 @@ test.describe('posts (seeded)', () => {
     const text = `E2E post ${Date.now()}`
 
     await page.goto('/posts')
+    const trigger = page.getByRole('button', { name: 'New post' })
+    await expect(trigger).toBeVisible()
+    await trigger.click()
     const composer = page.getByRole('textbox', { name: 'New post' })
     await expect(composer).toBeVisible()
 
