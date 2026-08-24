@@ -404,9 +404,30 @@ export function useDeleteComment(clusterId: string | null) {
       const { error } = await supabase.rpc('delete_post_comment', { p_comment_id: commentId })
       if (error) throw error
     },
-    onSuccess: () => {
+    onSuccess: (_data, commentId) => {
       if (clusterId) {
+        // delete_post_comment removes the whole reply subtree; drop it from cache
+        // too so the thread disappears immediately (and stays gone after refetch).
+        queryClient.setQueriesData<PostComment[]>(
+          { queryKey: ['post-comments', clusterId] },
+          (cur) => {
+            const base = cur ?? []
+            const remove = new Set<string>([commentId])
+            let added = true
+            while (added) {
+              added = false
+              for (const c of base) {
+                if (c.parent_comment_id && remove.has(c.parent_comment_id) && !remove.has(c.id)) {
+                  remove.add(c.id)
+                  added = true
+                }
+              }
+            }
+            return base.filter((c) => !remove.has(c.id))
+          },
+        )
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
     },
   })
