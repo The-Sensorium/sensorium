@@ -4,6 +4,7 @@ import { GifPicker } from '../pages/cluster/room/GifPicker'
 import { useCreatePost, uploadPostImage, POST_CONTENT_MAX, POST_TITLE_MAX } from '../features/posts'
 import type { Gif } from '../features/gifs'
 import { toErrorMessage } from '../lib/error'
+import { cn } from '../lib/utils'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -124,14 +125,19 @@ export function PostComposer({
       )}
       {error && <p className="mt-2 text-xs text-error">{error}</p>}
       <div className="mt-3 flex items-center gap-2">
-        <div className="relative">
+        <div className="relative flex items-center gap-1.5">
           <button
             type="button"
             aria-label="Attach image"
             onClick={() => fileRef.current?.click()}
-            className="grid h-9 w-9 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-pill px-3 py-2 text-sm font-semibold transition-colors',
+              file
+                ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
+                : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+            )}
           >
-            <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Image
           </button>
           <button
             type="button"
@@ -142,9 +148,14 @@ export function PostComposer({
               e.stopPropagation()
               setGifOpen((o) => !o)
             }}
-            className="grid h-9 w-9 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-pill px-3 py-2 text-sm font-semibold transition-colors',
+              gif
+                ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
+                : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+            )}
           >
-            <ImagePlay className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            <ImagePlay className="h-4 w-4" strokeWidth={1.5} aria-hidden /> GIF
           </button>
           {gifOpen && (
             <GifPicker
