@@ -148,6 +148,7 @@ export function PostComposer({
           </button>
           {gifOpen && (
             <GifPicker
+              placement="bottom"
               pending={create.isPending}
               onSelect={(g) => {
                 setGif(g)

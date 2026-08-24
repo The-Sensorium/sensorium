@@ -234,6 +234,7 @@ export function CommentThread({
               </button>
               {gifOpen && (
                 <GifPicker
+                  placement="bottom"
                   pending={create.isPending}
                   onSelect={(g) => {
                     setGif(g)
