@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { CornerUpLeft, Flag, Heart, MessageSquare, Trash2 } from 'lucide-react'
+import { CornerUpLeft, Flag, Heart, Loader2, MessageSquare, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
 import { PostMedia } from './PostMedia'
+import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { useDeleteComment, type PostComment } from '../features/posts'
+import { toErrorMessage } from '../lib/error'
 
 const timeAgo = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -38,7 +40,19 @@ export function CommentItem({
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const isMine = comment.author_id === userId
   const [reportOpen, setReportOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const del = useDeleteComment(clusterId)
+
+  async function handleDelete() {
+    setDeleteError(null)
+    try {
+      await del.mutateAsync(comment.id)
+      setConfirmOpen(false)
+    } catch (e) {
+      setDeleteError(toErrorMessage(e, 'Could not delete this comment. Try again.'))
+    }
+  }
 
   return (
     <li className="flex gap-3">
@@ -99,9 +113,11 @@ export function CommentItem({
             <button
               type="button"
               aria-label="Delete comment"
-              onClick={() => void del.mutateAsync(comment.id)}
-              disabled={del.isPending}
-              className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-error disabled:opacity-60"
+              onClick={() => {
+                setDeleteError(null)
+                setConfirmOpen(true)
+              }}
+              className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-error"
             >
               <Trash2 className="h-3 w-3" strokeWidth={1.5} aria-hidden /> Delete
             </button>
@@ -127,6 +143,37 @@ export function CommentItem({
           contentTarget={{ kind: 'comment', id: comment.id }}
         />
       )}
+      <Modal
+        open={confirmOpen}
+        onClose={() => {
+          if (!del.isPending) setConfirmOpen(false)
+        }}
+        title="Delete comment?"
+      >
+        <p className="mt-3 text-sm text-on-surface-variant">
+          This permanently deletes this comment. This action can't be undone.
+        </p>
+        {deleteError && <p className="mt-3 text-sm text-error">{deleteError}</p>}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmOpen(false)}
+            disabled={del.isPending}
+            className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            disabled={del.isPending}
+            className="inline-flex items-center gap-2 rounded-pill bg-error px-4 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+          >
+            {del.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {del.isPending ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </Modal>
     </li>
   )
 }
