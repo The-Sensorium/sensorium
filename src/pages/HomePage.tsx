@@ -29,7 +29,7 @@ const GET_STARTED_STEPS = [
     desc: 'Pick a radius and you’ll be matched with people nearby.',
   },
   {
-    to: '/discovery',
+    to: '/clusters',
     title: 'Join a queue',
     desc: 'Choose a matching mode. Clusters form when 8 people match.',
   },
@@ -175,7 +175,7 @@ export function HomePage() {
                   You’re not waiting in any queue right now.
                 </p>
                 <Link
-                  to="/discovery"
+                  to="/clusters"
                   className="mt-4 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
                 >
                   Browse matching modes <ArrowRight className="h-4 w-4" aria-hidden />

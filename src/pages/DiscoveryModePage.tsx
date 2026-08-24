@@ -16,7 +16,7 @@ export function DiscoveryModePage() {
   const clusters = useClustersByMode(mode)
   const mine = useMyClusters()
 
-  useDocumentTitle(info ? `${info.label} · Discovery` : 'Discovery')
+  useDocumentTitle(info ? `${info.label} · Clusters` : 'Clusters')
 
   const myClusterIds = new Set((mine.data ?? []).map((m) => m.cluster.id))
 
@@ -24,14 +24,14 @@ export function DiscoveryModePage() {
     return (
       <div className="space-y-6">
         <header className="pt-2">
-          <h1 className="font-display text-3xl font-semibold text-on-surface">Discovery</h1>
+          <h1 className="font-display text-3xl font-semibold text-on-surface">Clusters</h1>
         </header>
         <p className="text-sm text-on-surface-variant">That matching mode doesn’t exist.</p>
         <Link
-          to="/discovery"
+          to="/clusters"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to discovery
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Back to clusters
         </Link>
       </div>
     )
@@ -41,10 +41,10 @@ export function DiscoveryModePage() {
     <div className="space-y-6">
       <header className="pt-2">
         <Link
-          to="/discovery"
+          to="/clusters"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Discovery
+          <ArrowLeft className="h-4 w-4" aria-hidden /> Clusters
         </Link>
         <h1 className="mt-2 font-display text-3xl font-semibold text-on-surface">{info.label}</h1>
         <p className="mt-1 text-sm text-on-surface-variant">{info.detail}</p>
