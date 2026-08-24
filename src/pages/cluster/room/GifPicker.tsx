@@ -11,9 +11,11 @@ import {
 export function GifPicker({
   pending,
   onSelect,
+  placement = 'top',
 }: {
   pending: boolean
   onSelect(gif: Gif): void
+  placement?: 'top' | 'bottom'
 }) {
   const [query, setQuery] = useState('')
   const search = useSearchGifs(query)
@@ -25,7 +27,10 @@ export function GifPicker({
 
   return (
     <div
-      className="absolute bottom-full left-0 z-30 mb-2 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift"
+      className={cn(
+        'absolute left-0 z-30 flex w-72 max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift',
+        placement === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2',
+      )}
       onClick={(e) => e.stopPropagation()}
     >
       <input
