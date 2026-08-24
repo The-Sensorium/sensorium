@@ -308,6 +308,12 @@ export function useDeletePost(clusterId: string | null) {
     },
     onSuccess: (_data, postId) => {
       if (clusterId) {
+        // useClusterPosts merge-preserves earlier pages on refetch, so invalidating
+        // alone would keep the deleted row from the existing cache. Drop it first.
+        queryClient.setQueryData<Post[]>(['cluster-posts', clusterId], (cur) =>
+          (cur ?? []).filter((p) => p.id !== postId),
+        )
+        queryClient.setQueryData<Post | null>(['cluster-posts', 'single', postId], () => null)
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', 'single', postId] })
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })

@@ -75,6 +75,7 @@ export function PostDetailPage() {
         likedByMe={likeInfo.mine}
         commentCount={comments.data?.length ?? 0}
         onLike={(id) => void toggle.mutateAsync(id)}
+        onDeleted={() => navigate(-1)}
       />
 
       <CommentThread
