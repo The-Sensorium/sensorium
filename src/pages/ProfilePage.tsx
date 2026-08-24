@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import {
   ArrowLeft,
@@ -9,6 +9,7 @@ import {
   Heart,
   Loader2,
   MapPin,
+  MessageSquare,
   Sparkles,
   Target,
   Telescope,
@@ -18,12 +19,16 @@ import { useDocumentTitle } from '../lib/use-document-title'
 import { useClusterMembers, useMyClusters } from '../features/matching'
 import { usePresence } from '../features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
-import { useUserPosts } from '../features/posts'
+import {
+  useClusterPostComments,
+  useClusterPostLikes,
+  usePostImageUrl,
+  useUserPosts,
+} from '../features/posts'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
 import { PronounBadge } from '../components/PronounBadge'
-import { PostMedia } from '../components/PostMedia'
 import { ReportModal } from '../components/ReportModal'
 import { countryName } from '../lib/countries'
 import { cn } from '../lib/utils'
@@ -36,6 +41,28 @@ const postTime = new Intl.DateTimeFormat(undefined, {
   hour: 'numeric',
   minute: '2-digit',
 })
+
+function PostThumb({
+  imageUrl,
+  gifUrl,
+  alt,
+}: {
+  imageUrl?: string | null
+  gifUrl?: string | null
+  alt?: string
+}) {
+  const { data: signedUrl } = usePostImageUrl(imageUrl ?? null)
+  const src = gifUrl ?? signedUrl ?? null
+  if (!src) return null
+  return (
+    <img
+      src={src}
+      alt={alt ?? 'Post media'}
+      loading="lazy"
+      className="h-24 w-24 shrink-0 rounded-xl border border-outline-variant/60 object-cover"
+    />
+  )
+}
 
 export function ProfilePage() {
   useDocumentTitle('Profile')
@@ -61,6 +88,38 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
   const userPosts = useUserPosts(userId)
+  const postIds = (userPosts.data ?? []).map((p) => p.id)
+  const likes = useClusterPostLikes(clusterId, postIds)
+  const comments = useClusterPostComments(clusterId, postIds)
+
+  const likesByPost = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const l of likes.data ?? []) {
+      counts.set(l.post_id, (counts.get(l.post_id) ?? 0) + 1)
+    }
+    return counts
+  }, [likes.data])
+  const commentsByPost = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const c of comments.data ?? []) {
+      counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1)
+    }
+    return counts
+  }, [comments.data])
+
+  // Engagement counts are cached by cluster, not by post set. When the post set
+  // changes (e.g. an in-place member switch), refetch so the new posts get real
+  // counts instead of the stale 0 from the previous member.
+  const postIdsKey = postIds.join(',')
+  const prevPostIdsKey = useRef(postIdsKey)
+  const refetchEngagement = useRef({ likes: likes.refetch, comments: comments.refetch })
+  refetchEngagement.current = { likes: likes.refetch, comments: comments.refetch }
+  useEffect(() => {
+    if (prevPostIdsKey.current === postIdsKey) return
+    prevPostIdsKey.current = postIdsKey
+    void refetchEngagement.current.likes()
+    void refetchEngagement.current.comments()
+  }, [postIdsKey])
 
   const member = (members.data ?? []).find((m) => m.id === userId)
   const cluster = (myClusters.data ?? []).find((c) => c.cluster.id === clusterId)
@@ -240,39 +299,49 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
 
       {/* ── Posts ──────────────────────────────────────────── */}
       {!userPosts.isLoading && (userPosts.data ?? []).length > 0 && (
-        <section
-          aria-label="Posts"
-          className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft"
-        >
+        <section aria-label="Posts">
           <h2 className="font-display text-lg font-semibold text-on-surface">Posts</h2>
-          <ul className="mt-3 space-y-4">
+          <ul className="mt-3 space-y-3">
             {(userPosts.data ?? []).map((post) => (
               <li key={post.id}>
                 <Link
                   to={`/posts/${post.id}`}
-                  className="block rounded-xl transition-colors hover:bg-surface-container/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className="flex w-full items-start gap-3 rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-colors hover:border-outline-variant focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <Avatar
-                      name={member.display_name}
-                      src={member.avatar_url}
-                      className="h-5 w-5"
-                      textClassName="text-[10px]"
-                    />
-                    <span className="text-sm font-medium text-on-surface">{member.display_name}</span>
-                    <span className="text-xs text-on-surface-variant">
-                      · {postTime.format(new Date(post.created_at))}
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <Avatar
+                        name={member.display_name}
+                        src={member.avatar_url}
+                        className="h-5 w-5"
+                        textClassName="text-[10px]"
+                      />
+                      <span className="text-xs text-on-surface-variant">
+                        · {postTime.format(new Date(post.created_at))}
+                      </span>
+                    </div>
+                    {post.title && (
+                      <h3 className="mt-1.5 font-display text-sm font-semibold text-on-surface">
+                        {post.title}
+                      </h3>
+                    )}
+                    {post.content && (
+                      <p className="mt-1 line-clamp-3 overflow-hidden whitespace-pre-wrap text-sm leading-5 text-on-surface">
+                        {post.content}
+                      </p>
+                    )}
+                    <div className="mt-2 flex items-center gap-4 text-sm text-on-surface-variant">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Heart className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                        {likesByPost.get(post.id) ?? 0}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <MessageSquare className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                        {commentsByPost.get(post.id) ?? 0}
+                      </span>
+                    </div>
                   </div>
-                  {post.title && (
-                    <p className="mt-1.5 font-display text-sm font-semibold text-on-surface">{post.title}</p>
-                  )}
-                  {post.content && (
-                    <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-on-surface">
-                      {post.content}
-                    </p>
-                  )}
-                  <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} />
+                  <PostThumb imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} />
                 </Link>
               </li>
             ))}
