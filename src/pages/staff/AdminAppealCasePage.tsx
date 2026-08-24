@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 import { ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { cn } from '../../lib/utils'
@@ -12,6 +12,8 @@ const MAX_RESPONSE = 2000
 export function AdminAppealCasePage() {
   useDocumentTitle('Appeal case')
   const { appealId } = useParams<{ appealId: string }>()
+  const { pathname } = useLocation()
+  const backPath = pathname.replace(/\/[^/]+$/, '')
   const appeals = useAdminAppeal(appealId)
   const decide = useDecideAppeal()
   const [accept, setAccept] = useState<boolean | null>(null)
@@ -64,7 +66,7 @@ export function AdminAppealCasePage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3">
-          <Link to=".." className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container">
+          <Link to={backPath} className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container">
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           </Link>
           <div>

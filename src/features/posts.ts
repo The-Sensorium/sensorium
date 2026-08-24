@@ -19,6 +19,26 @@ const byNewest = (a: Post, b: Post) =>
 const byOldest = (a: PostComment, b: PostComment) =>
   a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
 
+export type PostSort = 'new' | 'top'
+
+/** Reorder a loaded feed slice for display. "top" ranks a post by likes + comments
+ * (client-side: the data is already fetched) and falls back to newest on ties. */
+export function sortPostsForFeed(
+  posts: Post[],
+  sort: PostSort,
+  engagement: (post: Post) => { likes: number; comments: number },
+): Post[] {
+  if (sort === 'new') return posts
+  return [...posts].sort((a, b) => {
+    const rank = (p: Post) => {
+      const e = engagement(p)
+      return e.likes + e.comments
+    }
+    const diff = rank(b) - rank(a)
+    return diff !== 0 ? diff : byNewest(a, b)
+  })
+}
+
 /** Posts of one cluster, newest first (RLS: active members of an unlocked cluster).
  * A refetch returns the newest page but merge-preserves any earlier pages already
  * loaded via useLoadEarlierPosts, so cache invalidations don't truncate the feed.

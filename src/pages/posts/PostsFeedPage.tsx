@@ -1,10 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronUp, Loader2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers, useMyClusters } from '../../features/matching'
-import { useLoadEarlierPosts, POSTS_PAGE_SIZE } from '../../features/posts'
+import {
+  useLoadEarlierPosts,
+  POSTS_PAGE_SIZE,
+  sortPostsForFeed,
+  type PostSort,
+} from '../../features/posts'
 import {
   useClusterPosts,
   useClusterPostComments,
@@ -22,6 +27,7 @@ export function PostsFeedPage() {
 
   const clusters = useMyClusters()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sort, setSort] = useState<PostSort>('new')
 
   const clusterIds = useMemo(() => (clusters.data ?? []).map((c) => c.cluster.id), [clusters.data])
   useEffect(() => {
@@ -61,6 +67,30 @@ export function PostsFeedPage() {
     return byPost
   }, [comments.data])
 
+  const sorted = useMemo(
+    () =>
+      sortPostsForFeed(
+        posts.data ?? [],
+        sort,
+        (p) => ({ likes: likesMap.get(p.id)?.count ?? 0, comments: commentCount.get(p.id) ?? 0 }),
+      ),
+    [posts.data, sort, likesMap, commentCount],
+  )
+
+  // Likes/comments are cluster-scoped caches that fetch once for the initially
+  // loaded posts. When "Load earlier" grows the set, refetch them so newly added
+  // posts are ranked on their real engagement instead of a 0-engagement tie.
+  const postIdsKey = (posts.data ?? []).map((p) => p.id).join(',')
+  const prevPostIdsKey = useRef(postIdsKey)
+  const refetchEngagement = useRef({ likes: likes.refetch, comments: comments.refetch })
+  refetchEngagement.current = { likes: likes.refetch, comments: comments.refetch }
+  useEffect(() => {
+    if (prevPostIdsKey.current === postIdsKey) return
+    prevPostIdsKey.current = postIdsKey
+    void refetchEngagement.current.likes()
+    void refetchEngagement.current.comments()
+  }, [postIdsKey])
+
   const selected = (clusters.data ?? []).find((c) => c.cluster.id === selectedId)
   const hasMore =
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
@@ -71,6 +101,28 @@ export function PostsFeedPage() {
         <div>
           <h1 className="font-display text-lg font-semibold text-on-surface">Posts</h1>
           <p className="text-xs text-on-surface-variant">Share something with your cluster.</p>
+        </div>
+        <div
+          role="group"
+          aria-label="Sort posts"
+          className="inline-flex items-center gap-1 rounded-pill border border-outline-variant/70 p-1"
+        >
+          {(['new', 'top'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={sort === option}
+              onClick={() => setSort(option)}
+              className={cn(
+                'rounded-pill px-3 py-1 text-xs font-semibold capitalize transition-colors',
+                sort === option
+                  ? 'bg-primary-container/15 text-primary'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+              )}
+            >
+              {option}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -117,7 +169,7 @@ export function PostsFeedPage() {
           ) : (
             <>
               <div className="space-y-4">
-                {(posts.data ?? []).map((post) => {
+                {sorted.map((post) => {
                   const like = likesMap.get(post.id)
                   return (
                     <PostCard
