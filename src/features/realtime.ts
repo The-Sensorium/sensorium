@@ -4,12 +4,17 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
 import type { Database } from '../lib/database.types'
+import type { Post, PostComment, PostLike, CommentLike } from './posts'
 
 type Message = Database['public']['Tables']['messages']['Row']
 type Reaction = Database['public']['Tables']['message_reactions']['Row']
 type Signal = Database['public']['Tables']['signals']['Row']
 type SignalReply = Database['public']['Tables']['signal_replies']['Row']
 type Vote = Database['public']['Tables']['votes']['Row']
+type PostRealtime = Post
+type PostCommentRealtime = PostComment
+type PostLikeRealtime = PostLike
+type CommentLikeRealtime = CommentLike
 
 const byCreatedAsc = (a: Message, b: Message) => a.created_at.localeCompare(b.created_at)
 
@@ -74,13 +79,83 @@ async function patchSignalReply(queryClient: ReturnType<typeof useQueryClient>, 
 }
 
 /**
+ * Route a post-like INSERT/DELETE to the cache of the cluster its post belongs to
+ * (likes carry no cluster id). Patches only caches that already exist.
+ */
+async function patchPostLike(
+  queryClient: ReturnType<typeof useQueryClient>,
+  like: PostLikeRealtime,
+  kind: 'insert' | 'delete',
+) {
+  const supabase = requireSupabase()
+  const { data, error } = await supabase
+    .from('posts')
+    .select('cluster_id')
+    .eq('id', like.post_id)
+    .maybeSingle()
+  if (error || !data) return
+  const clusterId = data.cluster_id
+  queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', clusterId], (cur) => {
+    if (!cur) return cur
+    if (kind === 'insert') {
+      const dup = cur.some((r) => r.post_id === like.post_id && r.user_id === like.user_id)
+      return dup ? cur : [...cur, like]
+    }
+    return cur.filter((r) => !(r.post_id === like.post_id && r.user_id === like.user_id))
+  })
+}
+
+/** Route a post-comment INSERT to the cache of the cluster its post belongs to. */
+async function patchPostComment(
+  queryClient: ReturnType<typeof useQueryClient>,
+  comment: PostCommentRealtime,
+) {
+  const supabase = requireSupabase()
+  const { data, error } = await supabase
+    .from('posts')
+    .select('cluster_id')
+    .eq('id', comment.post_id)
+    .maybeSingle()
+  if (error || !data) return
+  const clusterId = data.cluster_id
+  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], (cur) => {
+    if (!cur || cur.some((c) => c.id === comment.id)) return cur
+    return [...cur, comment].sort((a, b) => a.created_at.localeCompare(b.created_at))
+  })
+}
+
+/** Route a comment-like INSERT/DELETE to the cache of the cluster its comment belongs to. */
+async function patchCommentLike(
+  queryClient: ReturnType<typeof useQueryClient>,
+  like: CommentLikeRealtime,
+  kind: 'insert' | 'delete',
+) {
+  const supabase = requireSupabase()
+  const { data, error } = await supabase
+    .from('post_comments')
+    .select('post_id, posts(cluster_id)')
+    .eq('id', like.comment_id)
+    .maybeSingle()
+  if (error || !data) return
+  const clusterId = (data.posts as { cluster_id: string } | null)?.cluster_id
+  if (!clusterId) return
+  queryClient.setQueryData<CommentLikeRealtime[]>(['comment-likes', clusterId], (cur) => {
+    if (!cur) return cur
+    if (kind === 'insert') {
+      const dup = cur.some((l) => l.comment_id === like.comment_id && l.user_id === like.user_id)
+      return dup ? cur : [...cur, like]
+    }
+    return cur.filter((l) => !(l.comment_id === like.comment_id && l.user_id === like.user_id))
+  })
+}
+
+/**
  * Subscribes to Postgres Changes for one cluster and patches the TanStack caches in
  * place (docs 04 §1 / §3). Safe to mount once per cluster shell - RLS keeps locked
  * clusters from delivering anything. Message-reaction and signal-reply events carry no
  * cluster id, so they are routed via a lookup to whatever cluster cache they belong to.
  */
-export function useClusterChannel(clusterId: string | null) {
-  const queryClient = useQueryClient()
+export function useClusterChannel(clusterId: string | null) {  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (!clusterId) return
@@ -89,6 +164,7 @@ export function useClusterChannel(clusterId: string | null) {
     const messagesKey = ['cluster-messages', clusterId]
     const signalsKey = ['cluster-signals', clusterId]
     const votesKey = ['cluster-votes', clusterId]
+    const postsKey = ['cluster-posts', clusterId]
 
     const channel = supabase
       .channel(`cluster:${clusterId}`)
@@ -258,6 +334,79 @@ export function useClusterChannel(clusterId: string | null) {
         () => {
           void queryClient.invalidateQueries({ queryKey: ['replacement-round', clusterId] })
           void queryClient.invalidateQueries({ queryKey: ['replacement-candidates'] })
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          const row = payload.new as PostRealtime
+          queryClient.setQueryData<Post[]>(postsKey, (cur) => {
+            if (!cur || cur.some((p) => p.id === row.id)) return cur
+            return [row, ...cur]
+          })
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'posts',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          const row = payload.new as PostRealtime
+          queryClient.setQueryData<Post[]>(postsKey, (cur) =>
+            cur ? cur.map((p) => (p.id === row.id ? row : p)) : cur,
+          )
+        },
+      )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_likes' }, (payload) => {
+        void patchPostLike(queryClient, payload.new as PostLikeRealtime, 'insert')
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_likes' }, (payload) => {
+        void patchPostLike(queryClient, payload.old as PostLikeRealtime, 'delete')
+      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'posts',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          const row = payload.old as PostRealtime
+          queryClient.setQueryData<Post[]>(postsKey, (cur) =>
+            cur ? cur.filter((p) => p.id !== row.id) : cur,
+          )
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'post_comments' },
+        (payload) => {
+          void patchPostComment(queryClient, payload.new as PostCommentRealtime)
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comment_likes' },
+        (payload) => {
+          void patchCommentLike(queryClient, payload.new as CommentLikeRealtime, 'insert')
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'comment_likes' },
+        (payload) => {
+          void patchCommentLike(queryClient, payload.old as CommentLikeRealtime, 'delete')
         },
       )
       .subscribe()

@@ -135,7 +135,15 @@ export function useNotificationPrefs(enabled = true) {
   })
 }
 
-export type PrefToggle = 'messages' | 'mentions' | 'reactions' | 'votes' | 'invitations' | 'signals'
+export type PrefToggle =
+  | 'messages'
+  | 'mentions'
+  | 'reactions'
+  | 'votes'
+  | 'invitations'
+  | 'signals'
+  | 'post_comment'
+  | 'post_like'
 
 export const PREF_TOGGLES: PrefToggle[] = [
   'messages',
@@ -144,6 +152,8 @@ export const PREF_TOGGLES: PrefToggle[] = [
   'votes',
   'invitations',
   'signals',
+  'post_comment',
+  'post_like',
 ]
 
 export const PREF_LABELS: Record<PrefToggle, string> = {
@@ -153,6 +163,8 @@ export const PREF_LABELS: Record<PrefToggle, string> = {
   votes: 'Votes & replacements',
   invitations: 'Invitations',
   signals: 'Signals',
+  post_comment: 'Comments & replies',
+  post_like: 'Likes',
 }
 
 /** Upsert the caller's prefs for one cluster; re-reads notifications (prefs filter the list). */
@@ -230,8 +242,12 @@ export function notificationTarget(
   const clusterId = n.cluster_id
   const payload = (n.payload ?? {}) as Record<string, unknown>
   const signalId = typeof payload.signal_id === 'string' ? payload.signal_id : null
+  const postId = typeof payload.post_id === 'string' ? payload.post_id : null
 
   switch (n.type) {
+    case 'post_comment':
+    case 'post_like':
+      return postId ? { to: `/posts/${postId}` } : clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'message':
     case 'mention':
     case 'reaction':
@@ -248,7 +264,7 @@ export function notificationTarget(
     case 'cluster_formed':
       return clusterId ? { to: `/cluster/${clusterId}/introductions` } : { to: '/home' }
     case 'queue_update':
-      return { to: '/discovery' }
+      return { to: '/clusters' }
     default:
       return clusterId ? { to: `/cluster/${clusterId}` } : null
   }

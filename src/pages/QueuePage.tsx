@@ -23,7 +23,7 @@ export function QueuePage() {
     return (
       <EmptyState
         title="Queue not found"
-        body="That queue doesn’t exist. Head back to discovery to browse matching modes."
+        body="That queue doesn’t exist. Head back to clusters to browse matching modes."
       />
     )
   }
@@ -40,9 +40,9 @@ export function QueuePage() {
     return (
       <EmptyState
         title="You’re not in this queue"
-        body="Join it from Discovery to see the live waiting count."
-        actionHref="/discovery"
-        actionLabel="Go to Discovery"
+        body="Join it from Clusters to see the live waiting count."
+        actionHref="/clusters"
+        actionLabel="Go to Clusters"
       />
     )
   }
@@ -126,7 +126,7 @@ export function QueuePage() {
 
       <p className="text-xs text-on-surface-variant">
         Want to match differently?{' '}
-        <Link to="/discovery" className="font-semibold text-primary hover:underline">
+        <Link to="/clusters" className="font-semibold text-primary hover:underline">
           Explore other modes
         </Link>
         .

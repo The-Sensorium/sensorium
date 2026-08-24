@@ -25,8 +25,8 @@ test.describe('golden path (seeded)', () => {
     await expect(page.getByRole('heading', { name: /Welcome,/i })).toBeVisible()
   })
 
-  test('discovery mode tiles link to their mode pages', async ({ page }) => {
-    await page.goto('/discovery')
+  test('mode tiles on clusters link to their mode pages', async ({ page }) => {
+    await page.goto('/clusters')
 
     const modes = page.getByRole('region', { name: 'Matching modes' })
     const exact = modes.getByRole('link', { name: /Exact Birthdate/i })
