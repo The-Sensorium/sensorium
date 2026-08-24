@@ -74,10 +74,41 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `avatars.ts` | avatar signed URLs and storage paths |
 | `mentions.ts` | mention parsing and linkification |
 | `appeals.ts` | in-app appeals (restricted users) and the admin appeal queue |
+| `posts.ts` | standalone cluster-scoped posts feed (`/posts`), optional post title, heart likes (post + comment/reply), threaded replies, post/comment-image signed URLs, comment/reply + like notifications |
 
 ### Email pipeline
 
 Email is outbound-only and queued in the DB. `outbound_emails` rows are written by enforcement/appeal RPC functions in the same transaction as the action; a pg_cron job (`pump_outbound_emails`) POSTs batches to the `send-emails` Edge Function (guarded by a shared secret against `SENSORIUM_EMAIL_SECRET`), which claims rows, renders a template, forwards to Resend, and marks each row sent/failed. `recover_stuck_sending` re-queues rows stuck in `sending`. The `anon`/`authenticated` roles hold no grants on `outbound_emails` or `email_settings`; only `service_role` (and postgres for cron) touch them. See `docs/EMAIL_NOTIFICATIONS_APPEALS_PLAN.md` for the full design.
+
+### Posts
+
+Posts are a cluster-scoped surface reached from the top nav (`/posts`) and
+deep-linked per item (`/posts/:postId`), laid out Reddit/Twitter-style. A post
+belongs to exactly one cluster and is visible only to its active members
+(`is_active_member` + `cluster_unlocked`); the feed shows one selected cluster at
+a time.
+
+- **Schema (0072–0082)**: `posts` (`title` optional, `content`, `image_url`,
+  `gif_url`, `moderation_status`), `post_comments` (flat thread with a
+  `parent_comment_id` reply target), `post_likes`, and `comment_likes`. Post and
+  comment media live in a private `posts-images` bucket; GIFs are remote KLIPY
+  URLs.
+- **Replies (Instagram-style)**: replies render indented under their parent
+  comment as a single thread; a reply that targets another reply is prefixed with
+  `@name`. Any comment can be replied to, but replies stay one visual level.
+- **Likes**: a single heart per user per post and per comment/reply
+  (`toggle_post_like`, `toggle_comment_like`), applied optimistically in the UI.
+  Likes are counted client-side from the likes query; `comment_likes` is the only
+  new realtime table (0074 publication is extended by 0082).
+- **Moderation**: posts/comments carry `moderation_status`; members report them
+  via `report_post` / `report_post_comment`, and moderators hide/restore them
+  (`hide_post`, `restore_post`, `hide_post_comment`, `restore_post_comment`),
+  writing to `moderation_actions` and emitting a `moderation_notice`.
+- **Notifications**: `create_post_comment` notifies the post author ("replied to
+  your post") and, on a reply, the parent-comment author ("replied to your
+  comment"); `toggle_post_like` notifies the post author. They are gated at
+  read-time by `notification_allowed` via the `post_comment` / `post_like`
+  preference columns (0080).
 
 ### Chat read receipts
 
@@ -123,6 +154,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Realtime (0021-0024)**: chat, signal replies, governance events, and notification payloads.
 - **Hardening (0025-0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
 - **Moderation and platform roles (0052-0066)**: platform access primitives (`user_roles`, `account_restrictions`, `moderation_actions`), reports queue and claim/release/resolve workflow, content enforcement (hide/restore), warnings, temporary suspensions and permanent bans, platform role administration, staff status guards, and moderation workflow guards (claim locks, action-close-report, report validation, restriction lift no-ops). See [`ROLE_BASED_ACCESS_PLAN.md`](ROLE_BASED_ACCESS_PLAN.md) for the access model.
+- **Posts (0072-0082)**: the standalone cluster posts surface — schema (`posts`, `post_comments`, `post_likes`, `comment_likes`), RPCs (create/edit/delete, like toggles, report, hide/restore), realtime, the private `posts-images` bucket, post/comment + like notifications, and the optional post title. See the Posts subsection above.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
@@ -138,8 +170,9 @@ Media is stored in private buckets and served through short-lived signed URLs, n
 |---|---|
 | `chat-images` | readable only by active members of the owning cluster (`is_active_member(cluster_id)`) |
 | `avatars` | readable by any authenticated user |
+| `posts-images` | readable only by active members of the owning cluster (`is_active_member(cluster_id)`) |
 
-The browser obtains a signed URL with a short TTL, uses it to render the image, and requests a fresh URL before expiry. Uploads store the bare storage path so URLs are never persisted. See `src/features/avatars.ts` and `src/features/cluster.ts`.
+The browser obtains a signed URL with a short TTL, uses it to render the image, and requests a fresh URL before expiry. Uploads store the bare storage path so URLs are never persisted. See `src/features/avatars.ts`, `src/features/cluster.ts`, and `src/features/posts.ts`.
 
 ## Auth
 

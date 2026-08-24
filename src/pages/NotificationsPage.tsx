@@ -8,6 +8,7 @@ import {
   Loader2,
   LockOpen,
   MailOpen,
+  MessageCircle,
   MessageSquare,
   PartyPopper,
   ShieldCheck,
@@ -40,6 +41,8 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   unlocked: LockOpen,
   queue_update: Users,
   moderation_notice: ShieldCheck,
+  post_comment: MessageCircle,
+  post_like: Heart,
 }
 
 export function NotificationsPage() {

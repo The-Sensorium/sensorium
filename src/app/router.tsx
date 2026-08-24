@@ -20,6 +20,8 @@ import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage'
 import { TermsPage } from '../pages/TermsPage'
 import { HomePage } from '../pages/HomePage'
 import { ClustersPage } from '../pages/ClustersPage'
+import { PostsFeedPage } from '../pages/posts/PostsFeedPage'
+import { PostDetailPage } from '../pages/posts/PostDetailPage'
 import { DiscoveryPage } from '../pages/DiscoveryPage'
 import { DiscoveryModePage } from '../pages/DiscoveryModePage'
 import { QueuePage } from '../pages/QueuePage'
@@ -125,6 +127,8 @@ export function AppRouter() {
             }
           >
             <Route path="/home" element={<HomePage />} />
+            <Route path="/posts" element={<PostsFeedPage />} />
+            <Route path="/posts/:postId" element={<PostDetailPage />} />
             <Route path="/clusters" element={<ClustersPage />} />
             <Route path="/discovery" element={<DiscoveryPage />} />
             <Route path="/discovery/:modeId" element={<DiscoveryModePage />} />

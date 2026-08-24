@@ -230,6 +230,39 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          liked_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          liked_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          liked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_settings: {
         Row: {
           app_url: string
@@ -526,10 +559,12 @@ export type Database = {
         Row: {
           action: Database["public"]["Enums"]["moderation_action_type"]
           actor_id: string | null
+          comment_id: string | null
           created_at: string
           id: string
           message_id: string | null
           metadata: Json
+          post_id: string | null
           reason: string
           report_id: string | null
           target_user_id: string | null
@@ -537,10 +572,12 @@ export type Database = {
         Insert: {
           action: Database["public"]["Enums"]["moderation_action_type"]
           actor_id?: string | null
+          comment_id?: string | null
           created_at?: string
           id?: string
           message_id?: string | null
           metadata?: Json
+          post_id?: string | null
           reason: string
           report_id?: string | null
           target_user_id?: string | null
@@ -548,10 +585,12 @@ export type Database = {
         Update: {
           action?: Database["public"]["Enums"]["moderation_action_type"]
           actor_id?: string | null
+          comment_id?: string | null
           created_at?: string
           id?: string
           message_id?: string | null
           metadata?: Json
+          post_id?: string | null
           reason?: string
           report_id?: string | null
           target_user_id?: string | null
@@ -565,10 +604,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "moderation_actions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "moderation_actions_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_actions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
           {
@@ -593,6 +646,8 @@ export type Database = {
           invitations: boolean
           mentions: boolean
           messages: boolean
+          post_comment: boolean
+          post_like: boolean
           reactions: boolean
           signals: boolean
           user_id: string
@@ -603,6 +658,8 @@ export type Database = {
           invitations?: boolean
           mentions?: boolean
           messages?: boolean
+          post_comment?: boolean
+          post_like?: boolean
           reactions?: boolean
           signals?: boolean
           user_id: string
@@ -613,6 +670,8 @@ export type Database = {
           invitations?: boolean
           mentions?: boolean
           messages?: boolean
+          post_comment?: boolean
+          post_like?: boolean
           reactions?: boolean
           signals?: boolean
           user_id?: string
@@ -732,6 +791,157 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_comments: {
+        Row: {
+          author_id: string
+          content: string | null
+          created_at: string
+          deleted_at: string | null
+          gif_url: string | null
+          id: string
+          image_url: string | null
+          moderation_status: Database["public"]["Enums"]["image_moderation_status"]
+          parent_comment_id: string | null
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          moderation_status?: Database["public"]["Enums"]["image_moderation_status"]
+          parent_comment_id?: string | null
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          moderation_status?: Database["public"]["Enums"]["image_moderation_status"]
+          parent_comment_id?: string | null
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          liked_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          liked_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          liked_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          cluster_id: string
+          content: string | null
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          gif_url: string | null
+          id: string
+          image_url: string | null
+          moderation_status: Database["public"]["Enums"]["image_moderation_status"]
+          title: string | null
+        }
+        Insert: {
+          author_id: string
+          cluster_id: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          moderation_status?: Database["public"]["Enums"]["image_moderation_status"]
+          title?: string | null
+        }
+        Update: {
+          author_id?: string
+          cluster_id?: string
+          content?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          gif_url?: string | null
+          id?: string
+          image_url?: string | null
+          moderation_status?: Database["public"]["Enums"]["image_moderation_status"]
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
             referencedColumns: ["id"]
           },
         ]
@@ -901,11 +1111,13 @@ export type Database = {
         Row: {
           assigned_to: string | null
           cluster_id: string | null
+          comment_id: string | null
           created_at: string
           details: string | null
           evidence: Json | null
           id: string
           message_id: string | null
+          post_id: string | null
           reason: Database["public"]["Enums"]["report_reason"]
           reporter_id: string | null
           resolution_note: string | null
@@ -918,11 +1130,13 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           cluster_id?: string | null
+          comment_id?: string | null
           created_at?: string
           details?: string | null
           evidence?: Json | null
           id?: string
           message_id?: string | null
+          post_id?: string | null
           reason: Database["public"]["Enums"]["report_reason"]
           reporter_id?: string | null
           resolution_note?: string | null
@@ -935,11 +1149,13 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           cluster_id?: string | null
+          comment_id?: string | null
           created_at?: string
           details?: string | null
           evidence?: Json | null
           id?: string
           message_id?: string | null
+          post_id?: string | null
           reason?: Database["public"]["Enums"]["report_reason"]
           reporter_id?: string | null
           resolution_note?: string | null
@@ -965,10 +1181,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reports_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
           {
@@ -1253,6 +1483,7 @@ export type Database = {
         Args: { p_cluster_id: string; p_user_id: string }
         Returns: undefined
       }
+      app_url: { Args: never; Returns: string }
       apply_account_restriction: {
         Args: {
           p_expires_at?: string
@@ -1263,10 +1494,13 @@ export type Database = {
         }
         Returns: undefined
       }
-      app_url: { Args: never; Returns: string }
       assert_account_can_write: { Args: never; Returns: undefined }
       assert_can_manage_roles: { Args: never; Returns: undefined }
       assert_can_moderate: { Args: never; Returns: undefined }
+      assert_post_report_actionable: {
+        Args: { p_comment_id?: string; p_post_id?: string; p_report_id: string }
+        Returns: undefined
+      }
       assert_report_actionable: {
         Args: {
           p_message_id?: string
@@ -1292,6 +1526,15 @@ export type Database = {
         }[]
       }
       close_expired_votes: { Args: never; Returns: undefined }
+      close_post_report_as_actioned: {
+        Args: {
+          p_comment_id?: string
+          p_note: string
+          p_post_id?: string
+          p_report_id: string
+        }
+        Returns: undefined
+      }
       close_report_as_actioned: {
         Args: {
           p_message_id?: string
@@ -1303,12 +1546,28 @@ export type Database = {
       }
       cluster_unlocked: { Args: { p_cluster_id: string }; Returns: boolean }
       create_invitation: { Args: { p_round_id: string }; Returns: undefined }
-      decide_appeal: {
+      create_post: {
         Args: {
-          p_accept: boolean
-          p_appeal_id: string
-          p_note: string
+          p_cluster_id: string
+          p_content?: string
+          p_gif_url?: string
+          p_image_url?: string
+          p_title?: string
         }
+        Returns: string
+      }
+      create_post_comment: {
+        Args: {
+          p_content?: string
+          p_gif_url?: string
+          p_image_url?: string
+          p_parent_comment_id?: string
+          p_post_id: string
+        }
+        Returns: string
+      }
+      decide_appeal: {
+        Args: { p_accept: boolean; p_appeal_id: string; p_response: string }
         Returns: undefined
       }
       decline_invitation: {
@@ -1316,6 +1575,15 @@ export type Database = {
         Returns: undefined
       }
       delete_my_account: { Args: never; Returns: undefined }
+      delete_post: { Args: { p_post_id: string }; Returns: undefined }
+      delete_post_comment: {
+        Args: { p_comment_id: string }
+        Returns: undefined
+      }
+      edit_post: {
+        Args: { p_content: string; p_post_id: string; p_title?: string }
+        Returns: undefined
+      }
       enqueue_email: {
         Args: {
           p_params?: Json
@@ -1355,20 +1623,20 @@ export type Database = {
       get_admin_appeal: {
         Args: { p_appeal_id: string }
         Returns: {
-          appealed_expires_at: string | null
+          appealed_expires_at: string
           appealed_reason: string
           appealed_status: Database["public"]["Enums"]["account_status"]
           created_at: string
           current_account_status: Database["public"]["Enums"]["account_status"]
-          current_restriction_expires_at: string | null
-          current_restriction_reason: string | null
-          decided_at: string | null
+          current_restriction_expires_at: string
+          current_restriction_reason: string
+          decided_at: string
           details: string
-          display_name: string | null
+          display_name: string
           id: string
-          response: string | null
+          response: string
           status: Database["public"]["Enums"]["appeal_status"]
-          user_id: string | null
+          user_id: string
         }[]
       }
       get_candidate_profiles: {
@@ -1426,7 +1694,7 @@ export type Database = {
       get_message_reads: {
         Args: { p_message_id: string }
         Returns: {
-          avatar_url: string | null
+          avatar_url: string
           display_name: string
           id: string
           read_at: string
@@ -1440,16 +1708,16 @@ export type Database = {
         }
         Returns: {
           action: Database["public"]["Enums"]["moderation_action_type"]
-          actor_display_name: string | null
-          actor_id: string | null
+          actor_display_name: string
+          actor_id: string
           created_at: string
           id: string
-          message_id: string | null
+          message_id: string
           metadata: Json
           reason: string
-          report_id: string | null
-          target_display_name: string | null
-          target_user_id: string | null
+          report_id: string
+          target_display_name: string
+          target_user_id: string
         }[]
       }
       get_moderation_message: {
@@ -1514,7 +1782,7 @@ export type Database = {
           available_session_roles: string[]
           capabilities: string[]
           onboarding_completed: boolean
-          restriction_expires_at: string | null
+          restriction_expires_at: string
           roles: string[]
           user_id: string
         }[]
@@ -1522,14 +1790,14 @@ export type Database = {
       get_my_appeal: {
         Args: never
         Returns: {
-          appealed_expires_at: string | null
+          appealed_expires_at: string
           appealed_reason: string
           appealed_status: Database["public"]["Enums"]["account_status"]
           created_at: string
-          decided_at: string | null
+          decided_at: string
           details: string
           id: string
-          response: string | null
+          response: string
           status: Database["public"]["Enums"]["appeal_status"]
         }[]
       }
@@ -1657,6 +1925,14 @@ export type Database = {
         Args: { p_message_id: string; p_reason: string; p_report_id?: string }
         Returns: undefined
       }
+      hide_post: {
+        Args: { p_post_id: string; p_reason: string; p_report_id?: string }
+        Returns: undefined
+      }
+      hide_post_comment: {
+        Args: { p_comment_id: string; p_reason: string; p_report_id?: string }
+        Returns: undefined
+      }
       is_account_active: { Args: { p_user_id?: string }; Returns: boolean }
       is_active_member: { Args: { p_cluster_id: string }; Returns: boolean }
       is_mentioned: {
@@ -1693,11 +1969,11 @@ export type Database = {
           appealed_reason: string
           appealed_status: Database["public"]["Enums"]["account_status"]
           created_at: string
-          decided_at: string | null
+          decided_at: string
           details: string
           display_name: string
           id: string
-          response: string | null
+          response: string
           status: Database["public"]["Enums"]["appeal_status"]
           user_id: string
         }[]
@@ -1788,6 +2064,24 @@ export type Database = {
         }
         Returns: string
       }
+      report_post: {
+        Args: {
+          p_cluster_id: string
+          p_details?: string
+          p_post_id: string
+          p_reason: Database["public"]["Enums"]["report_reason"]
+        }
+        Returns: string
+      }
+      report_post_comment: {
+        Args: {
+          p_cluster_id: string
+          p_comment_id: string
+          p_details?: string
+          p_reason: Database["public"]["Enums"]["report_reason"]
+        }
+        Returns: string
+      }
       resolve_moderation_report: {
         Args: {
           p_action?: Json
@@ -1799,6 +2093,14 @@ export type Database = {
       }
       restore_message: {
         Args: { p_message_id: string; p_reason: string; p_report_id?: string }
+        Returns: undefined
+      }
+      restore_post: {
+        Args: { p_post_id: string; p_reason: string; p_report_id?: string }
+        Returns: undefined
+      }
+      restore_post_comment: {
+        Args: { p_comment_id: string; p_reason: string; p_report_id?: string }
         Returns: undefined
       }
       revoke_platform_role: {
@@ -1851,6 +2153,11 @@ export type Database = {
         Args: { p_answers: Json; p_cluster_id: string }
         Returns: undefined
       }
+      toggle_comment_like: {
+        Args: { p_comment_id: string }
+        Returns: undefined
+      }
+      toggle_post_like: { Args: { p_post_id: string }; Returns: undefined }
       vote_on: {
         Args: { p_choice: string; p_vote_id: string }
         Returns: undefined
@@ -1884,6 +2191,10 @@ export type Database = {
         | "role_granted"
         | "role_revoked"
         | "appeal_decided"
+        | "post_hidden"
+        | "post_restored"
+        | "post_comment_hidden"
+        | "post_comment_restored"
       notification_type:
         | "message"
         | "mention"
@@ -1897,6 +2208,8 @@ export type Database = {
         | "unlocked"
         | "queue_update"
         | "moderation_notice"
+        | "post_comment"
+        | "post_like"
       outbound_email_template:
         | "message-hidden"
         | "warning-issued"
@@ -2082,6 +2395,10 @@ export const Constants = {
         "role_granted",
         "role_revoked",
         "appeal_decided",
+        "post_hidden",
+        "post_restored",
+        "post_comment_hidden",
+        "post_comment_restored",
       ],
       notification_type: [
         "message",
@@ -2096,6 +2413,8 @@ export const Constants = {
         "unlocked",
         "queue_update",
         "moderation_notice",
+        "post_comment",
+        "post_like",
       ],
       outbound_email_template: [
         "message-hidden",

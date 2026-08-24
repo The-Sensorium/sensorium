@@ -44,7 +44,7 @@ The repository is organized so the frontend and backend live side by side, with 
 | `src/app/` | The app skeleton: router, providers, auth context, access guards, and page layouts. |
 | `src/pages/` | One component per route/page, composed from shared and feature components. |
 | `src/components/` | Reusable UI: avatars, modals, cards, pickers, navigation chrome. |
-| `src/features/` | Domain logic: matching, cluster, introductions, signals, votes, notifications, moderation, appeals. One module per domain, with its hooks and tests. |
+| `src/features/` | Domain logic: matching, cluster, introductions, signals, votes, notifications, moderation, appeals, posts. One module per domain, with its hooks and tests. |
 | `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, and helpers. |
 | `supabase/migrations/` | The entire database schema as ordered SQL files (the single source of truth for the backend). |
 | `supabase/functions/` | Edge Functions. `send-emails` drains the outbound email queue and forwards to Resend. |
@@ -68,7 +68,7 @@ flowchart TD
     D --> E[Cluster Formation]
     E --> F[Introduction Phase]
     F --> G[Cluster Unlock]
-    G --> H[Chat, Signals, Notifications, Governance, Settings]
+    G --> H[Chat, Signals, Posts, Notifications, Governance, Settings]
 ```
 
 - **Landing Page**: public marketing page with no auth required.

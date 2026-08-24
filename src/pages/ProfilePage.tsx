@@ -18,15 +18,24 @@ import { useDocumentTitle } from '../lib/use-document-title'
 import { useClusterMembers, useMyClusters } from '../features/matching'
 import { usePresence } from '../features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
+import { useUserPosts } from '../features/posts'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
 import { PronounBadge } from '../components/PronounBadge'
+import { PostMedia } from '../components/PostMedia'
 import { ReportModal } from '../components/ReportModal'
 import { countryName } from '../lib/countries'
 import { cn } from '../lib/utils'
 
 const INTRO_ICONS = [Briefcase, Heart, Target, Users, Telescope]
+
+const postTime = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
 
 export function ProfilePage() {
   useDocumentTitle('Profile')
@@ -51,6 +60,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const { online } = usePresence(clusterId)
   const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
+  const userPosts = useUserPosts(userId)
 
   const member = (members.data ?? []).find((m) => m.id === userId)
   const cluster = (myClusters.data ?? []).find((c) => c.cluster.id === clusterId)
@@ -227,6 +237,48 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
           </ul>
         )}
       </section>
+
+      {/* ── Posts ──────────────────────────────────────────── */}
+      {!userPosts.isLoading && (userPosts.data ?? []).length > 0 && (
+        <section
+          aria-label="Posts"
+          className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft"
+        >
+          <h2 className="font-display text-lg font-semibold text-on-surface">Posts</h2>
+          <ul className="mt-3 space-y-4">
+            {(userPosts.data ?? []).map((post) => (
+              <li key={post.id}>
+                <Link
+                  to={`/posts/${post.id}`}
+                  className="block rounded-xl transition-colors hover:bg-surface-container/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Avatar
+                      name={member.display_name}
+                      src={member.avatar_url}
+                      className="h-5 w-5"
+                      textClassName="text-[10px]"
+                    />
+                    <span className="text-sm font-medium text-on-surface">{member.display_name}</span>
+                    <span className="text-xs text-on-surface-variant">
+                      · {postTime.format(new Date(post.created_at))}
+                    </span>
+                  </div>
+                  {post.title && (
+                    <p className="mt-1.5 font-display text-sm font-semibold text-on-surface">{post.title}</p>
+                  )}
+                  {post.content && (
+                    <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-on-surface">
+                      {post.content}
+                    </p>
+                  )}
+                  <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }
