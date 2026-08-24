@@ -151,7 +151,7 @@ export function CommentItem({
         title="Delete comment?"
       >
         <p className="mt-3 text-sm text-on-surface-variant">
-          This permanently deletes this comment. This action can't be undone.
+          This removes this comment and any replies to it. This action can't be undone.
         </p>
         {deleteError && <p className="mt-3 text-sm text-error">{deleteError}</p>}
         <div className="mt-6 flex justify-end gap-2">

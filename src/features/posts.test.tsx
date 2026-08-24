@@ -79,6 +79,26 @@ describe('posts', () => {
     expect(result.current.data?.map((p) => p.id)).toEqual(['p2', 'p1'])
   })
 
+  it('useClusterPosts prunes removed posts but keeps earlier-page ones', async () => {
+    const mk = (id: string, created_at: string) => ({ id, created_at })
+    const olderPage = mk('old', '2026-01-01T00:00:00Z')
+    const removed = mk('removed', '2026-02-15T00:00:00Z')
+    const cutoff = mk('cut', '2026-01-31T00:00:00Z')
+    const newer = Array.from({ length: POSTS_PAGE_SIZE - 1 }, (_, i) =>
+      mk(`n${i}`, `2026-03-${String(i + 1).padStart(2, '0')}T00:00:00Z`),
+    )
+    const fresh = [cutoff, ...newer]
+    queryClient.setQueryData(['cluster-posts', 'c1'], [olderPage, removed, ...fresh])
+    mockResult.value = { data: fresh, error: null }
+
+    const { result } = renderHook(() => useClusterPosts('c1'), { wrapper })
+    await waitFor(() => expect(result.current.data?.some((p) => p.id === removed.id)).toBe(false))
+    const ids = result.current.data?.map((p) => p.id) ?? []
+    expect(ids).toContain(olderPage.id)
+    expect(ids).not.toContain(removed.id)
+    expect(ids).toHaveLength(fresh.length + 1)
+  })
+
   it('useClusterPosts is disabled without a cluster', async () => {
     const { result } = renderHook(() => useClusterPosts(null), { wrapper })
     expect(result.current.fetchStatus).toBe('idle')
