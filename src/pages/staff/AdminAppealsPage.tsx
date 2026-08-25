@@ -1,46 +1,109 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Loader2, MessageSquareWarning } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { cn } from '../../lib/utils'
-import { APPEAL_STATUS_LABELS, useAdminAppeals, type AppealStatus } from '../../features/appeals'
-import { timeAgo } from '../../features/notifications'
+import {
+  APPEAL_STATUS_LABELS,
+  useAdminAppeals,
+  type AppealStatus,
+  type QueueOrder,
+} from '../../features/appeals'
+import {
+  timeAgo,
+  useMarkStaffNotificationsRead,
+  useStaffUnreadCounts,
+} from '../../features/notifications'
 
 const PAGE_SIZE = 25
 
 export function AdminAppealsPage() {
   useDocumentTitle('Appeals')
   const [status, setStatus] = useState<AppealStatus | 'all'>('submitted')
+  const [order, setOrder] = useState<QueueOrder>('desc')
   const [page, setPage] = useState(1)
-  const queue = useAdminAppeals({ status, page, pageSize: PAGE_SIZE })
+  const queue = useAdminAppeals({ status, order, page, pageSize: PAGE_SIZE })
+  const { refetch: refetchQueue, isSuccess: queueLoaded } = queue
+  const { mutate: markAppealRead } = useMarkStaffNotificationsRead()
+  const staffUnread = useStaffUnreadCounts()
+  const appealUnread = staffUnread.data?.appeals ?? 0
   const rows = queue.data ?? []
   const hasNext = rows.length >= PAGE_SIZE
 
+  // Same behaviour as the Reports tab for consistency: clear once when the
+  // moderator opens the tab, then let the badge re-arm and persist on new
+  // arrivals until the tab is opened again.
+  const markedReadRef = useRef(false)
+  useEffect(() => {
+    if (queueLoaded && !markedReadRef.current) {
+      markedReadRef.current = true
+      markAppealRead('appeal_new')
+    }
+  }, [queueLoaded, markAppealRead])
+
+  // Newest-first means a new appeal is at the top of page 1, so refresh when an
+  // `appeal_new` arrives (the badge count increases) to show it without a manual
+  // reload. Only the newest-first view surfaces it on the current page; in
+  // oldest-first a new appeal lands at the end.
+  const prevAppealUnreadRef = useRef<number | null>(null)
+  useEffect(() => {
+    const prev = prevAppealUnreadRef.current
+    prevAppealUnreadRef.current = appealUnread
+    if (prev === null || !queueLoaded) return
+    if (order === 'desc' && appealUnread > prev) void refetchQueue()
+  }, [appealUnread, queueLoaded, refetchQueue, order])
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3 pt-2">
+      <header className="space-y-4 pt-2">
         <div>
           <h1 className="font-display text-3xl font-semibold text-on-surface">Appeals</h1>
-          <p className="mt-1 text-sm text-on-surface-variant">Restricted accounts asking to have a decision reconsidered.</p>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            Restricted accounts asking to have a decision reconsidered, {order === 'desc' ? 'newest first' : 'oldest first'}.
+          </p>
         </div>
-        <div className="flex max-w-full gap-1 overflow-x-auto rounded-pill border border-outline-variant/60 bg-surface p-1">
-          {(['submitted', 'resolved', 'all'] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setStatus(s)
-                setPage(1)
-              }}
-              aria-pressed={status === s}
-              className={cn(
-                'rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors',
-                status === s ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface',
-              )}
-            >
-              {s === 'all' ? 'All' : APPEAL_STATUS_LABELS[s]}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex max-w-full gap-1 overflow-x-auto rounded-pill border border-outline-variant/60 bg-surface p-1">
+            {(['submitted', 'resolved', 'all'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  setStatus(s)
+                  setPage(1)
+                }}
+                aria-pressed={status === s}
+                className={cn(
+                  'rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors',
+                  status === s ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface',
+                )}
+              >
+                {s === 'all' ? 'All' : APPEAL_STATUS_LABELS[s]}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-on-surface-variant">Sort</span>
+            <div role="group" aria-label="Appeal order" className="flex gap-1 rounded-pill border border-outline-variant/60 bg-surface p-1">
+              {(['desc', 'asc'] as const).map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => {
+                    setOrder(o)
+                    setPage(1)
+                  }}
+                  aria-pressed={order === o}
+                  className={cn(
+                    'rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors',
+                    order === o ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface',
+                  )}
+                >
+                  {o === 'desc' ? 'Newest' : 'Oldest'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -97,7 +160,9 @@ export function AdminAppealsPage() {
           <div className="flex items-center justify-between gap-3 text-xs text-on-surface-variant">
             <span>
               Page {page}
-              {hasNext ? ' · older appeals available' : ''}
+              {hasNext
+                ? ` · ${order === 'desc' ? 'older' : 'newer'} appeals available`
+                : ''}
             </span>
             <div className="flex gap-2">
               <button
