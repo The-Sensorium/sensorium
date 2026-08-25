@@ -14,6 +14,8 @@ vi.mock('../../features/appeals', () => ({
 }))
 vi.mock('../../features/notifications', () => ({
   timeAgo: () => 'just now',
+  useMarkStaffNotificationsRead: () => ({ mutate: vi.fn() }),
+  useStaffUnreadCounts: () => ({ data: { reports: 0, appeals: 0 } }),
 }))
 
 const row = {

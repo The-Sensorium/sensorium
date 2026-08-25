@@ -14,9 +14,11 @@ import {
   useMarkAllNotificationsRead,
   useMarkClusterRead,
   useMarkNotificationRead,
+  useMarkStaffNotificationsRead,
   useMyNotifications,
   useNotificationPrefs,
   useNotificationsChannel,
+  useStaffUnreadCounts,
   useUpsertNotificationPrefs,
   useUnreadCount,
 } from './notifications'
@@ -181,6 +183,25 @@ describe('hooks', () => {
       { onConflict: 'user_id,cluster_id' },
     )
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
+  })
+
+  it('useStaffUnreadCounts reads the first row from get_staff_unread_counts', async () => {
+    mockResult.value = { data: [{ reports: 3, appeals: 1 }], error: null }
+    const { result } = renderHook(() => useStaffUnreadCounts(), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual({ reports: 3, appeals: 1 }))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_staff_unread_counts')
+  })
+
+  it('useMarkStaffNotificationsRead marks the type read and re-reads staff unread', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useMarkStaffNotificationsRead(), { wrapper })
+    result.current.mutate('report_new')
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith(
+      'mark_staff_notifications_read',
+      { p_type: 'report_new' },
+    )
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['staff', 'unread'] })
   })
 
   it('useMyNotifications propagates an RPC error', async () => {

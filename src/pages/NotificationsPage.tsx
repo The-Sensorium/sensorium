@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router'
 import {
   AtSign,
   Bell,
+  Flag,
   Gavel,
   Heart,
   LifeBuoy,
@@ -10,6 +11,7 @@ import {
   MailOpen,
   MessageCircle,
   MessageSquare,
+  MessageSquareWarning,
   PartyPopper,
   ShieldCheck,
   UserPlus,
@@ -43,6 +45,8 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   moderation_notice: ShieldCheck,
   post_comment: MessageCircle,
   post_like: Heart,
+  report_new: Flag,
+  appeal_new: MessageSquareWarning,
 }
 
 export function NotificationsPage() {

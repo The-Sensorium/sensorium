@@ -31,20 +31,25 @@ export function moderationKey() {
 }
 
 /** Moderator report queue, paginated via cursor keys, filtered by status/assignee. */
+export type QueueOrder = 'asc' | 'desc'
+
 export function useModerationQueue({
   status,
+  order = 'desc',
   limit = 25,
 }: {
   status?: ReportStatus
+  order?: QueueOrder
   limit?: number
 }) {
   return useInfiniteQuery({
-    queryKey: ['moderation', 'queue', status ?? 'all', limit],
+    queryKey: ['moderation', 'queue', status ?? 'all', order, limit],
     initialPageParam: null as { created_at: string; id: string } | null,
     queryFn: async ({ pageParam }) => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_moderation_queue', {
         p_status: status,
+        p_order: order,
         p_limit: limit,
         p_cursor_created_at: pageParam?.created_at ?? undefined,
         p_cursor_id: pageParam?.id ?? undefined,

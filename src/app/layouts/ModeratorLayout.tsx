@@ -7,7 +7,7 @@ import { StaffMobileNav, StaffNavigation, type StaffNavItem } from '../../compon
 import { useNotificationsChannel } from '../../features/notifications'
 
 const navItems: readonly StaffNavItem[] = [
-  { to: '/moderator/reports', label: 'Reports', icon: Flag },
+  { to: '/moderator/reports', label: 'Reports', icon: Flag, unreadKey: 'report_new' },
 ] as const
 
 export function ModeratorLayout() {

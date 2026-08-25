@@ -1736,6 +1736,7 @@ export type Database = {
           p_cursor_created_at?: string
           p_cursor_id?: string
           p_limit?: number
+          p_order?: string
           p_status?: Database["public"]["Enums"]["report_status"]
         }
         Returns: {
@@ -1862,6 +1863,13 @@ export type Database = {
           target_user_id: string
         }[]
       }
+      get_staff_unread_counts: {
+        Args: never
+        Returns: {
+          appeals: number
+          reports: number
+        }[]
+      }
       get_pending_invitations: {
         Args: never
         Returns: {
@@ -1963,6 +1971,7 @@ export type Database = {
         Args: {
           p_limit?: number
           p_offset?: number
+          p_order?: string
           p_status?: Database["public"]["Enums"]["appeal_status"]
         }
         Returns: {
@@ -2022,6 +2031,10 @@ export type Database = {
       mark_cluster_read: { Args: { p_cluster_id: string }; Returns: undefined }
       mark_outbound_email: {
         Args: { p_error?: string; p_id: string; p_status: string }
+        Returns: undefined
+      }
+      mark_staff_notifications_read: {
+        Args: { p_type: Database["public"]["Enums"]["notification_type"] }
         Returns: undefined
       }
       maybe_form_cluster: {
@@ -2210,6 +2223,8 @@ export type Database = {
         | "moderation_notice"
         | "post_comment"
         | "post_like"
+        | "report_new"
+        | "appeal_new"
       outbound_email_template:
         | "message-hidden"
         | "warning-issued"
@@ -2415,6 +2430,8 @@ export const Constants = {
         "moderation_notice",
         "post_comment",
         "post_like",
+        "report_new",
+        "appeal_new",
       ],
       outbound_email_template: [
         "message-hidden",

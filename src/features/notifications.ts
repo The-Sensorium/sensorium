@@ -46,6 +46,52 @@ export function useUnreadCount(enabled = true) {
   })
 }
 
+export type StaffNotificationType = 'report_new' | 'appeal_new'
+
+export type StaffUnreadCounts = {
+  reports: number
+  appeals: number
+}
+
+/** Staff unread counts for the Reports/Appeals tab badges (RLS: own rows). */
+export function useStaffUnreadCounts(enabled = true) {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+
+  return useQuery({
+    queryKey: ['staff', 'unread', userId ?? 'signed-out'],
+    enabled: enabled && userId !== null,
+    // No poll: staff are few but never idle, and a 30s read per staff member is
+    // a meaningful share of a free-tier request budget. Realtime INSERT
+    // invalidation (useNotificationsChannel) keeps the badge live, and the
+    // focus/reconnect refetches cover the "came back to the tab" case.
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_staff_unread_counts')
+      if (error) throw error
+      return (data?.[0] ?? { reports: 0, appeals: 0 }) as StaffUnreadCounts
+    },
+  })
+}
+
+/** Mark the caller's unread staff notifications of one type as read (RLS: own rows). */
+export function useMarkStaffNotificationsRead() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (type: StaffNotificationType) => {
+      const supabase = requireSupabase()
+      const { error } = await supabase.rpc('mark_staff_notifications_read', { p_type: type })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['staff', 'unread'] })
+    },
+  })
+}
+
 function useNotificationsQueryKeys() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -218,6 +264,7 @@ export function useNotificationsChannel(userId: string | null) {
         () => {
           void queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
           void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+          void queryClient.invalidateQueries({ queryKey: ['staff', 'unread'] })
         },
       )
       .on(

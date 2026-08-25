@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Flag, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
@@ -9,46 +9,108 @@ import {
   formatError,
   useModerationQueue,
   useClaimReport,
+  type QueueOrder,
   type ReportStatus,
 } from '../../features/admin-moderation'
-import { timeAgo } from '../../features/notifications'
+import {
+  timeAgo,
+  useMarkStaffNotificationsRead,
+  useStaffUnreadCounts,
+} from '../../features/notifications'
 
 export function ModerationQueuePage() {
   useDocumentTitle('Report queue')
   const [status, setStatus] = useState<ReportStatus | undefined>(undefined)
+  const [order, setOrder] = useState<QueueOrder>('desc')
   const [claimError, setClaimError] = useState<string | null>(null)
   const [claimMessage, setClaimMessage] = useState<string | null>(null)
-  const queue = useModerationQueue({ status })
+  const queue = useModerationQueue({ status, order })
+  const { refetch: refetchQueue, isSuccess: queueLoaded } = queue
   const claim = useClaimReport()
+  const { mutate: markReportRead } = useMarkStaffNotificationsRead()
+  const staffUnread = useStaffUnreadCounts()
+  const reportUnread = staffUnread.data?.reports ?? 0
 
   const rows = queue.data?.pages.flat() ?? []
 
+  // Clear once when the moderator opens the tab (acknowledging the queue), then
+  // let the badge re-arm and persist on new arrivals until the tab is reopened.
+  // Kept identical to the Appeals tab on purpose; clearing every arrival is only
+  // safe while the newest items are on the current page (see the order toggle).
+  const markedReadRef = useRef(false)
+  useEffect(() => {
+    if (queueLoaded && !markedReadRef.current) {
+      markedReadRef.current = true
+      markReportRead('report_new')
+    }
+  }, [queueLoaded, markReportRead])
+
+  // Newest-first means a brand-new report is at the top of page 1, so when a
+  // `report_new` arrives (the unread badge count increases) while this queue is
+  // on screen, refresh it so the row appears immediately rather than on the next
+  // visit. Only the newest-first view can surface it on the current page; in
+  // oldest-first a new report lands at the end, so a refetch would show nothing.
+  const prevReportUnreadRef = useRef<number | null>(null)
+  useEffect(() => {
+    const prev = prevReportUnreadRef.current
+    prevReportUnreadRef.current = reportUnread
+    if (prev === null || !queueLoaded) return
+    if (order === 'desc' && reportUnread > prev) void refetchQueue()
+  }, [reportUnread, queueLoaded, refetchQueue, order])
+
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3 pt-2">
+      <header className="space-y-4 pt-2">
         <div>
           <h1 className="font-display text-3xl font-semibold text-on-surface">Report queue</h1>
-          <p className="mt-1 text-sm text-on-surface-variant">Open reports across the platform, oldest first.</p>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            Open reports across the platform, {order === 'desc' ? 'newest first' : 'oldest first'}.
+          </p>
         </div>
-        <div className="flex max-w-full gap-1 overflow-x-auto rounded-pill border border-outline-variant/60 bg-surface p-1">
-          {([undefined, ...REPORT_STATUS_ORDER] as (ReportStatus | undefined)[]).map((s) => (
-            <button
-              key={s ?? 'all'}
-              type="button"
-              onClick={() => {
-                setClaimError(null)
-                setClaimMessage(null)
-                setStatus(s)
-              }}
-              aria-pressed={status === s}
-              className={cn(
-                'rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors',
-                status === s ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface',
-              )}
-            >
-              {s ? REPORT_STATUS_LABELS[s] : 'All'}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex max-w-full gap-1 overflow-x-auto rounded-pill border border-outline-variant/60 bg-surface p-1">
+            {([undefined, ...REPORT_STATUS_ORDER] as (ReportStatus | undefined)[]).map((s) => (
+              <button
+                key={s ?? 'all'}
+                type="button"
+                onClick={() => {
+                  setClaimError(null)
+                  setClaimMessage(null)
+                  setStatus(s)
+                }}
+                aria-pressed={status === s}
+                className={cn(
+                  'rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors',
+                  status === s ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface',
+                )}
+              >
+                {s ? REPORT_STATUS_LABELS[s] : 'All'}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-on-surface-variant">Sort</span>
+            <div role="group" aria-label="Report order" className="flex gap-1 rounded-pill border border-outline-variant/60 bg-surface p-1">
+              {(['desc', 'asc'] as const).map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => {
+                    setClaimError(null)
+                    setClaimMessage(null)
+                    setOrder(o)
+                  }}
+                  aria-pressed={order === o}
+                  className={cn(
+                    'rounded-pill px-3 py-1.5 text-xs font-semibold transition-colors',
+                    order === o ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface',
+                  )}
+                >
+                  {o === 'desc' ? 'Newest' : 'Oldest'}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -125,7 +187,10 @@ export function ModerationQueuePage() {
           <div className="flex items-center justify-between gap-3 text-xs text-on-surface-variant">
             <span>
               {rows.length} report{rows.length === 1 ? '' : 's'} shown
-              {queue.hasNextPage && (queue.isFetchingNextPage ? ' · loading older…' : ' · older reports available')}
+              {queue.hasNextPage &&
+                (queue.isFetchingNextPage
+                  ? ` · loading ${order === 'desc' ? 'older' : 'newer'}…`
+                  : ` · ${order === 'desc' ? 'older' : 'newer'} reports available`)}
             </span>
             {queue.hasNextPage && !queue.isFetchingNextPage && (
               <button
@@ -133,7 +198,7 @@ export function ModerationQueuePage() {
                 onClick={() => void queue.fetchNextPage()}
                 className="rounded-pill border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
               >
-                Load older reports
+                Load {order === 'desc' ? 'older' : 'newer'} reports
               </button>
             )}
           </div>
