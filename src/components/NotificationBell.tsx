@@ -2,19 +2,7 @@ import { NavLink } from 'react-router'
 import { Bell } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useUnreadCount } from '../features/notifications'
-
-/** Unread-count badge; caps the displayed number at 99+. */
-function Badge({ count }: { count: number }) {
-  if (count <= 0) return null
-  return (
-    <span
-      aria-label={`${count} unread notifications`}
-      className="absolute -right-1 -top-1 grid min-w-[18px] place-items-center rounded-full bg-error px-1 text-[10px] font-semibold leading-4 text-on-error"
-    >
-      {count > 99 ? '99+' : count}
-    </span>
-  )
-}
+import { UnreadBadge } from './UnreadBadge'
 
 export function NotificationBell({ variant }: { variant: 'top' | 'bottom' }) {
   const unread = useUnreadCount()
@@ -42,7 +30,7 @@ export function NotificationBell({ variant }: { variant: 'top' | 'bottom' }) {
     >
       <span className="relative">
         <Bell className={variant === 'top' ? 'h-4 w-4' : 'h-5 w-5'} strokeWidth={1.5} aria-hidden />
-        <Badge count={count} />
+        <UnreadBadge count={count} />
       </span>
       Notifications
     </NavLink>

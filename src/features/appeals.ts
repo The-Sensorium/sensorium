@@ -50,8 +50,11 @@ export function useSubmitAppeal() {
   })
 }
 
+export type QueueOrder = 'asc' | 'desc'
+
 export interface AdminAppealsFilters {
   status: AppealStatus | 'all'
+  order: QueueOrder
   page: number
   pageSize: number
 }
@@ -60,12 +63,13 @@ export interface AdminAppealsFilters {
 export function useAdminAppeals(filters: AdminAppealsFilters) {
   const status = filters.status === 'all' ? undefined : filters.status
   return useQuery({
-    queryKey: ['admin', 'appeals', status ?? 'all', filters.page, filters.pageSize],
+    queryKey: ['admin', 'appeals', status ?? 'all', filters.order, filters.page, filters.pageSize],
     placeholderData: keepPreviousData,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('list_appeals_page', {
         p_status: status,
+        p_order: filters.order,
         p_limit: filters.pageSize,
         p_offset: (filters.page - 1) * filters.pageSize,
       })
