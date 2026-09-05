@@ -52,9 +52,12 @@ export function PostDetailPage() {
   }
 
   const p = post.data
+  // The likes cache is keyed by cluster and may hold other posts' likes
+  // loaded from the feed, so scope the count to this post.
+  const postLikes = (likes.data ?? []).filter((l) => l.post_id === p.id)
   const likeInfo = {
-    count: (likes.data ?? []).length,
-    mine: (likes.data ?? []).some((l) => l.user_id === userId),
+    count: postLikes.length,
+    mine: postLikes.some((l) => l.user_id === userId),
   }
 
   return (

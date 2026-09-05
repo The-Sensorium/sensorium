@@ -80,7 +80,9 @@ async function patchSignalReply(queryClient: ReturnType<typeof useQueryClient>, 
 
 /**
  * Route a post-like INSERT/DELETE to the cache of the cluster its post belongs to
- * (likes carry no cluster id). Patches only caches that already exist.
+ * (likes carry no cluster id). Patches only caches that already exist. The Home
+ * preview reads per-post ['post-likes', 'single', postId] caches, so patch those
+ * too (mirrors how patchPostComment patches both comment cache keys).
  */
 async function patchPostLike(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -95,14 +97,16 @@ async function patchPostLike(
     .maybeSingle()
   if (error || !data) return
   const clusterId = data.cluster_id
-  queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', clusterId], (cur) => {
+  const apply = (cur?: PostLikeRealtime[]) => {
     if (!cur) return cur
     if (kind === 'insert') {
       const dup = cur.some((r) => r.post_id === like.post_id && r.user_id === like.user_id)
       return dup ? cur : [...cur, like]
     }
     return cur.filter((r) => !(r.post_id === like.post_id && r.user_id === like.user_id))
-  })
+  }
+  queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', clusterId], apply)
+  queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', 'single', like.post_id], apply)
 }
 
 /** Route a post-comment INSERT to the cache of the cluster its post belongs to. */
