@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+import { Image as ImageIcon, X } from 'lucide-react'
 import { usePostImageUrl } from '../features/posts'
 import { cn } from '../lib/utils'
 
@@ -10,11 +10,13 @@ export function PostMedia({
   gifUrl,
   alt,
   className,
+  compact,
 }: {
   imageUrl?: string | null
   gifUrl?: string | null
   alt?: string
   className?: string
+  compact?: boolean
 }) {
   const { data: signedUrl } = usePostImageUrl(imageUrl ?? null)
   const src = gifUrl ?? signedUrl ?? null
@@ -33,7 +35,20 @@ export function PostMedia({
     }
   }, [open])
 
-  if (!src) return null
+  if (!src) {
+    if (!compact) return null
+    return (
+      <div
+        aria-hidden
+        className="mt-3 grid h-44 w-full place-items-center rounded-2xl border border-outline-variant/60 bg-surface-container"
+      >
+        <div className="flex flex-col items-center gap-2 text-outline">
+          <ImageIcon className="h-8 w-8" strokeWidth={1.5} aria-hidden />
+          <span className="text-xs">No image</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -51,7 +66,10 @@ export function PostMedia({
           src={src}
           alt={alt ?? 'Shared media'}
           loading="lazy"
-          className="mt-3 max-h-96 w-full rounded-2xl border border-outline-variant/60 bg-surface-container object-contain"
+          className={cn(
+            'mt-3 w-full rounded-2xl border border-outline-variant/60 bg-surface-container',
+            compact ? 'h-44 object-cover' : 'max-h-96 object-contain',
+          )}
         />
       </button>
       {open && (

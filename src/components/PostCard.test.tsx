@@ -15,7 +15,11 @@ vi.mock('./ReportModal', () => ({
   ReportModal: ({ open }: { open: boolean }) =>
     open ? <div data-testid="report-modal">Report</div> : null,
 }))
-vi.mock('./PostMedia', () => ({ PostMedia: () => <img data-testid="post-media" alt="media" /> }))
+vi.mock('./PostMedia', () => ({
+  PostMedia: ({ compact }: { compact?: boolean }) => (
+    <img data-testid="post-media" data-compact={compact ? 'true' : 'false'} alt="media" />
+  ),
+}))
 
 import { useAuth } from '../app/auth-context'
 import { useAvatarUrl } from '../features/avatars'
@@ -80,6 +84,86 @@ describe('PostCard', () => {
     expect(screen.getByText('Rio')).toBeInTheDocument()
     expect(screen.getByText('Hello world')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument()
+  })
+
+  it('shows the cluster name when provided', () => {
+    const post = fixture()
+    vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    vi.mocked(useEditPost).mockReturnValue({ mutateAsync: editMutate, isPending: false } as never)
+    vi.mocked(useDeletePost).mockReturnValue({ mutateAsync: deleteMutate, isPending: false } as never)
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={post}
+          clusterId="c1"
+          clusterName="Aurora"
+          author={{ id: post.author_id, display_name: 'Rio', avatar_url: null }}
+          likeCount={0}
+          likedByMe={false}
+          commentCount={0}
+          onLike={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('· Aurora')).toBeInTheDocument()
+  })
+
+  it('renders a compact preview with constrained media and clamped content', () => {
+    const post = fixture({ content: 'Hello world' })
+    vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    vi.mocked(useEditPost).mockReturnValue({ mutateAsync: editMutate, isPending: false } as never)
+    vi.mocked(useDeletePost).mockReturnValue({ mutateAsync: deleteMutate, isPending: false } as never)
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={post}
+          clusterId="c1"
+          clusterName="Aurora"
+          compact
+          author={{ id: post.author_id, display_name: 'Rio', avatar_url: null }}
+          likeCount={3}
+          likedByMe={false}
+          commentCount={2}
+          onLike={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Rio')).toBeInTheDocument()
+    expect(screen.getByText('· Aurora')).toBeInTheDocument()
+    expect(screen.getByText('Hello world')).toHaveClass('line-clamp-2')
+    expect(screen.getByTestId('post-media')).toHaveAttribute('data-compact', 'true')
+    expect(screen.getByRole('link', { name: /Rio/ }).getAttribute('href')).toBe('/posts/p1')
+  })
+
+  it('pins the engagement row to the bottom in compact mode', () => {
+    const post = fixture({ content: 'Hello world' })
+    vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    vi.mocked(useEditPost).mockReturnValue({ mutateAsync: editMutate, isPending: false } as never)
+    vi.mocked(useDeletePost).mockReturnValue({ mutateAsync: deleteMutate, isPending: false } as never)
+    const { container } = render(
+      <MemoryRouter>
+        <PostCard
+          post={post}
+          clusterId="c1"
+          compact
+          author={{ id: post.author_id, display_name: 'Rio', avatar_url: null }}
+          likeCount={0}
+          likedByMe={false}
+          commentCount={0}
+          onLike={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+    expect(container.querySelector('article')).toHaveClass('flex-col')
+    expect(screen.getByRole('button', { name: '0' }).parentElement).toHaveClass('mt-auto')
+  })
+
+  it('uses full media by default', () => {
+    setup()
+    expect(screen.getByTestId('post-media')).toHaveAttribute('data-compact', 'false')
   })
 
   it('shows the (you) marker for the author’s own post', () => {
