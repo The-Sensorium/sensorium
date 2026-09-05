@@ -93,14 +93,14 @@ function ModeTile({
   return (
     <Link
       to={`/discovery/${value}`}
-      className="group block min-w-0 rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft transition-shadow hover:shadow-lift"
+      className="group block min-w-0 rounded-2xl border border-outline-variant bg-surface-container p-5 shadow-soft transition-colors hover:border-outline hover:bg-surface-high hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Icon className="h-5 w-5 shrink-0 text-primary" strokeWidth={1.5} aria-hidden />
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">{label}</p>
         </div>
-        <span className="shrink-0 rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
+        <span className="shrink-0 rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
           {count === undefined ? '…' : `${count} ${count === 1 ? 'cluster' : 'clusters'}`}
         </span>
       </div>

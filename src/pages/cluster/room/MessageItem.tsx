@@ -4,6 +4,7 @@ import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import { DayDivider } from './DayDivider'
 import { MessageImage } from './MessageImage'
+import { MessageGif } from './MessageGif'
 import { MentionText } from './MentionText'
 import type { Message, Reaction } from '../../../features/cluster'
 import type { MentionMember } from '../../../features/mentions'
@@ -247,21 +248,23 @@ export function MessageItem({
                 </div>
               </div>
             ) : message.image_url ? (
-              message.moderation_status === 'approved' ? (
-                <MessageImage path={message.image_url} alt={message.content ?? 'Shared image'} />
-              ) : (
-                <span className="flex items-center gap-2 rounded-xl bg-surface-container/50 px-4 py-3 text-xs text-on-surface-variant">
-                  <ShieldOff className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                  This image was hidden by moderation.
-                </span>
-              )
+              <>
+                {message.moderation_status === 'approved' ? (
+                  <MessageImage path={message.image_url} alt="Shared image" />
+                ) : (
+                  <span className="flex items-center gap-2 rounded-xl bg-surface-container/50 px-4 py-3 text-xs text-on-surface-variant">
+                    <ShieldOff className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                    This image was hidden by moderation.
+                  </span>
+                )}
+                {message.content?.trim() ? (
+                  <div className="mt-1.5">
+                    <MentionText content={message.content} members={members} clusterId={clusterId} />
+                  </div>
+                ) : null}
+              </>
             ) : gifUrl ? (
-              <img
-                src={gifUrl}
-                alt="GIF"
-                loading="lazy"
-                className="max-h-80 w-full rounded-xl object-contain"
-              />
+              <MessageGif src={gifUrl} />
             ) : (
               <MentionText
                 content={message.content ?? ''}
