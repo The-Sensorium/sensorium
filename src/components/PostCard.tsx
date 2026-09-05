@@ -26,6 +26,8 @@ export function PostCard({
   commentCount,
   onLike,
   onDeleted,
+  clusterName,
+  compact,
 }: {
   post: Post
   clusterId: string
@@ -35,6 +37,8 @@ export function PostCard({
   commentCount: number
   onLike: (postId: string) => void
   onDeleted?: () => void
+  clusterName?: string
+  compact?: boolean
 }) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -100,32 +104,53 @@ export function PostCard({
   }
 
   return (
-    <article className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+    <article className={cn('rounded-2xl border border-outline-variant/60 bg-surface shadow-soft', compact ? 'flex h-full flex-col p-4' : 'p-5')}>
       <Link to={`/posts/${post.id}`} className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Avatar
-            name={author?.display_name ?? 'Member'}
-            src={author?.avatar_url}
-            className="h-5 w-5"
-            textClassName="text-[10px]"
-          />
-          <span className="text-sm font-medium text-on-surface">{author?.display_name ?? 'Member'}</span>
-          {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}
-          <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(post.created_at))}</span>
-          {post.edited_at && <span className="text-xs text-on-surface-variant">· edited</span>}
-        </div>
+        {compact ? (
+          <div className="flex items-center gap-3">
+            <Avatar
+              name={author?.display_name ?? 'Member'}
+              src={author?.avatar_url}
+              className="h-10 w-10"
+              textClassName="text-sm"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm text-on-surface">
+                <span className="font-medium">{author?.display_name ?? 'Member'}</span>
+                {isMine && <span className="text-on-surface-variant"> (you)</span>}
+                <span className="text-on-surface-variant"> · {timeAgo.format(new Date(post.created_at))}</span>
+                {post.edited_at && <span className="text-on-surface-variant"> · edited</span>}
+              </p>
+              {clusterName && <p className="mt-0.5 truncate text-xs font-semibold text-primary">· {clusterName}</p>}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Avatar
+              name={author?.display_name ?? 'Member'}
+              src={author?.avatar_url}
+              className="h-5 w-5"
+              textClassName="text-[10px]"
+            />
+            <span className="text-sm font-medium text-on-surface">{author?.display_name ?? 'Member'}</span>
+            {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}
+            <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(post.created_at))}</span>
+            {clusterName && <span className="text-xs font-semibold text-primary">· {clusterName}</span>}
+            {post.edited_at && <span className="text-xs text-on-surface-variant">· edited</span>}
+          </div>
+        )}
         {post.title && (
           <h3 className="mt-2 font-display text-base font-semibold leading-tight text-on-surface">
             {post.title}
           </h3>
         )}
         {post.content && (
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-on-surface">{post.content}</p>
+          <p className={cn('mt-2 whitespace-pre-wrap text-sm leading-6 text-on-surface', compact && 'line-clamp-2')}>{post.content}</p>
         )}
-        <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} />
+        <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />
       </Link>
 
-      <div className="mt-3 flex items-center gap-4">
+      <div className={cn('flex items-center gap-4', compact ? 'mt-auto pt-3' : 'mt-3')}>
         <button
           type="button"
           aria-pressed={likedByMe}

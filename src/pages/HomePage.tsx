@@ -1,10 +1,12 @@
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, ArrowRight, Compass, Loader2, MailOpen, PartyPopper, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Loader2, MailOpen, PartyPopper, Sparkles } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
+import { useAuth } from '../app/auth-context'
 import {
   useMyClusters,
-  useMyQueueKeys,
+  useClusterMembers,
   useLatestClusterFormed,
   type MyCluster,
 } from '../features/matching'
@@ -13,8 +15,15 @@ import {
   useAcceptInvitation,
   useDeclineInvitation,
 } from '../features/votes'
-import { QueueCard } from '../components/QueueCard'
+import {
+  useRecentClusterPosts,
+  usePostLikes,
+  usePostComments,
+  useTogglePostLike,
+  type Post,
+} from '../features/posts'
 import { ClusterCard } from '../components/ClusterCard'
+import { PostCard } from '../components/PostCard'
 import { toErrorMessage } from '../lib/error'
 
 const GET_STARTED_STEPS = [
@@ -40,7 +49,6 @@ export function HomePage() {
   const profile = useProfile()
   const navigate = useNavigate()
   const clusters = useMyClusters()
-  const queues = useMyQueueKeys()
   const formed = useLatestClusterFormed()
   const invitations = useMyPendingInvitations()
   const acceptInvite = useAcceptInvitation()
@@ -52,14 +60,18 @@ export function HomePage() {
     toErrorMessage(declineInvite.error, '') ||
     null
 
-  const loading = clusters.isLoading || queues.isLoading || invitations.isLoading
+  const clusterIds = useMemo(() => (clusters.data ?? []).map((c) => c.cluster.id), [clusters.data])
+  const clusterNameById = useMemo(
+    () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
+    [clusters.data],
+  )
+
+  const loading = clusters.isLoading || invitations.isLoading
   const hasClusters = (clusters.data?.length ?? 0) > 0
-  const hasQueues = (queues.data?.length ?? 0) > 0
   const hasInvites = (invitations.data?.length ?? 0) > 0
-  const isFresh = !loading && !hasClusters && !hasQueues && !hasInvites && !formed.data
+  const isFresh = !loading && !hasClusters && !hasInvites && !formed.data
   const listError =
     (clusters.isError ? 'Couldn’t load your clusters.' : '') ||
-    (queues.isError ? 'Couldn’t load your queues.' : '') ||
     (invitations.isError ? 'Couldn’t load your invitations.' : '')
 
   return (
@@ -156,33 +168,10 @@ export function HomePage() {
         <GetStarted />
       ) : (
         <>
-          {hasClusters && <JumpBackIn clusters={clusters.data ?? []} />}
-
-          <section className="space-y-4">
-            <h2 className="font-display text-xl font-semibold text-on-surface">Queued</h2>
-            {queues.isLoading ? (
-              <LoadingRow />
-            ) : queues.data && queues.data.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
-                {queues.data.map((entry) => (
-                  <QueueCard key={entry.mode} entry={entry} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center">
-                <Compass className="mx-auto h-6 w-6 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
-                <p className="mt-3 text-sm text-on-surface-variant">
-                  You’re not waiting in any queue right now.
-                </p>
-                <Link
-                  to="/clusters"
-                  className="mt-4 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
-                >
-                  Browse matching modes <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </div>
-            )}
-          </section>
+          {hasClusters && <YourClusters clusters={clusters.data ?? []} />}
+          {hasClusters && (
+            <RecentFromClusters clusterIds={clusterIds} clusterNameById={clusterNameById} />
+          )}
         </>
       )}
     </div>
@@ -222,11 +211,11 @@ function GetStarted() {
   )
 }
 
-function JumpBackIn({ clusters }: { clusters: MyCluster[] }) {
+function YourClusters({ clusters }: { clusters: MyCluster[] }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-semibold text-on-surface">Jump back in</h2>
+        <h2 className="font-display text-xl font-semibold text-on-surface">Your clusters</h2>
         <Link
           to="/clusters"
           className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
@@ -235,11 +224,89 @@ function JumpBackIn({ clusters }: { clusters: MyCluster[] }) {
         </Link>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        {clusters.slice(0, 2).map((item) => (
+        {clusters.map((item) => (
           <ClusterCard key={item.cluster.id} item={item} />
         ))}
       </div>
     </section>
+  )
+}
+
+function RecentFromClusters({
+  clusterIds,
+  clusterNameById,
+}: {
+  clusterIds: string[]
+  clusterNameById: Map<string, string>
+}) {
+  const recent = useRecentClusterPosts(clusterIds, 3)
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-xl font-semibold text-on-surface">Recent posts</h2>
+        <Link
+          to="/posts"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
+        >
+          View all posts <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+      </div>
+      {recent.isLoading ? (
+        <LoadingRow />
+      ) : recent.isError ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
+        >
+          Couldn’t load recent posts. Please try again.
+        </div>
+      ) : (recent.data ?? []).length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center">
+          <p className="text-sm text-on-surface-variant">
+            No posts in your clusters yet. Be the first to share something.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {(recent.data ?? []).map((post) => (
+            <RecentPostItem
+              key={post.id}
+              post={post}
+              clusterName={clusterNameById.get(post.cluster_id)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function RecentPostItem({ post, clusterName }: { post: Post; clusterName: string | undefined }) {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const members = useClusterMembers(post.cluster_id)
+  const likes = usePostLikes(post.id)
+  const comments = usePostComments(post.cluster_id, post.id)
+  const toggle = useTogglePostLike(post.cluster_id)
+
+  const memberById = useMemo(
+    () => new Map((members.data ?? []).map((m) => [m.id, m])),
+    [members.data],
+  )
+
+  return (
+    <PostCard
+      post={post}
+      clusterId={post.cluster_id}
+      clusterName={clusterName}
+      compact
+      author={memberById.get(post.author_id)}
+      likeCount={(likes.data ?? []).length}
+      likedByMe={(likes.data ?? []).some((l) => l.user_id === userId)}
+      commentCount={comments.data?.length ?? 0}
+      onLike={(id) => void toggle.mutateAsync(id)}
+    />
   )
 }
 

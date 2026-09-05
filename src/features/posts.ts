@@ -134,6 +134,30 @@ export function usePost(postId: string | null) {
   })
 }
 
+export const RECENT_POSTS_LIMIT = 5
+
+/** Recent posts across the caller's clusters, newest first (RLS scopes it).
+ * Home preview only; the Posts page remains the full per-cluster experience. */
+export function useRecentClusterPosts(clusterIds: string[], limit = RECENT_POSTS_LIMIT) {
+  const key = [...clusterIds].sort().join(',')
+  return useQuery({
+    queryKey: ['recent-posts', key, limit],
+    enabled: clusterIds.length > 0,
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .in('cluster_id', clusterIds)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(limit)
+      if (error) throw error
+      return ((data ?? []) as Post[]).sort(byNewest)
+    },
+  })
+}
+
 /** Posts authored by a user across clusters the caller can see (RLS scopes it). */
 export function useUserPosts(authorId: string | null, enabled = true) {
   return useQuery({
@@ -167,6 +191,26 @@ export function useClusterPostLikes(clusterId: string | null, postIds: string[])
         .from('post_likes')
         .select('*')
         .in('post_id', postIds)
+      if (error) throw error
+      return (data ?? []) as PostLike[]
+    },
+  })
+}
+
+/** Likes on a single post, keyed by post. The Home preview mounts one card
+ * per post (possibly sharing a cluster), where the cluster-keyed
+ * useClusterPostLikes would collide; the feed/detail pages keep using that. */
+export function usePostLikes(postId: string | null) {
+  return useQuery({
+    queryKey: ['post-likes', 'single', postId ?? 'none'],
+    enabled: postId !== null,
+    queryFn: async () => {
+      if (!postId) throw new Error('No post')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase
+        .from('post_likes')
+        .select('*')
+        .eq('post_id', postId)
       if (error) throw error
       return (data ?? []) as PostLike[]
     },
@@ -296,6 +340,7 @@ export function useCreatePost(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
       }
     },
   })
@@ -325,6 +370,7 @@ export function useEditPost(clusterId: string | null) {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', 'single', variables.postId] })
+        void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
       }
     },
   })
@@ -348,6 +394,7 @@ export function useDeletePost(clusterId: string | null) {
         queryClient.setQueryData<Post | null>(['cluster-posts', 'single', postId], () => null)
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', 'single', postId] })
+        void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId, 'all'] })
       }
@@ -372,12 +419,17 @@ export function useTogglePostLike(clusterId: string | null) {
       if (!clusterId || !userId) return
       await queryClient.cancelQueries({ queryKey: ['post-likes', clusterId] })
       const prev = queryClient.getQueryData<PostLike[]>(['post-likes', clusterId])
-      queryClient.setQueryData<PostLike[]>(['post-likes', clusterId], (cur) => {
-        const base = cur ?? prev ?? []
+      const toggleLike = (base: PostLike[]) => {
         const liked = base.some((l) => l.post_id === postId && l.user_id === userId)
         if (liked) return base.filter((l) => !(l.post_id === postId && l.user_id === userId))
         return [...base, { post_id: postId, user_id: userId, liked_at: new Date().toISOString() }]
-      })
+      }
+      queryClient.setQueryData<PostLike[]>(['post-likes', clusterId], (cur) =>
+        toggleLike(cur ?? prev ?? []),
+      )
+      queryClient.setQueryData<PostLike[]>(['post-likes', 'single', postId], (cur) =>
+        toggleLike(cur ?? []),
+      )
       return { prev }
     },
     onError: (_e, _postId, ctx) => {
@@ -385,10 +437,11 @@ export function useTogglePostLike(clusterId: string | null) {
         queryClient.setQueryData(['post-likes', clusterId], ctx.prev)
       }
     },
-    onSettled: () => {
+    onSettled: (_d, _e, postId) => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
       }
+      void queryClient.invalidateQueries({ queryKey: ['post-likes', 'single', postId] })
     },
   })
 }
