@@ -1,18 +1,9 @@
-import { useChatImageUrl } from '../../../features/cluster'
 import { ImagePreviewDialog } from './ImagePreview'
 import { useImagePreview } from './useImagePreview'
 
-export function MessageImage({ path, alt }: { path: string; alt: string }) {
-  const { data: src, isError } = useChatImageUrl(path)
+export function MessageGif({ src }: { src: string }) {
   const { open, setOpen } = useImagePreview()
 
-  if (isError || !src) {
-    return (
-      <div className="flex h-32 items-center justify-center rounded-xl bg-surface-container text-sm text-on-surface-variant">
-        Image unavailable
-      </div>
-    )
-  }
   return (
     <>
       <button
@@ -27,12 +18,12 @@ export function MessageImage({ path, alt }: { path: string; alt: string }) {
       >
         <img
           src={src}
-          alt={alt}
+          alt="GIF"
           loading="lazy"
           className="max-h-80 w-full rounded-xl object-contain"
         />
       </button>
-      {open && <ImagePreviewDialog src={src} alt={alt} onClose={() => setOpen(false)} />}
+      {open && <ImagePreviewDialog src={src} alt="GIF" onClose={() => setOpen(false)} />}
     </>
   )
 }

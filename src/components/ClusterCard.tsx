@@ -25,7 +25,7 @@ export function ClusterCard({ item }: { item: MyCluster }) {
   return (
     <Link
       to={target}
-      className="block min-w-0 rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft transition-shadow hover:shadow-lift"
+      className="block min-w-0 rounded-2xl border border-outline-variant bg-surface-container p-5 shadow-soft transition-colors hover:border-outline hover:bg-surface-high hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -37,7 +37,7 @@ export function ClusterCard({ item }: { item: MyCluster }) {
             {cluster.name}
           </h3>
         </div>
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
           <Users className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
           {item.memberCount} members
         </span>

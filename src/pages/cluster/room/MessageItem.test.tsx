@@ -9,6 +9,10 @@ vi.mock('../../../features/avatars', () => ({
   useAvatarUrl: () => ({ data: undefined }),
 }))
 
+vi.mock('../../../features/cluster', () => ({
+  useChatImageUrl: () => ({ data: 'signed://img', isError: false }),
+}))
+
 const author = { id: 'a1', display_name: 'Alice Blue', avatar_url: null }
 
 function makeMessage(overrides: Partial<Message> = {}): Message {
@@ -173,5 +177,16 @@ describe('MessageItem', () => {
     const { props } = setup()
     await userEvent.click(screen.getByRole('button', { name: 'Reply' }))
     expect(props.onReply).toHaveBeenCalledWith(props.message)
+  })
+
+  it('renders caption text alongside an image', () => {
+    setup({ message: makeMessage({ content: 'look at this', image_url: 'c1/a.png' }) })
+    expect(screen.getByRole('img', { name: 'Shared image' })).toBeInTheDocument()
+    expect(screen.getByText('look at this')).toBeInTheDocument()
+  })
+
+  it('renders an image without caption when content is empty', () => {
+    setup({ message: makeMessage({ content: null, image_url: 'c1/a.png' }) })
+    expect(screen.getByRole('img', { name: 'Shared image' })).toBeInTheDocument()
   })
 })

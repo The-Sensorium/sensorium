@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MessageImage } from './MessageImage'
 import { useChatImageUrl } from '../../../features/cluster'
 
@@ -29,5 +30,14 @@ describe('MessageImage', () => {
     useChatImageUrlMock.mockReturnValue({ data: undefined, isError: true } as never)
     render(<MessageImage path="c1/a.png" alt="a photo" />)
     expect(screen.getByText('Image unavailable')).toBeInTheDocument()
+  })
+
+  it('opens a full-size preview when the thumbnail is clicked', async () => {
+    useChatImageUrlMock.mockReturnValue({ data: 'signed://img', isError: false } as never)
+    render(<MessageImage path="c1/a.png" alt="a photo" />)
+    await userEvent.click(screen.getByRole('button', { name: 'View image full size' }))
+    expect(screen.getByRole('dialog', { name: 'Image preview' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Close preview' }))
+    expect(screen.queryByRole('dialog', { name: 'Image preview' })).not.toBeInTheDocument()
   })
 })
