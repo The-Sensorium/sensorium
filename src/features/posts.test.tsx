@@ -22,6 +22,8 @@ import {
   useLoadEarlierPosts,
   usePost,
   usePostComments,
+  usePostLikes,
+  useRecentClusterPosts,
   usePostImageUrl,
   useReportComment,
   useReportPost,
@@ -130,6 +132,26 @@ describe('posts', () => {
     expect(result.current.fetchStatus).toBe('idle')
   })
 
+  it('useRecentClusterPosts queries across cluster ids newest-first', async () => {
+    mockResult.value = {
+      data: [
+        { id: 'p2', cluster_id: 'c2', created_at: '2026-01-02T00:00:00Z' },
+        { id: 'p1', cluster_id: 'c1', created_at: '2026-01-01T00:00:00Z' },
+      ],
+      error: null,
+    }
+    const { result } = renderHook(() => useRecentClusterPosts(['c1', 'c2']), { wrapper })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.from('posts').in).toHaveBeenCalledWith('cluster_id', ['c1', 'c2'])
+    expect(result.current.data?.map((p) => p.id)).toEqual(['p2', 'p1'])
+  })
+
+  it('useRecentClusterPosts is disabled without clusters', async () => {
+    const { result } = renderHook(() => useRecentClusterPosts([]), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+  })
+
   it('useUserPosts queries by author id', async () => {
     const { result } = renderHook(() => useUserPosts('u1'), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -151,6 +173,19 @@ describe('posts', () => {
     await waitFor(() => expect(result.current.data).toEqual([{ post_id: 'p1', user_id: 'u1' }]))
     const c = requireSupabaseMock.mock.results[0].value
     expect(c.from('post_likes').in).toHaveBeenCalledWith('post_id', ['p1', 'p2'])
+  })
+
+  it('usePostLikes queries a single post’s likes', async () => {
+    mockResult.value = { data: [{ post_id: 'p1', user_id: 'u1' }], error: null }
+    const { result } = renderHook(() => usePostLikes('p1'), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual([{ post_id: 'p1', user_id: 'u1' }]))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.from('post_likes').eq).toHaveBeenCalledWith('post_id', 'p1')
+  })
+
+  it('usePostLikes is disabled without a post', async () => {
+    const { result } = renderHook(() => usePostLikes(null), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
   })
 
   it('useClusterCommentLikes queries only the loaded comment ids', async () => {
@@ -282,6 +317,24 @@ describe('posts', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
     const cached = queryClient.getQueryData<{ post_id: string; user_id: string }[]>(['post-likes', 'c1'])
+    expect(cached).toEqual(
+      expect.arrayContaining([expect.objectContaining({ post_id: 'p1', user_id: 'u1' })]),
+    )
+  })
+
+  it('useTogglePostLike writes the single-post likes cache optimistically', async () => {
+    const pending = new Promise<never>(() => {})
+    requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
+    const { result } = renderHook(() => useTogglePostLike('c1'), { wrapper })
+    result.current.mutate('p1')
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const cached = queryClient.getQueryData<{ post_id: string; user_id: string }[]>([
+      'post-likes',
+      'single',
+      'p1',
+    ])
     expect(cached).toEqual(
       expect.arrayContaining([expect.objectContaining({ post_id: 'p1', user_id: 'u1' })]),
     )
