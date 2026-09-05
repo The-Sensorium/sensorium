@@ -3,8 +3,10 @@ import { Archive, CalendarDays, CircleCheck, Hourglass, Users } from 'lucide-rea
 import type { ClusterTile } from '../features/discovery'
 import { modeInfo } from '../lib/modes'
 
-const tileClass =
-  'block min-w-0 rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft'
+const tileBase =
+  'block min-w-0 rounded-2xl border border-outline-variant bg-surface-container p-5 shadow-soft'
+const tileInteractive =
+  `${tileBase} transition-colors hover:border-outline hover:bg-surface-high hover:shadow-lift focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`
 
 const formedFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -38,7 +40,7 @@ export function PublicClusterCard({ cluster, isMember }: { cluster: ClusterTile;
             {cluster.name}
           </h3>
         </div>
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
           <Users className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
           {cluster.member_count} members
         </span>
@@ -58,10 +60,10 @@ export function PublicClusterCard({ cluster, isMember }: { cluster: ClusterTile;
 
   if (isMember) {
     return (
-      <Link to={`/cluster/${cluster.id}`} className={tileClass}>
+      <Link to={`/cluster/${cluster.id}`} className={tileInteractive}>
         {body}
       </Link>
     )
   }
-  return <div className={tileClass}>{body}</div>
+  return <div className={tileBase}>{body}</div>
 }
