@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { requireSupabase } from '../lib/supabase'
 import { useAuth } from '../app/auth-context'
 import { makeSupabaseClient, initialMockResult, asError, type MockSupabaseResult } from '../test/supabase-client'
-import { REPORT_REASONS, useDeleteAccount, useReportMember } from './moderation'
+import { REPORT_REASONS, isMutedAuthor, mutedIds, useDeleteAccount, useMuteUser, useMyMutes, useMyReports, useReportMember, useUnmuteUser } from './moderation'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
 vi.mock('../app/auth-context', () => ({ useAuth: vi.fn() }))
@@ -136,5 +136,91 @@ describe('moderation', () => {
     expect(removeAvatar).toHaveBeenCalledWith(['u1/av.png'])
     expect(removeChatImage).toHaveBeenCalledWith(['c1/a.png'])
     expect(removeChatImage).toHaveBeenCalledWith(['c2/b.png'])
+  })
+
+  it('isMutedAuthor matches only muted ids', () => {
+    const muted = new Set(['u2'])
+    expect(isMutedAuthor(muted, 'u2')).toBe(true)
+    expect(isMutedAuthor(muted, 'u3')).toBe(false)
+  })
+
+  it('useMyMutes returns muted users with profile data', async () => {
+    const rows = [
+      { muted_user_id: 'u2', display_name: 'Bo', avatar_url: null },
+      { muted_user_id: 'u3', display_name: null, avatar_url: null },
+    ]
+    mockResult.value = { data: rows, error: null }
+    const { result } = renderHook(() => useMyMutes(), { wrapper })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual(rows)
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_my_mutes')
+  })
+
+  it('mutedIds maps rows to an id set', () => {
+    expect(mutedIds([{ muted_user_id: 'u2', display_name: 'Bo', avatar_url: null }])).toEqual(new Set(['u2']))
+    expect(mutedIds(undefined)).toEqual(new Set())
+  })
+
+  it('useMyMutes is disabled while signed out', () => {
+    useAuthMock.mockReturnValue({ state: 'signedOut' })
+    const { result } = renderHook(() => useMyMutes(), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+  })
+
+  it('mute inserts and updates the cache optimistically', async () => {
+    queryClient.setQueryData(['my-mutes', 'u1'], [])
+    const { result } = renderHook(() => useMuteUser(), { wrapper })
+    result.current.mutate({ targetUserId: 'u2' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryData(['my-mutes', 'u1'])).toEqual([
+      { muted_user_id: 'u2', display_name: null, avatar_url: null },
+    ])
+  })
+
+  it('mute rejects self-mute without a network call', async () => {
+    const { result } = renderHook(() => useMuteUser(), { wrapper })
+    result.current.mutate({ targetUserId: 'u1' })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(String(result.current.error)).toContain('cannot_mute_self')
+  })
+
+  it('unmute removes the id from the cache', async () => {
+    queryClient.setQueryData(
+      ['my-mutes', 'u1'],
+      [
+        { muted_user_id: 'u2', display_name: 'Bo', avatar_url: null },
+        { muted_user_id: 'u3', display_name: null, avatar_url: null },
+      ],
+    )
+    const { result } = renderHook(() => useUnmuteUser(), { wrapper })
+    result.current.mutate({ targetUserId: 'u2' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(queryClient.getQueryData(['my-mutes', 'u1'])).toEqual([
+      { muted_user_id: 'u3', display_name: null, avatar_url: null },
+    ])
+    const client = requireSupabaseMock.mock.results[0].value
+    expect(client.from('user_mutes').eq).toHaveBeenCalledWith('user_id', 'u1')
+    expect(client.from('user_mutes').eq).toHaveBeenCalledWith('muted_user_id', 'u2')
+  })
+
+  it('useMyReports calls get_my_reports_v2', async () => {
+    const rows = [
+      {
+        id: 'r1',
+        cluster_id: 'c1',
+        cluster_name: 'Aurora',
+        target_kind: 'member',
+        target_display_name: 'Bo',
+        reason: 'spam',
+        details: null,
+        status: 'pending',
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ]
+    mockResult.value = { data: rows, error: null }
+    const { result } = renderHook(() => useMyReports(), { wrapper })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data).toEqual(rows)
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_my_reports_v2')
   })
 })

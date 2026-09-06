@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useAuth } from '../app/auth-context'
 import { Modal } from './Modal'
-import { REPORT_REASONS, useReportMember, type ReportReason } from '../features/moderation'
+import { REPORT_REASONS, useIsMuted, useMuteUser, useReportMember, type ReportReason } from '../features/moderation'
 import { useReportComment, useReportPost } from '../features/posts'
 
 const REPORT_ERRORS: Record<string, string> = {
@@ -37,6 +39,11 @@ export function ReportModal({
   const reportMember = useReportMember()
   const reportPost = useReportPost(clusterId)
   const reportComment = useReportComment(clusterId)
+  const auth = useAuth()
+  const selfId = auth.state === 'signedIn' ? auth.userId : null
+  const isSelf = selfId !== null && target.id === selfId
+  const muted = useIsMuted(target.id)
+  const muteUser = useMuteUser()
   const active =
     contentTarget?.kind === 'post' ? reportPost : contentTarget?.kind === 'comment' ? reportComment : reportMember
   const resetRef = useRef(false)
@@ -93,6 +100,30 @@ export function ReportModal({
             Thanks. Our moderators will review your report
             {contentTarget ? ` about this ${contentTarget.kind}` : ` about ${target.name}`}.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Link
+              to="/settings/reports"
+              onClick={onClose}
+              className="inline-flex items-center rounded-pill border border-primary/50 px-4 py-1.5 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
+            >
+              View my reports
+            </Link>
+            {!muted && !isSelf && (
+              <button
+                type="button"
+                disabled={muteUser.isPending}
+                onClick={() => muteUser.mutate({ targetUserId: target.id })}
+                className="inline-flex items-center rounded-pill border border-outline-variant/60 px-4 py-1.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+              >
+                Also mute {target.name} (only you)
+              </button>
+            )}
+            {muteUser.isError && (
+              <p role="alert" className="w-full text-center text-xs text-error">
+                Couldn’t mute {target.name}. Try again.
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         <form

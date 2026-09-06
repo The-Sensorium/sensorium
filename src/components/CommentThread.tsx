@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Send, X } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
@@ -14,6 +14,8 @@ import {
 } from '../features/posts'
 import type { Gif } from '../features/gifs'
 import { toErrorMessage } from '../lib/error'
+import { isMutedAuthor, mutedIds, useMyMutes } from '../features/moderation'
+import { MutedPlaceholder } from './MutedPlaceholder'
 import { cn } from '../lib/utils'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -90,6 +92,16 @@ export function CommentThread({
 
   const hasContent = Boolean(draft.trim() || file || gif)
 
+  const myMutes = useMyMutes(true)
+  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  function reveal(id: string) {
+    setRevealed((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }
   const commentIds = comments.map((c) => c.id)
   const commentLikes = useClusterCommentLikes(clusterId, commentIds)
   const toggleCommentLike = useToggleCommentLike(clusterId)
@@ -283,14 +295,25 @@ export function CommentThread({
         />
       </form>
 
-      {comments.length === 0 ? (
+      {myMutes.isLoading ? (
+        <p className="flex items-center gap-2 text-sm text-on-surface-variant">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+        </p>
+      ) : comments.length === 0 ? (
         <p className="text-sm text-on-surface-variant">No comments yet. Be the first to reply.</p>
       ) : (
         <ul className="space-y-4">
           {top.map((tc) => {
             const thread = threads.get(tc.id) ?? []
+            const tcHidden = isMutedAuthor(mutedSet, tc.author_id) && !revealed.has(tc.id)
             return (
               <li key={tc.id} className="space-y-3">
+                {tcHidden ? (
+                  <MutedPlaceholder
+                    name={memberById.get(tc.author_id)?.display_name ?? 'Member'}
+                    onToggle={() => reveal(tc.id)}
+                  />
+                ) : (
                 <CommentItem
                   comment={tc}
                   clusterId={clusterId}
@@ -301,29 +324,47 @@ export function CommentThread({
                   likedByMe={likesByComment.get(tc.id)?.mine ?? false}
                   replyCount={thread.length}
                 />
+                )}
                 {thread.length > 0 && (
                   <ul className="ml-11 space-y-3 border-l border-outline-variant/40 pl-4">
-                    {thread.map((r) => (
-                      <CommentItem
-                        key={r.id}
-                        comment={r}
-                        clusterId={clusterId}
-                        author={memberById.get(r.author_id)}
-                        repliedToName={
-                          r.parent_comment_id === tc.id ? undefined : authorNameOf(r.parent_comment_id as string)
-                        }
-                        onReply={() => setReplyTo({ id: r.id, authorName: authorNameOf(r.id) })}
-                        onLike={(id) => void toggleCommentLike.mutateAsync(id)}
-                        likeCount={likesByComment.get(r.id)?.count ?? 0}
-                        likedByMe={likesByComment.get(r.id)?.mine ?? false}
-                      />
-                    ))}
+                    {thread.map((r) =>
+                      isMutedAuthor(mutedSet, r.author_id) && !revealed.has(r.id) ? (
+                        <li key={r.id}>
+                          <MutedPlaceholder
+                            name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                            onToggle={() => reveal(r.id)}
+                          />
+                        </li>
+                      ) : (
+                        <CommentItem
+                          key={r.id}
+                          comment={r}
+                          clusterId={clusterId}
+                          author={memberById.get(r.author_id)}
+                          repliedToName={
+                            r.parent_comment_id === tc.id ? undefined : authorNameOf(r.parent_comment_id as string)
+                          }
+                          onReply={() => setReplyTo({ id: r.id, authorName: authorNameOf(r.id) })}
+                          onLike={(id) => void toggleCommentLike.mutateAsync(id)}
+                          likeCount={likesByComment.get(r.id)?.count ?? 0}
+                          likedByMe={likesByComment.get(r.id)?.mine ?? false}
+                        />
+                      ),
+                    )}
                   </ul>
                 )}
               </li>
             )
           })}
-          {orphans.map((c) => (
+          {orphans.map((c) =>
+            isMutedAuthor(mutedSet, c.author_id) && !revealed.has(c.id) ? (
+              <li key={c.id}>
+                <MutedPlaceholder
+                  name={memberById.get(c.author_id)?.display_name ?? 'Member'}
+                  onToggle={() => reveal(c.id)}
+                />
+              </li>
+            ) : (
             <li key={c.id}>
               <CommentItem
                 comment={c}
@@ -336,7 +377,8 @@ export function CommentThread({
                 likedByMe={likesByComment.get(c.id)?.mine ?? false}
               />
             </li>
-          ))}
+            )
+          )}
         </ul>
       )}
     </section>

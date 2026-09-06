@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { ArrowLeft, Loader2, MessageSquare } from 'lucide-react'
@@ -14,6 +14,8 @@ import {
 import type { SignalStatus } from '../../features/signals'
 import { useAuth } from '../../app/auth-context'
 import { Avatar } from '../../components/Avatar'
+import { MutedPlaceholder } from '../../components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
 
 const statusMeta: Record<SignalStatus, { label: string; className: string }> = {
   open: { label: 'Open', className: 'bg-primary/10 text-primary' },
@@ -46,6 +48,10 @@ export function SignalDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
   const [confirmResolve, setConfirmResolve] = useState(false)
+  const myMutes = useMyMutes(clusterId !== '')
+  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  const [articleRevealed, setArticleRevealed] = useState(false)
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
   const s = (signals.data ?? []).find((x) => x.id === signalId)
@@ -77,7 +83,7 @@ export function SignalDetailPage() {
     }
   }
 
-  if (signals.isLoading || replies.isLoading || members.isLoading) {
+  if (signals.isLoading || replies.isLoading || members.isLoading || myMutes.isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-on-surface-variant">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading signal…
@@ -108,6 +114,12 @@ export function SignalDetailPage() {
         Back
       </button>
 
+      {isMutedAuthor(mutedSet, s.author_id) && !articleRevealed ? (
+        <MutedPlaceholder
+          name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+          onToggle={() => setArticleRevealed(true)}
+        />
+      ) : (
       <article className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Avatar
@@ -186,6 +198,7 @@ export function SignalDetailPage() {
           </div>
         )}
       </article>
+      )}
 
       <section aria-label="Replies">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-on-surface">
@@ -199,7 +212,21 @@ export function SignalDetailPage() {
           </p>
         ) : (
           <ul className="mt-3 space-y-3">
-            {(replies.data ?? []).map((r) => (
+            {(replies.data ?? []).map((r) =>
+              isMutedAuthor(mutedSet, r.author_id) && !revealed.has(r.id) ? (
+                <li key={r.id}>
+                  <MutedPlaceholder
+                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                    onToggle={() =>
+                      setRevealed((prev) => {
+                        const next = new Set(prev)
+                        next.add(r.id)
+                        return next
+                      })
+                    }
+                  />
+                </li>
+              ) : (
               <li key={r.id} className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
                 <div className="flex items-center gap-2">
                   <Avatar
@@ -217,7 +244,8 @@ export function SignalDetailPage() {
                 </div>
                 <p className="mt-2 text-sm leading-6 text-on-surface">{r.content}</p>
               </li>
-            ))}
+              )
+            )}
           </ul>
         )}
 

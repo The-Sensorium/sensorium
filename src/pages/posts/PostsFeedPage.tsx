@@ -17,6 +17,8 @@ import {
   useTogglePostLike,
 } from '../../features/posts'
 import { useClusterChannel } from '../../features/realtime'
+import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
+import { MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { PostComposer } from '../../components/PostComposer'
 import { PostCard } from '../../components/PostCard'
 
@@ -44,6 +46,9 @@ export function PostsFeedPage() {
   const comments = useClusterPostComments(clusterId, (posts.data ?? []).map((p) => p.id))
   const toggle = useTogglePostLike(clusterId)
   const loadEarlier = useLoadEarlierPosts(clusterId)
+  const myMutes = useMyMutes(clusterId != null)
+  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
 
   useClusterChannel(clusterId)
 
@@ -158,7 +163,7 @@ export function PostsFeedPage() {
 
           {clusterId && <PostComposer clusterId={clusterId} />}
 
-          {posts.isLoading ? (
+          {posts.isLoading || myMutes.isLoading ? (
             <div className="flex items-center gap-2 text-sm text-on-surface-variant">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading posts…
             </div>
@@ -170,6 +175,22 @@ export function PostsFeedPage() {
             <>
               <div className="space-y-4">
                 {sorted.map((post) => {
+                  if (isMutedAuthor(mutedSet, post.author_id) && !revealed.has(post.id)) {
+                    const author = memberById.get(post.author_id)
+                    return (
+                      <MutedPlaceholder
+                        key={post.id}
+                        name={author?.display_name ?? 'Member'}
+                        onToggle={() =>
+                          setRevealed((prev) => {
+                            const next = new Set(prev)
+                            next.add(post.id)
+                            return next
+                          })
+                        }
+                      />
+                    )
+                  }
                   const like = likesMap.get(post.id)
                   return (
                     <PostCard
