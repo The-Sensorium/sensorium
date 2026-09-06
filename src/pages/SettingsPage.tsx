@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ImageMinus, ImagePlus, Loader2, LogOut, Trash2, UserRound } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
+import { AlertTriangle, BellRing, ImageMinus, ImagePlus, Loader2, LogOut, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -10,7 +10,7 @@ import { toErrorMessage } from '../lib/error'
 import { useMyClusters } from '../features/matching'
 import { useUpdateProfile } from '../features/cluster'
 import { deleteAvatarObject } from '../features/avatars'
-import { useDeleteAccount } from '../features/moderation'
+import { useDeleteAccount, useMyMutes } from '../features/moderation'
 import {
   PREF_LABELS,
   PREF_TOGGLES,
@@ -19,6 +19,7 @@ import {
   type PrefToggle,
 } from '../features/notifications'
 import { Avatar } from '../components/Avatar'
+import { MuteButton } from '../components/MuteButton'
 import { Modal } from '../components/Modal'
 import { PronounSelect } from '../components/PronounSelect'
 import { SignOutModal } from '../components/SignOutModal'
@@ -204,6 +205,8 @@ export function SettingsPage() {
 
       <NotificationPreferences />
 
+      <SafetySection />
+
       <section aria-label="Account" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
         <h2 className="font-display text-lg font-semibold text-on-surface">Account</h2>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -365,6 +368,61 @@ function DeleteAccountModal({
         </button>
       </div>
     </Modal>
+  )
+}
+
+function SafetySection() {
+  const mutes = useMyMutes()
+  const muted = mutes.data ?? []
+
+  return (
+    <section aria-label="Safety" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+        <h2 className="font-display text-lg font-semibold text-on-surface">Safety</h2>
+      </div>
+      <p className="mt-1 text-sm text-on-surface-variant">
+        Muted members are hidden for you only. They are never told.
+      </p>
+      <Link
+        to="/settings/reports"
+        className="mt-3 inline-flex items-center rounded-pill border border-primary/50 px-5 py-2 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
+      >
+        My reports
+      </Link>
+      <div className="mt-4">
+        {mutes.isLoading ? (
+          <p className="flex items-center gap-2 text-sm text-on-surface-variant">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+          </p>
+        ) : mutes.isError ? (
+          <p role="alert" className="rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
+            Couldn’t load your muted members. Please try again.
+          </p>
+        ) : muted.length === 0 ? (
+          <p className="rounded-xl bg-surface-container/50 px-4 py-3 text-sm text-on-surface-variant">
+            No muted members.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {muted.map((m) => (
+              <li key={m.muted_user_id} className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/60 px-4 py-2.5">
+                <span className="flex min-w-0 items-center gap-3">
+                  <Avatar
+                    name={m.display_name ?? 'Member'}
+                    src={m.avatar_url}
+                    className="h-8 w-8"
+                    textClassName="text-sm"
+                  />
+                  <span className="truncate text-sm text-on-surface">{m.display_name ?? 'Member'}</span>
+                </span>
+                <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   )
 }
 

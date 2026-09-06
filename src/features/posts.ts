@@ -542,6 +542,7 @@ export function useReportPost(clusterId: string | null) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['reports'] })
+      void queryClient.invalidateQueries({ queryKey: ['my-reports'] })
     },
   })
 }
@@ -570,6 +571,7 @@ export function useReportComment(clusterId: string | null) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['reports'] })
+      void queryClient.invalidateQueries({ queryKey: ['my-reports'] })
     },
   })
 }

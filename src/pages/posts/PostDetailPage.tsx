@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
@@ -13,6 +13,8 @@ import {
 import { useClusterChannel } from '../../features/realtime'
 import { PostCard } from '../../components/PostCard'
 import { CommentThread } from '../../components/CommentThread'
+import { MutedPlaceholder } from '../../components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
 
 export function PostDetailPage() {
   useDocumentTitle('Post')
@@ -27,6 +29,9 @@ export function PostDetailPage() {
   const likes = useClusterPostLikes(clusterId, post.data ? [post.data.id] : [])
   const comments = usePostComments(clusterId, postId)
   const toggle = useTogglePostLike(clusterId)
+  const myMutes = useMyMutes(clusterId != null)
+  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const [revealed, setRevealed] = useState(false)
 
   useClusterChannel(clusterId)
 
@@ -35,7 +40,7 @@ export function PostDetailPage() {
     [members.data],
   )
 
-  if (post.isLoading) {
+  if (post.isLoading || myMutes.isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-on-surface-variant">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
@@ -70,16 +75,23 @@ export function PostDetailPage() {
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back
       </button>
 
-      <PostCard
-        post={p}
-        clusterId={clusterId!}
-        author={memberById.get(p.author_id)}
-        likeCount={likeInfo.count}
-        likedByMe={likeInfo.mine}
-        commentCount={comments.data?.length ?? 0}
-        onLike={(id) => void toggle.mutateAsync(id)}
-        onDeleted={() => navigate(-1)}
-      />
+      {isMutedAuthor(mutedSet, p.author_id) && !revealed ? (
+        <MutedPlaceholder
+          name={memberById.get(p.author_id)?.display_name ?? 'Member'}
+          onToggle={() => setRevealed(true)}
+        />
+      ) : (
+        <PostCard
+          post={p}
+          clusterId={clusterId!}
+          author={memberById.get(p.author_id)}
+          likeCount={likeInfo.count}
+          likedByMe={likeInfo.mine}
+          commentCount={comments.data?.length ?? 0}
+          onLike={(id) => void toggle.mutateAsync(id)}
+          onDeleted={() => navigate(-1)}
+        />
+      )}
 
       <CommentThread
         clusterId={clusterId!}

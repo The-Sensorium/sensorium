@@ -30,6 +30,7 @@ import { Avatar } from '../components/Avatar'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
 import { PronounBadge } from '../components/PronounBadge'
 import { ReportModal } from '../components/ReportModal'
+import { MuteButton } from '../components/MuteButton'
 import { countryName } from '../lib/countries'
 import { cn } from '../lib/utils'
 
@@ -236,23 +237,26 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
         </div>
 
         {!isSelf && (
-          <div className="mt-3 flex items-center gap-2 border-t border-outline-variant/40 pt-3 md:mt-4 md:pt-4">
+          <div className="mt-3 flex flex-col gap-2 border-t border-outline-variant/40 pt-3 md:mt-4 md:flex-row md:items-center md:pt-4">
             <Link
               to={`/cluster/${clusterId}`}
               className={cn(
-                'inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container',
+                'flex w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto',
               )}
             >
               Message {member.display_name}
             </Link>
-            <button
-              type="button"
-              onClick={() => setReportOpen(true)}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-pill border border-outline-variant px-3 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container"
-            >
-              <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-              Report
-            </button>
+            <div className="grid grid-cols-2 gap-2 md:ml-auto md:flex md:items-center">
+              <MuteButton targetUserId={member.id} targetName={member.display_name} fullWidth />
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container md:w-28"
+              >
+                <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                Report
+              </button>
+            </div>
           </div>
         )}
       </div>

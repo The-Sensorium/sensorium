@@ -1318,6 +1318,39 @@ export type Database = {
           },
         ]
       }
+      user_mutes: {
+        Row: {
+          created_at: string
+          muted_user_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          muted_user_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          muted_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_mutes_muted_user_id_fkey"
+            columns: ["muted_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_mutes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           grant_reason: string
@@ -1861,6 +1894,28 @@ export type Database = {
           reason: Database["public"]["Enums"]["report_reason"]
           status: Database["public"]["Enums"]["report_status"]
           target_user_id: string
+        }[]
+      }
+      get_my_mutes: {
+        Args: never
+        Returns: {
+          avatar_url: string | null
+          display_name: string | null
+          muted_user_id: string
+        }[]
+      }
+      get_my_reports_v2: {
+        Args: never
+        Returns: {
+          cluster_id: string
+          cluster_name: string
+          created_at: string
+          details: string | null
+          id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          status: Database["public"]["Enums"]["report_status"]
+          target_display_name: string | null
+          target_kind: string
         }[]
       }
       get_staff_unread_counts: {

@@ -11,6 +11,7 @@ const hooks = vi.hoisted(() => ({
   useReplySignal: vi.fn(),
   useSetSignalStatus: vi.fn(),
   useAvatarUrl: vi.fn(),
+  useMyMutes: vi.fn(),
 }))
 
 vi.mock('react-router', async (importOriginal) => {
@@ -31,6 +32,7 @@ vi.mock('../../features/signals', () => ({
   useSetSignalStatus: hooks.useSetSignalStatus,
   SIGNAL_STATUS_ORDER: ['open', 'in_progress', 'resolved'],
 }))
+vi.mock('../../features/moderation', () => ({ useMyMutes: hooks.useMyMutes, isMutedAuthor: (muted: Set<string>, id: string) => muted.has(id), mutedIds: (mutes: Array<{ muted_user_id: string }> | undefined) => new Set((mutes ?? []).map((m) => m.muted_user_id)) }))
 
 const members = [
   { id: 'm1', display_name: 'Bo', avatar_url: null },
@@ -73,6 +75,7 @@ describe('SignalDetailPage', () => {
     hooks.useReplySignal.mockReturnValue(reply)
     hooks.useSetSignalStatus.mockReturnValue(setStatus)
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
+    hooks.useMyMutes.mockReturnValue(queryStub([]))
   })
 
   it('shows the loading state while signals load', () => {

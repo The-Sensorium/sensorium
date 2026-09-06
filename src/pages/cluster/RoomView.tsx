@@ -27,6 +27,8 @@ import {
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../features/signals'
 import { useClusterVotes, type Vote } from '../../features/votes'
 import { useMarkClusterRead } from '../../features/notifications'
+import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
+import { MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { toErrorMessage } from '../../lib/error'
 import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
@@ -70,6 +72,16 @@ export function RoomView() {
   const deleteMessage = useDeleteMessage(clusterId)
   const raise = useRaiseSignal(clusterId)
   const markRead = useMarkClusterRead()
+  const myMutes = useMyMutes(clusterId !== '')
+  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  function reveal(id: string) {
+    setRevealed((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }
   const { typing, signalTyping, resetTyping, online } = usePresence(clusterId)
 
   const memberCount = (members.data ?? []).length
@@ -551,7 +563,7 @@ export function RoomView() {
             </ul>
           </div>
         </section>
-        {messages.isLoading ? (
+        {messages.isLoading || myMutes.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the room…
           </div>
@@ -581,6 +593,16 @@ export function RoomView() {
 
                 if (item.kind === 'message') {
                   const m = item.data
+                  if (isMutedAuthor(mutedSet, m.author_id) && !revealed.has(m.id)) {
+                    return (
+                      <li key={m.id}>
+                        <MutedPlaceholder
+                          name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
+                          onToggle={() => reveal(m.id)}
+                        />
+                      </li>
+                    )
+                  }
                   return (
                     <MessageItem
                       key={m.id}
@@ -597,7 +619,11 @@ export function RoomView() {
                       editPending={editMessage.isPending}
                       menuOpen={menuFor === m.id}
                       pickerOpen={pickerFor === m.id}
-                      replyParent={replyPreview(replyById.get(m.reply_to_id ?? ''))}
+                      replyParent={(() => {
+                        const parent = replyById.get(m.reply_to_id ?? '')
+                        if (parent && isMutedAuthor(mutedSet, parent.author_id)) return undefined
+                        return replyPreview(parent)
+                      })()}
                       onEditDraftChange={setEditDraft}
                       onSaveEdit={() => void saveEdit()}
                       onCancelEdit={() => setEditingId(null)}
@@ -617,6 +643,16 @@ export function RoomView() {
 
                 if (item.kind === 'signal') {
                   const s = item.data
+                  if (isMutedAuthor(mutedSet, s.author_id) && !revealed.has(`signal-${s.id}`)) {
+                    return (
+                      <li key={`signal-${s.id}`}>
+                        <MutedPlaceholder
+                          name={memberMap.get(s.author_id)?.display_name ?? 'Member'}
+                          onToggle={() => reveal(`signal-${s.id}`)}
+                        />
+                      </li>
+                    )
+                  }
                   return (
                     <SignalRow
                       key={`signal-${s.id}`}

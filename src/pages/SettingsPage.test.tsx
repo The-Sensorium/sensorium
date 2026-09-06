@@ -8,6 +8,8 @@ const hooks = vi.hoisted(() => ({
   useProfile: vi.fn(),
   useUpdateProfile: vi.fn(),
   useDeleteAccount: vi.fn(),
+  useMyMutes: vi.fn(),
+  useUnmuteUser: vi.fn(),
   useMyClusters: vi.fn(),
   useNotificationPrefs: vi.fn(),
   useUpsertNotificationPrefs: vi.fn(),
@@ -19,11 +21,12 @@ const hooks = vi.hoisted(() => ({
 
 vi.mock('../lib/use-profile', () => ({ useProfile: hooks.useProfile }))
 vi.mock('../features/cluster', () => ({ useUpdateProfile: hooks.useUpdateProfile }))
-vi.mock('../features/moderation', () => ({ useDeleteAccount: hooks.useDeleteAccount }))
+vi.mock('../features/moderation', () => ({ useDeleteAccount: hooks.useDeleteAccount, useMyMutes: hooks.useMyMutes, useUnmuteUser: hooks.useUnmuteUser }))
 vi.mock('../features/matching', () => ({ useMyClusters: hooks.useMyClusters }))
 vi.mock('../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, deleteAvatarObject: hooks.deleteAvatarObject }))
 vi.mock('../lib/supabase', () => ({ requireSupabase: hooks.requireSupabase }))
 vi.mock('../lib/image', () => ({ prepareImage: hooks.prepareImage }))
+vi.mock('../components/MuteButton', () => ({ MuteButton: () => <button type="button">Unmute</button> }))
 vi.mock('../features/notifications', () => {
   const PREF_TOGGLES = ['messages', 'mentions', 'reactions', 'votes', 'invitations', 'signals']
   const PREF_LABELS = {
@@ -70,6 +73,8 @@ describe('SettingsPage', () => {
     hooks.useProfile.mockReturnValue({ data: profile, isLoading: false })
     hooks.useUpdateProfile.mockReturnValue(updateProfile)
     hooks.useDeleteAccount.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
+    hooks.useMyMutes.mockReturnValue({ data: [], isLoading: false, isError: false })
+    hooks.useUnmuteUser.mockReturnValue({ mutate: vi.fn(), isPending: false })
     hooks.useMyClusters.mockReturnValue({ data: [], isLoading: false, isError: false })
     hooks.useNotificationPrefs.mockReturnValue({ data: [], isLoading: false, isError: false })
     hooks.useUpsertNotificationPrefs.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue({}) })
@@ -255,5 +260,22 @@ describe('SettingsPage', () => {
   it('shows an empty state when there are no clusters yet', () => {
     renderPage()
     expect(screen.getByText('No clusters yet. Preferences appear here once you join a cluster.')).toBeInTheDocument()
+  })
+
+  it('lists muted members by name in the Safety section', () => {
+    hooks.useMyMutes.mockReturnValue({
+      data: [{ muted_user_id: 'u2', display_name: 'Bo', avatar_url: null }],
+      isLoading: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Bo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Unmute' })).toBeInTheDocument()
+  })
+
+  it('shows an error when muted members fail to load', () => {
+    hooks.useMyMutes.mockReturnValue({ data: undefined, isLoading: false, isError: true })
+    renderPage()
+    expect(screen.getByText('Couldn’t load your muted members. Please try again.')).toBeInTheDocument()
   })
 })

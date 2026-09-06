@@ -8,6 +8,7 @@ import { useReplacementRound } from '../../features/votes'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { AvailabilityBadge } from '../../components/AvailabilityBadge'
+import { MuteButton } from '../../components/MuteButton'
 import { PronounBadge } from '../../components/PronounBadge'
 import { countryName } from '../../lib/countries'
 
@@ -113,7 +114,10 @@ export function MembersView() {
                           “{member.current_status}”
                         </span>
                       ) : null}
-                    </div>
+                      </div>
+                      {member.id !== userId && (
+                        <MuteButton targetUserId={member.id} targetName={member.display_name} />
+                      )}
                   </div>
                 </div>
               </li>
