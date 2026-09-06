@@ -30,6 +30,7 @@ import { WaitingForOthersPage } from '../pages/WaitingForOthersPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { NotificationsPage } from '../pages/NotificationsPage'
 import { SettingsPage } from '../pages/SettingsPage'
+import { MyReportsPage } from '../pages/settings/MyReportsPage'
 import { RoomView } from '../pages/cluster/RoomView'
 import { MembersView } from '../pages/cluster/MembersView'
 import { SignalsView } from '../pages/cluster/SignalsView'
@@ -146,6 +147,7 @@ export function AppRouter() {
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/reports" element={<MyReportsPage />} />
           </Route>
 
           {/* Moderator shell */}

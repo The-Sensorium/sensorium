@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../app/auth-context'
 import type { Database } from '../lib/database.types'
 import { requireSupabase } from '../lib/supabase'
@@ -14,6 +14,125 @@ export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
   { value: 'inappropriate_content', label: 'Inappropriate Content' },
   { value: 'other', label: 'Other' },
 ]
+
+export function isMutedAuthor(muted: Set<string>, authorId: string): boolean {
+  return muted.has(authorId)
+}
+
+export type MutedUser = Database['public']['Functions']['get_my_mutes']['Returns'][number]
+
+export function useMyMutes(enabled = true) {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+
+  return useQuery({
+    queryKey: ['my-mutes', userId ?? 'signed-out'],
+    enabled: enabled && userId !== null,
+    queryFn: async () => {
+      if (!userId) throw new Error('Not signed in')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_my_mutes')
+      if (error) throw error
+      return (data ?? []) as MutedUser[]
+    },
+  })
+}
+
+export function mutedIds(mutes: MutedUser[] | undefined): Set<string> {
+  return new Set((mutes ?? []).map((m) => m.muted_user_id))
+}
+
+export function useIsMuted(userId: string | null | undefined): boolean {
+  const mutes = useMyMutes(userId != null)
+  if (!userId) return false
+  return (mutes.data ?? []).some((m) => m.muted_user_id === userId)
+}
+
+export function useMuteUser() {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ targetUserId }: { targetUserId: string }) => {
+      if (!userId) throw new Error('Not signed in')
+      if (targetUserId === userId) throw new Error('cannot_mute_self')
+      const supabase = requireSupabase()
+      const { error } = await supabase.from('user_mutes').insert({ user_id: userId, muted_user_id: targetUserId })
+      if (error && error.code !== '23505') throw error
+    },
+    onMutate: async ({ targetUserId }) => {
+      const key = ['my-mutes', userId ?? 'signed-out']
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<MutedUser[]>(key)
+      queryClient.setQueryData<MutedUser[]>(key, (existing) =>
+        existing && existing.some((m) => m.muted_user_id === targetUserId)
+          ? existing
+          : [...(existing ?? []), { muted_user_id: targetUserId, display_name: null, avatar_url: null }],
+      )
+      return { previous }
+    },
+    onError: (_e, _v, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['my-mutes', userId ?? 'signed-out'], context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['my-mutes', userId ?? 'signed-out'] })
+    },
+  })
+}
+
+export function useUnmuteUser() {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ targetUserId }: { targetUserId: string }) => {
+      if (!userId) throw new Error('Not signed in')
+      const supabase = requireSupabase()
+      const { error } = await supabase.from('user_mutes').delete().eq('user_id', userId).eq('muted_user_id', targetUserId)
+      if (error) throw error
+    },
+    onMutate: async ({ targetUserId }) => {
+      const key = ['my-mutes', userId ?? 'signed-out']
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<MutedUser[]>(key)
+      queryClient.setQueryData<MutedUser[]>(key, (existing) =>
+        (existing ?? []).filter((m) => m.muted_user_id !== targetUserId),
+      )
+      return { previous }
+    },
+    onError: (_e, _v, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['my-mutes', userId ?? 'signed-out'], context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['my-mutes', userId ?? 'signed-out'] })
+    },
+  })
+}
+
+export type MyReport = Database['public']['Functions']['get_my_reports_v2']['Returns'][number]
+
+export function useMyReports(enabled = true) {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+
+  return useQuery({
+    queryKey: ['my-reports', userId ?? 'signed-out'],
+    enabled: enabled && userId !== null,
+    queryFn: async () => {
+      if (!userId) throw new Error('Not signed in')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_my_reports_v2')
+      if (error) throw error
+      return (data ?? []) as MyReport[]
+    },
+  })
+}
 
 /** Report a member of a cluster (validated server-side; rejects self-reports). */
 export function useReportMember() {
@@ -45,6 +164,7 @@ export function useReportMember() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['reports'] })
+      void queryClient.invalidateQueries({ queryKey: ['my-reports'] })
     },
   })
 }

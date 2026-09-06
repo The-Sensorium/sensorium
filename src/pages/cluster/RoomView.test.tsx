@@ -51,6 +51,13 @@ const hooks = vi.hoisted(() => ({
     signalTyping: vi.fn(),
     resetTyping: vi.fn(),
   },
+  myMutes: { data: [] as string[], isLoading: false, isError: false },
+  reportMember: {
+    mutateAsync: vi.fn().mockResolvedValue(undefined),
+    reset: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+  },
 }))
 
 vi.mock('../../app/auth-context', async (importOriginal) => {
@@ -84,6 +91,21 @@ vi.mock('../../features/signals', () => ({
 vi.mock('../../features/votes', () => ({ useClusterVotes: () => hooks.votes }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: () => hooks.members }))
 vi.mock('../../features/notifications', () => ({ useMarkClusterRead: () => hooks.markRead }))
+vi.mock('../../features/moderation', () => ({
+  useMyMutes: () => hooks.myMutes,
+  isMutedAuthor: (muted: Set<string>, id: string) => muted.has(id),
+  mutedIds: (mutes: Array<{ muted_user_id: string }> | undefined) => new Set((mutes ?? []).map((m) => m.muted_user_id)),
+  useIsMuted: () => false,
+  useMuteUser: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useReportMember: () => hooks.reportMember,
+  REPORT_REASONS: [
+    { value: 'harassment', label: 'Harassment' },
+    { value: 'hate_speech', label: 'Hate Speech' },
+    { value: 'spam', label: 'Spam' },
+    { value: 'inappropriate_content', label: 'Inappropriate Content' },
+    { value: 'other', label: 'Other' },
+  ],
+}))
 vi.mock('../../features/realtime', () => ({ usePresence: () => hooks.presence }))
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: () => ({ data: undefined }) }))
 vi.mock('../../features/gifs', () => ({

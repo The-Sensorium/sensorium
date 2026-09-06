@@ -10,6 +10,7 @@ const hooks = vi.hoisted(() => ({
   useSignalReplies: vi.fn(),
   useRaiseSignal: vi.fn(),
   useAvatarUrl: vi.fn(),
+  useMyMutes: vi.fn(),
 }))
 
 vi.mock('react-router', async (importOriginal) => {
@@ -24,6 +25,7 @@ vi.mock('../../features/signals', () => ({
   useSignalReplies: hooks.useSignalReplies,
   useRaiseSignal: hooks.useRaiseSignal,
 }))
+vi.mock('../../features/moderation', () => ({ useMyMutes: hooks.useMyMutes, isMutedAuthor: (muted: Set<string>, id: string) => muted.has(id), mutedIds: (mutes: Array<{ muted_user_id: string }> | undefined) => new Set((mutes ?? []).map((m) => m.muted_user_id)) }))
 
 const members = [
   { id: 'm1', display_name: 'Bo', avatar_url: null },
@@ -63,6 +65,7 @@ describe('SignalsView', () => {
     hooks.useClusterSignals.mockReturnValue(queryStub([]))
     hooks.useSignalReplies.mockReturnValue(queryStub([]))
     hooks.useRaiseSignal.mockReturnValue(raise)
+    hooks.useMyMutes.mockReturnValue(queryStub([]))
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
   })
 

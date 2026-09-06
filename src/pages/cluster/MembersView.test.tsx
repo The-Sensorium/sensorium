@@ -20,6 +20,7 @@ vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterM
 vi.mock('../../features/votes', () => ({ useReplacementRound: hooks.useReplacementRound }))
 vi.mock('../../features/realtime', () => ({ usePresence: hooks.usePresence }))
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../../components/MuteButton', () => ({ MuteButton: () => null }))
 
 const member = {
   id: 'm1',
