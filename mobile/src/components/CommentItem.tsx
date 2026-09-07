@@ -83,20 +83,20 @@ export function CommentItem({
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
               <Heart
-                size={12}
+                size={16}
                 color={likedByMe ? t.error : t.onSurfaceVariant}
-                strokeWidth={1.5}
+                strokeWidth={2}
                 fill={likedByMe ? t.error : 'transparent'}
               />
-              <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
                 {likeCount}
               </Text>
             </Pressable>
           ) : null}
           {replyCount !== undefined ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <MessageSquare size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>{replyCount}</Text>
+              <MessageSquare size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>{replyCount}</Text>
             </View>
           ) : null}
           {onReply ? (
@@ -104,8 +104,8 @@ export function CommentItem({
               onPress={() => onReply(comment)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
-              <CornerUpLeft size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>Reply</Text>
+              <CornerUpLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Reply</Text>
             </Pressable>
           ) : null}
           {isMine ? (
@@ -117,8 +117,8 @@ export function CommentItem({
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
-              <Trash2 size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>Delete</Text>
+              <Trash2 size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Delete</Text>
             </Pressable>
           ) : (
             <Pressable
@@ -126,8 +126,8 @@ export function CommentItem({
               onPress={() => setReportOpen(true)}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
-              <Flag size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>Report</Text>
+              <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Report</Text>
             </Pressable>
           )}
         </View>

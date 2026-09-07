@@ -83,12 +83,12 @@ export function CommentItem({
               type="button"
               aria-pressed={likedByMe}
               onClick={() => onLike(comment.id)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-primary"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition hover:text-primary active:scale-90"
               style={{ color: likedByMe ? 'var(--color-error)' : undefined }}
             >
               <Heart
-                className="h-3 w-3"
-                strokeWidth={1.5}
+                className="h-4 w-4"
+                strokeWidth={2}
                 aria-hidden
                 {...(likedByMe ? { fill: 'currentcolor' } : {})}
               />
@@ -96,17 +96,17 @@ export function CommentItem({
             </button>
           )}
           {replyCount !== undefined && (
-            <span className="inline-flex items-center gap-1 text-xs text-on-surface-variant">
-              <MessageSquare className="h-3 w-3" strokeWidth={1.5} aria-hidden /> {replyCount}
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
+              <MessageSquare className="h-4 w-4" strokeWidth={1.5} aria-hidden /> {replyCount}
             </span>
           )}
           {onReply && (
             <button
               type="button"
               onClick={() => onReply(comment)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-primary"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition-colors hover:text-primary"
             >
-              <CornerUpLeft className="h-3 w-3" strokeWidth={1.5} aria-hidden /> Reply
+              <CornerUpLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Reply
             </button>
           )}
           {isMine && (
@@ -117,9 +117,9 @@ export function CommentItem({
                 setDeleteError(null)
                 setConfirmOpen(true)
               }}
-              className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-error"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error"
             >
-              <Trash2 className="h-3 w-3" strokeWidth={1.5} aria-hidden /> Delete
+              <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Delete
             </button>
           )}
           {!isMine && (
@@ -127,9 +127,9 @@ export function CommentItem({
               type="button"
               aria-label="Report comment"
               onClick={() => setReportOpen(true)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-on-surface-variant transition-colors hover:text-error"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error"
             >
-              <Flag className="h-3 w-3" strokeWidth={1.5} aria-hidden /> Report
+              <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Report
             </button>
           )}
         </div>
