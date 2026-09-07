@@ -1,0 +1,30 @@
+{
+  "cli": {
+    "version": ">= 16.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "$STAGING_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "$STAGING_SUPABASE_ANON_KEY"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "$PROD_SUPABASE_URL",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "$PROD_SUPABASE_ANON_KEY"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

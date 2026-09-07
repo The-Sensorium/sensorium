@@ -170,10 +170,10 @@ describe('moderation', () => {
   it('mute inserts and updates the cache optimistically', async () => {
     queryClient.setQueryData(['my-mutes', 'u1'], [])
     const { result } = renderHook(() => useMuteUser(), { wrapper })
-    result.current.mutate({ targetUserId: 'u2' })
+    result.current.mutate({ targetUserId: 'u2', displayName: 'Bo' })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryData(['my-mutes', 'u1'])).toEqual([
-      { muted_user_id: 'u2', display_name: null, avatar_url: null },
+      { muted_user_id: 'u2', display_name: 'Bo', avatar_url: '' },
     ])
   })
 

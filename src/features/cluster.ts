@@ -267,30 +267,50 @@ export function useEditMessage(clusterId: string | null) {
   })
 }
 
-/** Soft-delete own message: author-only RLS update of deleted_at. The message's
- * image (if any) becomes unreachable once the row is hidden, so remove the object
- * from chat-images too (member-scoped delete, migration 0050). The image path
- * comes from the updated row itself rather than the query cache, so a cache
- * miss can't skip the reclaim. */
+/** Soft-delete own message via the delete_message RPC (0095). A direct UPDATE
+ * cannot work: PostgREST always requests RETURNING, and the SELECT policy
+ * hides rows with deleted_at set, so the returned row fails RLS. The message's
+ * image (if any) becomes unreachable once the row is hidden, so remove the
+ * object from chat-images too (member-scoped delete, migration 0050). */
 export function useDeleteMessage(clusterId: string | null) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async (messageId: string) => {
       const supabase = requireSupabase()
-      const { data, error } = await supabase
-        .from('messages')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', messageId)
-        .select('image_url')
+      const { data: imageUrl, error } = await supabase.rpc('delete_message', {
+        p_message_id: messageId,
+      })
       if (error) throw error
-      const imageUrl = (data?.[0] as { image_url: string | null } | undefined)?.image_url ?? null
-      if (imageUrl) await deleteChatImage(imageUrl).catch(() => {})
+      if (imageUrl) await deleteChatImage(imageUrl as string).catch(() => {})
     },
-    onSuccess: () => {
+    onSuccess: (_data, messageId) => {
       if (clusterId) {
+        // Drop the row from the cache immediately. The messages merge keeps
+        // rows strictly newer than the fresh window (live-channel arrivals),
+        // which would otherwise resurrect a just-deleted newest message until
+        // the next invalidation.
+        queryClient.setQueryData<Message[]>(['cluster-messages', clusterId], (cur) =>
+          (cur ?? []).filter((m) => m.id !== messageId),
+        )
         void queryClient.invalidateQueries({ queryKey: ['cluster-messages', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['cluster-reply-targets', clusterId] })
+        // Tell the room explicitly: the postgres_changes UPDATE for a delete
+        // never reaches other members (the deleted row fails their SELECT
+        // policy), so broadcast the removal instead. Best-effort: a missing
+        // or failing broadcast channel must never fail the delete itself.
+        void (async () => {
+          try {
+            const supabase = requireSupabase()
+            await supabase.channel(`cluster:${clusterId}`).send({
+              type: 'broadcast',
+              event: 'message_deleted',
+              payload: { message_id: messageId },
+            })
+          } catch {
+            // ignore broadcast failures
+          }
+        })()
       }
     },
   })

@@ -54,21 +54,24 @@ export function useMuteUser() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ targetUserId }: { targetUserId: string }) => {
+    mutationFn: async ({ targetUserId }: { targetUserId: string; displayName?: string }) => {
       if (!userId) throw new Error('Not signed in')
       if (targetUserId === userId) throw new Error('cannot_mute_self')
       const supabase = requireSupabase()
       const { error } = await supabase.from('user_mutes').insert({ user_id: userId, muted_user_id: targetUserId })
       if (error && error.code !== '23505') throw error
     },
-    onMutate: async ({ targetUserId }) => {
+    onMutate: async ({ targetUserId, displayName }) => {
       const key = ['my-mutes', userId ?? 'signed-out']
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<MutedUser[]>(key)
       queryClient.setQueryData<MutedUser[]>(key, (existing) =>
         existing && existing.some((m) => m.muted_user_id === targetUserId)
           ? existing
-          : [...(existing ?? []), { muted_user_id: targetUserId, display_name: null, avatar_url: null }],
+          : [
+              ...(existing ?? []),
+              { muted_user_id: targetUserId, display_name: displayName ?? '', avatar_url: '' },
+            ],
       )
       return { previous }
     },

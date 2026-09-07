@@ -35,7 +35,7 @@ describe('MuteButton', () => {
     useMuteUserMock.mockReturnValue({ mutate, isPending: false, error: null } as never)
     render(<MuteButton targetUserId="u2" targetName="Bo" />)
     fireEvent.click(screen.getByRole('button', { name: 'Mute Bo' }))
-    expect(mutate).toHaveBeenCalledWith({ targetUserId: 'u2' })
+    expect(mutate).toHaveBeenCalledWith({ targetUserId: 'u2', displayName: 'Bo' })
   })
 
   it('unmutes on click when muted', () => {
