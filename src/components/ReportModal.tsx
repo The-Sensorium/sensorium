@@ -112,7 +112,7 @@ export function ReportModal({
               <button
                 type="button"
                 disabled={muteUser.isPending}
-                onClick={() => muteUser.mutate({ targetUserId: target.id })}
+                onClick={() => muteUser.mutate({ targetUserId: target.id, displayName: target.name })}
                 className="inline-flex items-center rounded-pill border border-outline-variant/60 px-4 py-1.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
               >
                 Also mute {target.name} (only you)

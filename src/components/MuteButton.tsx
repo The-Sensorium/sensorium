@@ -36,7 +36,11 @@ export function MuteButton({
       <button
         type="button"
         disabled={pending}
-        onClick={() => action.mutate({ targetUserId })}
+        onClick={() =>
+          muted
+            ? action.mutate({ targetUserId })
+            : action.mutate({ targetUserId, displayName: targetName })
+        }
         aria-label={`${label} ${targetName}`}
         className={
           fullWidth

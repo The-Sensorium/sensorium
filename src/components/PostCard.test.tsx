@@ -106,7 +106,7 @@ describe('PostCard', () => {
         />
       </MemoryRouter>,
     )
-    expect(screen.getByText('· Aurora')).toBeInTheDocument()
+    expect(screen.getByText(/Aurora/)).toBeInTheDocument()
   })
 
   it('renders a compact preview with constrained media and clamped content', () => {
@@ -131,13 +131,13 @@ describe('PostCard', () => {
       </MemoryRouter>,
     )
     expect(screen.getByText('Rio')).toBeInTheDocument()
-    expect(screen.getByText('· Aurora')).toBeInTheDocument()
+    expect(screen.getByText('Aurora')).toBeInTheDocument()
     expect(screen.getByText('Hello world')).toHaveClass('line-clamp-2')
     expect(screen.getByTestId('post-media')).toHaveAttribute('data-compact', 'true')
     expect(screen.getByRole('link', { name: /Rio/ }).getAttribute('href')).toBe('/posts/p1')
   })
 
-  it('pins the engagement row to the bottom in compact mode', () => {
+  it('keeps natural height in compact mode without pinning the engagement row', () => {
     const post = fixture({ content: 'Hello world' })
     vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
     vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
@@ -158,7 +158,9 @@ describe('PostCard', () => {
       </MemoryRouter>,
     )
     expect(container.querySelector('article')).toHaveClass('flex-col')
-    expect(screen.getByRole('button', { name: '0' }).parentElement).toHaveClass('mt-auto')
+    expect(container.querySelector('article')).not.toHaveClass('h-full')
+    expect(screen.getByRole('button', { name: '0' }).parentElement).toHaveClass('mt-3')
+    expect(screen.getByRole('button', { name: '0' }).parentElement).not.toHaveClass('mt-auto')
   })
 
   it('uses full media by default', () => {

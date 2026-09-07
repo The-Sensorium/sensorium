@@ -1,0 +1,52 @@
+name: EAS Build
+
+on:
+  # Manual builds only: pick a profile + platform and run. Requires the
+  # EXPO_TOKEN repository secret (Expo access token with build permissions).
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile (see mobile/eas.json)'
+        required: true
+        default: preview
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - android
+          - ios
+
+jobs:
+  build:
+    name: eas ${{ inputs.profile }} (${{ inputs.platform }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: EAS build
+        run: npx eas-cli@latest build --non-interactive --profile ${{ inputs.profile }} --platform ${{ inputs.platform }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

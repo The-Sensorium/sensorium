@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { useRef, useState, type MouseEvent } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { Check, Copy, Flag, Heart, Loader2, MessageSquare, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
@@ -58,6 +58,13 @@ export function PostCard({
 
   const edit = useEditPost(clusterId)
   const del = useDeletePost(clusterId)
+  const navigate = useNavigate()
+
+  function handleCardClick(e: MouseEvent) {
+    const el = e.target as HTMLElement
+    if (el.closest('button, a, [role="menu"], [role="dialog"], input, textarea, select')) return
+    void navigate(`/posts/${post.id}`)
+  }
 
   async function handleCopy() {
     try {
@@ -104,7 +111,10 @@ export function PostCard({
   }
 
   return (
-    <article className={cn('rounded-2xl border border-outline-variant/60 bg-surface shadow-soft', compact ? 'flex h-full flex-col p-4' : 'p-5')}>
+    <article
+      onClick={handleCardClick}
+      className={cn('cursor-pointer rounded-2xl border border-outline-variant/60 bg-surface shadow-soft', compact ? 'flex flex-col p-4' : 'p-5')}
+    >
       <Link to={`/posts/${post.id}`} className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
         {compact ? (
           <div className="flex items-center gap-3">
@@ -121,7 +131,7 @@ export function PostCard({
                 <span className="text-on-surface-variant"> · {timeAgo.format(new Date(post.created_at))}</span>
                 {post.edited_at && <span className="text-on-surface-variant"> · edited</span>}
               </p>
-              {clusterName && <p className="mt-0.5 truncate text-xs font-semibold text-primary">· {clusterName}</p>}
+              {clusterName && <p className="mt-0.5 truncate text-xs font-semibold text-primary">{clusterName}</p>}
             </div>
           </div>
         ) : (
@@ -140,27 +150,39 @@ export function PostCard({
           </div>
         )}
         {post.title && (
-          <h3 className="mt-2 font-display text-base font-semibold leading-tight text-on-surface">
+          <h3
+            className={cn(
+              'mt-2 font-display text-base font-semibold leading-tight text-on-surface',
+              compact && 'line-clamp-2',
+            )}
+          >
             {post.title}
           </h3>
         )}
         {post.content && (
-          <p className={cn('mt-2 whitespace-pre-wrap text-sm leading-6 text-on-surface', compact && 'line-clamp-2')}>{post.content}</p>
+          <p
+            className={cn(
+              'mt-2 whitespace-pre-wrap text-sm leading-6 text-on-surface',
+              compact && 'line-clamp-2',
+            )}
+          >
+            {post.content}
+          </p>
         )}
         <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />
       </Link>
 
-      <div className={cn('flex items-center gap-4', compact ? 'mt-auto pt-3' : 'mt-3')}>
+      <div className="mt-3 flex items-center gap-4">
         <button
           type="button"
           aria-pressed={likedByMe}
           onClick={() => onLike(post.id)}
-          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:text-primary"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold transition hover:text-primary active:scale-90"
           style={{ color: likedByMe ? 'var(--color-error)' : undefined }}
         >
           <Heart
-            className="h-4 w-4"
-            strokeWidth={1.5}
+            className="h-5 w-5"
+            strokeWidth={2}
             aria-hidden
             {...(likedByMe ? { fill: 'currentcolor' } : {})}
           />
@@ -169,9 +191,9 @@ export function PostCard({
 
         <Link
           to={`/posts/${post.id}`}
-          className="inline-flex items-center gap-1.5 text-sm text-on-surface-variant transition-colors hover:text-on-surface"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant transition-colors hover:text-on-surface"
         >
-          <MessageSquare className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+          <MessageSquare className="h-5 w-5" strokeWidth={2} aria-hidden />
           {commentCount}
         </Link>
 

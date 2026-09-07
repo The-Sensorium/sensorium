@@ -37,7 +37,10 @@ test.describe('posts (seeded)', () => {
     await expect(card).toBeVisible()
     await expect(card.getByText(text)).toBeVisible()
 
-    // Like it: the heart starts at 0 and becomes pressed at 1.
+    // Own posts start liked, so the heart starts at 1 and pressed.
+    await expect(card.getByRole('button', { name: '1' })).toHaveAttribute('aria-pressed', 'true')
+    await card.getByRole('button', { name: '1' }).click()
+    await expect(card.getByRole('button', { name: '0' })).toHaveAttribute('aria-pressed', 'false')
     await card.getByRole('button', { name: '0' }).click()
     await expect(card.getByRole('button', { name: '1' })).toHaveAttribute('aria-pressed', 'true')
 

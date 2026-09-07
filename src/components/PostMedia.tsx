@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Image as ImageIcon, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { usePostImageUrl } from '../features/posts'
 import { cn } from '../lib/utils'
 
@@ -35,20 +35,7 @@ export function PostMedia({
     }
   }, [open])
 
-  if (!src) {
-    if (!compact) return null
-    return (
-      <div
-        aria-hidden
-        className="mt-3 grid h-44 w-full place-items-center rounded-2xl border border-outline-variant/60 bg-surface-container"
-      >
-        <div className="flex flex-col items-center gap-2 text-outline">
-          <ImageIcon className="h-8 w-8" strokeWidth={1.5} aria-hidden />
-          <span className="text-xs">No image</span>
-        </div>
-      </div>
-    )
-  }
+  if (!src) return null
 
   return (
     <>
