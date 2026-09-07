@@ -15,6 +15,7 @@ import { Link, type Href } from 'expo-router'
 import { radii, shadowSoft, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { BrandWordmark } from './BrandWordmark'
+import { GoogleMark } from './GoogleMark'
 
 export function AuthShell({
   title,
@@ -162,6 +163,57 @@ export function SecondaryButton({
     >
       <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>{title}</Text>
     </Pressable>
+  )
+}
+
+export function GoogleButton({
+  title = 'Continue with Google',
+  onPress,
+  loading,
+  disabled,
+}: {
+  title?: string
+  onPress: () => void
+  loading?: boolean
+  disabled?: boolean
+}) {
+  const t = useTheme()
+  const inactive = disabled || loading
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={inactive}
+      style={{
+        flexDirection: 'row',
+        gap: 8,
+        borderWidth: 1,
+        borderColor: t.outlineVariant,
+        borderRadius: radii.pill,
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: inactive ? 0.6 : 1,
+      }}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={t.primary} />
+      ) : (
+        <GoogleMark size={20} />
+      )}
+      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>{title}</Text>
+    </Pressable>
+  )
+}
+
+export function OrDivider() {
+  const t = useTheme()
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 24 }}>
+      <View style={{ flex: 1, height: 1, backgroundColor: t.outlineVariant }} />
+      <Text style={{ marginHorizontal: 8, fontSize: 12, color: t.onSurfaceVariant }}>OR</Text>
+      <View style={{ flex: 1, height: 1, backgroundColor: t.outlineVariant }} />
+    </View>
   )
 }
 
