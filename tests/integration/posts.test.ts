@@ -156,13 +156,11 @@ describe('posts RLS + RPC', () => {
     const { a, c, clusterId } = await wireCluster()
     const postId = await createPost(a, clusterId)
 
-    const { error: likeA } = await a.client.rpc('toggle_post_like', { p_post_id: postId })
-    expect(likeA).toBeNull()
-    const { data: count1 } = await admin
+    const { data: selfLike } = await admin
       .from('post_likes')
       .select('user_id')
       .eq('post_id', postId)
-    expect(count1).toHaveLength(1)
+    expect((selfLike ?? []).map((r) => r.user_id)).toContain(a.id)
 
     const { error: unlikeA } = await a.client.rpc('toggle_post_like', { p_post_id: postId })
     expect(unlikeA).toBeNull()
@@ -171,6 +169,14 @@ describe('posts RLS + RPC', () => {
       .select('user_id')
       .eq('post_id', postId)
     expect(count0).toHaveLength(0)
+
+    const { error: likeA } = await a.client.rpc('toggle_post_like', { p_post_id: postId })
+    expect(likeA).toBeNull()
+    const { data: count1 } = await admin
+      .from('post_likes')
+      .select('user_id')
+      .eq('post_id', postId)
+    expect(count1).toHaveLength(1)
 
     const { error: outsider } = await c.client.rpc('toggle_post_like', { p_post_id: postId })
     expect(outsider).not.toBeNull()

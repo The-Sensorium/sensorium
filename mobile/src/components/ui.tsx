@@ -41,7 +41,7 @@ export function AuthShell({
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <BrandWordmark />
+          <BrandWordmark size={28} />
           <View
             style={{
               marginTop: spacing.gutter,

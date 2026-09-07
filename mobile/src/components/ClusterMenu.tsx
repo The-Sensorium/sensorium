@@ -56,7 +56,7 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
               width: 208,
               backgroundColor: t.surfaceLowest,
               borderRadius: radii.xl,
-              padding: 4,
+              padding: 8,
               gap: 2,
             }}
           >

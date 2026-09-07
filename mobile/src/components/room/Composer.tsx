@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Plus, Send, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
@@ -50,7 +50,7 @@ export function Composer({
   onTyping(): void
   onStopTyping(): void
   onSend(content: string): Promise<void>
-  onSendImage(image: PickedImage): Promise<void>
+  onSendImage(image: PickedImage, caption: string | null): Promise<void>
   onSendGif(gif: Gif): Promise<void>
   onOpenSignal(): void
   onCancelReply(): void
@@ -62,6 +62,7 @@ export function Composer({
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
   const [caret, setCaret] = useState(0)
   const [uploading, setUploading] = useState(false)
+  const [stagedImage, setStagedImage] = useState<PickedImage | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const mentionMembers = useMemo(() => {
@@ -96,16 +97,25 @@ export function Composer({
   }
 
   async function handleSend() {
+    if (pending || uploading) return
     const content = draft.trim()
-    if (!content || pending || uploading) return
+    if (!content && !stagedImage) return
     onError(null)
     onStopTyping()
     try {
-      await onSend(content)
+      if (stagedImage) {
+        setUploading(true)
+        await onSendImage(stagedImage, content || null)
+        setStagedImage(null)
+      } else {
+        await onSend(content)
+      }
       setDraft('')
       setMention(null)
     } catch (e) {
       onError(toErrorMessage(e, 'Could not send your message. Try again.'))
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -138,18 +148,10 @@ export function Composer({
       onError('Images must be 5 MB or smaller.')
       return
     }
-    setUploading(true)
-    onStopTyping()
-    try {
-      await onSendImage({ uri: asset.uri, mime, width: asset.width ?? 0, height: asset.height ?? 0 })
-    } catch (e) {
-      onError(toErrorMessage(e, 'Could not send that image. Try again.'))
-    } finally {
-      setUploading(false)
-    }
+    setStagedImage({ uri: asset.uri, mime, width: asset.width ?? 0, height: asset.height ?? 0 })
   }
 
-  const canSend = draft.trim().length > 0 && !pending && !uploading
+  const canSend = (draft.trim().length > 0 || stagedImage !== null) && !pending && !uploading
 
   return (
     <View>
@@ -182,6 +184,34 @@ export function Composer({
             accessibilityLabel="Cancel reply"
             onPress={onCancelReply}
             style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
+        </View>
+      ) : null}
+      {stagedImage ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: t.surfaceLowest,
+            borderRadius: radii.md,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            marginBottom: 8,
+          }}
+        >
+          <Image source={{ uri: stagedImage.uri }} style={{ width: 48, height: 48, borderRadius: radii.md }} />
+          <Text style={{ flex: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
+            Image attached — add a caption or press send
+          </Text>
+          <Pressable
+            accessibilityLabel="Remove image"
+            onPress={() => {
+              if (!uploading) setStagedImage(null)
+            }}
+            style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.4 : 1 }}
           >
             <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </Pressable>
@@ -273,7 +303,7 @@ export function Composer({
             onStopTyping()
             setMention(null)
           }}
-          placeholder="Write to your cluster…"
+          placeholder={stagedImage ? 'Add a caption…' : 'Write to your cluster…'}
           placeholderTextColor={t.onSurfaceVariant}
           maxLength={2000}
           multiline

@@ -13,10 +13,10 @@ describe('PostMedia', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('renders a placeholder without media in compact mode', () => {
+  it('renders nothing without media in compact mode', () => {
     vi.mocked(usePostImageUrl).mockReturnValue({ data: undefined } as never)
-    render(<PostMedia imageUrl={null} gifUrl={null} compact />)
-    expect(screen.getByText('No image')).toBeInTheDocument()
+    const { container } = render(<PostMedia imageUrl={null} gifUrl={null} compact />)
+    expect(container).toBeEmptyDOMElement()
   })
 
   it('renders the image instead of the placeholder when media exists', () => {

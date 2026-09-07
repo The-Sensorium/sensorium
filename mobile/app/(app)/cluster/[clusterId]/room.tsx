@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowLeft } from 'lucide-react-native'
+import { ArrowDown, ArrowLeft, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import type { MentionMember } from '../../../../src/features/mentions'
@@ -316,11 +316,11 @@ export default function RoomScreen() {
     setReplyTo(null)
   }
 
-  async function persistSendImage(image: PickedImage) {
+  async function persistSendImage(image: PickedImage, caption: string | null) {
     if (!clusterId) return
     const path = await uploadChatImage(clusterId, image.uri, image.mime, image.width, image.height)
     try {
-      await send.mutateAsync({ clusterId, content: null, imageUrl: path, replyToId: replyTo?.id ?? undefined })
+      await send.mutateAsync({ clusterId, content: caption, imageUrl: path, replyToId: replyTo?.id ?? undefined })
       setReplyTo(null)
     } catch (e) {
       await deleteChatImage(path).catch(() => {})
@@ -471,17 +471,9 @@ export default function RoomScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                In the room now
-              </Text>
-              <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                {onlineCount} of {memberCount} here
-              </Text>
-            </View>
-            <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               {(members.data ?? []).slice(0, 8).map((m) => (
                 <View key={m.id} style={{ position: 'relative' }}>
-                  <Avatar name={m.display_name} src={m.avatar_url} size={28} />
+                  <Avatar name={m.display_name} src={m.avatar_url} size={24} />
                   {online.has(m.id) || m.id === userId ? (
                     <View
                       style={{
@@ -499,6 +491,12 @@ export default function RoomScreen() {
                   ) : null}
                 </View>
               ))}
+              <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                  {onlineCount} of {memberCount} here
+                </Text>
+              </View>
             </View>
           </View>
         </View>

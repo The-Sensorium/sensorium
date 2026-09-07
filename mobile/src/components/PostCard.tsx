@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { Link } from 'expo-router'
-import * as Clipboard from 'expo-clipboard'
-import { Check, Copy, Flag, Heart, MessageSquare, MoreVertical, Pencil, Trash2 } from 'lucide-react-native'
+import { Heart, MessageSquare, MoreVertical } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { Avatar } from './Avatar'
+import { PostActionsSheet } from './PostActionsSheet'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
@@ -51,20 +51,9 @@ export function PostCard({
   const [titleDraft, setTitleDraft] = useState(post.title ?? '')
   const [editError, setEditError] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   const edit = useEditPost(clusterId)
   const del = useDeletePost(clusterId)
-
-  async function handleCopy() {
-    try {
-      await Clipboard.setStringAsync(`sensorium://posts/${post.id}`)
-    } catch {
-      // Clipboard may be unavailable; still give feedback.
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   async function handleDelete() {
     setDeleteError(null)
@@ -94,7 +83,10 @@ export function PostCard({
       style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: compact ? 16 : 20, marginBottom: 16, ...shadowSoft }}
     >
       <Link href={{ pathname: '/posts/[postId]', params: { postId: post.id } }} asChild>
-        <Pressable>
+        <Pressable
+          onLongPress={() => setMenuOpen(true)}
+          delayLongPress={350}
+        >
           {compact ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
@@ -107,7 +99,7 @@ export function PostCard({
                 </Text>
                 {clusterName ? (
                   <Text style={{ marginTop: 2, fontSize: 12, fontWeight: '600', color: t.primary }} numberOfLines={1}>
-                    · {clusterName}
+                    {clusterName}
                   </Text>
                 ) : null}
               </View>
@@ -131,7 +123,10 @@ export function PostCard({
             </View>
           )}
           {post.title ? (
-            <Text style={{ marginTop: 8, fontSize: 16, fontWeight: '600', lineHeight: 22, color: t.onSurface }}>
+            <Text
+              style={{ marginTop: 8, fontSize: 16, fontWeight: '600', lineHeight: 22, color: t.onSurface }}
+              numberOfLines={compact ? 2 : undefined}
+            >
               {post.title}
             </Text>
           ) : null}
@@ -141,86 +136,56 @@ export function PostCard({
             </Text>
           ) : null}
           <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />
+          <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <Pressable
+              accessibilityLabel="Like post"
+              onPress={() => onLike(post.id)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Heart
+                size={22}
+                color={likedByMe ? t.error : t.onSurfaceVariant}
+                strokeWidth={2}
+                fill={likedByMe ? t.error : 'transparent'}
+              />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{likeCount}</Text>
+            </Pressable>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <MessageSquare size={22} color={t.onSurfaceVariant} strokeWidth={2} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{commentCount}</Text>
+            </View>
+
+            <View style={{ marginLeft: 'auto' }}>
+              <Pressable
+                accessibilityLabel="Post actions"
+                onPress={() => setMenuOpen(true)}
+                style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              </Pressable>
+            </View>
+          </View>
         </Pressable>
       </Link>
 
-      <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-        <Pressable
-          accessibilityLabel="Like post"
-          onPress={() => onLike(post.id)}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-        >
-          <Heart
-            size={16}
-            color={likedByMe ? t.error : t.onSurfaceVariant}
-            strokeWidth={1.5}
-            fill={likedByMe ? t.error : 'transparent'}
-          />
-          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{likeCount}</Text>
-        </Pressable>
-
-        <Link href={{ pathname: '/posts/[postId]', params: { postId: post.id } }} asChild>
-          <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <MessageSquare size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{commentCount}</Text>
-          </Pressable>
-        </Link>
-
-        <View style={{ marginLeft: 'auto' }}>
-          <Pressable
-            accessibilityLabel="Post actions"
-            onPress={() => setMenuOpen((o) => !o)}
-            style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-          </Pressable>
-        </View>
-      </View>
-
-      {menuOpen ? (
-        <View style={{ marginTop: 8, backgroundColor: t.surface, borderRadius: radii.md, padding: 4, gap: 2 }}>
-          <MenuRow label={copied ? 'Copied!' : 'Copy link'} onPress={() => void handleCopy()}>
-            {copied ? (
-              <Check size={16} color={t.primary} strokeWidth={1.5} />
-            ) : (
-              <Copy size={16} color={t.onSurface} strokeWidth={1.5} />
-            )}
-          </MenuRow>
-          {isMine ? (
-            <>
-              <MenuRow
-                label="Edit"
-                onPress={() => {
-                  setEditing(true)
-                  setMenuOpen(false)
-                }}
-              >
-                <Pencil size={16} color={t.onSurface} strokeWidth={1.5} />
-              </MenuRow>
-              <MenuRow
-                label="Delete"
-                danger
-                onPress={() => {
-                  setMenuOpen(false)
-                  setConfirmOpen(true)
-                }}
-              >
-                <Trash2 size={16} color={t.error} strokeWidth={1.5} />
-              </MenuRow>
-            </>
-          ) : (
-            <MenuRow
-              label="Report"
-              onPress={() => {
-                setReportOpen(true)
-                setMenuOpen(false)
-              }}
-            >
-              <Flag size={16} color={t.onSurface} strokeWidth={1.5} />
-            </MenuRow>
-          )}
-        </View>
-      ) : null}
+      <PostActionsSheet
+        open={menuOpen}
+        mine={isMine}
+        onClose={() => setMenuOpen(false)}
+        onEdit={() => {
+          setMenuOpen(false)
+          setEditing(true)
+        }}
+        onDelete={() => {
+          setMenuOpen(false)
+          setConfirmOpen(true)
+        }}
+        onReport={() => {
+          setMenuOpen(false)
+          setReportOpen(true)
+        }}
+      />
 
       <Modal open={confirmOpen} onClose={() => { if (!del.isPending) setConfirmOpen(false) }} title="Delete post?">
         <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
@@ -311,20 +276,5 @@ export function PostCard({
         />
       ) : null}
     </View>
-  )
-}
-
-function MenuRow({ label, danger, onPress, children }: { label: string; danger?: boolean; onPress: () => void; children: React.ReactNode }) {
-  const t = useTheme()
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 10 }}
-    >
-      {children}
-      <Text style={{ fontSize: 14, fontWeight: '600', color: danger ? t.error : t.onSurface }}>
-        {label}
-      </Text>
-    </Pressable>
   )
 }
