@@ -45,7 +45,7 @@ export function parseKlipyResults(payload: unknown): Gif[] {
     .map((raw): Gif | null => {
       const g = raw as KlipyGif
       const url = g.file?.md?.gif?.url ?? g.file?.hd?.gif?.url ?? g.file?.sm?.gif?.url
-      const thumb = g.file?.sm?.webp?.url ?? g.file?.sm?.gif?.url ?? url
+      const thumb = g.file?.sm?.gif?.url ?? url
       if (!url || !thumb) return null
       const width = g.file?.md?.gif?.width ?? g.file?.sm?.gif?.width ?? 480
       const height = g.file?.md?.gif?.height ?? g.file?.sm?.gif?.height ?? 480

@@ -64,7 +64,8 @@ export function GifPicker({ pending, onSelect }: { pending: boolean; onSelect(gi
                 <Image
                   source={{ uri: item.thumb }}
                   accessibilityLabel={item.title || 'GIF'}
-                  style={{ flex: 1, borderRadius: radii.md, backgroundColor: t.surfaceContainer }}
+                  resizeMode="cover"
+                  style={{ flex: 1, width: '100%', borderRadius: radii.md, backgroundColor: t.surfaceContainer }}
                 />
               </Pressable>
             )}
