@@ -206,11 +206,25 @@ describe('cluster', () => {
     result.current.mutate('m1')
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('messages').update).toHaveBeenCalledWith({ deleted_at: expect.any(String) })
+    expect(c.rpc).toHaveBeenCalledWith('delete_message', { p_message_id: 'm1' })
+  })
+
+  it('useDeleteMessage broadcasts the removal to the room', async () => {
+    const { result } = renderHook(() => useDeleteMessage('c1'), { wrapper })
+    result.current.mutate('m1')
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    const c = requireSupabaseMock.mock.results[0].value
+    await waitFor(() =>
+      expect(c.channel('cluster:c1').send).toHaveBeenCalledWith({
+        type: 'broadcast',
+        event: 'message_deleted',
+        payload: { message_id: 'm1' },
+      }),
+    )
   })
 
   it('useDeleteMessage reclaims the image object of a soft-deleted message', async () => {
-    mockResult.value = { data: [{ id: 'm1', image_url: 'c1/a.png' }], error: null }
+    mockResult.value = { data: 'c1/a.png', error: null }
     const { result } = renderHook(() => useDeleteMessage('c1'), { wrapper })
     result.current.mutate('m1')
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

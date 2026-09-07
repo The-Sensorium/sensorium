@@ -25,6 +25,7 @@ export function makeSupabaseClient(ref: { value: MockSupabaseResult }) {
   const channel = {
     on: vi.fn(() => channel),
     subscribe: vi.fn(() => ({})),
+    send: vi.fn(() => Promise.resolve({})),
   }
   const storageBucket = {
     createSignedUrl: vi.fn(() => Promise.resolve(ref.value)),

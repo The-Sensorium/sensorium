@@ -207,6 +207,17 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           )
         },
       )
+      .on('broadcast', { event: 'message_deleted' }, ({ payload }) => {
+        // Soft-deletes never arrive as postgres_changes: the deleted row fails
+        // the SELECT policy, so the server filters the event out. The deleter
+        // broadcasts explicitly instead (see useDeleteMessage).
+        const id = (payload as { message_id?: unknown } | null)?.message_id
+        if (typeof id === 'string') {
+          queryClient.setQueryData<Message[]>(messagesKey, (cur) =>
+            (cur ?? []).filter((m) => m.id !== id),
+          )
+        }
+      })
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'message_reactions' },
