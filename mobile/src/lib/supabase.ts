@@ -10,17 +10,24 @@ export type MatchingMode = Database['public']['Enums']['matching_mode']
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL
 const anonKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
+function createSupabaseClient(url: string, anonKey: string) {
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return null
+  try {
+    return createClient<Database>(url, anonKey, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+    })
+  } catch {
+    return null
+  }
+}
+
 export const supabase: SupabaseClient<Database> | null =
-  url && anonKey
-    ? createClient<Database>(url, anonKey, {
-        auth: {
-          storage: AsyncStorage,
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
-        },
-      })
-    : null
+  url && anonKey ? createSupabaseClient(url, anonKey) : null
 
 AppState.addEventListener('change', (state) => {
   if (!supabase) return

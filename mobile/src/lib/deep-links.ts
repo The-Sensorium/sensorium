@@ -14,19 +14,25 @@ function first(value: unknown): string | null {
 }
 
 export async function handleAuthCallback(url: string): Promise<AuthCallback | null> {
-  const supabase = requireSupabase()
   const { queryParams } = Linking.parse(url)
   const params = queryParams ?? {}
 
   const code = first(params.code)
+  const tokenHash = first(params.token_hash)
+  const type = first(params.type)
+  const hash = url.split('#')[1]
+  const pairs = hash ? Object.fromEntries(new URLSearchParams(hash)) : null
+  const hasHashSession = Boolean(pairs?.access_token && pairs?.refresh_token)
+
+  if (!code && !(tokenHash && type) && !hasHashSession) return null
+
+  const supabase = requireSupabase()
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (error) throw error
     return first(params.type) === 'recovery' ? 'recovery' : 'session'
   }
 
-  const tokenHash = first(params.token_hash)
-  const type = first(params.type)
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
@@ -36,17 +42,13 @@ export async function handleAuthCallback(url: string): Promise<AuthCallback | nu
     return type === 'recovery' ? 'recovery' : 'session'
   }
 
-  const hash = url.split('#')[1]
-  if (hash) {
-    const pairs = Object.fromEntries(new URLSearchParams(hash))
-    if (pairs.access_token && pairs.refresh_token) {
-      const { error } = await supabase.auth.setSession({
-        access_token: pairs.access_token,
-        refresh_token: pairs.refresh_token,
-      })
-      if (error) throw error
-      return pairs.type === 'recovery' ? 'recovery' : 'session'
-    }
+  if (hash && pairs?.access_token && pairs?.refresh_token) {
+    const { error } = await supabase.auth.setSession({
+      access_token: pairs.access_token,
+      refresh_token: pairs.refresh_token,
+    })
+    if (error) throw error
+    return pairs.type === 'recovery' ? 'recovery' : 'session'
   }
 
   return null
