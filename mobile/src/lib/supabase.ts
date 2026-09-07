@@ -8,7 +8,7 @@ export type { Database }
 export type MatchingMode = Database['public']['Enums']['matching_mode']
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL
-const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+const anonKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
 export const supabase: SupabaseClient<Database> | null =
   url && anonKey
@@ -31,7 +31,7 @@ AppState.addEventListener('change', (state) => {
 export function requireSupabase(): SupabaseClient<Database> {
   if (!supabase) {
     throw new Error(
-      'Supabase is not configured. Copy .env.example to .env and fill in EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.',
+      'Supabase is not configured. Copy .env.example to .env and fill in EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.',
     )
   }
   return supabase

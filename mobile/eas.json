@@ -11,7 +11,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "$STAGING_SUPABASE_URL",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "$STAGING_SUPABASE_ANON_KEY"
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$STAGING_SUPABASE_PUBLISHABLE_KEY"
       }
     },
     "production": {
@@ -20,7 +20,7 @@
       },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "$PROD_SUPABASE_URL",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "$PROD_SUPABASE_ANON_KEY"
+        "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "$PROD_SUPABASE_PUBLISHABLE_KEY"
       }
     }
   },

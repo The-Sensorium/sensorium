@@ -42,7 +42,7 @@ Design tokens: port `docs/DESIGN.md` front-matter 1:1 into `src/lib/theme-tokens
 
 1. `npx create-expo-app sensorium-mobile --template tabs` then convert to Expo Router stack + tabs, TypeScript strict on, `oxlint` or `eslint-config-expo`.
 2. Install: `@tanstack/react-query`, `@supabase/supabase-js`, `@react-native-async-storage/async-storage`, `react-native-url-polyfill`, `nativewind`, `lucide-react-native`, `@shopify/flash-list`, `expo-image-picker`, `expo-image-manipulator`, `expo-location`, `expo-notifications`, `expo-font`, `expo-linking`, `expo-web-browser`.
-3. Env: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT` (mirrors `VITE_*` in web `.env.example`). Same staging values first.
+3. Env: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT` (mirrors `VITE_*` in web `.env.example`). Same staging values first.
 4. `src/lib/supabase.ts` (RN variant of web `src/lib/supabase.ts`):
    - `import 'react-native-url-polyfill/auto'`, `createClient(url, key, { auth: { storage: AsyncStorage, autoRefreshToken: true, persistSession: true, detectSessionInUrl: false } })`.
    - Add `AppState` listener to start/stop auto-refresh (standard Supabase RN recipe).
