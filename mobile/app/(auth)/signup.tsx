@@ -5,7 +5,8 @@ import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
 import { setSignupEmail } from '../../src/lib/auth-storage'
 import { authRedirect } from '../../src/lib/deep-links'
-import { AuthLink, AuthShell, ErrorText, Field, MutedCenter, PrimaryButton } from '../../src/components/ui'
+import { signInWithGoogle } from '../../src/lib/google-auth'
+import { AuthLink, AuthShell, ErrorText, Field, GoogleButton, MutedCenter, OrDivider, PrimaryButton } from '../../src/components/ui'
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('')
@@ -13,6 +14,7 @@ export default function SignupScreen() {
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [googleBusy, setGoogleBusy] = useState(false)
 
   async function onSubmit() {
     setError(null)
@@ -41,6 +43,21 @@ export default function SignupScreen() {
       setSubmitting(false)
     }
   }
+
+  async function onGoogle() {
+    setError(null)
+    setGoogleBusy(true)
+    try {
+      const outcome = await signInWithGoogle()
+      if (outcome === 'success') router.replace('/(app)/home')
+    } catch (err) {
+      setError(toErrorMessage(err, 'Something went wrong.'))
+    } finally {
+      setGoogleBusy(false)
+    }
+  }
+
+  const busy = submitting || googleBusy
 
   return (
     <AuthShell
@@ -71,7 +88,9 @@ export default function SignupScreen() {
         onSubmitEditing={onSubmit}
       />
       <ErrorText message={error} />
-      <PrimaryButton title="Create Account" loadingTitle="Creating…" onPress={onSubmit} loading={submitting} />
+      <PrimaryButton title="Create Account" loadingTitle="Creating…" onPress={onSubmit} loading={submitting} disabled={busy} />
+      <OrDivider />
+      <GoogleButton onPress={onGoogle} loading={googleBusy} disabled={busy} />
       <View style={{ marginTop: 24 }}>
         <MutedCenter>
           Already have an account? <AuthLink href="/(auth)/login">Sign in</AuthLink>

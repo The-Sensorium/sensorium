@@ -7,6 +7,8 @@ export function authRedirect(path: string): string {
   return Linking.createURL(path)
 }
 
+const consumedCodes = new Set<string>()
+
 function first(value: unknown): string | null {
   if (typeof value === 'string' && value) return value
   if (Array.isArray(value) && typeof value[0] === 'string' && value[0]) return value[0]
@@ -16,6 +18,11 @@ function first(value: unknown): string | null {
 export async function handleAuthCallback(url: string): Promise<AuthCallback | null> {
   const { queryParams } = Linking.parse(url)
   const params = queryParams ?? {}
+
+  const oauthError = first(params.error)
+  if (oauthError) {
+    throw new Error(first(params.error_description) ?? 'Google sign-in did not complete.')
+  }
 
   const code = first(params.code)
   const tokenHash = first(params.token_hash)
@@ -28,8 +35,15 @@ export async function handleAuthCallback(url: string): Promise<AuthCallback | nu
 
   const supabase = requireSupabase()
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (error) throw error
+    if (consumedCodes.has(code)) return first(params.type) === 'recovery' ? 'recovery' : 'session'
+    consumedCodes.add(code)
+    try {
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      if (error) throw error
+    } catch (err) {
+      consumedCodes.delete(code)
+      throw err
+    }
     return first(params.type) === 'recovery' ? 'recovery' : 'session'
   }
 
