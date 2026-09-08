@@ -160,6 +160,7 @@ export function PostCard({
               <Pressable
                 accessibilityLabel="Post actions"
                 onPress={() => setMenuOpen(true)}
+                hitSlop={6}
                 style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
               >
                 <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
