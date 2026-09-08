@@ -234,7 +234,25 @@ export function useUpsertNotificationPrefs() {
         .upsert({ user_id: userId, cluster_id: clusterId, ...toggles }, { onConflict: 'user_id,cluster_id' })
       if (error) throw error
     },
-    onSuccess: () => {
+    onMutate: async ({ clusterId, toggles }) => {
+      if (!userId) return
+      await queryClient.cancelQueries({ queryKey: ['notification-prefs', userId] })
+      const prev = queryClient.getQueryData<NotificationPrefsRow[]>(['notification-prefs', userId])
+      queryClient.setQueryData<NotificationPrefsRow[]>(['notification-prefs', userId], (cur) => {
+        const base = cur ?? prev ?? []
+        if (base.some((p) => p.cluster_id === clusterId)) {
+          return base.map((p) => (p.cluster_id === clusterId ? { ...p, ...toggles } : p))
+        }
+        return [...base, { user_id: userId, cluster_id: clusterId, ...toggles } as NotificationPrefsRow]
+      })
+      return { prev }
+    },
+    onError: (_e, _v, ctx) => {
+      if (userId && ctx) {
+        queryClient.setQueryData(['notification-prefs', userId], ctx.prev)
+      }
+    },
+    onSettled: () => {
       if (userId) {
         void queryClient.invalidateQueries({ queryKey: ['notification-prefs', userId] })
         void queryClient.invalidateQueries({ queryKey: ['notifications'] })
