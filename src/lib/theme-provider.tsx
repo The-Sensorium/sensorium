@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   ThemeContext,
+  applyFavicon,
   applyTheme,
   getStoredMode,
   systemPrefersDark,
@@ -13,6 +14,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [systemDark, setSystemDark] = useState<boolean>(() => systemPrefersDark())
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
     const media = window.matchMedia('(prefers-color-scheme: dark)')
     const onChange = () => setSystemDark(media.matches)
     onChange()
@@ -24,6 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const resolved: ResolvedTheme =
       mode === 'dark' || (mode === 'system' && systemDark) ? 'dark' : 'light'
     applyTheme(resolved)
+    applyFavicon(resolved)
     try {
       localStorage.setItem('sensorium:theme', mode)
     } catch {

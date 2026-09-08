@@ -14,7 +14,8 @@ import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { countryName } from '../../../../src/lib/countries'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
-import { LoadingView, Screen } from '../../../../src/components/ui'
+import { ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
+import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 export default function MembersScreen() {
   const t = useTheme()
@@ -24,6 +25,7 @@ export default function MembersScreen() {
   const members = useClusterMembers(clusterId || null)
   const { online } = usePresence(clusterId || null)
   const replacement = useReplacementRound(clusterId || null)
+  const pull = usePullToRefresh([() => members.refetch(), () => replacement.refetch()])
 
   if (members.isLoading) {
     return (
@@ -38,8 +40,9 @@ export default function MembersScreen() {
   const isOnline = (id: string) => online.has(id) || id === userId
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ClusterSectionHeader title="Members" clusterId={clusterId} section="members" />
+      <ErrorText message={pull.error} />
       {replacement.data ? (
         <View
           style={{

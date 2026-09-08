@@ -345,13 +345,11 @@ describe('posts RLS + RPC', () => {
     })
     expect(commentId).toBeTruthy()
 
-    const { error: likeErr } = await a.client.rpc('toggle_comment_like', { p_comment_id: commentId })
-    expect(likeErr).toBeNull()
-    const { data: likes1 } = await admin
+    const { data: selfLike } = await admin
       .from('comment_likes')
       .select('user_id')
       .eq('comment_id', commentId)
-    expect(likes1).toHaveLength(1)
+    expect((selfLike ?? []).map((r) => r.user_id)).toContain(a.id)
 
     const { error: unlikeErr } = await a.client.rpc('toggle_comment_like', { p_comment_id: commentId })
     expect(unlikeErr).toBeNull()
@@ -360,6 +358,14 @@ describe('posts RLS + RPC', () => {
       .select('user_id')
       .eq('comment_id', commentId)
     expect(likes0).toHaveLength(0)
+
+    const { error: likeErr } = await a.client.rpc('toggle_comment_like', { p_comment_id: commentId })
+    expect(likeErr).toBeNull()
+    const { data: likes1 } = await admin
+      .from('comment_likes')
+      .select('user_id')
+      .eq('comment_id', commentId)
+    expect(likes1).toHaveLength(1)
 
     const { error: outsider } = await c.client.rpc('toggle_comment_like', { p_comment_id: commentId })
     expect(outsider).not.toBeNull()

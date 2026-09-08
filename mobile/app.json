@@ -6,15 +6,20 @@
     "orientation": "portrait",
     "scheme": "sensorium",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/icon-light.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "online.thesensorium.app"
+      "bundleIdentifier": "online.thesensorium.app",
+      "icon": {
+        "light": "./assets/icon-light.png",
+        "dark": "./assets/icon-dark.png"
+      }
     },
     "android": {
+      "icon": "./assets/legacy-icon.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logo.png",
-        "backgroundColor": "#fff8f6"
+        "foregroundImage": "./assets/adaptive-foreground.png",
+        "backgroundColor": "#fef8f7"
       },
       "package": "online.thesensorium.app",
       "permissions": [
@@ -33,8 +38,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#fff8f6",
-          "image": "./assets/logo.png",
+          "backgroundColor": "#fef8f7",
+          "image": "./assets/splash-light.png",
+          "dark": {
+            "backgroundColor": "#1a1919",
+            "image": "./assets/splash-dark.png"
+          },
           "imageWidth": 200
         }
       ],

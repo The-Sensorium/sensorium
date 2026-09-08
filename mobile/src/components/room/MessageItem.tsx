@@ -166,6 +166,7 @@ export function MessageItem({
                   accessibilityLabel="Save edit"
                   disabled={!editDraft.trim() || editPending}
                   onPress={onSaveEdit}
+                  hitSlop={4}
                   style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', opacity: !editDraft.trim() || editPending ? 0.4 : 1 }}
                 >
                   {editPending ? (
@@ -177,6 +178,7 @@ export function MessageItem({
                 <Pressable
                   accessibilityLabel="Cancel edit"
                   onPress={onCancelEdit}
+                  hitSlop={4}
                   style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <X size={16} color={t.onSurface} strokeWidth={1.5} />

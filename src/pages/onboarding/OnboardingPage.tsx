@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { BrandMark } from '../../components/BrandMark'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { useAuth } from '../../app/auth-context'
 import { requireSupabase } from '../../lib/supabase'
@@ -142,8 +143,9 @@ export function OnboardingPage() {
       </div>
 
       <header className="mx-auto flex w-full max-w-xl items-center justify-between px-6 pt-8">
-        <Link to="/" className="font-brand text-lg tracking-[0.15em]">
-          Sensorium
+        <Link to="/" className="flex items-center gap-2">
+          <BrandMark size={24} />
+          <span className="font-brand text-lg tracking-[0.15em]">Sensorium</span>
         </Link>
       </header>
 

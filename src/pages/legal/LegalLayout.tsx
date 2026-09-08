@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft } from 'lucide-react'
+import type { LegalBlock } from './content'
 
 export function LegalLayout({
   title,
@@ -37,5 +38,35 @@ export function Section({ title, children }: { title: string; children: ReactNod
       <h2 className="text-base font-semibold text-on-surface">{title}</h2>
       <div className="space-y-2 text-on-surface-variant">{children}</div>
     </section>
+  )
+}
+
+export function LegalBlocks({ blocks }: { blocks: LegalBlock[] }) {
+  return (
+    <>
+      {blocks.map((block, index) => {
+        if (block.kind === 'bullets') {
+          return (
+            <ul key={index} className="list-disc space-y-1 pl-6">
+              {block.items.map((item, itemIndex) => (
+                <li key={itemIndex}>{item}</li>
+              ))}
+            </ul>
+          )
+        }
+        if (block.kind === 'email') {
+          return (
+            <p key={index}>
+              {block.before}
+              <a className="text-primary underline" href={`mailto:${block.address}`}>
+                {block.address}
+              </a>
+              {block.after}
+            </p>
+          )
+        }
+        return <p key={index}>{block.text}</p>
+      })}
+    </>
   )
 }

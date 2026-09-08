@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router'
 import { Home, Newspaper, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../auth-context'
+import { BrandMark } from '../../components/BrandMark'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { NotificationBell } from '../../components/NotificationBell'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
@@ -40,8 +41,9 @@ export function AppShell() {
       {/* Top nav - slim bar mobile (brand + theme), full nav desktop (md+) */}
       <header className="sticky top-0 z-40 border-b border-outline-variant/60 bg-surface/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-          <NavLink to="/home" className="font-brand text-lg tracking-[0.15em] text-primary">
-            Sensorium
+          <NavLink to="/home" className="flex items-center gap-2">
+            <BrandMark size={40} />
+            <span className="font-brand text-lg tracking-[0.15em] text-primary">Sensorium</span>
           </NavLink>
           <nav className="hidden items-center gap-1 lg:flex">
             {navItems.map((item) =>

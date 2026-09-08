@@ -10,6 +10,7 @@ import { useDeleteAccount } from '../src/features/moderation'
 import { radii, spacing } from '../src/lib/theme-tokens'
 import { useTheme } from '../src/lib/use-theme'
 import { PrimaryButton } from '../src/components/ui'
+import { BrandMark } from '../src/components/BrandMark'
 import { BrandWordmark } from '../src/components/BrandWordmark'
 
 export default function RestrictedScreen() {
@@ -66,7 +67,8 @@ export default function RestrictedScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: spacing.containerMargin }}>
-        <View style={{ marginBottom: 24 }}>
+        <View style={{ marginBottom: 24, alignItems: 'center', gap: 12 }}>
+          <BrandMark size={48} />
           <BrandWordmark size={18} />
         </View>
         <View style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 32, alignItems: 'center' }}>

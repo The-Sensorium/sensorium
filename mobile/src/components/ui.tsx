@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, type Href } from 'expo-router'
 import { radii, shadowSoft, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { BrandMark } from './BrandMark'
 import { BrandWordmark } from './BrandWordmark'
 import { GoogleMark } from './GoogleMark'
 
@@ -41,7 +43,10 @@ export function AuthShell({
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <BrandWordmark size={28} />
+          <View style={{ alignItems: 'center', marginBottom: 8 }}>
+            <BrandMark size={76} />
+          </View>
+          <BrandWordmark size={20} />
           <View
             style={{
               marginTop: spacing.gutter,
@@ -232,12 +237,33 @@ export function ErrorText({ message }: { message: string | null }) {
   return <Text style={{ fontSize: 14, color: t.error, marginBottom: spacing.gutter }}>{message}</Text>
 }
 
-export function Screen({ children, avoiding }: { children: ReactNode; avoiding?: boolean }) {
+export function Screen({
+  children,
+  avoiding,
+  onRefresh,
+  refreshing,
+}: {
+  children: ReactNode
+  avoiding?: boolean
+  onRefresh?: () => void
+  refreshing?: boolean
+}) {
   const t = useTheme()
   const body = (
     <ScrollView
       contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
       keyboardShouldPersistTaps="handled"
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing ?? false}
+            onRefresh={onRefresh}
+            tintColor={t.primary}
+            colors={[t.primary]}
+            progressBackgroundColor={t.surfaceContainer}
+          />
+        ) : undefined
+      }
     >
       {children}
     </ScrollView>

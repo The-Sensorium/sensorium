@@ -476,6 +476,7 @@ export function useCreateComment(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
     },
   })

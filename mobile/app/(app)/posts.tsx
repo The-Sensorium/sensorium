@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../src/auth-context'
 import { useClusterMembers, useMyClusters } from '../../src/features/matching'
 import {
@@ -19,9 +20,10 @@ import { isMutedAuthor, mutedIds, useMyMutes } from '../../src/features/moderati
 import { MutedPlaceholder } from '../../src/components/MutedPlaceholder'
 import { PostComposer } from '../../src/components/PostComposer'
 import { PostCard } from '../../src/components/PostCard'
-import { radii } from '../../src/lib/theme-tokens'
+import { radii, spacing } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, LoadingView, Screen } from '../../src/components/ui'
+import { Card, ErrorText, LoadingView } from '../../src/components/ui'
+import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 
 export default function PostsFeedScreen() {
   const t = useTheme()
@@ -49,6 +51,14 @@ export default function PostsFeedScreen() {
   const loadEarlier = useLoadEarlierPosts(clusterId)
   const myMutes = useMyMutes(clusterId != null)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const pull = usePullToRefresh([
+    () => clusters.refetch(),
+    () => posts.refetch(),
+    () => members.refetch(),
+    () => likes.refetch(),
+    () => comments.refetch(),
+    () => myMutes.refetch(),
+  ])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   function reveal(id: string) {
     setRevealed((prev) => {
@@ -104,117 +114,138 @@ export default function PostsFeedScreen() {
   const selected = (clusters.data ?? []).find((c) => c.cluster.id === selectedId)
   const hasMore =
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
+  const inCluster = !clusters.isLoading && (clusters.data ?? []).length > 0
+  const feedLoading = clusters.isLoading || posts.isLoading || myMutes.isLoading
 
   return (
-    <Screen>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <View>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Posts</Text>
-          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-            Share something with your cluster.
-          </Text>
-        </View>
-        <View style={{ flexDirection: 'row', borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, padding: 4, gap: 4 }}>
-          {(['new', 'top'] as const).map((option) => {
-            const active = sort === option
+    <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+      <FlatList
+        data={inCluster && !posts.isLoading && !myMutes.isLoading ? sorted : []}
+        keyExtractor={(post) => post.id}
+        renderItem={({ item: post }) => {
+          if (isMutedAuthor(mutedSet, post.author_id) && !revealed.has(post.id)) {
+            const author = memberById.get(post.author_id)
             return (
-              <Pressable
-                key={option}
-                onPress={() => setSort(option)}
-                style={{ borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: active ? t.surfaceContainer : 'transparent' }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'capitalize', color: active ? t.primary : t.onSurfaceVariant }}>
-                  {option}
-                </Text>
-              </Pressable>
+              <MutedPlaceholder
+                name={author?.display_name ?? 'Member'}
+                onToggle={() => reveal(post.id)}
+              />
             )
-          })}
-        </View>
-      </View>
-
-      {clusters.isLoading ? (
-        <LoadingView />
-      ) : (clusters.data ?? []).length === 0 ? (
-        <Card>
-          <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
-            You aren’t in a cluster yet. Join a matching mode to start sharing posts.
-          </Text>
-        </Card>
-      ) : (
-        <>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-            {(clusters.data ?? []).map((c) => {
-              const active = c.cluster.id === selectedId
-              return (
-                <Pressable
-                  key={c.cluster.id}
-                  onPress={() => setSelectedId(c.cluster.id)}
-                  style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: active ? t.surfaceContainer : 'transparent' }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>
-                    {c.cluster.name}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
-
-          {clusterId ? <PostComposer clusterId={clusterId} /> : null}
-
-          {posts.isLoading || myMutes.isLoading ? (
+          }
+          const like = likesMap.get(post.id)
+          return (
+            <PostCard
+              post={post}
+              clusterId={clusterId!}
+              author={memberById.get(post.author_id)}
+              likeCount={like?.count ?? 0}
+              likedByMe={like?.mine ?? false}
+              commentCount={commentCount.get(post.id) ?? 0}
+              onLike={(postId) => void toggle.mutateAsync(postId)}
+            />
+          )
+        }}
+        ListHeaderComponent={
+          <>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Posts</Text>
+                <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                  Share something with your cluster.
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, padding: 4, gap: 4 }}>
+                {(['new', 'top'] as const).map((option) => {
+                  const active = sort === option
+                  return (
+                    <Pressable
+                      key={option}
+                      onPress={() => setSort(option)}
+                      style={{ borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: active ? t.surfaceContainer : 'transparent' }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'capitalize', color: active ? t.primary : t.onSurfaceVariant }}>
+                        {option}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+            </View>
+            <ErrorText message={pull.error} />
+            {inCluster ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                {(clusters.data ?? []).map((c) => {
+                  const active = c.cluster.id === selectedId
+                  return (
+                    <Pressable
+                      key={c.cluster.id}
+                      onPress={() => setSelectedId(c.cluster.id)}
+                      style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: active ? t.surfaceContainer : 'transparent' }}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>
+                        {c.cluster.name}
+                      </Text>
+                    </Pressable>
+                  )
+                })}
+              </View>
+            ) : null}
+            {inCluster && clusterId ? <PostComposer clusterId={clusterId} /> : null}
+          </>
+        }
+        ListEmptyComponent={
+          feedLoading ? (
             <LoadingView label="Loading posts…" />
-          ) : (posts.data ?? []).length === 0 ? (
+          ) : posts.isError || myMutes.isError ? (
+            <Card>
+              <Text style={{ fontSize: 14, textAlign: 'center', color: t.error }}>
+                Couldn’t load posts. Please try again.
+              </Text>
+            </Card>
+          ) : !inCluster ? (
+            <Card>
+              <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+                You aren’t in a cluster yet. Join a matching mode to start sharing posts.
+              </Text>
+            </Card>
+          ) : (
             <Card plain>
               <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
                 No posts in {selected?.cluster.name ?? 'this cluster'} yet. Share the first one.
               </Text>
             </Card>
-          ) : (
-            <>
-              {sorted.map((post) => {
-                if (isMutedAuthor(mutedSet, post.author_id) && !revealed.has(post.id)) {
-                  const author = memberById.get(post.author_id)
-                  return (
-                    <MutedPlaceholder
-                      key={post.id}
-                      name={author?.display_name ?? 'Member'}
-                      onToggle={() => reveal(post.id)}
-                    />
-                  )
-                }
-                const like = likesMap.get(post.id)
-                return (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    clusterId={clusterId!}
-                    author={memberById.get(post.author_id)}
-                    likeCount={like?.count ?? 0}
-                    likedByMe={like?.mine ?? false}
-                    commentCount={commentCount.get(post.id) ?? 0}
-                    onLike={(postId) => void toggle.mutateAsync(postId)}
-                  />
-                )
-              })}
-              {hasMore ? (
-                <Pressable
-                  onPress={() => void loadEarlier.mutate()}
-                  disabled={loadEarlier.isPending}
-                  style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: loadEarlier.isPending ? 0.6 : 1 }}
-                >
-                  {loadEarlier.isPending ? (
-                    <ActivityIndicator size="small" color={t.onSurfaceVariant} />
-                  ) : (
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
-                      Load earlier posts
-                    </Text>
-                  )}
-                </Pressable>
-              ) : null}
-            </>
-          )}
-        </>
-      )}
-    </Screen>
+          )
+        }
+        ListFooterComponent={
+          inCluster && hasMore && sorted.length > 0 ? (
+            <Pressable
+              onPress={() => void loadEarlier.mutate()}
+              disabled={loadEarlier.isPending}
+              style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: loadEarlier.isPending ? 0.6 : 1 }}
+            >
+              {loadEarlier.isPending ? (
+                <ActivityIndicator size="small" color={t.onSurfaceVariant} />
+              ) : (
+                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+                  Load earlier posts
+                </Text>
+              )}
+            </Pressable>
+          ) : null
+        }
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, padding: spacing.containerMargin, paddingBottom: 48 }}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={pull.refreshing}
+            onRefresh={pull.onRefresh}
+            tintColor={t.primary}
+            colors={[t.primary]}
+            progressBackgroundColor={t.surfaceContainer}
+          />
+        }
+      />
+    </SafeAreaView>
   )
 }
