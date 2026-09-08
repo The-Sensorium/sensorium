@@ -14,6 +14,7 @@
     "test:e2e": "playwright test --project=chromium && playwright test --project=mobile-chromium",
     "check:release": "node scripts/check-release-merge.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
+    "sync:legal": "node scripts/sync-legal.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

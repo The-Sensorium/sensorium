@@ -1,94 +1,18 @@
 import { useDocumentTitle } from '../lib/use-document-title'
-import { LegalLayout, Section } from './legal/LegalLayout'
+import { LegalBlocks, LegalLayout, Section } from './legal/LegalLayout'
+import { TERMS_DOCUMENT } from './legal/content'
 
 export function TermsPage() {
   useDocumentTitle('Terms of Service')
   return (
-    <LegalLayout title="Terms of Service" updated="August 20, 2026">
-      <p>
-        These Terms govern your use of Sensorium, a social platform that places you into a permanent
-        group of eight people (“clusters”). By signing up you agree to these Terms. You must be at
-        least 18 years old to use the service.
-      </p>
+    <LegalLayout title={TERMS_DOCUMENT.title} updated={TERMS_DOCUMENT.updated}>
+      <p>{TERMS_DOCUMENT.intro}</p>
 
-      <Section title="1. The service">
-        <p>
-          Sensorium matches you into a cluster by birth date or location and provides tools for that
-          group to interact: chat, signals for help, and votes. We may change, suspend, or
-          discontinue any feature at any time.
-        </p>
-      </Section>
-
-      <Section title="2. Your account">
-        <p>
-          You are responsible for keeping your account credentials safe and for everything done on
-          your account. You must not share accounts or provide false information, including an
-          incorrect date of birth.
-        </p>
-      </Section>
-
-      <Section title="3. Acceptable use">
-        <p>You agree not to use Sensorium to:</p>
-        <ul className="list-disc space-y-1 pl-6">
-          <li>harass, threaten, or impersonate others;</li>
-          <li>share illegal, hateful, or sexually explicit content;</li>
-          <li>spam or abuse the reporting, voting, or messaging systems;</li>
-          <li>attempt to breach our security or collect data about other members.</li>
-        </ul>
-      </Section>
-
-      <Section title="4. Your content">
-        <p>
-          You keep whatever rights you have in your own posts. You grant Sensorium a limited license
-          to store, display, and distribute your content solely for providing the service. We may
-          remove content or suspend accounts that our moderation team determines violate these
-          Terms.
-        </p>
-      </Section>
-
-      <Section title="5. Moderation and enforcement">
-        <p>
-          Members can report other members or specific messages. A report is reviewed by our
-          moderation team, who may dismiss it or take action. Actions we may take include hiding or
-          restoring a reported message, issuing a warning, suspending an account for up to 7 days,
-          or permanently banning an account. Permanent bans are applied by administrators.
-        </p>
-        <p>
-          If your account is suspended or banned, you can sign in to a restricted-account screen
-          that shows your status and any suspension expiry. If you believe a decision is wrong, you
-          can appeal by contacting{' '}
-          <a className="text-primary underline" href="mailto:support@sensorium.app">
-            support@sensorium.app
-          </a>
-          . If your message is hidden or your account is warned or suspended, we notify you in the
-          app.
-        </p>
-      </Section>
-
-      <Section title="6. Termination">
-        <p>
-          You can leave a cluster or delete your account at any time from Settings. We may also
-          suspend or terminate accounts for a breach of these Terms or to protect the community.
-        </p>
-      </Section>
-
-      <Section title="7. Disclaimers">
-        <p>
-          The service is provided “as is” and “as available.” To the extent permitted by law, we
-          disclaim warranties about reliability, fitness, or uninterrupted availability, and our
-          liability is limited to the amount you paid us (Sensorium is free today).
-        </p>
-      </Section>
-
-      <Section title="8. Changes & contact">
-        <p>
-          We may update these Terms, and the current version always applies; continued use after a
-          change means you accept them. Questions?{' '}
-          <a className="text-primary underline" href="mailto:legal@sensorium.app">
-            legal@sensorium.app
-          </a>
-        </p>
-      </Section>
+      {TERMS_DOCUMENT.sections.map((section) => (
+        <Section key={section.title} title={section.title}>
+          <LegalBlocks blocks={section.blocks} />
+        </Section>
+      ))}
     </LegalLayout>
   )
 }

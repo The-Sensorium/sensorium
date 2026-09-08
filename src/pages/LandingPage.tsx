@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { HeartHandshake, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { BrandMark } from '../components/BrandMark'
 import { ThemeToggle } from '../components/theme-toggle'
 import { MATCHING_MODES } from '../lib/modes'
 
@@ -29,7 +30,10 @@ export function LandingPage() {
       </div>
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pb-20 pt-16 md:pt-24">
-        <p className="font-brand text-lg tracking-[0.2em] text-primary">Sensorium</p>
+        <div className="flex flex-col items-start gap-2">
+          <BrandMark size={76} />
+          <span className="font-brand text-lg tracking-[0.2em] text-primary">Sensorium</span>
+        </div>
         <h1 className="mt-4 max-w-2xl text-4xl leading-tight font-bold md:text-5xl">
           Eight strangers. One cluster.
         </h1>
@@ -104,7 +108,10 @@ export function LandingPage() {
 
       <footer className="border-t border-outline-variant/60 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 text-sm text-on-surface-variant sm:flex-row sm:justify-between">
-          <span className="font-brand text-lg tracking-[0.15em] text-on-surface">Sensorium</span>
+          <span className="flex items-center gap-3">
+            <BrandMark size={36} />
+            <span className="font-brand text-lg tracking-[0.15em] text-on-surface">Sensorium</span>
+          </span>
           <div className="flex gap-6">
             <Link to="/privacy-policy" className="hover:text-on-surface">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-on-surface">Terms</Link>

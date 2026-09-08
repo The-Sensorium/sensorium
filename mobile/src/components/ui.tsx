@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, type Href } from 'expo-router'
 import { radii, shadowSoft, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { BrandMark } from './BrandMark'
 import { BrandWordmark } from './BrandWordmark'
 import { GoogleMark } from './GoogleMark'
 
@@ -41,7 +42,10 @@ export function AuthShell({
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <BrandWordmark size={28} />
+          <View style={{ alignItems: 'center', marginBottom: 8 }}>
+            <BrandMark size={76} />
+          </View>
+          <BrandWordmark size={20} />
           <View
             style={{
               marginTop: spacing.gutter,
