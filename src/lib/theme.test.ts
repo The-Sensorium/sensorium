@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
   STORAGE_KEY,
+  applyFavicon,
   applyTheme,
   getStoredMode,
   systemPrefersDark,
@@ -64,6 +65,37 @@ describe('theme', () => {
     applyTheme('light')
     expect(root.classList.contains('dark')).toBe(false)
     expect(root.style.colorScheme).toBe('light')
+  })
+
+  it('applyFavicon activates the matching icon set', () => {
+    document.head.innerHTML = [
+      '<link rel="icon" type="image/svg+xml" href="/favicon.svg" media="(prefers-color-scheme: light)" data-favicon="light">',
+      '<link rel="icon" type="image/svg+xml" href="/favicon-dark.svg" media="(prefers-color-scheme: dark)" data-favicon="dark">',
+      '<link rel="icon" type="image/x-icon" href="/favicon.ico" media="(prefers-color-scheme: light)" data-favicon="light">',
+      '<link rel="icon" type="image/x-icon" href="/favicon-dark.ico" media="(prefers-color-scheme: dark)" data-favicon="dark">',
+    ].join('')
+    const media = (href: string) =>
+      document.querySelector(`link[href="${href}"]`)?.getAttribute('media')
+
+    applyFavicon('dark')
+    expect(media('/favicon-dark.svg')).toBe('all')
+    expect(media('/favicon-dark.ico')).toBe('all')
+    expect(media('/favicon.svg')).toBe('not all')
+    expect(media('/favicon.ico')).toBe('not all')
+
+    applyFavicon('light')
+    expect(media('/favicon.svg')).toBe('all')
+    expect(media('/favicon.ico')).toBe('all')
+    expect(media('/favicon-dark.svg')).toBe('not all')
+
+    document.head.innerHTML = ''
+  })
+
+  it('applyFavicon is a no-op without a document', () => {
+    const doc = globalThis.document
+    vi.stubGlobal('document', undefined)
+    expect(() => applyFavicon('dark')).not.toThrow()
+    vi.stubGlobal('document', doc)
   })
 
   it('useTheme throws outside a ThemeProvider', () => {

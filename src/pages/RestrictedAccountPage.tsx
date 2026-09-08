@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AlertOctagon, Loader2, LogOut, MailWarning, ShieldAlert } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { BrandMark } from '../components/BrandMark'
 import { ThemeToggle } from '../components/theme-toggle'
 import { requireSupabase } from '../lib/supabase'
 import { useMyAppeal } from '../features/appeals'
@@ -66,8 +67,9 @@ export function RestrictedAccountPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="fixed left-4 top-4 z-30">
-        <Link to="/" className="font-brand text-lg tracking-[0.15em] text-primary transition-colors hover:text-on-surface">
-          Sensorium
+        <Link to="/" className="flex items-center gap-2 transition-colors hover:text-on-surface">
+          <BrandMark size={24} />
+          <span className="font-brand text-lg tracking-[0.15em] text-primary">Sensorium</span>
         </Link>
       </div>
       <div className="fixed right-4 top-4 z-30">

@@ -13,11 +13,15 @@ import {
   type SessionRole,
 } from '../features/access'
 import { useSessionRole } from './session-role-context'
+import { BrandMark } from '../components/BrandMark'
 function SetupNotice() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-md rounded-2xl bg-surface-lowest p-8 text-center shadow-soft">
-        <h1 className="font-brand text-2xl tracking-[0.15em] text-on-surface">Sensorium</h1>
+        <div className="flex flex-col items-center gap-2">
+          <BrandMark size={64} />
+          <h1 className="font-brand text-2xl tracking-[0.15em] text-on-surface">Sensorium</h1>
+        </div>
         <p className="mt-4 text-sm leading-6 text-on-surface-variant">
           Supabase is not configured yet. Copy <code>.env.example</code> to{' '}
           <code>.env</code> and set <code>VITE_SUPABASE_URL</code> and{' '}

@@ -43,6 +43,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check legal content sync
+        run: node scripts/sync-legal.mjs --check
+
       - name: Unit & component tests (with coverage gate)
         run: npm run test:coverage
 

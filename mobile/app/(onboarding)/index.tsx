@@ -17,6 +17,7 @@ import {
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { PrimaryButton, SecondaryButton } from '../../src/components/ui'
+import { BrandMark } from '../../src/components/BrandMark'
 import { BrandWordmark } from '../../src/components/BrandWordmark'
 import { StepProfile } from '../../src/components/onboarding/StepProfile'
 import { StepCustomization } from '../../src/components/onboarding/StepCustomization'
@@ -148,7 +149,10 @@ export default function OnboardingScreen() {
         contentContainerStyle={{ padding: 24, paddingBottom: 64 }}
         keyboardShouldPersistTaps="handled"
       >
-        <BrandWordmark size={16} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <BrandMark size={28} />
+          <BrandWordmark size={16} />
+        </View>
         <Text style={{ marginTop: 16, fontSize: 14, fontWeight: '600', color: t.primary }}>
           Step {step} of {TOTAL_STEPS}
         </Text>

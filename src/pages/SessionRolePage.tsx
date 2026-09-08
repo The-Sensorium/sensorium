@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight, Check, Info, Loader2, Shield, ShieldCheck, Us
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useAuth } from '../app/auth-context'
 import { useSessionRole } from '../app/session-role-context'
+import { BrandMark } from '../components/BrandMark'
 import { ThemeToggle } from '../components/theme-toggle'
 import {
   activeSessionRoles,
@@ -46,8 +47,9 @@ export function SessionRolePage() {
       <div className="mx-auto w-full max-w-5xl">
         <section className="flex min-w-0 flex-col px-1 py-2 sm:px-4 sm:py-4 lg:px-6 lg:py-6">
           <header className="flex items-start justify-between gap-6">
-            <Link to="/" className="font-brand text-base tracking-[0.18em] text-primary transition-colors hover:text-on-surface">
-              Sensorium
+            <Link to="/" className="flex items-center gap-2 transition-colors hover:text-on-surface">
+              <BrandMark size={24} />
+              <span className="font-brand text-base tracking-[0.18em] text-primary">Sensorium</span>
             </Link>
             <div className="ml-auto">
               <ThemeToggle />

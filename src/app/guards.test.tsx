@@ -135,6 +135,8 @@ vi.mock('../features/access', async (importOriginal) => {
   return { ...actual, useMyAccess: vi.fn(() => accessStates.member) }
 })
 
+vi.mock('../components/BrandMark', () => ({ BrandMark: () => null }))
+
 vi.mock('./session-role-context', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./session-role-context')>()
   return {

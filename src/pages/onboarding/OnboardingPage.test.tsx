@@ -23,6 +23,7 @@ vi.mock('../../lib/use-profile', () => ({ useProfile: hooks.useProfile, profileK
 vi.mock('../../lib/supabase', () => ({ requireSupabase: hooks.requireSupabase }))
 vi.mock('../../lib/use-document-title', () => ({ useDocumentTitle: () => {} }))
 vi.mock('../../components/theme-toggle', () => ({ ThemeToggle: () => null }))
+vi.mock('../../components/BrandMark', () => ({ BrandMark: () => null }))
 vi.mock('./draft', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./draft')>()
   return { ...actual, validateStep: () => null }
