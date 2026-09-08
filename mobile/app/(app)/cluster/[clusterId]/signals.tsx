@@ -13,7 +13,8 @@ import { isMutedAuthor, mutedIds, useMyMutes } from '../../../../src/features/mo
 import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
-import { Card, LoadingView, Screen } from '../../../../src/components/ui'
+import { Card, ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
+import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 const statusMeta: Record<SignalStatus, { label: string; colorKey: 'primary' | 'tertiary' | 'onSurfaceVariant' }> = {
   open: { label: 'Open', colorKey: 'primary' },
@@ -38,6 +39,12 @@ export default function SignalsScreen() {
   const [showResolved, setShowResolved] = useState(false)
   const myMutes = useMyMutes(clusterId !== '')
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const pull = usePullToRefresh([
+    () => signals.refetch(),
+    () => replies.refetch(),
+    () => members.refetch(),
+    () => myMutes.refetch(),
+  ])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   function reveal(id: string) {
     setRevealed((prev) => {
@@ -70,8 +77,9 @@ export default function SignalsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ClusterSectionHeader title="Signals" clusterId={clusterId} section="signals" />
+      <ErrorText message={pull.error} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Signals</Text>

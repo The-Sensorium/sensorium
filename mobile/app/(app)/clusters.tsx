@@ -8,7 +8,8 @@ import { usePublicClusterCounts } from '../../src/features/discovery'
 import { useMyQueueStatus, useMyClusters } from '../../src/features/matching'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, LoadingView, Screen } from '../../src/components/ui'
+import { Card, ErrorText, LoadingView, Screen } from '../../src/components/ui'
+import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { ClusterCard } from '../../src/components/ClusterCard'
 
 export default function ClustersScreen() {
@@ -17,13 +18,19 @@ export default function ClustersScreen() {
   const counts = usePublicClusterCounts()
   const status = useMyQueueStatus()
   const countByMode = new Map((counts.data ?? []).map((r) => [r.mode, r.cluster_count]))
+  const pull = usePullToRefresh([
+    () => clusters.refetch(),
+    () => counts.refetch(),
+    () => status.refetch(),
+  ])
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>Clusters</Text>
       <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant, marginBottom: 24 }}>
         Every cluster you’ve been matched into. Browse a matching mode below to meet more people.
       </Text>
+      <ErrorText message={pull.error} />
 
       <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginBottom: 12 }}>
         Your clusters

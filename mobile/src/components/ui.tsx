@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -236,12 +237,33 @@ export function ErrorText({ message }: { message: string | null }) {
   return <Text style={{ fontSize: 14, color: t.error, marginBottom: spacing.gutter }}>{message}</Text>
 }
 
-export function Screen({ children, avoiding }: { children: ReactNode; avoiding?: boolean }) {
+export function Screen({
+  children,
+  avoiding,
+  onRefresh,
+  refreshing,
+}: {
+  children: ReactNode
+  avoiding?: boolean
+  onRefresh?: () => void
+  refreshing?: boolean
+}) {
   const t = useTheme()
   const body = (
     <ScrollView
       contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
       keyboardShouldPersistTaps="handled"
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing ?? false}
+            onRefresh={onRefresh}
+            tintColor={t.primary}
+            colors={[t.primary]}
+            progressBackgroundColor={t.surfaceContainer}
+          />
+        ) : undefined
+      }
     >
       {children}
     </ScrollView>

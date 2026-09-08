@@ -183,6 +183,7 @@ export function Composer({
           <Pressable
             accessibilityLabel="Cancel reply"
             onPress={onCancelReply}
+            hitSlop={10}
             style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
           >
             <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
@@ -211,6 +212,7 @@ export function Composer({
             onPress={() => {
               if (!uploading) setStagedImage(null)
             }}
+            hitSlop={10}
             style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', opacity: uploading ? 0.4 : 1 }}
           >
             <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />

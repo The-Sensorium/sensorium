@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Hourglass, ThumbsDown, ThumbsUp } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
@@ -24,7 +25,8 @@ import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
-import { Card, LoadingView, PrimaryButton, Screen } from '../../../../src/components/ui'
+import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../../src/components/ui'
+import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 type MemberCard = { id: string; display_name: string; avatar_url: string | null }
 
@@ -55,6 +57,20 @@ export default function VotesScreen() {
   const [nameSuggestion, setNameSuggestion] = useState('')
   const [pendingVoteId, setPendingVoteId] = useState<string | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const pull = usePullToRefresh([
+    () => votes.refetch(),
+    () => responses.refetch(),
+    async () => {
+      const result = await round.refetch()
+      if (result.data?.id === round.data?.id) {
+        await candidates.refetch()
+      } else {
+        await queryClient.refetchQueries({ queryKey: ['replacement-candidates'] })
+      }
+    },
+    () => members.refetch(),
+  ])
 
   const memberById = useMemo(
     () =>
@@ -126,8 +142,9 @@ export default function VotesScreen() {
   const roundVoting = round.data && round.data.status === 'voting'
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ClusterSectionHeader title="Votes" clusterId={clusterId} section="votes" />
+      <ErrorText message={pull.error} />
       {voteError ? (
         <Card>
           <Text style={{ fontSize: 14, color: t.error }}>{voteError}</Text>

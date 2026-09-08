@@ -444,7 +444,7 @@ export default function RoomScreen() {
           <Pressable
             accessibilityLabel="Back"
             onPress={() => router.back()}
-            style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
           >
             <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />
           </Pressable>
