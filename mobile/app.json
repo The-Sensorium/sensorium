@@ -17,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon-light.png",
+        "foregroundImage": "./assets/adaptive-foreground.png",
         "backgroundColor": "#fef8f7"
       },
       "package": "online.thesensorium.app",
