@@ -2,9 +2,11 @@ import { useEffect, useMemo } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, router, type Href } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, MailOpen, PartyPopper, Sparkles } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
 import { useProfile } from '../../src/lib/use-profile'
+import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { useClusterMembers, useMyClusters, useLatestClusterFormed } from '../../src/features/matching'
 import {
   useRecentClusterPosts,
@@ -21,7 +23,7 @@ import {
 import { toErrorMessage } from '../../src/lib/error'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
+import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { ClusterCard } from '../../src/components/ClusterCard'
 import { PostCard } from '../../src/components/PostCard'
 
@@ -60,6 +62,16 @@ export default function HomeScreen() {
   const invitations = useMyPendingInvitations()
   const acceptInvite = useAcceptInvitation()
   const declineInvite = useDeclineInvitation()
+  const queryClient = useQueryClient()
+  const pull = usePullToRefresh([
+    () => clusters.refetch(),
+    () => invitations.refetch(),
+    () => formed.refetch(),
+    () => queryClient.refetchQueries({ queryKey: ['recent-posts'] }),
+    () => queryClient.refetchQueries({ queryKey: ['post-likes'] }),
+    () => queryClient.refetchQueries({ queryKey: ['post-comments'] }),
+    () => queryClient.refetchQueries({ queryKey: ['cluster-members'] }),
+  ])
 
   useEffect(() => {
     if (
@@ -97,13 +109,14 @@ export default function HomeScreen() {
     (invitations.isError ? 'Couldn’t load your invitations.' : '')
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>
         {firstName ? `Welcome, ${firstName}` : 'Home'}
       </Text>
       <Text style={{ marginTop: 4, fontSize: 17, color: t.onSurfaceVariant, marginBottom: 24 }}>
         {daypartGreeting()}
       </Text>
+      <ErrorText message={pull.error} />
 
       {(invitations.data ?? []).map((inv) => (
         <Card key={inv.id}>

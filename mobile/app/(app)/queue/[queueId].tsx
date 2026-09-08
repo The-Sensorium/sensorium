@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Link, router, useLocalSearchParams } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react-native'
 import { useMyQueueKeys, useLeaveQueue } from '../../../src/features/matching'
 import { modeInfo, isMatchingMode } from '../../../src/lib/modes'
 import { toErrorMessage } from '../../../src/lib/error'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
-import { Card, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
+import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
 import { QueueProgress } from '../../../src/components/QueueCard'
 
 export default function QueueScreen() {
@@ -17,6 +19,12 @@ export default function QueueScreen() {
   const leave = useLeaveQueue()
   const [leaveError, setLeaveError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const queryClient = useQueryClient()
+  const pull = usePullToRefresh([
+    () => queues.refetch(),
+    () => queryClient.refetchQueries({ queryKey: ['queue-count'] }),
+    () => queryClient.refetchQueries({ queryKey: ['matching-status'] }),
+  ])
 
   const mode = isMatchingMode(queueId) ? queueId : null
   const entry = queues.data?.find((q) => q.mode === mode)
@@ -74,7 +82,8 @@ export default function QueueScreen() {
   }
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
+      <ErrorText message={pull.error} />
       <Pressable
         onPress={() => router.replace('/(app)/home')}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}

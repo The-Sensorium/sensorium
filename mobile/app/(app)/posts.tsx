@@ -21,7 +21,8 @@ import { PostComposer } from '../../src/components/PostComposer'
 import { PostCard } from '../../src/components/PostCard'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, LoadingView, Screen } from '../../src/components/ui'
+import { Card, ErrorText, LoadingView, Screen } from '../../src/components/ui'
+import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 
 export default function PostsFeedScreen() {
   const t = useTheme()
@@ -49,6 +50,14 @@ export default function PostsFeedScreen() {
   const loadEarlier = useLoadEarlierPosts(clusterId)
   const myMutes = useMyMutes(clusterId != null)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const pull = usePullToRefresh([
+    () => clusters.refetch(),
+    () => posts.refetch(),
+    () => members.refetch(),
+    () => likes.refetch(),
+    () => comments.refetch(),
+    () => myMutes.refetch(),
+  ])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   function reveal(id: string) {
     setRevealed((prev) => {
@@ -106,7 +115,8 @@ export default function PostsFeedScreen() {
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
+      <ErrorText message={pull.error} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <View>
           <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Posts</Text>

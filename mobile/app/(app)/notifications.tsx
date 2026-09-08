@@ -17,6 +17,7 @@ import {
   Users,
   Vote,
 } from 'lucide-react-native'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   notificationTarget,
   timeAgo,
@@ -28,7 +29,8 @@ import {
 } from '../../src/features/notifications'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, LoadingView, Screen } from '../../src/components/ui'
+import { Card, ErrorText, LoadingView, Screen } from '../../src/components/ui'
+import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -88,6 +90,11 @@ export default function NotificationsScreen() {
   const notifications = useMyNotifications()
   const markRead = useMarkNotificationRead()
   const markAll = useMarkAllNotificationsRead()
+  const queryClient = useQueryClient()
+  const pull = usePullToRefresh([
+    () => notifications.refetch(),
+    () => queryClient.refetchQueries({ queryKey: ['notifications', 'unread'] }),
+  ])
 
   const items = notifications.data ?? []
   const unread = items.filter((n) => n.read_at === null).length
@@ -101,7 +108,7 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 16 }}>
         <View>
           <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>Notifications</Text>
@@ -118,6 +125,7 @@ export default function NotificationsScreen() {
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Mark all read</Text>
         </Pressable>
       </View>
+      <ErrorText message={pull.error} />
 
       {notifications.isLoading ? (
         <LoadingView />

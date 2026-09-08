@@ -1,11 +1,13 @@
 import { Pressable, Text, View } from 'react-native'
 import { Link, useLocalSearchParams } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react-native'
 import { isMatchingMode, modeInfo } from '../../../src/lib/modes'
 import { useClustersByMode } from '../../../src/features/discovery'
 import { useMyClusters } from '../../../src/features/matching'
 import { useTheme } from '../../../src/lib/use-theme'
-import { LoadingView, Screen } from '../../../src/components/ui'
+import { ErrorText, LoadingView, Screen } from '../../../src/components/ui'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
 import { ModePanel } from '../../../src/components/discovery/ModePanel'
 import { PublicClusterCard } from '../../../src/components/PublicClusterCard'
 
@@ -19,6 +21,14 @@ export default function DiscoveryModeScreen() {
   const clusters = useClustersByMode(mode)
   const mine = useMyClusters()
   const myClusterIds = new Set((mine.data ?? []).map((m) => m.cluster.id))
+  const queryClient = useQueryClient()
+  const pull = usePullToRefresh([
+    () => clusters.refetch(),
+    () => mine.refetch(),
+    () => queryClient.refetchQueries({ queryKey: ['my-queues'] }),
+    () => queryClient.refetchQueries({ queryKey: ['matching-status'] }),
+    () => queryClient.refetchQueries({ queryKey: ['queue-count'] }),
+  ])
 
   if (!mode || !info) {
     return (
@@ -40,7 +50,8 @@ export default function DiscoveryModeScreen() {
   }
 
   return (
-    <Screen>
+    <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
+      <ErrorText message={pull.error} />
       <Link href="/(app)/clusters" asChild>
         <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={16} color={t.onSurfaceVariant} />
