@@ -382,6 +382,7 @@ describe('posts', () => {
       p_parent_comment_id: undefined,
     })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments', 'c1'] })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['comment-likes', 'c1'] })
   })
 
   it('useCreateComment forwards a parent comment for a reply', async () => {
