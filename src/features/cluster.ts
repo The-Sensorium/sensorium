@@ -205,7 +205,10 @@ export function useReplyTargets(clusterId: string | null, parentIds: string[]) {
   })
 }
 
-/** Toggle the caller's reaction on a message (RLS: insert/delete own rows). */
+/** Toggle the caller's reaction on a message optimistically: the emoji
+ * appears/disappears immediately, rolls back on error, then reconciles with
+ * the server. The write is the atomic toggle_message_reaction RPC (0106), so
+ * a fast double-tap cannot double-write. Mirrors useTogglePostLike. */
 export function useToggleReaction(clusterId: string | null) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -213,31 +216,35 @@ export function useToggleReaction(clusterId: string | null) {
 
   return useMutation({
     mutationFn: async ({ messageId, emoji }: { messageId: string; emoji: string }) => {
-      if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
-      const { data: existing } = await supabase
-        .from('message_reactions')
-        .select('message_id')
-        .eq('message_id', messageId)
-        .eq('user_id', userId)
-        .eq('emoji', emoji)
-        .maybeSingle()
-      if (existing) {
-        const { error } = await supabase
-          .from('message_reactions')
-          .delete()
-          .eq('message_id', messageId)
-          .eq('user_id', userId)
-          .eq('emoji', emoji)
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('message_reactions')
-          .insert({ message_id: messageId, user_id: userId, emoji })
-        if (error) throw error
+      const { error } = await supabase.rpc('toggle_message_reaction', {
+        p_message_id: messageId,
+        p_emoji: emoji,
+      })
+      if (error) throw error
+    },
+    onMutate: async ({ messageId, emoji }) => {
+      if (!clusterId || !userId) return
+      await queryClient.cancelQueries({ queryKey: ['cluster-reactions', clusterId] })
+      const prev = queryClient.getQueryData<Reaction[]>(['cluster-reactions', clusterId])
+      queryClient.setQueryData<Reaction[]>(['cluster-reactions', clusterId], (cur) => {
+        const base = cur ?? prev ?? []
+        const mine = (r: Reaction) =>
+          r.message_id === messageId && r.user_id === userId && r.emoji === emoji
+        if (base.some(mine)) return base.filter((r) => !mine(r))
+        return [
+          ...base,
+          { message_id: messageId, user_id: userId, emoji, created_at: new Date().toISOString() },
+        ]
+      })
+      return { prev }
+    },
+    onError: (_e, _vars, ctx) => {
+      if (clusterId && ctx?.prev) {
+        queryClient.setQueryData(['cluster-reactions', clusterId], ctx.prev)
       }
     },
-    onSuccess: () => {
+    onSettled: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-reactions', clusterId] })
       }

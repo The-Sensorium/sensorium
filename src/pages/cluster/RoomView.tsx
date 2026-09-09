@@ -515,54 +515,54 @@ export function RoomView() {
 
   return (
     <section aria-label="The room" className="flex min-h-0 flex-1 flex-col gap-4 lg:h-full">
+      {/* Presence strip - a quiet row of faces. Pinned above the scroll
+       surface (like mobile's fixed row) so it stays visible while reading
+       instead of scrolling away with the timeline. */}
+      <section
+        aria-label="Who is in the room"
+        className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft"
+      >
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-sm font-semibold text-on-surface">
+              In the room now
+            </h2>
+            <span className="text-xs text-on-surface-variant">
+              {onlineCount} of {memberCount} here
+            </span>
+          </div>
+          <ul className="flex flex-wrap items-center gap-2">
+            {(members.data ?? []).map((m) => {
+              const isMe = m.id === userId
+              return (
+                <li key={m.id}>
+                  <Link
+                    to={`/profile/${m.id}?cluster=${clusterId}`}
+                    title={`${m.display_name}${isMe ? ' (you)' : ''}`}
+                    className="relative block"
+                  >
+                    <Avatar
+                      name={m.display_name}
+                      src={m.avatar_url}
+                      className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
+                      textClassName="text-xs"
+                    />
+                    {online.has(m.id) || isMe ? (
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500"
+                        aria-hidden
+                      />
+                    ) : null}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </section>
       {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
        the timeline scrolls inside the container and the page never moves. */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {/* Presence strip - a quiet row of faces. Lives at the top of the
-         timeline so it scrolls out of the way while reading, leaving the chat
-         the full room band. */}
-        <section
-          aria-label="Who is in the room"
-          className="mb-3 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft"
-        >
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-display text-sm font-semibold text-on-surface">
-                In the room now
-              </h2>
-              <span className="text-xs text-on-surface-variant">
-                {onlineCount} of {memberCount} here
-              </span>
-            </div>
-            <ul className="flex flex-wrap items-center gap-2">
-              {(members.data ?? []).map((m) => {
-                const isMe = m.id === userId
-                return (
-                  <li key={m.id}>
-                    <Link
-                      to={`/profile/${m.id}?cluster=${clusterId}`}
-                      title={`${m.display_name}${isMe ? ' (you)' : ''}`}
-                      className="relative block"
-                    >
-                      <Avatar
-                        name={m.display_name}
-                        src={m.avatar_url}
-                        className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
-                        textClassName="text-xs"
-                      />
-                      {online.has(m.id) || isMe ? (
-                        <span
-                          className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        </section>
         {messages.isLoading || myMutes.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the room…

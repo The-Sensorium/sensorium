@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -11,6 +11,7 @@ import {
   View,
   type TextInputProps,
 } from 'react-native'
+import { Eye, EyeOff } from 'lucide-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, type Href } from 'expo-router'
 import { radii, shadowSoft, spacing } from '../lib/theme-tokens'
@@ -100,6 +101,61 @@ export function Field({ label, ...props }: { label: string } & TextInputProps) {
         }}
         {...props}
       />
+    </View>
+  )
+}
+
+export function PasswordField({
+  label,
+  ...props
+}: Omit<{ label: string } & TextInputProps, 'secureTextEntry'>) {
+  const t = useTheme()
+  const [visible, setVisible] = useState(false)
+  const Icon = visible ? EyeOff : Eye
+  return (
+    <View style={{ marginBottom: spacing.gutter }}>
+      <Text
+        style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
+      >
+        {label}
+      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: t.surfaceContainer,
+          borderWidth: 1,
+          borderColor: t.outlineVariant,
+          borderRadius: radii.md,
+        }}
+      >
+        <TextInput
+          autoCapitalize="none"
+          placeholderTextColor={t.onSurfaceVariant}
+          secureTextEntry={!visible}
+          style={{
+            flex: 1,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            fontSize: 14,
+            color: t.onSurface,
+          }}
+          {...props}
+        />
+        <Pressable
+          accessibilityLabel={visible ? 'Hide password' : 'Show password'}
+          accessibilityRole="button"
+          onPress={() => setVisible((v) => !v)}
+          style={{
+            width: 44,
+            height: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+        </Pressable>
+      </View>
     </View>
   )
 }
