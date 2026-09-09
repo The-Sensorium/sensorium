@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { AppState } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
-import { registerPushToken, unregisterPushToken } from './lib/push'
+import { refreshPushToken, registerPushToken, unregisterPushToken } from './lib/push'
 import { isPermanentQueryError } from './lib/query-retry'
 import { AuthContext, type AuthStatus } from './auth-context'
 import { ThemeChoiceProvider } from './lib/theme-choice'
@@ -49,6 +50,15 @@ export function AppProviders({ children }: { children: ReactNode }) {
     })
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (auth.state !== 'signedIn') return
+    const userId = auth.userId
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refreshPushToken(userId)
+    })
+    return () => sub.remove()
+  }, [auth])
 
   return (
     <ThemeChoiceProvider>
