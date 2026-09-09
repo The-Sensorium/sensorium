@@ -25,7 +25,7 @@ vi.mock('../features/moderation', () => ({ useDeleteAccount: hooks.useDeleteAcco
 vi.mock('../features/matching', () => ({ useMyClusters: hooks.useMyClusters }))
 vi.mock('../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, deleteAvatarObject: hooks.deleteAvatarObject }))
 vi.mock('../lib/supabase', () => ({ requireSupabase: hooks.requireSupabase }))
-vi.mock('../lib/image', () => ({ prepareImage: hooks.prepareImage }))
+vi.mock('../lib/image', () => ({ AVATAR_MAX_DIMENSION: 256, prepareImage: hooks.prepareImage }))
 vi.mock('../components/MuteButton', () => ({ MuteButton: () => <button type="button">Unmute</button> }))
 vi.mock('../features/notifications', () => {
   const PREF_TOGGLES = ['messages', 'mentions', 'reactions', 'votes', 'invitations', 'signals']

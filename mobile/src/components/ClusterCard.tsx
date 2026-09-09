@@ -3,7 +3,7 @@ import { Link, type Href } from 'expo-router'
 import { Users } from 'lucide-react-native'
 import type { MyCluster } from '../features/matching'
 import { modeInfo } from '../lib/modes'
-import { radii, shadowSoft } from '../lib/theme-tokens'
+import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
 function statusLabel(status: string, introComplete: boolean): string {
@@ -32,7 +32,8 @@ export function ClusterCard({ item }: { item: MyCluster }) {
           borderRadius: radii.xl,
           padding: 20,
           marginBottom: 16,
-          ...shadowSoft,
+          ...shadowShape,
+          shadowColor: t.shadowColor,
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>

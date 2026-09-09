@@ -1,9 +1,12 @@
-import { Tabs } from 'expo-router'
+import { useEffect } from 'react'
+import { router, Tabs } from 'expo-router'
 import { Bell, Home, Newspaper, Settings, Users } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
 import { useNotificationsChannel, useUnreadCount } from '../../src/features/notifications'
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { useTheme } from '../../src/lib/use-theme'
+import { onPushResponse, getLaunchPushData, syncBadgeCount } from '../../src/lib/push'
+import { pushDataToHref, type PushData } from '../../src/lib/notification-routing'
 
 export default function AppTabs() {
   const t = useTheme()
@@ -13,6 +16,32 @@ export default function AppTabs() {
   useNotificationsChannel(userId)
   const unread = useUnreadCount()
   const badge = (unread.data ?? 0) > 0 ? String(unread.data) : undefined
+  useEffect(() => {
+    void syncBadgeCount(unread.data ?? 0)
+  }, [unread.data])
+  useEffect(() => {
+    let disposed = false
+    let unsubscribe: (() => void) | undefined
+    void onPushResponse((data) => {
+      const target = pushDataToHref(data as PushData)
+      if (target) router.push(target)
+    }).then((fn) => {
+      if (disposed) fn()
+      else unsubscribe = fn
+    })
+    // A tap that cold-starts a terminated app is not delivered through the
+    // listener above; it must be read once at startup.
+    void getLaunchPushData().then((data) => {
+      if (!disposed && data) {
+        const target = pushDataToHref(data as PushData)
+        if (target) router.push(target)
+      }
+    })
+    return () => {
+      disposed = true
+      unsubscribe?.()
+    }
+  }, [])
   return (
     <Tabs
       screenOptions={{

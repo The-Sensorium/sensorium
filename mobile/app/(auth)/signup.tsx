@@ -6,7 +6,7 @@ import { toErrorMessage } from '../../src/lib/error'
 import { setSignupEmail } from '../../src/lib/auth-storage'
 import { authRedirect } from '../../src/lib/deep-links'
 import { signInWithGoogle } from '../../src/lib/google-auth'
-import { AuthLink, AuthShell, ErrorText, Field, GoogleButton, MutedCenter, OrDivider, PrimaryButton } from '../../src/components/ui'
+import { AuthLink, AuthShell, ErrorText, Field, GoogleButton, MutedCenter, OrDivider, PasswordField, PrimaryButton } from '../../src/components/ui'
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('')
@@ -72,18 +72,16 @@ export default function SignupScreen() {
         autoComplete="email"
         autoCapitalize="none"
       />
-      <Field
+      <PasswordField
         label="Password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         autoComplete="new-password"
       />
-      <Field
+      <PasswordField
         label="Confirm Password"
         value={confirm}
         onChangeText={setConfirm}
-        secureTextEntry
         autoComplete="new-password"
         onSubmitEditing={onSubmit}
       />

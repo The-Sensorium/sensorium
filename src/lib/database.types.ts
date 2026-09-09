@@ -1015,6 +1015,89 @@ export type Database = {
         }
         Relationships: []
       }
+      push_outbox: {
+        Row: {
+          attempts: number
+          body: string | null
+          channel: string
+          created_at: string
+          data: Json
+          expo_push_token: string | null
+          id: string
+          last_error: string | null
+          sent_at: string | null
+          status: string
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          body?: string | null
+          channel?: string
+          created_at?: string
+          data?: Json
+          expo_push_token?: string | null
+          id?: string
+          last_error?: string | null
+          sent_at?: string | null
+          status?: string
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          body?: string | null
+          channel?: string
+          created_at?: string
+          data?: Json
+          expo_push_token?: string | null
+          id?: string
+          last_error?: string | null
+          sent_at?: string | null
+          status?: string
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_outbox_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_settings: {
+        Row: {
+          edge_url: string | null
+          enabled: boolean
+          id: boolean
+          secret: string | null
+          updated_at: string
+        }
+        Insert: {
+          edge_url?: string | null
+          enabled?: boolean
+          id?: boolean
+          secret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          edge_url?: string | null
+          enabled?: boolean
+          id?: boolean
+          secret?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       push_tokens: {
         Row: {
           created_at: string
@@ -1587,6 +1670,17 @@ export type Database = {
           template: Database["public"]["Enums"]["outbound_email_template"]
         }[]
       }
+      claim_push_notifications: {
+        Args: { p_limit?: number }
+        Returns: {
+          body: string
+          channel: string
+          data: Json
+          expo_push_token: string
+          id: string
+          title: string
+        }[]
+      }
       close_expired_votes: { Args: never; Returns: undefined }
       close_post_report_as_actioned: {
         Args: {
@@ -2118,6 +2212,10 @@ export type Database = {
         Args: { p_error?: string; p_id: string; p_status: string }
         Returns: undefined
       }
+      mark_push_notification: {
+        Args: { p_error?: string; p_id: string; p_status: string }
+        Returns: undefined
+      }
       mark_staff_notifications_read: {
         Args: { p_type: Database["public"]["Enums"]["notification_type"] }
         Returns: undefined
@@ -2151,10 +2249,12 @@ export type Database = {
       }
       progress_replacements: { Args: never; Returns: undefined }
       pump_outbound_emails: { Args: never; Returns: undefined }
+      pump_push_notifications: { Args: never; Returns: undefined }
       raise_signal: {
         Args: { p_cluster_id: string; p_prompt: string }
         Returns: string
       }
+      recover_stuck_push_sending: { Args: never; Returns: undefined }
       recover_stuck_sending: { Args: never; Returns: undefined }
       release_moderation_report: {
         Args: { p_report_id: string }
@@ -2267,11 +2367,16 @@ export type Database = {
         Args: { p_comment_id: string }
         Returns: undefined
       }
+      toggle_message_reaction: {
+        Args: { p_emoji: string; p_message_id: string }
+        Returns: undefined
+      }
       toggle_post_like: { Args: { p_post_id: string }; Returns: undefined }
       vote_on: {
         Args: { p_choice: string; p_vote_id: string }
         Returns: undefined
       }
+      wake_push_worker: { Args: never; Returns: undefined }
     }
     Enums: {
       account_status: "active" | "suspended" | "banned"

@@ -3,7 +3,7 @@ import { Link } from 'expo-router'
 import { CLUSTER_SIZE } from '../lib/constants'
 import { useQueueCount, type MyQueueEntry } from '../features/matching'
 import { modeInfo } from '../lib/modes'
-import { radii, shadowSoft } from '../lib/theme-tokens'
+import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
 export function QueueProgress({ mode, queueKey }: { mode: MyQueueEntry['mode']; queueKey: string | null }) {
@@ -54,7 +54,8 @@ export function QueueCard({ entry }: { entry: MyQueueEntry }) {
           borderRadius: radii.xl,
           padding: 20,
           marginBottom: 16,
-          ...shadowSoft,
+          ...shadowShape,
+          shadowColor: t.shadowColor,
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

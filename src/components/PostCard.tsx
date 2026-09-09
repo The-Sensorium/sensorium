@@ -139,8 +139,8 @@ export function PostCard({
             <Avatar
               name={author?.display_name ?? 'Member'}
               src={author?.avatar_url}
-              className="h-5 w-5"
-              textClassName="text-[10px]"
+              className="h-10 w-10"
+              textClassName="text-sm"
             />
             <span className="text-sm font-medium text-on-surface">{author?.display_name ?? 'Member'}</span>
             {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}

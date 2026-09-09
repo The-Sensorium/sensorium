@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Animated, Easing, View } from 'react-native'
-import { Avatar } from '../Avatar'
+import { AvatarLink } from '../AvatarLink'
 import { useTheme } from '../../lib/use-theme'
 
-export function TypingBubble({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+export function TypingBubble({
+  name,
+  avatarUrl,
+  userId,
+  clusterId,
+}: {
+  name: string
+  avatarUrl: string | null
+  userId: string
+  clusterId: string
+}) {
   const t = useTheme()
   const [pulse] = useState(() => new Animated.Value(0))
 
@@ -22,7 +32,7 @@ export function TypingBubble({ name, avatarUrl }: { name: string; avatarUrl: str
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4 }}>
-      <Avatar name={name} src={avatarUrl} size={28} />
+      <AvatarLink userId={userId} clusterId={clusterId} name={name} src={avatarUrl} size={28} />
       <Animated.View
         style={{
           opacity,

@@ -3,7 +3,7 @@ import { Link } from 'expo-router'
 import { Archive, CalendarDays, CircleCheck, Hourglass, Users } from 'lucide-react-native'
 import type { ClusterTile } from '../features/discovery'
 import { modeInfo } from '../lib/modes'
-import { radii, shadowSoft } from '../lib/theme-tokens'
+import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
 const formedFormatter = new Intl.DateTimeFormat(undefined, {
@@ -34,7 +34,7 @@ export function PublicClusterCard({
 
   const body = (
     <View
-      style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 20, ...shadowSoft }}
+      style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 20, ...shadowShape, shadowColor: t.shadowColor }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flex: 1 }}>

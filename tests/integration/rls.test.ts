@@ -198,6 +198,46 @@ describe('RLS denial matrix', () => {
     expect(afterDelete).toHaveLength(0)
   })
 
+  it('toggle_message_reaction toggles a member reaction, rejects outsiders', async () => {
+    const { a, c, messageId } = await wireCluster()
+
+    const { error: likeErr } = await a.client.rpc('toggle_message_reaction', {
+      p_message_id: messageId,
+      p_emoji: 'like',
+    })
+    expect(likeErr).toBeNull()
+
+    const { data: reactions } = await admin
+      .from('message_reactions')
+      .select('user_id, emoji')
+      .eq('message_id', messageId)
+    expect(reactions).toEqual([{ user_id: a.id, emoji: 'like' }])
+
+    const { error: unlikeErr } = await a.client.rpc('toggle_message_reaction', {
+      p_message_id: messageId,
+      p_emoji: 'like',
+    })
+    expect(unlikeErr).toBeNull()
+
+    const { data: afterUnlike } = await admin
+      .from('message_reactions')
+      .select('user_id')
+      .eq('message_id', messageId)
+    expect(afterUnlike).toHaveLength(0)
+
+    const { error: outsiderErr } = await c.client.rpc('toggle_message_reaction', {
+      p_message_id: messageId,
+      p_emoji: 'like',
+    })
+    expect(outsiderErr).not.toBeNull()
+
+    const { error: anonErr } = await anon.rpc('toggle_message_reaction', {
+      p_message_id: messageId,
+      p_emoji: 'like',
+    })
+    expect(anonErr).not.toBeNull()
+  })
+
   it('open-vote responses are hidden from other members, revealed once closed', async () => {
     const a = await member('rls-v-a')
     const b = await member('rls-v-b')

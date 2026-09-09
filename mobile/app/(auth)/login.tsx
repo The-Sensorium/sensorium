@@ -4,7 +4,7 @@ import { router } from 'expo-router'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
 import { signInWithGoogle } from '../../src/lib/google-auth'
-import { AuthLink, AuthShell, ErrorText, Field, GoogleButton, MutedCenter, OrDivider, PrimaryButton } from '../../src/components/ui'
+import { AuthLink, AuthShell, ErrorText, Field, GoogleButton, MutedCenter, OrDivider, PasswordField, PrimaryButton } from '../../src/components/ui'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -56,11 +56,10 @@ export default function LoginScreen() {
         autoComplete="email"
         autoCapitalize="none"
       />
-      <Field
+      <PasswordField
         label="Password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         autoComplete="password"
         onSubmitEditing={onSubmit}
       />

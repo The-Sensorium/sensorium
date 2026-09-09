@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
 import { toErrorMessage } from '../../lib/error'
+import { PasswordInput } from '../../components/PasswordInput'
 
 export function ResetPasswordPage() {
   useDocumentTitle('Reset Password')
@@ -37,18 +38,14 @@ export function ResetPasswordPage() {
     <div className="rounded-2xl bg-surface-lowest p-8 shadow-soft">
       <h1 className="text-2xl font-semibold">Choose a new password</h1>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <label className="block">
-          <span className="text-sm font-semibold text-on-surface">New Password</span>
-          <input
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
-        </label>
+        <PasswordInput
+          label="New Password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+          required
+          minLength={8}
+        />
         {error && (
           <p role="alert" className="text-sm text-error">
             {error}

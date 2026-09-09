@@ -6,7 +6,7 @@ const PASSWORD = process.env.E2E_PASSWORD ?? 'sensor123'
 async function login(page: Page) {
   await page.goto('/home')
   await page.getByLabel('Email').fill(EMAIL)
-  await page.getByLabel('Password').fill(PASSWORD)
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Login' }).click()
   await expect(page.getByRole('navigation')).toBeVisible()
 }

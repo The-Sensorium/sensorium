@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { useColorScheme } from 'react-native'
+import { Appearance, useColorScheme } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export type ThemeChoice = 'light' | 'system' | 'dark'
@@ -13,6 +13,10 @@ const ThemeChoiceContext = createContext<{
 
 export function ThemeChoiceProvider({ children }: { children: ReactNode }) {
   const [choice, setChoiceState] = useState<ThemeChoice>('light')
+
+  useEffect(() => {
+    Appearance.setColorScheme(choice === 'system' ? 'unspecified' : choice)
+  }, [choice])
 
   useEffect(() => {
     void AsyncStorage.getItem(STORAGE_KEY).then((value) => {

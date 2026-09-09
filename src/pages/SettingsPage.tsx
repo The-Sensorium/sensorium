@@ -5,7 +5,7 @@ import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
 import { requireSupabase } from '../lib/supabase'
-import { prepareImage } from '../lib/image'
+import { AVATAR_MAX_DIMENSION, prepareImage } from '../lib/image'
 import { toErrorMessage } from '../lib/error'
 import { useMyClusters } from '../features/matching'
 import { useUpdateProfile } from '../features/cluster'
@@ -54,7 +54,7 @@ export function SettingsPage() {
     setAvatarError(null)
     try {
       const supabase = requireSupabase()
-      const prepared = await prepareImage(file, { maxDimension: 512 })
+      const prepared = await prepareImage(file, { maxDimension: AVATAR_MAX_DIMENSION })
       const ext = prepared.name.split('.').pop()?.toLowerCase() || 'webp'
       const path = `${profile.data?.id ?? 'me'}/${Date.now()}.${ext}`
       const { data, error } = await supabase.storage.from('avatars').upload(path, prepared, {

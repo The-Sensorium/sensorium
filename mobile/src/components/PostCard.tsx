@@ -11,7 +11,7 @@ import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 import { dateTimeFormatter } from './room/format'
-import { radii, shadowSoft } from '../lib/theme-tokens'
+import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { PrimaryButton } from './ui'
 
@@ -80,7 +80,7 @@ export function PostCard({
 
   return (
     <View
-      style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: compact ? 16 : 20, marginBottom: 16, ...shadowSoft }}
+      style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: compact ? 16 : 20, marginBottom: 16, ...shadowShape, shadowColor: t.shadowColor }}
     >
       <Link href={{ pathname: '/posts/[postId]', params: { postId: post.id } }} asChild>
         <Pressable
@@ -106,7 +106,7 @@ export function PostCard({
             </View>
           ) : (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={20} />
+              <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
               <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurface }}>
                 {author?.display_name ?? 'Member'}
               </Text>

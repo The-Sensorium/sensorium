@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
@@ -170,27 +170,64 @@ describe('cluster', () => {
     expect(c.from('message_reactions').in).toHaveBeenCalledWith('message_id', ['m1', 'm2'])
   })
 
-  it('useToggleReaction deletes an existing reaction', async () => {
-    mockResult.value = { data: { message_id: 'm1' }, error: null }
+  it('useToggleReaction calls toggle_message_reaction and invalidates', async () => {
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
     const { result } = renderHook(() => useToggleReaction('c1'), { wrapper })
-    result.current.mutate({ messageId: 'm1', emoji: ':wave:' })
+    result.current.mutate({ messageId: 'm1', emoji: '❤️' })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('message_reactions').delete).toHaveBeenCalled()
-    expect(c.from('message_reactions').insert).not.toHaveBeenCalled()
+    expect(c.rpc).toHaveBeenCalledWith('toggle_message_reaction', {
+      p_message_id: 'm1',
+      p_emoji: '❤️',
+    })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['cluster-reactions', 'c1'] })
   })
 
-  it('useToggleReaction inserts a new reaction when none exists', async () => {
-    mockResult.value = { data: null, error: null }
+  it('useToggleReaction writes the caller’s reaction optimistically before the round-trip', async () => {
+    const pending = new Promise<never>(() => {})
+    requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
     const { result } = renderHook(() => useToggleReaction('c1'), { wrapper })
-    result.current.mutate({ messageId: 'm1', emoji: ':heart:' })
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('message_reactions').insert).toHaveBeenCalledWith({
-      message_id: 'm1',
-      user_id: 'u1',
-      emoji: ':heart:',
+    result.current.mutate({ messageId: 'm1', emoji: '❤️' })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
     })
+    const cached = queryClient.getQueryData<{ message_id: string; user_id: string; emoji: string }[]>([
+      'cluster-reactions',
+      'c1',
+    ])
+    expect(cached).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ message_id: 'm1', user_id: 'u1', emoji: '❤️' }),
+      ]),
+    )
+  })
+
+  it('useToggleReaction removes the caller’s reaction optimistically when present', async () => {
+    queryClient.setQueryData(['cluster-reactions', 'c1'], [
+      { message_id: 'm1', user_id: 'u1', emoji: '❤️', created_at: '2026-01-01T00:00:00Z' },
+    ])
+    const pending = new Promise<never>(() => {})
+    requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
+    const { result } = renderHook(() => useToggleReaction('c1'), { wrapper })
+    result.current.mutate({ messageId: 'm1', emoji: '❤️' })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(queryClient.getQueryData(['cluster-reactions', 'c1'])).toEqual([])
+  })
+
+  it('useToggleReaction rolls back the optimistic write on error', async () => {
+    const prev = [
+      { message_id: 'm1', user_id: 'u1', emoji: '❤️', created_at: '2026-01-01T00:00:00Z' },
+    ]
+    queryClient.setQueryData(['cluster-reactions', 'c1'], prev)
+    requireSupabaseMock.mockReturnValue({
+      rpc: vi.fn(() => Promise.resolve({ data: null, error: { message: 'boom' } })),
+    } as never)
+    const { result } = renderHook(() => useToggleReaction('c1'), { wrapper })
+    result.current.mutate({ messageId: 'm1', emoji: '❤️' })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(queryClient.getQueryData(['cluster-reactions', 'c1'])).toEqual(prev)
   })
 
   it('useEditMessage updates its own message row', async () => {

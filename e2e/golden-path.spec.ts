@@ -10,7 +10,7 @@ const PASSWORD = process.env.E2E_PASSWORD ?? 'sensor123'
 async function login(page: Page) {
   await page.goto('/home')
   await page.getByLabel('Email').fill(EMAIL)
-  await page.getByLabel('Password').fill(PASSWORD)
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Login' }).click()
   await expect(page.getByRole('navigation')).toBeVisible()
 }
@@ -52,4 +52,14 @@ test.describe('golden path (seeded)', () => {
       ).toBeVisible()
     }
   })
+})
+
+test('login password field has a show/hide toggle', async ({ page }) => {
+  await page.goto('/home')
+  const password = page.getByLabel('Password', { exact: true })
+  await expect(password).toHaveAttribute('type', 'password')
+  await page.getByRole('button', { name: 'Show password' }).click()
+  await expect(password).toHaveAttribute('type', 'text')
+  await page.getByRole('button', { name: 'Hide password' }).click()
+  await expect(password).toHaveAttribute('type', 'password')
 })
