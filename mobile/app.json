@@ -5,7 +5,7 @@
     "version": "0.0.1",
     "orientation": "portrait",
     "scheme": "sensorium",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "icon": "./assets/icon-light.png",
     "ios": {
       "supportsTablet": true,

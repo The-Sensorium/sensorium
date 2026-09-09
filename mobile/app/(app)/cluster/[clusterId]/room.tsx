@@ -50,7 +50,7 @@ import { TypingBubble } from '../../../../src/components/room/TypingBubble'
 import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows'
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
-import { radii, shadowSoft } from '../../../../src/lib/theme-tokens'
+import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 
 type TimelineItem =
