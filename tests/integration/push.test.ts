@@ -266,6 +266,39 @@ describe('push outbox fan-out', () => {
     expect(second!.some((r: { id: string }) => r.id === id)).toBe(true)
   })
 
+  it('wake and pump are safe no-ops while push_settings is disabled', async () => {
+    const u = await member('push-wake')
+    await withToken(u.id)
+    const { error: wakeErr } = await admin.rpc('wake_push_worker')
+    expect(wakeErr).toBeNull()
+    const { error: pumpErr } = await admin.rpc('pump_push_notifications')
+    expect(pumpErr).toBeNull()
+    const { data: rows } = await admin.from('push_outbox').select('id')
+    expect(rows ?? []).toHaveLength(0)
+  })
+
+  it('fan-out with push_settings enabled queues rows without erroring', async () => {
+    const u = await member('push-wake2')
+    await withToken(u.id)
+    const { error: setErr } = await admin.from('push_settings').update({
+      edge_url: 'http://127.0.0.1:9/functions/v1/send-push', // nothing listening; pg_net fires async and fails silently
+      secret: 'test-secret',
+      enabled: true,
+    }).eq('id', true)
+    expect(setErr).toBeNull()
+
+    const { error: notifyErr } = await admin.from('notifications').insert({
+      user_id: u.id,
+      type: 'mention',
+      title: 'Wake test',
+    })
+    expect(notifyErr).toBeNull()
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === u.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.status).toBe('queued')
+  })
+
   it('denies client access to the outbox', async () => {
     const u = await member('push-j')
     const { data } = await u.client.from('push_outbox').select('id')
