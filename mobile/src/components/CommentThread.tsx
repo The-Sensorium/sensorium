@@ -282,10 +282,6 @@ export function CommentThread({
       <View style={{ marginTop: 16, gap: 16 }}>
         {myMutes.isLoading ? (
           <ActivityIndicator size="small" color={t.primary} />
-        ) : comments.length === 0 ? (
-          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
-            No comments yet. Be the first to reply.
-          </Text>
         ) : (
           <>
             {top.map((tc) => {
