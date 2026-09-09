@@ -1022,6 +1022,7 @@ export type Database = {
           channel: string
           created_at: string
           data: Json
+          expo_push_token: string | null
           id: string
           last_error: string | null
           sent_at: string | null
@@ -1037,6 +1038,7 @@ export type Database = {
           channel?: string
           created_at?: string
           data?: Json
+          expo_push_token?: string | null
           id?: string
           last_error?: string | null
           sent_at?: string | null
@@ -1052,6 +1054,7 @@ export type Database = {
           channel?: string
           created_at?: string
           data?: Json
+          expo_push_token?: string | null
           id?: string
           last_error?: string | null
           sent_at?: string | null
@@ -2369,6 +2372,7 @@ export type Database = {
         Args: { p_choice: string; p_vote_id: string }
         Returns: undefined
       }
+      wake_push_worker: { Args: never; Returns: undefined }
     }
     Enums: {
       account_status: "active" | "suspended" | "banned"
