@@ -1,0 +1,79 @@
+name: Android APK (local build)
+
+# Builds an installable debug-signed release APK in CI (no EAS, no local
+# machine). Runs prebuild + Gradle on a Linux runner, which sidesteps the
+# Windows CMake/ninja instability entirely, then uploads the APK as an
+# artifact you can download and side-load on a phone.
+#
+# The env vars are taken from GitHub Actions variables/secrets (public values,
+# safe as repo variables):
+#   EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+#   EXPO_PUBLIC_KLIPY_APP_KEY / EXPO_PUBLIC_KLIPY_ENDPOINT
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment for EXPO_PUBLIC_* env vars'
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars[format('EXPO_PUBLIC_SUPABASE_URL_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars[format('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_KLIPY_APP_KEY: ${{ vars[format('EXPO_PUBLIC_KLIPY_APP_KEY_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_KLIPY_ENDPOINT: ${{ vars[format('EXPO_PUBLIC_KLIPY_ENDPOINT_{0}', inputs.environment)] }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prebuild Android project
+        run: npx expo prebuild --platform android --clean
+
+      - name: Install project NDK
+        run: |
+          yes | sdkmanager --list 2>/dev/null | grep -q 'ndk;27.1.12297006' && \
+            yes | sdkmanager "ndk;27.1.12297006" 2>/dev/null || echo "NDK resolved by Gradle"
+
+      - name: Build release APK
+        working-directory: mobile/android
+        run: ./gradlew app:assembleRelease -x lint --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sensorium-${{ inputs.environment }}-release
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
