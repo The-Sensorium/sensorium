@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
@@ -110,6 +110,7 @@ export default function RoomScreen() {
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
   const [pinned, setPinned] = useState(true)
+  const [focused, setFocused] = useState(false)
   const [newCount, setNewCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const exhaustedRef = useRef(false)
@@ -298,13 +299,20 @@ export default function RoomScreen() {
 
   const markReadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    if (!pinned || !clusterId) return
+    if (!focused || !pinned || !clusterId) return
     if (markReadTimer.current) clearTimeout(markReadTimer.current)
     markReadTimer.current = setTimeout(() => markRead.mutate(clusterId), 400)
     return () => {
       if (markReadTimer.current) clearTimeout(markReadTimer.current)
     }
-  }, [pinned, clusterId, messages.data, markRead])
+  }, [focused, pinned, clusterId, messages.data, markRead])
+
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true)
+      return () => setFocused(false)
+    }, []),
+  )
 
   const typingMembers = [...typing]
     .map((id) => memberMap.get(id))
