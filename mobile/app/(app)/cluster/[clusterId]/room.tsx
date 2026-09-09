@@ -612,6 +612,7 @@ export default function RoomScreen() {
                     message={m}
                     mine={m.author_id === userId}
                     author={memberMap.get(m.author_id)}
+                    clusterId={clusterId}
                     reactions={reactionsByMessage.get(m.id) ?? []}
                     myReactionKeys={myReactionKeys}
                     members={parseMembers}
@@ -643,7 +644,7 @@ export default function RoomScreen() {
           {typingMembers.length > 0 ? (
             <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 4 }}>
               {typingMembers.map((m) => (
-                <TypingBubble key={m.id} name={m.display_name} avatarUrl={m.avatar_url} />
+                <TypingBubble key={m.id} name={m.display_name} avatarUrl={m.avatar_url} userId={m.id} clusterId={clusterId} />
               ))}
             </View>
           ) : null}
@@ -706,6 +707,7 @@ export default function RoomScreen() {
           onClose={() => setInfoFor(null)}
           seen={infoSeen}
           notSeen={infoNotSeen}
+          clusterId={clusterId}
         />
 
         {reportFor ? (
