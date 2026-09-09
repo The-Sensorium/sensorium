@@ -4,6 +4,7 @@ import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
 import { toErrorMessage } from '../../lib/error'
 import { GoogleIcon } from '../../components/GoogleIcon'
+import { PasswordInput } from '../../components/PasswordInput'
 
 export function LoginPage() {
   useDocumentTitle('Log In')
@@ -60,16 +61,7 @@ export function LoginPage() {
             className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </label>
-        <label className="block">
-          <span className="text-sm font-semibold text-on-surface">Password</span>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
-        </label>
+        <PasswordInput label="Password" value={password} onChange={setPassword} required />
         <div className="flex items-center justify-between">
           <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
             Forgot password?

@@ -2367,6 +2367,10 @@ export type Database = {
         Args: { p_comment_id: string }
         Returns: undefined
       }
+      toggle_message_reaction: {
+        Args: { p_emoji: string; p_message_id: string }
+        Returns: undefined
+      }
       toggle_post_like: { Args: { p_post_id: string }; Returns: undefined }
       vote_on: {
         Args: { p_choice: string; p_vote_id: string }

@@ -3,7 +3,7 @@ import { View } from 'react-native'
 import { router } from 'expo-router'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
-import { AuthLink, AuthShell, ErrorText, Field, MutedCenter, PrimaryButton } from '../../src/components/ui'
+import { AuthLink, AuthShell, ErrorText, MutedCenter, PasswordField, PrimaryButton } from '../../src/components/ui'
 
 export default function ResetPasswordScreen() {
   const [password, setPassword] = useState('')
@@ -31,11 +31,10 @@ export default function ResetPasswordScreen() {
 
   return (
     <AuthShell title="Choose a new password">
-      <Field
+      <PasswordField
         label="New Password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
         autoComplete="new-password"
         onSubmitEditing={onSubmit}
       />
