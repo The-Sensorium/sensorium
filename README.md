@@ -26,28 +26,40 @@
 
 ## About
 
-Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once you are matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat, availability check-ins, Signals (requests for help), and community governance through votes.
+Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat with reactions and read receipts, a cluster-scoped posts feed, availability check-ins, Signals (requests for help), and community governance through votes. It ships as a **web app** and an **Android app** that share one Supabase backend.
+
+## Platforms
+
+- **Web app** (`src/`): the full product — chat, posts, discovery, moderation, and admin surfaces — served on Vercel.
+- **Android app** (`mobile/`): an Expo/React Native companion for members, sharing the same Supabase backend and accounts, with push notifications via Expo. Admin and moderation stay web-only. See [`mobile/README.md`](mobile/README.md).
 
 ## Features
 
 - **Matching**: enter up to five queues (exact birth date, birth month and day, birth year and month, birth year, or local radius). A cluster forms when a mode reaches eight ready people.
-- **Cluster chat**: realtime messaging, reactions, edits, image sharing, and presence. Who is here, who is typing, who is online.
+- **Cluster chat**: realtime messaging with edits, reply threads, @-mentions, emoji reactions, image sharing, a GIF picker, and presence (who is here, who is typing, who is online).
+- **Read receipts**: per-message "seen by" detail with the time each member first read it, updated automatically as members scroll.
 - **Introduction phase**: a five-question shared intro must be completed before the room opens, with a 72-hour deadline.
+- **Posts**: a cluster-scoped feed of text, images, and GIFs — optional titles, heart likes, and threaded comments and replies, visible only to the cluster.
+- **Discovery**: a public cluster directory for browsing and previewing clusters.
 - **Availability**: per-cluster availability status shown to members.
 - **Signals**: raise a request for help, reply in threads, and track open and resolved states.
 - **Governance**: votes for cluster renames and member replacement, invitation flows, and cooldowns.
-- **Notifications**: a per-cluster notification center with per-type preferences.
-- **Safety**: member reporting, moderation checks, and self-service account deletion.
+- **Notifications & push**: a per-cluster notification center with per-type preferences, plus Android push notifications delivered through an Expo pipeline.
+- **Moderation & appeals**: member reporting, a moderation queue with staff roles, warnings, temporary suspensions and permanent bans, and an in-app appeal flow with email notifications.
+- **Safety**: per-user muting and self-service account deletion, which departs your clusters and anonymizes moderation records.
 
 ## Tech Stack
 
 | Layer | Choice |
 |---|---|
-| Frontend | React 19, TypeScript, Vite |
+| Web frontend | React 19, TypeScript, Vite |
 | Routing | React Router v8 |
 | Styling | Tailwind CSS v4, tokens from `docs/DESIGN.md` |
 | Server state | TanStack Query + Supabase Realtime |
+| Mobile app | React Native via Expo (`mobile/`), expo-router, expo-notifications, EAS |
 | Backend | Supabase (Postgres, Auth, Storage, Realtime) |
+| Email | Resend, drained by the `send-emails` Edge Function |
+| Push notifications | Expo Push, drained by the `send-push` Edge Function |
 | Scheduled jobs | pg_cron over database functions |
 | Testing and lint | oxlint, TypeScript, Vitest, Playwright |
 
@@ -93,6 +105,20 @@ npm run seed:demo
 
 > **Local realtime note:** if chat or presence does not flow after changing realtime migrations, run `supabase stop && supabase start` so the realtime server reconnects.
 
+### Mobile app (Android)
+
+The Android app lives in `mobile/` and shares the web app's Supabase backend and accounts.
+
+```bash
+cd mobile
+cp .env.example .env          # EXPO_PUBLIC_SUPABASE_URL + anon key (staging first)
+npm install
+npm run sync:db-types         # refresh database.types.ts from the web build
+npx expo start                # scan with Expo Go or run on a device
+```
+
+Android builds with push enabled require `mobile/google-services.json` and EAS credentials; see [`mobile/README.md`](mobile/README.md) for the full setup.
+
 ### Environment variables
 
 | Variable | Required | Description |
@@ -114,8 +140,10 @@ Only the anon key is used in the browser. All privileged operations run through 
 | `npm run test:coverage` | Run the unit suite and enforce the v8 coverage gate |
 | `npm run test:integration` | Run the integration suite against the local Supabase stack |
 | `npm run test:watch` | Run Vitest in watch mode |
-| `npm run test:e2e` | Run the Playwright E2E suite |
+| `npm run test:e2e` | Run the Playwright E2E suite (chromium + mobile-chromium projects) |
+| `npm run check:release` | Dry-run the `develop` → `main` release merge before opening the release PR |
 | `npm run seed:demo` | Idempotently seed the running local stack with demo data |
+| `npm run sync:legal` | Refresh the legal content pages |
 
 ## Testing
 
@@ -124,7 +152,10 @@ Sensorium has three test layers. `npm test`, `npm run test:coverage`, `npm run t
 - **Unit and component** (`npm test`): Vitest and React Testing Library run against pure logic (modes, availability, utils, onboarding validation) and components.
 - **Coverage gate** (`npm run test:coverage`): the unit suite measures `src/**` with v8 and enforces minimum thresholds so CI fails if coverage regresses. The gate is an enforced floor, not a target.
 - **Integration** (`npm run test:integration`): exercises the Supabase stack end-to-end (RPC functions, RLS, and `security definer` behavior) with fixtures created via service role and assertions through per-user anonymous clients. Requires a running local stack.
-- **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, settings, notifications, and multi-user read receipts. They expect a seeded local Supabase stack and the two demo accounts.
+- **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, posts, notifications, safety, seen-by, and settings. They run on two projects (desktop chromium and a mobile viewport) and expect a seeded local Supabase stack and the two demo accounts.
+- **Mobile**: `mobile/` is linted with oxlint and typechecked with TypeScript; it has its own Vitest runner (no test files yet).
+
+Mobile scripts live in `mobile/package.json`: `npm start` / `npm run android` / `npm run ios` (Expo), `npm run lint`, `npm test`, and `npm run sync:db-types`.
 
 ## Environments
 
@@ -136,10 +167,13 @@ Sensorium has three test layers. `npm test`, `npm run test:coverage`, `npm run t
 
 Sensorium uses a **staging-driven** Git workflow. All work starts from `develop`; `main` is reserved for production releases. Migrations are applied to staging when a PR merges into `develop`, and to production when `develop` merges into `main`. See [`docs/TECHNICAL.md`](docs/TECHNICAL.md#ci-and-deployment) and [`CONTRIBUTING.md`](CONTRIBUTING.md) for details.
 
+The Android app is built through the EAS/CI release workflows and shares the same production and staging Supabase projects as the web app.
+
 ## Security
 
 - Every table has **Row Level Security enabled**. The frontend never writes tables directly except through RPC functions or RLS-permitted inserts.
 - Chat media and profile photos are stored in **private buckets** and served through short-lived signed URLs.
+- Push notifications route through a **database outbox** drained by the cron-woken `send-push` Edge Function (Expo); transactional emails route through `send-emails` (Resend). Both are guarded by secrets and are never reachable from the browser.
 - No secrets ship in the client. Use `VITE_` variables for public values only.
 
 If you find a vulnerability, please open a private issue or reach out before publishing details.
@@ -153,6 +187,8 @@ Read the docs in this order when you are new to the project. Each document state
 3. **What it looks like.** [`docs/DESIGN.md`](docs/DESIGN.md) documents the visual design system and design tokens.
 4. **How it is built.** [`docs/TECHNICAL.md`](docs/TECHNICAL.md) is the deeper technical reference: stack, schema, migrations, storage, realtime, and deployment. Read it when you start working in the code.
 5. **How to contribute.** [`CONTRIBUTING.md`](CONTRIBUTING.md) covers the Git workflow, code conventions, and testing requirements.
+
+For the mobile app specifically, see [`mobile/README.md`](mobile/README.md).
 
 ## Contributing
 
