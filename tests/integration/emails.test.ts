@@ -113,6 +113,36 @@ describe('email outbox lifecycle', () => {
     expect(failed[0]!.last_error).toBe('boom')
   })
 
+  it('re-claims a failed row with attempts below the limit', async () => {
+    const a = await member('em-retry-a')
+    const b = await member('em-retry-b')
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+
+    await a.client.rpc('report_member', {
+      p_cluster_id: clusterId,
+      p_target_user_id: b.id,
+      p_reason: 'spam',
+    })
+    const [{ id }] = await outbox(admin)
+
+    const { data: first } = await admin.rpc('claim_outbound_emails', { p_limit: 20 })
+    expect(first).toHaveLength(1)
+    const { error: failErr } = await admin.rpc('mark_outbound_email', {
+      p_id: id,
+      p_status: 'failed',
+      p_error: 'transient',
+    })
+    expect(failErr).toBeNull()
+
+    const after = await outbox(admin)
+    expect(after[0]!.status).toBe('failed')
+    expect(after[0]!.attempts).toBe(1)
+
+    const { data: second } = await admin.rpc('claim_outbound_emails', { p_limit: 20 })
+    expect(second!.some((r: { id: string }) => r.id === id)).toBe(true)
+  })
+
   it('mark rejects invalid statuses', async () => {
     const a = await member('em-inv-a')
     const b = await member('em-inv-b')

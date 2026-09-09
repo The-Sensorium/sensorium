@@ -1,4 +1,4 @@
-import { router, type Href } from 'expo-router'
+import { router } from 'expo-router'
 import {
   AtSign,
   Bell,
@@ -19,7 +19,6 @@ import {
 } from 'lucide-react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  notificationTarget,
   timeAgo,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
@@ -27,6 +26,7 @@ import {
   type MyNotification,
   type NotificationType,
 } from '../../src/features/notifications'
+import { mobileTarget } from '../../src/lib/notification-routing'
 import { radii, spacing } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView } from '../../src/components/ui'
@@ -51,39 +51,6 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   post_like: Heart,
   report_new: Flag,
   appeal_new: MessageSquareWarning,
-}
-
-function mobileTarget(n: MyNotification): Href | null {
-  const target = notificationTarget(n)
-  if (!target) return null
-  const to = target.to
-  if (to.startsWith('/posts/')) {
-    return { pathname: '/posts/[postId]', params: { postId: to.slice('/posts/'.length) } }
-  }
-  if (to.startsWith('/cluster/')) {
-    const rest = to.slice('/cluster/'.length)
-    const [clusterId, ...tail] = rest.split('/')
-    if (tail[0] === 'signals' && tail[1]) {
-      return { pathname: '/cluster/[clusterId]/signals/[signalId]', params: { clusterId, signalId: tail[1] } }
-    }
-    if (tail[0] === 'signals') {
-      return { pathname: '/cluster/[clusterId]/signals', params: { clusterId } }
-    }
-    if (tail[0] === 'votes') {
-      return { pathname: '/cluster/[clusterId]/votes', params: { clusterId } }
-    }
-    if (tail[0] === 'introductions') {
-      return { pathname: '/cluster/[clusterId]/introductions', params: { clusterId } }
-    }
-    if (tail[0] === 'members') {
-      return { pathname: '/cluster/[clusterId]/members', params: { clusterId } }
-    }
-    return { pathname: '/cluster/[clusterId]/room', params: { clusterId } }
-  }
-  if (to === '/home') return '/(app)/home'
-  if (to === '/clusters') return '/(app)/clusters'
-  if (to === '/cluster-created') return '/cluster-created'
-  return null
 }
 
 export default function NotificationsScreen() {

@@ -5,27 +5,58 @@ OS-level push on iOS + Android, then shrink or remove the tab.
 
 ## 0. Where things stand
 
-Done already:
-- `supabase/migrations/0094_push_tokens.sql` — owner-scoped `push_tokens`
-  table (RLS + grants, mirrors `user_mutes`).
-- `mobile/src/lib/push.ts` — `registerPushToken` on sign-in,
-  `unregisterPushToken` on sign-out. Lazily loads `expo-notifications` and
-  no-ops inside Expo Go (remote push is stripped from Go on Android since
-  SDK 53).
-- `expo-notifications` installed, `NOTIFICATIONS` permission declared in
-  `mobile/app.json`.
-- Notification catalog + per-cluster prefs live in
-  `mobile/src/features/notifications.ts` (`PREF_TOGGLES`, `notificationTarget`
-  maps every type to a mobile route).
+Android push is built and verified locally end to end (this doc's phases 1-4,
+minus the Notifications-tab decision in phase 5). Status of each piece:
 
-Missing (this plan):
-- A dev build (push cannot be built or tested in Expo Go at all).
-- FCM (Android) + APNs (iOS) credentials.
-- Any server-side sender — nothing writes pushes today.
-- Tap-to-open routing, badge counts, Android channels.
-- The decision + execution on what happens to the Notifications tab.
+Done and merged-ready (feature branch `feat/push-client-hardening`):
+- `supabase/migrations/0094_push_tokens.sql` — owner-scoped `push_tokens`
+  table (RLS + grants, mirrors `user_mutes`); `0097` adds the owner UPDATE
+  policy + updated-at trigger the registration upsert needs.
+- `mobile/src/lib/push.ts` — registration on sign-in, unregister on sign-out,
+  Android channels (messages/mentions/invites/governance), no native
+  re-prompt after denial, token refresh on foreground, web/Expo-Go guards,
+  badge sync, warm-tap routing + `getLaunchPushData()` for cold-start taps.
+- `expo-notifications` installed and configured in `mobile/app.json` with the
+  notification icon (`assets/notification_icon.png`, cream `#fff8f6` tint).
+- `supabase/migrations/0100_push_outbox.sql` — `push_outbox` queue, AFTER
+  INSERT trigger on `notifications` that fans out through the per-cluster
+  Settings prefs (`notification_allowed`), account-active check, and token
+  presence; claim/mark/recovery RPCs; pg_cron pump (`push-pump` every minute,
+  `push-recover` every 5). Per-token delivery model.
+- `supabase/migrations/0102_push_outbox_per_token.sql` — one outbox row per
+  device token (fixes duplicate re-sends and stranded rows for multi-token
+  users); claim no longer joins `push_tokens`.
+- `supabase/migrations/0101_email_outbox_retry.sql` — same retry fix for the
+  pre-existing email outbox (`claim_outbound_emails` re-offers failed rows).
+- `supabase/functions/send-push/` — Edge Function worker mirroring
+  `send-emails`: claims batches, POSTs to Expo Push API (chunked at 100),
+  deletes `DeviceNotRegistered` tokens, marks rows sent/failed/abandoned.
+  Registered in `supabase/config.toml` with `verify_jwt = false`.
+- `mobile/src/lib/notification-routing.ts` — shared tap-routing (in-app +
+  push agree on destinations; `cluster_formed` → introductions,
+  `replacement` → votes).
+- Integration tests `tests/integration/push.test.ts` (prefs gating, per-token
+  fan-out, dead-token isolation, claim/mark/recovery, RLS) and the email
+  retry test in `tests/integration/emails.test.ts`.
+- `scripts/push-local.ps1` — local-only helper that re-wires
+  `push_settings.edge_url/secret/enabled` and starts the worker after every
+  `supabase db reset` (a reset disables the pump by design).
+
+Still open:
+- **Cloud deploy** of the function + migrations + `push_settings` seed (see
+  §8). Nothing push-related is live outside a local stack yet.
+- iOS APNs credentials + build (not started; Android-only scope so far).
+- Phase 5 Notifications-tab decision (slim vs remove) — deferred until push is
+  live with real devices.
+- Foreground duplicate-alert suppression when the user is already on the
+  relevant screen (phase 5.1) — low-value UX polish, deferred.
 
 ## 1. Decisions needed before code (owners)
+
+> The decisions below and phases in §2-§7 were made and executed on the
+> `feat/push-client-hardening` branch (Android); they are kept as the design
+> record. The open work for taking push to users is §8 (cloud deploy) and the
+> iOS/Notifications-tab items listed in §0.
 
 1. **EAS account + project**: who owns the Expo account/org? Dev builds and
    push credentials live there per environment (dev/staging/prod).
@@ -176,13 +207,32 @@ Effort: 1–2 days (A) / 2–3 days (B, more test fallout).
 
 ## 8. Rollout + ops
 
-1. Land behind staging first: `develop` → staging Supabase + staging Expo
-   project get migrations + function + creds; run §7 there.
-2. Production (`develop` → `main` release PR): same wiring with prod creds;
-   `npm run check:release` must pass first per AGENTS.md.
-3. Monitor: outbox `failed` counts, Expo push receipts (`error` responses),
-   token-table growth, per-type volume (watch mention-spam).
-4. Cost note: Expo Push Service is free within generous limits; FCM/APNs free.
+Push is only a local feature until the function + migrations run against the
+hosted Supabase projects. Do this before wiring Daily calling. Order mirrors
+the email pipeline (`send-emails` + `email_settings`).
+
+1. **Deploy (per env)**: merging to `develop` applies the push migrations
+   (`0094`, `0097`, `0100`, `0101`, `0102`) to staging via CI; production gets
+   them through the `develop` → `main` release (`npm run check:release` must
+   pass first per AGENTS.md). No `db reset` involved — migrations apply
+   forward only; never re-seed a hosted `push_settings` row by re-running the
+   migration.
+2. **Deploy the function**: `supabase functions deploy send-push` to the hosted
+   project, with `SENSORIUM_PUSH_SECRET` set in its environment (a long random
+   string). Same for `send-emails` if not already deployed.
+3. **Seed `push_settings`** (single row, `id = true`): `edge_url` =
+   `https://<project-ref>.supabase.co/functions/v1/send-push`, `secret` = the
+   value from step 2, `enabled` = true. Wire this through the CI migration
+   workflow exactly like `email_settings` (see `docs/TECHNICAL.md`).
+4. **Verify against staging**: from a phone, a web member mentions a mobile
+   user → push arrives. Confirm `push_outbox` rows go `queued → sending →
+   sent` and tap cold-starts to the room.
+5. **Monitor**: outbox `failed`/`abandoned` counts, Expo push receipts
+   (`DeviceNotRegistered` = token cleanup working), token-table growth,
+   per-type volume (watch mention-spam).
+6. **Cost note**: Expo Push Service is free within generous limits; FCM/APNs
+   free.
+
 
 ## 9. Total effort estimate
 
