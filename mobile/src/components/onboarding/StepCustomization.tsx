@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import { ImagePlus, X } from 'lucide-react-native'
 import { requireSupabase } from '../../lib/supabase'
-import { readImageBytes } from '../../lib/upload-image'
+import { AVATAR_MAX_DIMENSION, readImageBytes } from '../../lib/upload-image'
 import { toErrorMessage } from '../../lib/error'
 import { deleteAvatarObject, useAvatarUrl } from '../../features/avatars'
 import type { OnboardingDraft } from '../../lib/onboarding-draft'
@@ -63,11 +63,16 @@ export function StepCustomization({
     setUploading(true)
     try {
       const maxDim = Math.max(asset.width ?? 0, asset.height ?? 0)
+      const scale = maxDim > 0 ? AVATAR_MAX_DIMENSION / maxDim : 1
+      const resized = {
+        width: Math.max(1, Math.round((asset.width ?? maxDim) * scale)),
+        height: Math.max(1, Math.round((asset.height ?? maxDim) * scale)),
+      }
       const finalUri =
-        mime === 'image/gif' || maxDim <= 512
+        mime === 'image/gif' || maxDim <= AVATAR_MAX_DIMENSION
           ? asset.uri
           : (
-              await manipulateAsync(asset.uri, [{ resize: { width: 512 } }], {
+              await manipulateAsync(asset.uri, [{ resize: resized }], {
                 compress: 0.85,
                 format: SaveFormat.WEBP,
               })

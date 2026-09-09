@@ -53,6 +53,7 @@ export function PostMedia({
           src={src}
           alt={alt ?? 'Shared media'}
           loading="lazy"
+          decoding="async"
           className={cn(
             'mt-3 w-full rounded-2xl border border-outline-variant/60 bg-surface-container',
             compact ? 'h-44 object-cover' : 'max-h-96 object-contain',

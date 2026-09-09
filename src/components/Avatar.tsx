@@ -19,6 +19,7 @@ export function Avatar({
         src={resolved}
         alt={name}
         loading="lazy"
+        decoding="async"
         className={cn('shrink-0 rounded-full bg-surface-container object-cover', className)}
       />
     )

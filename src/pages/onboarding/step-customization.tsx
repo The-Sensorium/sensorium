@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ImagePlus, Loader2, X } from 'lucide-react'
 import { requireSupabase } from '../../lib/supabase'
-import { prepareImage } from '../../lib/image'
+import { AVATAR_MAX_DIMENSION, prepareImage } from '../../lib/image'
 import { toErrorMessage } from '../../lib/error'
 import { useAvatarUrl, deleteAvatarObject } from '../../features/avatars'
 import type { OnboardingDraft } from './draft'
@@ -45,7 +45,7 @@ export function StepCustomization({ userId, draft, patch }: Props) {
     setUploading(true)
     setError(null)
     try {
-      const prepared = await prepareImage(file, { maxDimension: 512 })
+      const prepared = await prepareImage(file, { maxDimension: AVATAR_MAX_DIMENSION })
       const url = await uploadAvatar(userId, prepared)
       // Reclaim a photo uploaded earlier in this session before it is replaced.
       await deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
