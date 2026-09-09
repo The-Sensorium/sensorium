@@ -52,6 +52,35 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
 
+      - name: Deploy send-push edge function to staging
+        run: npx supabase functions deploy send-push --project-ref "$SUPABASE_STAGING_PROJECT_ID" --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
+
+      - name: Set push secrets on staging edge function
+        run: >-
+          npx supabase secrets set
+          --project-ref "$SUPABASE_STAGING_PROJECT_ID"
+          SENSORIUM_PUSH_SECRET="$SENSORIUM_PUSH_SECRET"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
+          SENSORIUM_PUSH_SECRET: ${{ secrets.SENSORIUM_PUSH_SECRET }}
+
+      - name: Point the DB push cron at the staging edge function
+        run: >-
+          npx supabase db query --linked
+          "update public.push_settings
+             set edge_url = 'https://$SUPABASE_STAGING_PROJECT_ID.functions.supabase.co/send-push',
+                 secret = '$SENSORIUM_PUSH_SECRET',
+                 enabled = true,
+                 updated_at = now();"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
+          SENSORIUM_PUSH_SECRET: ${{ secrets.SENSORIUM_PUSH_SECRET }}
+
       - name: Set email secrets on staging edge function
         run: >-
           npx supabase secrets set
