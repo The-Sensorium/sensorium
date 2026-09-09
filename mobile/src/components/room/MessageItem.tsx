@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { CornerUpLeft, Send, ShieldOff, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
+import { AvatarLink } from '../AvatarLink'
 import { MessageActionsSheet } from './MessageActionsSheet'
 import { DayDivider } from './DayDivider'
 import { MessageGif, MessageImage } from './MessageMedia'
@@ -16,6 +17,7 @@ export function MessageItem({
   message,
   mine,
   author,
+  clusterId,
   reactions,
   myReactionKeys,
   members,
@@ -39,6 +41,7 @@ export function MessageItem({
   message: Message
   mine: boolean
   author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  clusterId: string
   reactions: Reaction[]
   myReactionKeys: ReadonlySet<string>
   members: MentionMember[]
@@ -69,7 +72,17 @@ export function MessageItem({
       {showDay ? <DayDivider iso={message.created_at} /> : null}
       <View style={{ flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4 }}>
         <View style={{ marginTop: 24 }}>
-          <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={28} />
+          {author ? (
+            <AvatarLink
+              userId={author.id}
+              clusterId={clusterId}
+              name={author.display_name}
+              src={author.avatar_url}
+              size={28}
+            />
+          ) : (
+            <Avatar name="Member" src={null} size={28} />
+          )}
         </View>
         <View style={{ maxWidth: '78%', alignItems: mine ? 'flex-end' : 'flex-start' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>

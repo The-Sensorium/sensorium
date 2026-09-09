@@ -1,5 +1,8 @@
 const RESIZABLE = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
+/** Longest edge for avatar uploads; they render at <=80 px, so 256 is ample. */
+export const AVATAR_MAX_DIMENSION = 256
+
 export interface PrepareImageOptions {
   /** Longest edge, in px, that the image is downscaled to. */
   maxDimension?: number

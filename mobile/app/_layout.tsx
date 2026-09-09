@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { router, Stack } from 'expo-router'
+import { useEffect, useMemo, type ReactNode } from 'react'
+import { DarkTheme, DefaultTheme, ThemeProvider, router, Stack } from 'expo-router'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
@@ -12,6 +12,7 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans'
 import { AppProviders } from '../src/app-providers'
+import { colors, darkColors } from '../src/lib/theme-tokens'
 import { useResolvedScheme } from '../src/lib/theme-choice'
 import { handleAuthCallback } from '../src/lib/deep-links'
 
@@ -55,21 +56,45 @@ export default function RootLayout() {
     <SafeAreaProvider>
     <AppProviders>
       <ThemedStatusBar />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="auth/callback" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(onboarding)" />
-        <Stack.Screen name="(app)" />
-        <Stack.Screen name="restricted" />
-        <Stack.Screen name="appeal" />
-        <Stack.Screen name="privacy-policy" />
-        <Stack.Screen name="terms" />
-      </Stack>
+      <ThemedNavigator>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="auth/callback" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="(app)" />
+          <Stack.Screen name="restricted" />
+          <Stack.Screen name="appeal" />
+          <Stack.Screen name="privacy-policy" />
+          <Stack.Screen name="terms" />
+        </Stack>
+      </ThemedNavigator>
     </AppProviders>
     </SafeAreaProvider>
     </GestureHandlerRootView>
   )
+}
+
+function ThemedNavigator({ children }: { children: ReactNode }) {
+  const scheme = useResolvedScheme()
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme
+  const palette = scheme === 'dark' ? darkColors : colors
+  const theme = useMemo(
+    () => ({
+      ...base,
+      colors: {
+        ...base.colors,
+        background: palette.background,
+        card: palette.surface,
+        text: palette.onBackground,
+        border: palette.outlineVariant,
+        primary: palette.primary,
+        notification: palette.error,
+      },
+    }),
+    [base, palette],
+  )
+  return <ThemeProvider value={theme}>{children}</ThemeProvider>
 }
 
 function ThemedStatusBar() {

@@ -3,6 +3,9 @@ import { File as ExpoFile } from 'expo-file-system'
 import { cacheDirectory, copyAsync } from 'expo-file-system/legacy'
 import { requireSupabase } from './supabase'
 
+/** Longest edge for avatar uploads; they render at <=80 px, so 256 is ample. */
+export const AVATAR_MAX_DIMENSION = 256
+
 function newId(): string {
   return (
     Date.now().toString(36) +

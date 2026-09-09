@@ -29,6 +29,7 @@ export function MessageImage({ path, alt }: { path: string; alt: string }) {
           src={src}
           alt={alt}
           loading="lazy"
+          decoding="async"
           className="max-h-80 w-full rounded-xl object-contain"
         />
       </button>

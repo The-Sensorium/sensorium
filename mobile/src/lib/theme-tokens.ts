@@ -27,6 +27,7 @@ export const colors = {
   errorContainer: '#ffdad6',
   background: '#fff8f6',
   onBackground: '#211a17',
+  shadowColor: '#9d3d1c',
 } as const
 
 export const darkColors: Record<keyof typeof colors, string> = {
@@ -58,6 +59,7 @@ export const darkColors: Record<keyof typeof colors, string> = {
   errorContainer: '#93000a',
   background: '#1a1a1a',
   onBackground: '#fcf9f2',
+  shadowColor: '#000000',
 }
 
 export const radii = {
@@ -76,10 +78,11 @@ export const spacing = {
   sectionGap: 40,
 } as const
 
-export const shadowSoft = {
-  shadowColor: '#9d3d1c',
-  shadowOpacity: 0.12,
+/** Raised-card treatment: elevation for the lift, shadow tint pulled from the
+ * active theme (terracotta in light, neutral black in dark). */
+export const shadowShape = {
+  elevation: 2,
+  shadowOpacity: 0.14,
   shadowRadius: 10,
   shadowOffset: { width: 0, height: 4 },
-  elevation: 3,
 } as const

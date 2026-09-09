@@ -14,7 +14,7 @@ import {
 import { Eye, EyeOff } from 'lucide-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, type Href } from 'expo-router'
-import { radii, shadowSoft, spacing } from '../lib/theme-tokens'
+import { radii, shadowShape, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { BrandMark } from './BrandMark'
 import { BrandWordmark } from './BrandWordmark'
@@ -362,7 +362,8 @@ export function Card({ children, plain }: { children: ReactNode; plain?: boolean
               borderRadius: radii.xl,
               padding: 20,
               marginBottom: 16,
-              ...shadowSoft,
+              ...shadowShape,
+              shadowColor: t.shadowColor,
             }
       }
     >

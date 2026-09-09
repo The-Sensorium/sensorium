@@ -29,7 +29,7 @@ Read these before opening an issue or a pull request. The recommended order is i
 
 ## Project overview
 
-Sensorium places each user into a permanent cluster of exactly eight people, matched by birth date or location. Clusters get realtime chat, an introduction phase, availability check-ins, Signals (requests for help), and community governance through votes. The frontend is a React 19 SPA (Vite + TypeScript + Tailwind v4) backed by Supabase (Postgres, Auth, Storage, Realtime). See the [README](README.md) for the full feature list and quick start.
+Sensorium places each user into a permanent cluster of exactly eight people, matched by birth date or location. Clusters get realtime chat, a posts feed, an introduction phase, availability check-ins, Signals (requests for help), and community governance through votes. The web frontend is a React 19 SPA (Vite + TypeScript + Tailwind v4) and the Android app is an Expo/React Native companion (`mobile/`); both are backed by Supabase (Postgres, Auth, Storage, Realtime). See the [README](README.md) for the full feature list and quick start.
 
 ## Setting up a development environment
 
@@ -124,7 +124,14 @@ supabase db reset          # confirm a clean, lint-free database build
 npm run test:integration   # integration suite against the fresh stack
 ```
 
-E2E changes are validated in CI; you can run them locally with `npm run test:e2e` after `supabase start` and `npm run seed:demo`.
+If you changed mobile code, also run from `mobile/`:
+
+```bash
+npm run lint
+npx tsc --noEmit
+```
+
+E2E changes are validated in CI; you can run them locally with `npm run test:e2e` after `supabase start` and `npm run seed:demo` (it runs two Playwright projects: desktop chromium and a mobile viewport).
 
 ## Preview environment
 
@@ -178,9 +185,10 @@ The project has three layers:
 
 | Layer | Command | Requires |
 |---|---|---|
-| Unit and component | `npm test` / `npm run test:coverage` | Nothing |
+| Unit and component (web) | `npm test` / `npm run test:coverage` | Nothing |
 | Integration | `npm run test:integration` | `supabase start` |
 | E2E | `npm run test:e2e` | `supabase start` + `npm run seed:demo` + `npx playwright install chromium` |
+| Mobile lint/typecheck | `cd mobile && npm run lint` + `npx tsc --noEmit` | Nothing (no mobile unit tests yet) |
 
 The coverage gate in `vite.config.ts` is an enforced floor - CI fails if it regresses. Treat it as a minimum, not a target.
 

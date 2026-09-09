@@ -1,12 +1,20 @@
 import { Text, View } from 'react-native'
 import { CheckCheck } from 'lucide-react-native'
 import { Modal } from '../Modal'
-import { Avatar } from '../Avatar'
+import { AvatarLink } from '../AvatarLink'
 import { dateTimeFormatter } from './format'
 import type { SeenByMember } from './seen-by'
 import { useTheme } from '../../lib/use-theme'
 
-function MemberList({ members, empty }: { members: SeenByMember[]; empty: string }) {
+function MemberList({
+  members,
+  empty,
+  clusterId,
+}: {
+  members: SeenByMember[]
+  empty: string
+  clusterId: string
+}) {
   const t = useTheme()
   if (members.length === 0) {
     return <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{empty}</Text>
@@ -15,7 +23,7 @@ function MemberList({ members, empty }: { members: SeenByMember[]; empty: string
     <View style={{ gap: 8 }}>
       {members.map((m) => (
         <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Avatar name={m.display_name} src={m.avatar_url} size={32} />
+          <AvatarLink userId={m.id} clusterId={clusterId} name={m.display_name} src={m.avatar_url} size={32} />
           <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
             {m.display_name}
           </Text>
@@ -38,11 +46,13 @@ export function MessageInfoModal({
   onClose,
   seen,
   notSeen,
+  clusterId,
 }: {
   open: boolean
   onClose(): void
   seen: SeenByMember[]
   notSeen: SeenByMember[]
+  clusterId: string
 }) {
   const t = useTheme()
   return (
@@ -52,13 +62,13 @@ export function MessageInfoModal({
           <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.onSurfaceVariant }}>
             Seen by
           </Text>
-          <MemberList members={seen} empty="No one has seen it yet." />
+          <MemberList members={seen} empty="No one has seen it yet." clusterId={clusterId} />
         </View>
         <View style={{ gap: 6 }}>
           <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.onSurfaceVariant }}>
             Not seen yet
           </Text>
-          <MemberList members={notSeen} empty="Everyone has seen it." />
+          <MemberList members={notSeen} empty="Everyone has seen it." clusterId={clusterId} />
         </View>
       </View>
     </Modal>

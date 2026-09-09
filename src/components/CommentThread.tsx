@@ -299,8 +299,6 @@ export function CommentThread({
         <p className="flex items-center gap-2 text-sm text-on-surface-variant">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
         </p>
-      ) : comments.length === 0 ? (
-        <p className="text-sm text-on-surface-variant">No comments yet. Be the first to reply.</p>
       ) : (
         <ul className="space-y-4">
           {top.map((tc) => {
