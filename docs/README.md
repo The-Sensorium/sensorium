@@ -12,6 +12,8 @@ This index maps the Sensorium documentation and gives a recommended reading orde
 | [`DESIGN.md`](DESIGN.md) | Visual design system and design tokens | When you build UI. No new colors, typefaces, or radii outside these tokens. |
 | [`TECHNICAL.md`](TECHNICAL.md) | Deep technical reference: stack, schema, migrations, storage, realtime, deployment | When you start working in the code or need implementation detail. |
 | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | How to contribute: Git workflow, conventions, testing, pull requests | Before opening an issue or a pull request. |
+| [`mobile/README.md`](../mobile/README.md) | The Expo/React Native companion app | When working on the Android app. |
+| [`archive/`](archive/README.md) | Design records for shipped features (implementation plans) | Only when you want the *why* behind a specific feature. Not required reading. |
 
 ## Recommended reading order
 
@@ -31,6 +33,9 @@ README.md          front door, links to everything
   └── DESIGN.md          visual system and tokens
   └── TECHNICAL.md       deep technical reference
   └── CONTRIBUTING.md    contributor workflow and rules
+  └── archive/           design records for shipped features (optional)
 ```
 
 Each document states its own audience and points to the next one to read. If you find information duplicated across documents, it should be consolidated; the technical facts (stack, schema, deployment, secrets) live canonically in `TECHNICAL.md`, and `README.md` links to it rather than repeating it.
+
+The `archive/` folder holds per-feature implementation plans for work that has already shipped. It is kept for history and rationale only; current behavior is described in the core docs and the code. See [`archive/README.md`](archive/README.md).

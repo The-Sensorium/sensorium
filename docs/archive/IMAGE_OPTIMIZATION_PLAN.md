@@ -1,5 +1,8 @@
 # P3 — Image Optimization Plan
 
+> **Status — implemented.** Avatars downscale to `AVATAR_MAX_DIMENSION = 256` on
+> web and mobile; lazy-loading coverage was verified. Retained as the design record.
+
 Goal: reduce storage + egress footprint on the free-tier beta without any user-visible
 regression. Scope: (1) downscale avatar uploads, (2) verify lazy-loading coverage is
 complete across web, (3) small polish (`decoding="async"`). Database and realtime are

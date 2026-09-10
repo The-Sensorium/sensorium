@@ -5,13 +5,14 @@ governance model. **Mute** hides someone's content for you only. **My Reports**
 shows a reporter the status of their own reports. Neither removes members,
 blocks DMs (there are none), nor changes votes, replacement, or moderation.
 
-This document is the plan only. Default product decisions are locked (see §1).
-Read order: [`PRD.md`](PRD.md) → [`ARCHITECTURE.md`](ARCHITECTURE.md) →
-[`TECHNICAL.md`](TECHNICAL.md) → this plan → [`DESIGN.md`](DESIGN.md).
+Default product decisions are locked (see §1).
+Read order: [`PRD.md`](../PRD.md) → [`ARCHITECTURE.md`](../ARCHITECTURE.md) →
+[`TECHNICAL.md`](../TECHNICAL.md) → this plan → [`DESIGN.md`](../DESIGN.md).
 
-> **Status — planned, not implemented.** `get_my_reports()` exists in
-> `0053` but is unused by the frontend and predates post/comment reports.
-> No mute table, hook, or UI exists.
+> **Status — implemented** (migrations `0090`–`0093`; `useMyMutes` / `useMuteUser`
+> / `useMyReports` in `src/features/moderation.ts`, `MuteButton`, the Settings mute
+> list, and the "My Reports" settings page). This doc is retained as the design
+> record; see [`../TECHNICAL.md`](../TECHNICAL.md) and `PRD.md` for live behavior.
 
 ---
 

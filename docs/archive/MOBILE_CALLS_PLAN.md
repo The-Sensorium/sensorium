@@ -1,6 +1,6 @@
 # Mobile Calls Plan — Sensorium
 
-Follow-up to `docs/CLUSTER_CALLS_PLAN.md`. The cluster call feature is already
+Follow-up to `docs/archive/CLUSTER_CALLS_PLAN.md`. The cluster call feature is already
 implemented and committed (`feat/cluster-calls`) and verified on web. This doc
 covers bringing the **mobile** call experience up to par and getting it onto a
 device: UI parity, in-call chat, lifecycle/ringing, pre-join + permissions,

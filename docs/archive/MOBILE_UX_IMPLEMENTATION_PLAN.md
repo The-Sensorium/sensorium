@@ -1,6 +1,6 @@
 # Sensorium Mobile UX Implementation Plan
 
-Scope: the mobile-specific experience gaps found while reviewing the Expo app (`mobile/`) against the web SPA and `docs/MOBILE_APP_PLAN.md`. Web behavior is the baseline; each item here is a change that is **mobile-only** and does not alter web screens, backend contracts, or the shared Supabase schema. (Push notification delivery was reviewed and is intentionally **out of scope** — see "Deferred: push notifications" below.)
+Scope: the mobile-specific experience gaps found while reviewing the Expo app (`mobile/`) against the web SPA and `docs/archive/MOBILE_APP_PLAN.md`. Web behavior is the baseline; each item here is a change that is **mobile-only** and does not alter web screens, backend contracts, or the shared Supabase schema. (Push notification delivery was reviewed and is intentionally **out of scope** — see "Deferred: push notifications" below.)
 
 The mobile app already has the right kind of platform-native polish for a few areas: long-press to react (`MessageActionsSheet`, `PostActionsSheet`), pinch-zoom image lightbox (`ZoomableImage`), `KeyboardAvoidingView` chat with multiline composer, and `SafeAreaView` usage. This plan does **not** re-litigate those — it fills the remaining gaps.
 

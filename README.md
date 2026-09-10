@@ -26,7 +26,7 @@
 
 ## About
 
-Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat with reactions and read receipts, a cluster-scoped posts feed, availability check-ins, Signals (requests for help), and community governance through votes. It ships as a **web app** and an **Android app** that share one Supabase backend.
+Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat with reactions and read receipts, a cluster-scoped posts feed, audio/video calls, availability check-ins, Signals (requests for help), and community governance through votes. It ships as a **web app** and an **Android app** that share one Supabase backend, plus moderator/admin workspaces and a transactional email + push pipeline.
 
 ## Platforms
 
@@ -36,17 +36,18 @@ Sensorium is an open-source social platform that places you into a permanent gro
 ## Features
 
 - **Matching**: enter up to five queues (exact birth date, birth month and day, birth year and month, birth year, or local radius). A cluster forms when a mode reaches eight ready people.
-- **Cluster chat**: realtime messaging with edits, reply threads, @-mentions, emoji reactions, image sharing, a GIF picker, and presence (who is here, who is typing, who is online).
+- **Cluster chat**: realtime messaging with edits, reply threads, @-mentions, emoji reactions, image sharing, a GIF picker (KLIPY), and presence (who is here, who is typing, who is online).
 - **Read receipts**: per-message "seen by" detail with the time each member first read it, updated automatically as members scroll.
+- **Cluster calls**: start or join audio/video calls from the room on web and Android, with ringing state and membership gating powered by LiveKit.
 - **Introduction phase**: a five-question shared intro must be completed before the room opens, with a 72-hour deadline.
 - **Posts**: a cluster-scoped feed of text, images, and GIFs — optional titles, heart likes, and threaded comments and replies, visible only to the cluster.
-- **Discovery**: a public cluster directory for browsing and previewing clusters.
+- **Clusters directory**: browse matching modes and preview a mode's active clusters (name, status, member count, formation date only).
 - **Availability**: per-cluster availability status shown to members.
 - **Signals**: raise a request for help, reply in threads, and track open and resolved states.
 - **Governance**: votes for cluster renames and member replacement, invitation flows, and cooldowns.
-- **Notifications & push**: a per-cluster notification center with per-type preferences, plus Android push notifications delivered through an Expo pipeline.
-- **Moderation & appeals**: member reporting, a moderation queue with staff roles, warnings, temporary suspensions and permanent bans, and an in-app appeal flow with email notifications.
-- **Safety**: per-user muting and self-service account deletion, which departs your clusters and anonymizes moderation records.
+- **Notifications & push**: a per-cluster notification center with per-type preferences, plus Android push notifications delivered through an Expo outbox pipeline.
+- **Moderation, roles & appeals**: member reporting, a moderation queue with moderator/admin workspaces, warnings, temporary suspensions and permanent bans, and an in-app appeal flow with email notifications.
+- **Safety**: per-user muting, a "My Reports" self-status view, and self-service account deletion that departs your clusters and anonymizes moderation records.
 
 ## Tech Stack
 
@@ -57,7 +58,10 @@ Sensorium is an open-source social platform that places you into a permanent gro
 | Styling | Tailwind CSS v4, tokens from `docs/DESIGN.md` |
 | Server state | TanStack Query + Supabase Realtime |
 | Mobile app | React Native via Expo (`mobile/`), expo-router, expo-notifications, EAS |
+| Calls | LiveKit: `@livekit/components-react` (web), `@livekit/react-native` (mobile), tokens minted by the `create-call-token` Edge Function |
+| GIFs | KLIPY, queried directly from the client with `VITE_KLIPY_APP_KEY` |
 | Backend | Supabase (Postgres, Auth, Storage, Realtime) |
+| Edge Functions | Supabase Edge Functions (Deno): `send-emails` (Resend), `send-push` (Expo), `create-call-token` (LiveKit) |
 | Email | Resend, drained by the `send-emails` Edge Function |
 | Push notifications | Expo Push, drained by the `send-push` Edge Function |
 | Scheduled jobs | pg_cron over database functions |
@@ -153,7 +157,7 @@ Sensorium has three test layers. `npm test`, `npm run test:coverage`, `npm run t
 - **Coverage gate** (`npm run test:coverage`): the unit suite measures `src/**` with v8 and enforces minimum thresholds so CI fails if coverage regresses. The gate is an enforced floor, not a target.
 - **Integration** (`npm run test:integration`): exercises the Supabase stack end-to-end (RPC functions, RLS, and `security definer` behavior) with fixtures created via service role and assertions through per-user anonymous clients. Requires a running local stack.
 - **E2E** (`npm run test:e2e`): Playwright specs under `e2e/` walk the golden path, cluster room, posts, notifications, safety, seen-by, and settings. They run on two projects (desktop chromium and a mobile viewport) and expect a seeded local Supabase stack and the two demo accounts.
-- **Mobile**: `mobile/` is linted with oxlint and typechecked with TypeScript; it has its own Vitest runner (no test files yet).
+- **Mobile**: `mobile/` is linted with oxlint, typechecked with TypeScript, and has its own Vitest runner (currently a small suite covering shared helpers; most behavior is validated on web and in the integration suite).
 
 Mobile scripts live in `mobile/package.json`: `npm start` / `npm run android` / `npm run ios` (Expo), `npm run lint`, `npm test`, and `npm run sync:db-types`.
 
@@ -189,6 +193,8 @@ Read the docs in this order when you are new to the project. Each document state
 5. **How to contribute.** [`CONTRIBUTING.md`](CONTRIBUTING.md) covers the Git workflow, code conventions, and testing requirements.
 
 For the mobile app specifically, see [`mobile/README.md`](mobile/README.md).
+
+Design records for features that already shipped (implementation plans) live in [`docs/archive/`](docs/archive/README.md). You do not need them to get started; reach for one only when you want the *why* behind a specific feature.
 
 ## Contributing
 

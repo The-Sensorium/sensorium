@@ -27,6 +27,8 @@ Read these before opening an issue or a pull request. The recommended order is i
 3. [`docs/DESIGN.md`](docs/DESIGN.md) - the visual design system. Do not introduce new palettes, typefaces, or radii outside the documented tokens.
 4. [`docs/TECHNICAL.md`](docs/TECHNICAL.md) - the technical reference: schema, and how migrations, RLS, realtime, and storage fit together.
 
+Design records for shipped features live in [`docs/archive/`](docs/archive/README.md). They are not required reading - reach for one only when you want the *why* behind a specific feature.
+
 ## Project overview
 
 Sensorium places each user into a permanent cluster of exactly eight people, matched by birth date or location. Clusters get realtime chat, a posts feed, an introduction phase, availability check-ins, Signals (requests for help), and community governance through votes. The web frontend is a React 19 SPA (Vite + TypeScript + Tailwind v4) and the Android app is an Expo/React Native companion (`mobile/`); both are backed by Supabase (Postgres, Auth, Storage, Realtime). See the [README](README.md) for the full feature list and quick start.
@@ -181,14 +183,14 @@ Because migrations are order-dependent and applied on merge, coordinate migratio
 
 ## Testing
 
-The project has three layers:
+The project has four layers (web unit/component, integration, E2E, and mobile lint/typecheck):
 
 | Layer | Command | Requires |
 |---|---|---|
 | Unit and component (web) | `npm test` / `npm run test:coverage` | Nothing |
 | Integration | `npm run test:integration` | `supabase start` |
 | E2E | `npm run test:e2e` | `supabase start` + `npm run seed:demo` + `npx playwright install chromium` |
-| Mobile lint/typecheck | `cd mobile && npm run lint` + `npx tsc --noEmit` | Nothing (no mobile unit tests yet) |
+| Mobile lint/typecheck/test | `cd mobile && npm run lint` + `npx tsc --noEmit` + `npm test` | Nothing (small mobile suite) |
 
 The coverage gate in `vite.config.ts` is an enforced floor - CI fails if it regresses. Treat it as a minimum, not a target.
 
