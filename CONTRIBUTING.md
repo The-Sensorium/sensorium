@@ -131,7 +131,10 @@ If you changed mobile code, also run from `mobile/`:
 ```bash
 npm run lint
 npx tsc --noEmit
+npm test
 ```
+
+> **Mobile gotcha:** `npm run sync:db-types` generates many `mobile/src/lib` and `mobile/src/features` files from the web `src/`; do not hand-edit those, or they will be overwritten. `mobile/src/features/realtime.ts` is pinned and reconciled by hand. See [`mobile/README.md`](mobile/README.md).
 
 E2E changes are validated in CI; you can run them locally with `npm run test:e2e` after `supabase start` and `npm run seed:demo` (it runs two Playwright projects: desktop chromium and a mobile viewport).
 
