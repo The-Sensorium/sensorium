@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { useConnectionState, useLocalParticipant } from '@livekit/react-native'
 import { ConnectionState } from 'livekit-client'
 import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff } from 'lucide-react-native'
@@ -10,6 +10,7 @@ interface CallControlsProps {
   initialMicOn: boolean
   initialCameraOn: boolean
   chatOpen: boolean
+  unread: number
   onChatPress: () => void
 }
 
@@ -19,6 +20,7 @@ export function CallControls({
   initialMicOn,
   initialCameraOn,
   chatOpen,
+  unread,
   onChatPress,
 }: CallControlsProps) {
   const t = useTheme()
@@ -79,24 +81,47 @@ export function CallControls({
             {b.on ? b.onIcon : b.offIcon}
           </Pressable>
         ))}
-        <Pressable
-          accessibilityLabel={chatOpen ? 'Close chat' : 'Open chat'}
-          onPress={onChatPress}
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: chatOpen ? t.primary : t.surfaceHighest,
-          }}
-        >
-          <MessageSquare
-            size={20}
-            color={chatOpen ? '#fff' : t.onSurfaceVariant}
-            strokeWidth={2}
-          />
-        </Pressable>
+        <View style={{ position: 'relative' }}>
+          <Pressable
+            accessibilityLabel={chatOpen ? 'Close chat' : 'Open chat'}
+            onPress={onChatPress}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: chatOpen ? t.primary : t.surfaceHighest,
+            }}
+          >
+            <MessageSquare
+              size={20}
+              color={chatOpen ? '#fff' : t.onSurfaceVariant}
+              strokeWidth={2}
+            />
+          </Pressable>
+          {unread > 0 ? (
+            <View
+              accessibilityLabel={`${unread} unread ${unread === 1 ? 'message' : 'messages'}`}
+              style={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                minWidth: 18,
+                height: 18,
+                borderRadius: 9,
+                paddingHorizontal: 4,
+                backgroundColor: t.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 10, fontWeight: '700', color: t.onPrimary }}>
+                {unread > 9 ? '9+' : unread}
+              </Text>
+            </View>
+          ) : null}
+        </View>
         <Pressable
           accessibilityLabel="Hang up"
           onPress={onHangUp}
