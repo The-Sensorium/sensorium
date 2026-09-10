@@ -263,7 +263,7 @@ export function Composer({
               id="room-actions-menu"
               role="menu"
               aria-label="Room actions"
-              className="absolute bottom-full left-0 z-20 mb-2 flex w-max flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-soft"
+              className="absolute bottom-full left-0 z-20 mb-2 flex w-max flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-soft"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -329,7 +329,7 @@ export function Composer({
               id="mention-listbox"
               role="listbox"
               aria-label="Mention a member"
-              className="absolute bottom-full left-0 z-20 mb-2 w-max min-w-44 max-w-full overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-soft"
+              className="absolute bottom-full left-0 z-20 mb-2 w-max min-w-44 max-w-full overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-soft"
             >
               {mentionCandidates.map((candidate, i) => (
                 <button
