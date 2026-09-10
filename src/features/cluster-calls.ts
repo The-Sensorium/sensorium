@@ -12,11 +12,12 @@ export const CALL_TOKEN_STALE_MS = 8 * 60 * 1000
 export const CALL_WARNING_SECONDS = 5 * 60
 
 /**
- * The LiveKit room for a cluster call. Mirrored by the create-call-token Edge
- * Function and the mobile app, so all three agree on the room name.
+ * The LiveKit room for a cluster call: unique per call so a lingering connection
+ * from a previous call in the same cluster can't appear in a new one. Mirrored
+ * by the create-call-token Edge Function and the mobile app.
  */
-export function buildCallRoomName(clusterId: string): string {
-  return `cluster:${clusterId}`
+export function buildCallRoomName(clusterId: string, callId: string): string {
+  return `cluster:${clusterId}:${callId}`
 }
 
 /** The cluster's live call (ringing or active), if any. Ended calls stay hidden. */

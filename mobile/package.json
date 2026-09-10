@@ -5,8 +5,8 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "lint": "oxlint",
     "test": "vitest run",
     "sync:db-types": "node scripts/sync-db-types.mjs"
@@ -23,6 +23,7 @@
     "@tanstack/react-query": "^5.101.4",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.21",
+    "expo-camera": "^57.0.4",
     "expo-clipboard": "~57.0.1",
     "expo-constants": "~57.0.17",
     "expo-dev-client": "~57.0.18",

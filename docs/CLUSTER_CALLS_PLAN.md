@@ -59,7 +59,7 @@ Already in place and reused, not rebuilt:
 
 ```
 Web SPA (components-react)  ──┐
-                              ├─► LiveKit room (cluster:<id>)   [media plane]
+                              ├─► LiveKit room (cluster:<id>:<callId>)   [media plane]
 Expo app (react-native)  ─────┘           ▲
                                         token
 ┌───────────────────────────────┐    ┌───────────────────────────┐
@@ -76,7 +76,9 @@ Expo app (react-native)  ─────┘           ▲
 
 - The **media plane** is LiveKit. The **signal/state plane** is Postgres +
   Supabase Realtime. The only thing LiveKit needs from us is a signed token.
-- Room name is **`cluster:<clusterId>`**. Token identity is the caller's
+- Room name is **`cluster:<clusterId>:<callId>`** — unique per call, so a
+  lingering connection from a previous call in the same cluster can't leak into
+  a new one. Token identity is the caller's
   `user.id` (from the auth JWT), validated against active membership.
 
 ## 4. Phase 1 — Environment + LiveKit provisioning
@@ -101,7 +103,7 @@ Expo app (react-native)  ─────┘           ▲
    - App config added to the existing dev-build flow (`expo-dev-client` already
      in `mobile/app.json`).
 5. Acceptance: both apps can obtain a signed token and join a manually-created
-   `cluster:<id>` test room; two devices see each other.
+   `cluster:<id>:<callId>` test room; two devices see each other.
 
 ## 5. Phase 2 — Backend: membership-gated token + call state
 
@@ -157,7 +159,7 @@ applied migration — add new ones**):
      (`is_account_active`), that the call is not `ended`/expired, and that the
      cluster is not ended (replicate the SELECT-policy predicate — the function
      bypasses RLS, so it must re-assert access by hand).
-   - Mint a LiveKit access token: room = `cluster:<clusterId>`, identity = caller
+   - Mint a LiveKit access token: room = `cluster:<clusterId>:<callId>`, identity = caller
      id, name = display name, `canPublishSources` = camera + microphone (no screen
      share), TTL short (e.g. 10 min). Return `{ token, url }`.
    - Secrets only from function env.

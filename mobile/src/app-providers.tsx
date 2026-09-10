@@ -6,6 +6,7 @@ import { refreshPushToken, registerPushToken, unregisterPushToken } from './lib/
 import { isPermanentQueryError } from './lib/query-retry'
 import { AuthContext, type AuthStatus } from './auth-context'
 import { ThemeChoiceProvider } from './lib/theme-choice'
+import { ensureLiveKitGlobals } from './lib/livekit'
 
 
 
@@ -26,6 +27,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthStatus>({ state: 'loading' })
 
   useEffect(() => {
+    ensureLiveKitGlobals()
     if (!supabase) {
       setAuth({ state: 'unconfigured' })
       return

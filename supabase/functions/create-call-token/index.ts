@@ -211,8 +211,11 @@ Deno.serve(async (request) => {
   // so the participant list (and its cap) is the real gate to the media plane.
   if (participants.length === 0) return json({ error: 'not_participant' }, 403)
 
+  // Room is unique per call, not per cluster: a stable name would surface any
+  // lingering connection from a previous call in the same cluster (ghost
+  // participant) inside the new call. call.id is shared by every joiner.
   const token = await mintLiveKitToken(
-    `cluster:${call.cluster_id}`,
+    `cluster:${call.cluster_id}:${call.id}`,
     callerId,
     profiles[0]?.display_name ?? null,
     apiKey,

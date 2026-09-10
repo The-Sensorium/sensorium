@@ -126,6 +126,7 @@ export default function RoomScreen() {
   const [focused, setFocused] = useState(false)
   const [newCount, setNewCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const [declinedCalls, setDeclinedCalls] = useState<Set<string>>(new Set())
   const exhaustedRef = useRef(false)
   const prevOldestIdRef = useRef<string | null>(null)
   const pinnedRef = useRef(true)
@@ -141,6 +142,7 @@ export default function RoomScreen() {
     setHasMore(false)
     prevOldestIdRef.current = null
     setReplyTo(null)
+    setDeclinedCalls(new Set())
   }, [clusterId])
 
   const memberMap = useMemo(() => {
@@ -505,7 +507,7 @@ export default function RoomScreen() {
           <ClusterMenu clusterId={clusterId} active="room" />
         </View>
 
-        {activeCall.data && (
+        {activeCall.data && !declinedCalls.has(activeCall.data.id) && (
           <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
             <View
               accessibilityLabel="Cluster call"
@@ -565,6 +567,19 @@ export default function RoomScreen() {
                   {joinedCall ? 'Open' : 'Join'}
                 </Text>
               </Pressable>
+              {!joinedCall ? (
+                <Pressable
+                  accessibilityLabel="Decline call"
+                  onPress={() =>
+                    setDeclinedCalls((prev) => new Set(prev).add(activeCall.data!.id))
+                  }
+                  style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+                    Decline
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           </View>
         )}

@@ -40,8 +40,8 @@ beforeEach(() => {
 })
 
 describe('buildCallRoomName', () => {
-  it('names the room after the cluster', () => {
-    expect(buildCallRoomName('c1')).toBe('cluster:c1')
+  it('names the room after the cluster and call', () => {
+    expect(buildCallRoomName('c1', 'call-1')).toBe('cluster:c1:call-1')
   })
 
   it('caps participants at eight', () => {
