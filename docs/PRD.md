@@ -1,6 +1,13 @@
-﻿# Sensorium - Product Requirements Document (MVP)
+﻿# Sensorium - Product Requirements Document
 
 This document defines what Sensorium is, who it is for, and how it should behave. It is the product source of truth: before changing product behavior, read this first. For the technical architecture, see [`ARCHITECTURE.md`](ARCHITECTURE.md); for the visual design, see [`DESIGN.md`](DESIGN.md).
+
+> **Reading this document.** Sensorium is past its original MVP; most core flows
+> below are built and live in the app. Sections marked **Open question** are
+> backlog questions that are *not* yet decided - they are recorded for context,
+> not as current behavior. When the doc and the app disagree, the app and
+> [`../README.md`](../README.md) describe what actually ships. Feature deep-dives
+> live in [`archive/`](archive/README.md).
 
 **Product Name:** Sensorium
 
@@ -234,14 +241,16 @@ Real names are not required.
 
 Supported:
 - Text Messages
+- Message Replies (threaded, Instagram-style)
+- @-Mentions
 - Images
 - GIFs
 - Emoji Reactions
+- Audio / Video Calls (cluster-scoped, started from the room, powered by LiveKit)
 
 Not Supported:
 - Direct Messages
 - Voice Notes
-- Video Calls
 
 Open question: with a user potentially in multiple clusters, should there be a unified inbox view across clusters, or fully separate spaces?
 
@@ -264,12 +273,15 @@ Receipts are sender-only and revealed on demand: the author opens the `⋯` menu
 on one of their messages, taps **Info**, and sees a dialog listing who has seen
 it ("Seen by") and who hasn't ("Not seen yet").
 
-They are based on a **read watermark**, not per-message tracking: a member counts
-as having seen a message once they have caught up past it in the room (the same
-position that clears their unread chat badge). This means "seen" means "was
-caught up to at least this point in the chat", not "opened this exact message".
-A member who joined after the message was sent will read as having seen it. The
-dialog updates live while open as members read.
+Each member carries a **read watermark** (`cluster_members.last_read_message_at`)
+that advances as they catch up in the room - the same position that clears their
+unread chat badge. The first time that watermark passes a message, an immutable
+`(message_id, user_id, read_at)` row is written to `message_reads`. So "seen"
+means "was caught up to at least this point in the chat", not "opened this exact
+message". A member who joined *after* the message was sent is listed under "Not
+seen yet" for it permanently - they were never present to read it. The dialog
+updates live while open as members read, and each read time stays frozen at first
+read.
 
 ---
 ## Status System
@@ -277,11 +289,11 @@ dialog updates live while open as members read.
 Users may set a current status.
 
 Examples:
-- ðŸ’» Working
-- ðŸ“š Studying
-- ðŸŽ® Gaming
-- âœˆï¸ Traveling
-- ðŸ˜´ Sleeping
+- Working
+- Studying
+- Gaming
+- Traveling
+- Sleeping
 
 Visible to cluster members.
 
@@ -289,9 +301,9 @@ Visible to cluster members.
 ## Availability System
 
 Options:
-- ðŸŸ¢ Available
-- ðŸŸ¡ Busy
-- ðŸ”´ Do Not Disturb
+- Available
+- Busy
+- Do Not Disturb
 
 Visible to cluster members.
 
@@ -313,7 +325,7 @@ Reasons may include:
 Voting remains hidden until completed.
 Results are revealed after voting closes.
 
-Open question: beta research flagged safety and harassment as the top concern, and a vote only removal process, with no individual blocking, means a harassed user depends on the rest of the cluster to act. Worth deciding whether to add an individual block or mute option as a faster personal safeguard alongside the vote system.
+Resolved: per-user **mute** shipped as the personal safeguard alongside the vote system (see [Muting and blocking](#muting-and-blocking)). Individual blocking/removal still does not exist; a harassed member can mute the offender immediately while the cluster decides on replacement.
 
 ---
 ## Replacement Process
@@ -411,7 +423,7 @@ Moderators cannot take enforcement action against other moderators or admins, an
 - Members receive an in-app moderation notice when their message is hidden or their account is warned or suspended.
 - Banned accounts cannot use the app, so no in-app notice is sent; the restriction is shown on the restricted-account screen.
 - Reporters receive an email confirmation when their report is submitted and a generic outcome when it is resolved (dismissed or actioned). The outcome email never contains internal notes, staff identity, or enforcement detail.
-- Enforcement actions are also emailed to the affected member (warning, suspension, ban, lift, hidden message). No report-history screen is shipped yet; a future report-history view may show only the current status and a generic final outcome.
+- Enforcement actions are also emailed to the affected member (warning, suspension, ban, lift, hidden message). Reporters get a "My Reports" screen (`/settings/reports`) showing their own reports' status and a generic final outcome - never staff identity, internal notes, or enforcement detail.
 
 ---
 ### Email Notifications
@@ -451,12 +463,19 @@ Includes:
 Violations may result in suspension or removal.
 
 ---
-### Blocking
+### Muting and blocking
 
-Blocking is not supported.
+Individual **mute** is shipped: a member can mute another member, which hides that
+person's content (chat messages, posts, comments, signals) for the muter only. It
+is a personal safeguard; it does not remove anyone, change the 8-member
+governance model, or affect votes, replacement, or moderation. Muted content is
+collapsed rather than vanished, with an inline "Show" reveal. Muted users appear
+in Settings, where they can be unmuted.
 
+Blocking (removing or hiding a member from the cluster) is still not supported.
 Users may:
 - Report
+- Mute
 - Leave cluster
 - Start replacement vote
 
@@ -465,24 +484,31 @@ See the open question under Replacement Votes above; this is the same tension fl
 ---
 ## Notifications
 
-User configurable.
+User configurable, per type and **per cluster**. The web app has an in-app
+notification center (unread badge + `/notifications`); the Android app adds
+OS-level push notifications.
 
-Examples:
+Types include:
 - All Messages
 - Mentions
 - Reactions
+- Posts, post comments/replies, and post likes
 - Votes
 - Cluster Invitations
 - New Signals
+- Moderation notices (member-facing) and reports/appeals (staff)
 
-Open question: with multiple simultaneous clusters, notification settings may need to be configurable per cluster, not just globally.
+Preferences are stored per cluster, so a member can quiet one cluster without
+muting the rest. This resolves the earlier open question about per-cluster
+settings.
 
 ---
 ## Discovery
 
-Users browse available matching modes as tiles, one per mode. Selecting a mode opens its
-page (`/discovery/{mode}`) with the queue/join flow for that mode and a directory of the mode's
-active clusters.
+The directory lives on the **Clusters** page (`/clusters`; the old `/discovery`
+path redirects there). Users browse available matching modes as tiles, one per
+mode. Selecting a mode opens its page (`/discovery/{mode}`) with the queue/join
+flow for that mode and a directory of the mode's active clusters.
 
 Discovery tiles show:
 - Matching Mode (Exact Birthdate, Birth Year + Month, Birth Month, Birth Year, Local)
@@ -520,36 +546,32 @@ Secondary
 
 ```text
 Landing Page
-â”œâ”€â”€ Login
-â”œâ”€â”€ Sign Up
-â”œâ”€â”€ Privacy Policy
-â”œâ”€â”€ Terms
+|-- Login
+|-- Sign Up
+|-- Privacy Policy
+`-- Terms
 
 Authenticated Area
-â”œâ”€â”€ Home (Cluster List, across all active clusters and modes)
-â”‚
-â”œâ”€â”€ Discovery
-â”‚   â”œâ”€â”€ Exact Birthdate Clusters
-â”‚   â”œâ”€â”€ Birth Year + Month Clusters
-â”‚   â”œâ”€â”€ Birth Month Clusters
-â”‚   â”œâ”€â”€ Birth Year Clusters
-â”‚   â””â”€â”€ Local Clusters
-â”‚
-â”œâ”€â”€ Queue Waiting (per mode, can have multiple active)
-â”‚
-â”œâ”€â”€ Cluster
-â”‚   â”œâ”€â”€ Chat
-â”‚   â”œâ”€â”€ Members
-â”‚   â”œâ”€â”€ Signals
-â”‚   â”œâ”€â”€ Cluster Pulse
-â”‚   â”œâ”€â”€ Votes
-â”‚   â””â”€â”€ Settings
-â”‚
-â”œâ”€â”€ Profile
-â”‚
-â”œâ”€â”€ Notifications
-â”‚
-â””â”€â”€ Account Settings
+|-- Home
+|-- Posts (cluster feed + post detail)
+|-- Clusters / Discovery (matching modes + mode directory)
+|-- Queue Waiting (per mode, can have multiple active)
+|-- Cluster
+|   |-- Chat (+ audio/video call)
+|   |-- Members
+|   |-- Signals
+|   |-- Votes
+|   `-- Settings
+|-- Profile
+|-- Notifications
+|-- Account Settings (+ My Reports, theme, delete account)
+|-- Restricted account (suspended/banned)
+|   `-- Appeal
+`-- Staff workspaces (moderator/admin only)
+    |-- Reports queue
+    |-- Appeals queue (admin)
+    |-- Platform roles (admin)
+    `-- Audit log (admin)
 ```
 
 ---
@@ -1001,7 +1023,7 @@ Waiting For Members
 Progress bar
 
 ```text
-â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘
+[######--]
 ```
 
 Note
@@ -1044,9 +1066,9 @@ Your Cluster Is Ready
 Members list
 
 ```text
-CodeNomad ðŸ‡®ðŸ‡³
-TokyoReader ðŸ‡¯ðŸ‡µ
-MountainFox ðŸ‡¨ðŸ‡¦
+CodeNomad
+TokyoReader
+MountainFox
 ...
 ```
 
@@ -1129,9 +1151,9 @@ Content
 Member list
 
 ```text
-âœ“ CodeNomad
-âœ“ TokyoReader
-â³ MountainFox
+[x] CodeNomad
+[x] TokyoReader
+[ ] MountainFox
 ```
 
 ---
@@ -1153,10 +1175,9 @@ Chat
 Tabs
 
 ```text
-Chat
+Chat (default)
 Members
 Signals
-Pulse
 Votes
 Settings
 ```
@@ -1174,12 +1195,14 @@ User
 Timestamp
 Message
 Reactions
+Reply thread
 ```
 
 Composer
 
 ```text
 Message Box
+Reply
 Upload Image
 GIF Picker
 Send
@@ -1191,6 +1214,18 @@ Features
 Edit
 Delete
 React
+Reply
+@-mentions
+Audio / Video Call (start or join from the room)
+Read receipts (Info on your own message)
+```
+
+Presence
+
+```text
+Online members
+Typing indicator
+Live call banner (join)
 ```
 
 ---
@@ -1316,7 +1351,7 @@ Mark Resolved (raiser only)
 
 ---
 
-### 18. Votes Tab
+### 17. Votes Tab
 
 Route
 
@@ -1366,7 +1401,7 @@ Select Candidate
 
 ---
 
-### 19. Cluster Settings
+### 18. Cluster Settings
 
 Route
 
@@ -1392,6 +1427,49 @@ Triggers vote.
 
 ---
 
+### 19. Posts
+
+Route
+
+```text
+/posts
+/posts/{postId}
+```
+
+A cluster-scoped feed reached from the top nav, separate from the cluster room. A
+member picks one of their clusters at a time and sees its posts; a post is visible
+only to that cluster's active members.
+
+Content
+
+```text
+Post (optional title, text, optional image or GIF)
+Heart likes
+Comments and replies (one threaded level; a reply to a reply is prefixed @name)
+```
+
+Composer
+
+```text
+Title (optional)
+Text
+Upload Image or GIF
+Post
+```
+
+Actions
+
+```text
+Like
+Comment
+Reply
+Delete (author)
+Report (member)
+Hide / Restore (moderator)
+```
+
+---
+
 ### 20. Notifications Page
 
 Route
@@ -1405,8 +1483,11 @@ Items
 ```text
 Vote Started
 Reaction Received
+Post Comment / Reply
+Post Like
 Cluster Formed
 Invitation Received
+Moderation Notice
 ```
 
 Actions
@@ -1434,6 +1515,7 @@ Profile
 Photo
 Display Name
 Bio
+Pronouns
 ```
 
 Matching Modes
@@ -1458,13 +1540,29 @@ Busy
 Do Not Disturb
 ```
 
-Notification Preferences
+Appearance
+
+```text
+Theme: Light / System / Dark
+```
+
+Notification Preferences (per cluster)
 
 ```text
 Messages
 Mentions
+Reactions
+Posts, post comments/replies, post likes
 Votes
 Invitations
+New Signals
+```
+
+Safety
+
+```text
+My Reports (status of reports you filed)
+Muted members (unmute)
 ```
 
 Account
@@ -1481,7 +1579,7 @@ Delete Account
 ```text
 Landing
 down
-Signup
+Signup (email/password or Google)
 down
 Verify Email
 down
@@ -1500,7 +1598,7 @@ Wait For Others
 down
 Cluster Unlocks
 down
-Chat
+Chat, Calls, Posts, Signals
 down
 Build Relationships
 down
@@ -1510,7 +1608,11 @@ Cluster Evolves
 down
 Years Of Shared History
 
-[User may add or remove matching modes at any time from Discovery/Settings, repeating the per-mode flow above independently for each]
+[User may add or remove matching modes at any time from the Clusters/Discovery page and Settings, repeating the per-mode flow above independently for each]
+
+[Staff only: users holding a moderator or admin platform role can switch to a
+staff workspace (Reports, and for admins Appeals/Roles/Audit) from the session
+role picker.]
 ```
 
 ---
@@ -1519,12 +1621,12 @@ Years Of Shared History
 
 This section pulls together every open question flagged above, in one place, for the product and strategy channel to work through:
 
-1. Total cap on simultaneous clusters per user. Capped or unlimited?
-2. Should Interest based clusters remain as a mode, given research showed a preference against them?
-3. Full date of birth at signup vs. birth year only. Is the added matching flexibility worth the extra friction?
-4. Should full date of birth be visible to other members, or kept private and only used internally for matching?
-5. Unified inbox across multiple clusters, or fully separate per cluster spaces?
-6. Should individual blocking or muting exist alongside the vote to remove system, given safety was the top user concern?
-7. Is the 30 day leave cooldown still the right length now that users likely have other active clusters to fall back on?
-8. Should Signals support category tags, or stay freeform text only for v1?
-9. Should new Signals trigger a distinct notification, separate from regular chat activity?
+1. Total cap on simultaneous clusters per user. Capped or unlimited? **Open.**
+2. Should Interest based clusters remain as a mode, given research showed a preference against them? **Open.**
+3. Full date of birth at signup vs. birth year only. Is the added matching flexibility worth the extra friction? **Open.**
+4. Should full date of birth be visible to other members, or kept private and only used internally for matching? **Open.**
+5. Unified inbox across multiple clusters, or fully separate per cluster spaces? **Open** - clusters are still fully separate spaces.
+6. Should individual blocking or muting exist alongside the vote to remove system, given safety was the top user concern? **Resolved** - per-user mute shipped; blocking (removal) still does not exist.
+7. Is the 30 day leave cooldown still the right length now that users likely have other active clusters to fall back on? **Open.**
+8. Should Signals support category tags, or stay freeform text only? **Open** - Signals are freeform text today.
+9. Should new Signals trigger a distinct notification, separate from regular chat activity? **Resolved** - Signals participate in the notification center and per-cluster preferences.

@@ -1,6 +1,6 @@
 # Email Notifications & Appeals — Implementation Plan
 
-Status: **draft, not yet implemented**
+Status: **implemented** (outbox migrations, `send-emails` Edge Function, `/appeal` + admin appeal queue). Retained as the design record; see [`../TECHNICAL.md`](../TECHNICAL.md) and `../PRD.md` for live behavior.
 Author: DotNetTitan
 Scope: transactional outbound email for moderation events + an in-app appeal flow, wired end to end (database → edge function → Resend → user), plus the appeal submission/review UI.
 

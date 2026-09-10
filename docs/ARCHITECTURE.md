@@ -6,7 +6,7 @@ For the deeper implementation detail (exact libraries, config, schema internals,
 
 ## 1. Architecture Overview
 
-Sensorium is a React single-page application that talks to Supabase for everything server-side. The browser renders the UI and calls Supabase directly; there is no custom backend application server in between.
+Sensorium is a React single-page application that talks to Supabase for everything server-side. The browser renders the UI and calls Supabase directly; there is no custom backend application server in between. A member-only Expo/React Native app (`mobile/`) sits alongside the SPA and talks to the same Supabase backend with the same accounts; only the frontend differs.
 
 ```mermaid
 flowchart TB
@@ -45,14 +45,15 @@ The repository is organized so the frontend and backend live side by side, with 
 | `src/pages/` | One component per route/page, composed from shared and feature components. |
 | `src/components/` | Reusable UI: avatars, modals, cards, pickers, navigation chrome. |
 | `src/features/` | Domain logic: matching, cluster, introductions, signals, votes, notifications, moderation, appeals, posts. One module per domain, with its hooks and tests. |
-| `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, and helpers. |
+| `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, image helpers, and constants. |
+| `mobile/` | The Expo/React Native Android app. Its own router (`app/`) and mirrors of the shared feature modules (`src/features/`). Member-only; staff surfaces stay web-only. |
 | `supabase/migrations/` | The entire database schema as ordered SQL files (the single source of truth for the backend). |
-| `supabase/functions/` | Edge Functions. `send-emails` drains the outbound email queue and forwards to Resend. |
-| `docs/` | Product, design, and technical documentation. |
+| `supabase/functions/` | Edge Functions: `send-emails` (Resend), `send-push` (Expo), and `create-call-token` (LiveKit), plus shared email templates. |
+| `docs/` | Product, design, and technical documentation; `docs/archive/` holds design records for shipped features. |
 | `public/` | Static assets served as-is (favicons, logo). |
 | `tests/integration/` | Backend integration suite that exercises RLS and RPC behavior against a local Supabase stack. |
 | `e2e/` | End-to-end Playwright specs that drive the app through real browser flows. |
-| `scripts/` | Development/ops helpers, notably the demo data seeder. |
+| `scripts/` | Development/ops helpers: the demo seeder, the release-merge dry run, and legal-content sync. |
 
 Don't memorize the tree; this is just a map. Files live where their concern lives, and you can find most things by name.
 
@@ -68,7 +69,7 @@ flowchart TD
     D --> E[Cluster Formation]
     E --> F[Introduction Phase]
     F --> G[Cluster Unlock]
-    G --> H[Chat, Signals, Posts, Notifications, Governance, Settings]
+    G --> H[Chat, Calls, Signals, Posts, Notifications, Governance, Settings]
 ```
 
 - **Landing Page**: public marketing page with no auth required.
@@ -77,7 +78,7 @@ flowchart TD
 - **Matching Queue**: the user opts into up to five matching modes; each queues them separately.
 - **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed.
 - **Introduction Phase**: a shared five-question intro must be completed within 72 hours before the room opens.
-- **Cluster Unlock**: once unlocked, members get chat, availability, Signals, votes, and notifications.
+- **Cluster Unlock**: once unlocked, members get chat, audio/video calls, availability, Signals, posts, votes, and notifications.
 - **Restriction & Appeal**: a moderated suspension/ban shows on the restricted-account screen, where the member may open one in-app appeal (`/appeal`). Admins review the queue (`/admin/appeals`) and decide; the outcome emails the appellant and lifts the restriction when accepted.
 
 The routing guards in `src/app/` enforce this order: guests can't reach onboarding, un-onboarded users can't reach the app, and cluster features require membership. Restricted accounts reach only the appeal page until restored.
@@ -111,7 +112,7 @@ There is no application server. Supabase provides every backend service, and the
 - **Storage**: private buckets for chat images and avatars. Files are served through short-lived signed URLs, never through public object URLs.
 - **Realtime**: the SPA subscribes to database changes (chat, presence, notifications) and reacts live.
 - **Scheduled Jobs**: pg_cron runs database functions on a schedule (e.g. expiring stale signals, rebalancing membership, pumping the email outbox).
-- **Edge Functions**: `send-emails` is invoked by the cron-driven outbox pump — and only by it, guarded by a shared secret. It claims queued `outbound_emails` rows under the service-role key and forwards them to Resend. The DB is the source of truth; the function is a stateless worker.
+- **Edge Functions**: stateless workers around the DB. `send-emails` and `send-push` are invoked by their cron-driven outbox pumps — and only by them, guarded by a shared secret — claim queued rows under the service-role key, and forward to Resend and Expo respectively. `create-call-token` mints short-lived LiveKit tokens for cluster calls, verifying membership before it does. The DB is the source of truth; the functions hold no state.
 
 The important mental model: **security lives in the database, not in the client**. The browser is untrusted; RLS and RPC functions are the enforcement point.
 
@@ -155,15 +156,17 @@ A single Vercel project serves the app with two environments, backed by two Supa
 | Preview | `develop` | Preview deployment | Staging project |
 | Feature previews | `feature/*` | Individual Preview deployments | Staging project |
 
-Production and staging are always isolated: different Vercel environments, different Supabase projects, separate credentials. Feature branches share the staging Supabase project but get their own frontend preview.
+Production and staging are always isolated: different Vercel environments, different Supabase projects, separate credentials. Feature branches share the staging Supabase project but get their own frontend preview. The Android app is not served by Vercel: it is built through EAS and the Android APK workflows and points at the same production/staging Supabase projects.
 
 ## 9. CI/CD Overview
 
-The pipelines validate every branch and release changes in a controlled order. Three GitHub Actions workflows handle it; for the exact steps and secrets, see [`TECHNICAL.md`](TECHNICAL.md#ci-and-deployment).
+The pipelines validate every branch and release changes in a controlled order. GitHub Actions handles it; for the exact steps and secrets, see [`TECHNICAL.md`](TECHNICAL.md#ci-and-deployment).
 
-- **CI workflow**: runs on push/PR to `main` and `develop`, and on push to `feature/*`, `fix/*`, and `docs/*`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with a coverage gate, the production build, applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
-- **Staging migration workflow**: on merge/push to `develop`, applies pending migrations to the staging Supabase project. Feature branches never apply migrations directly; migration SQL is applied only once the PR lands on `develop`.
-- **Production migration workflow**: on merge/push to `main`, applies the same pending migrations to the production Supabase project.
+- **Web CI (`ci.yml`)**: runs on push/PR to `main` and `develop`, and on push to `feature/*`, `fix/*`, and `docs/*`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with a coverage gate, the production build, applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
+- **Mobile CI (`mobile.yml`)**: runs when `mobile/**` changes; lints and typechecks the Expo app.
+- **Staging migration (`migrate-staging.yml`)**: on merge/push to `develop`, applies pending migrations to the staging Supabase project. Feature branches never apply migrations directly; migration SQL is applied only once the PR lands on `develop`.
+- **Production migration (`migrate-production.yml`)**: on merge/push to `main`, applies the same pending migrations to the production Supabase project.
+- **Android builds (`eas-build.yml`, `android-apk-build.yml`)**: manual workflows that build the mobile app through EAS or produce a CI-built APK artifact for side-loading.
 
 The order matters: migrations land on staging first, are tested there, and only reach production through a `main` release.
 

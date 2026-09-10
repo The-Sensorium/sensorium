@@ -8,8 +8,8 @@ not a cluster tab.
 
 This document is the plan only. Default product decisions are locked (see §1);
 everything else is phased so the work lands reviewable and testable. Read order:
-[`PRD.md`](PRD.md) → [`ARCHITECTURE.md`](ARCHITECTURE.md) →
-[`TECHNICAL.md`](TECHNICAL.md) → this plan → [`DESIGN.md`](DESIGN.md).
+[`PRD.md`](../PRD.md) → [`ARCHITECTURE.md`](../ARCHITECTURE.md) →
+[`TECHNICAL.md`](../TECHNICAL.md) → this plan → [`DESIGN.md`](../DESIGN.md).
 
 > **Status — implemented.** This plan was built out (migrations `0072`–`0082`),
 > with the following refinements made during implementation and review: comments
@@ -17,7 +17,7 @@ everything else is phased so the work lands reviewable and testable. Read order:
 > prefixed `@name`), comments and replies are **likable** (a heart, like posts),
 > comment/reply and post-like **notifications** were shipped (Phase 2), and an
 > **optional post title** was added. The live behavior is described in
-> [`TECHNICAL.md`](TECHNICAL.md) § Posts.
+> [`TECHNICAL.md`](../TECHNICAL.md) § Posts.
 
 ---
 

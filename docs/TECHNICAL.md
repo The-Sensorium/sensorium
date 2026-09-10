@@ -37,20 +37,24 @@ For a quick start and the front-door overview, see the [README](../README.md).
 ```
 sensorium/
 ├─ docs/                  # product, design, and architecture documentation
+│  └─ archive/            # design records for shipped features
+├─ mobile/                # Expo/React Native Android app (member-only)
+│  ├─ app/                # expo-router routes
+│  └─ src/                # features, components, lib (mirrors web where shared)
 ├─ supabase/
 │  ├─ config.toml         # local Supabase stack configuration
 │  ├─ migrations/         # order-dependent SQL: schema, RLS, functions, cron
-│  └─ functions/          # Edge Functions (send-emails + shared templates)
+│  └─ functions/          # Edge Functions (send-emails, send-push, create-call-token + shared)
 ├─ src/
-│  ├─ app/                # router, providers, guards, auth context, layouts
+│  ├─ app/                # router, providers, guards, auth + session-role context, layouts
 │  ├─ pages/              # route page components
 │  ├─ components/         # shared and feature components
 │  ├─ features/           # domain hooks, TanStack Query sources, realtime subscriptions
 │  ├─ lib/                # supabase client, typed database, modes, availability, theme, utils
 │  └─ test/               # unit test helpers
-├─ e2e/                   # Playwright E2E specs (golden path, cluster room, settings, notifications)
+├─ e2e/                   # Playwright E2E specs (golden path, cluster room, posts, safety, settings, notifications)
 ├─ tests/integration/     # Vitest integration suite against the local Supabase stack
-├─ scripts/               # idempotent demo seed
+├─ scripts/               # demo seed, release-merge dry run, legal sync
 ├─ public/                # favicons and static assets
 ├─ vercel.json            # SPA rewrites for Vercel
 ├─ .env.example           # local environment variables
@@ -65,20 +69,29 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 |---|---|
 | `matching.ts` | queue entry, matching status |
 | `introductions.ts` | the five-question shared intro and 72-hour phase |
-| `cluster.ts` | cluster data, realtime chat, chat-image signed URLs |
+| `cluster.ts` | cluster data, realtime chat, chat-image signed URLs, message send/edit/delete/reactions |
+| `cluster-calls.ts` | cluster call state (active call, participants), start/join/leave mutations, LiveKit token fetch |
 | `realtime.ts` | shared realtime subscription plumbing |
 | `signals.ts` | request-for-help threads |
 | `votes.ts` | governance votes and cooldowns |
 | `notifications.ts` | user notifications |
-| `moderation.ts` | reporting, moderation queue and case actions, account restriction status |
+| `discovery.ts` | matching-mode directory and public cluster counts |
+| `access.ts` | the caller's platform role and capabilities (staff guards) |
+| `moderation.ts` | reporting, moderation queue and case actions, account restriction status, per-user mute + "My Reports" |
+| `admin-moderation.ts` | admin-only moderation/role administration queries |
 | `avatars.ts` | avatar signed URLs and storage paths |
 | `mentions.ts` | mention parsing and linkification |
+| `gifs.ts` | KLIPY GIF search and result parsing |
 | `appeals.ts` | in-app appeals (restricted users) and the admin appeal queue |
 | `posts.ts` | standalone cluster-scoped posts feed (`/posts`), optional post title, heart likes (post + comment/reply), threaded replies, post/comment-image signed URLs, comment/reply + like notifications |
 
 ### Email pipeline
 
-Email is outbound-only and queued in the DB. `outbound_emails` rows are written by enforcement/appeal RPC functions in the same transaction as the action; a pg_cron job (`pump_outbound_emails`) POSTs batches to the `send-emails` Edge Function (guarded by a shared secret against `SENSORIUM_EMAIL_SECRET`), which claims rows, renders a template, forwards to Resend, and marks each row sent/failed. `recover_stuck_sending` re-queues rows stuck in `sending`. The `anon`/`authenticated` roles hold no grants on `outbound_emails` or `email_settings`; only `service_role` (and postgres for cron) touch them. See `docs/EMAIL_NOTIFICATIONS_APPEALS_PLAN.md` for the full design.
+Email is outbound-only and queued in the DB. `outbound_emails` rows are written by enforcement/appeal RPC functions in the same transaction as the action; a pg_cron job (`pump_outbound_emails`) POSTs batches to the `send-emails` Edge Function (guarded by a shared secret against `SENSORIUM_EMAIL_SECRET`), which claims rows, renders a template, forwards to Resend, and marks each row sent/failed. `recover_stuck_sending` re-queues rows stuck in `sending`. The `anon`/`authenticated` roles hold no grants on `outbound_emails` or `email_settings`; only `service_role` (and postgres for cron) touch them. See `docs/archive/EMAIL_NOTIFICATIONS_APPEALS_PLAN.md` for the full design.
+
+### Push pipeline
+
+Push mirrors the email pipeline on the DB side. A `notifications` INSERT trigger fans out into `push_outbox` (one row per recipient token), gated by the per-cluster notification prefs, account-active state, and token presence. A pg_cron pump POSTs batches to the `send-push` Edge Function (guarded by `SENSORIUM_PUSH_SECRET`), which claims rows under the service-role key, sends through the Expo Push API (using `EXPO_ACCESS_TOKEN` when set), marks rows sent/failed, and deletes tokens Expo reports as `DeviceNotRegistered`. An immediate-wake path nudges the worker when a row lands so delivery is not stuck waiting for the next cron tick. See `docs/archive/PUSH_NOTIFICATIONS_PLAN.md`.
 
 ### Posts
 
@@ -109,6 +122,15 @@ a time.
   comment"); `toggle_post_like` notifies the post author. They are gated at
   read-time by `notification_allowed` via the `post_comment` / `post_like`
   preference columns (0080).
+
+### Cluster calls
+
+Calls are audio/video rooms scoped to a cluster, backed by LiveKit, on both the web SPA and the Expo app.
+
+- **Schema (0107–0112)**: a `calls` table (one live call per cluster, `status` `ringing`/`active`/`ended`, `expires_at`) and `call_participants`. `start_call`, `join_call`, `leave_call`, and `end_call` are `security definer` RPCs that enforce active membership and the single-active-call invariant; a duration limit is enforced in `0110`, and leaving/departing a cluster cleans up memberships in `0111`.
+- **Tokens**: `create-call-token` (Edge Function) verifies membership and mints a short-lived LiveKit token. The client never holds the LiveKit API secret; the secret lives only in the function environment.
+- **Realtime**: `calls` / `call_participants` changes are published so the cluster's "ringing" banner and participant list update live.
+- **Clients**: web renders the call UI inside the cluster room (`@livekit/components-react`); mobile has a hand-built call screen (`mobile/app/(app)/cluster/[clusterId]/call.tsx`, `@livekit/react-native`).
 
 ### Chat read receipts
 
@@ -148,19 +170,26 @@ dialog updates live — while each member's read time stays frozen at first read
 
 All schema lives in `supabase/migrations/` and is **order-dependent**. Migrations build on each other and are never edited after they have been applied; changes come as new ordered files on top.
 
-- **Core schema (0001-0010)**: enums, profiles, queues and clusters, chat, signals, status and availability, votes and member replacement, notifications, reports, and demo seed data.
-- **Functions (0011-0015)**: matching, intro and social helpers, vote and replacement functions, and the pg_cron schedule.
-- **Storage and permissions (0016-0020)**: storage buckets, grants, and fixes.
-- **Realtime (0021-0024)**: chat, signal replies, governance events, and notification payloads.
-- **Hardening (0025-0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
-- **Moderation and platform roles (0052-0066)**: platform access primitives (`user_roles`, `account_restrictions`, `moderation_actions`), reports queue and claim/release/resolve workflow, content enforcement (hide/restore), warnings, temporary suspensions and permanent bans, platform role administration, staff status guards, and moderation workflow guards (claim locks, action-close-report, report validation, restriction lift no-ops). See [`ROLE_BASED_ACCESS_PLAN.md`](ROLE_BASED_ACCESS_PLAN.md) for the access model.
-- **Posts (0072-0082)**: the standalone cluster posts surface — schema (`posts`, `post_comments`, `post_likes`, `comment_likes`), RPCs (create/edit/delete, like toggles, report, hide/restore), realtime, the private `posts-images` bucket, post/comment + like notifications, and the optional post title. See the Posts subsection above.
+- **Core schema (0001–0010)**: enums, profiles, queues and clusters, chat, signals, status and availability, votes and member replacement, notifications, reports, and demo seed data.
+- **Functions (0011–0015)**: matching, intro and social helpers, vote and replacement functions, and the pg_cron schedule.
+- **Storage, grants, realtime (0016–0024)**: storage buckets, grants, and realtime publications for chat, signal replies, governance events, and notification payloads.
+- **Hardening (0025–0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
+- **Chat and profile UX (0035–0051)**: content-length and duplicate-report guards, member counts, the read watermark (`0038`), idempotent cron, the public cluster directory, reaction/vote RLS hardening, the intro-unlock guard, message replies (`0046`), pronouns (`0047`), read receipts (`0048`), per-message `message_reads` (`0049`), storage object GC (`0050`), and the notification center (`0051`).
+- **Moderation and platform roles (0052–0067)**: platform access primitives (`user_roles`, `account_restrictions`, `moderation_actions`), the reports queue and claim/release/resolve workflow, content enforcement (hide/restore), warnings, temporary suspensions and permanent bans, platform role administration, staff status guards, and moderation workflow guards (claim locks, action-close-report, report validation, restriction-lift no-ops). The access model is described in `PRD.md` (Moderation) and enforced by the `access.ts` / `admin-moderation.ts` modules.
+- **Email and appeals (0068–0071, 0101)**: the `outbound_emails` outbox + `email_settings`, the appeals table and RPCs, enforcement-time enqueue, and the email pump cron (with the outbox retry fix in `0101`).
+- **Posts (0072–0085)**: the standalone cluster posts surface — schema (`posts`, `post_comments`, `post_likes`, `comment_likes`), RPCs (create/edit/delete, like toggles, report, hide/restore), realtime, the private `posts-images` bucket, post/comment + like notifications, the optional post title, and threaded comment deletion. See the Posts subsection above.
+- **Staff notifications (0086–0088)**: `report_new` / `appeal_new` notification types, fan-out to eligible staff, and the role-guarded per-user read RPC.
+- **Safety and self-service (0089–0093)**: queue ordering, per-user `user_mutes`, and the "My Reports" RPCs (`get_my_reports`, with target profiles).
+- **Push (0094, 0097, 0100, 0102–0105)**: owner-scoped `push_tokens`, the `push_outbox` queue and fan-out trigger, per-token delivery, an immediate-wake path, and the pump/recovery grants.
+- **Messaging polish (0095–0096, 0098–0099, 0106)**: idempotent message deletion, self-likes on posts and comments, and the atomic `toggle_message_reaction` RPC.
+- **Cluster calls (0107–0112)**: the `calls` / `call_participants` schema, call RPCs, leave/end, the duration limit, membership cleanup, and service-role grants. See the Cluster calls subsection above.
+- **Public table grants (0113)**: the explicit grant surface for public tables.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
 ### Scheduled jobs
 
-Database functions run on a pg_cron schedule, for example to expire stale signals or rebalance membership. The schedule is defined in a migration and is idempotent.
+Database functions run on a pg_cron schedule: expiring stale signals, rebalancing membership, expiring lapsed suspensions, and pumping the email and push outboxes (with a recovery job for rows stuck in `sending`). Each schedule is defined in a migration and is idempotent.
 
 ## Storage
 
@@ -176,7 +205,7 @@ The browser obtains a signed URL with a short TTL, uses it to render the image, 
 
 ## Auth
 
-Authentication uses Supabase Auth with email and password. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028). Moderation records survive deletion but are anonymized, because `reports`, `moderation_actions`, `account_restrictions`, and `user_roles` reference profiles with `on delete set null` (0052-0053).
+Authentication uses Supabase Auth with email/password and Google OAuth. Platform access (member vs moderator vs admin) is layered on top via `user_roles` and the `access.ts` capabilities, not via auth itself; staff workspaces are reachable only with the matching role and capability. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028). Moderation records survive deletion but are anonymized, because `reports`, `moderation_actions`, `account_restrictions`, and `user_roles` reference profiles with `on delete set null` (0052-0053).
 
 ## Security
 
@@ -188,19 +217,27 @@ Security lives in the database, not in the client. The browser holds only the pu
 |---|---|---|
 | `VITE_SUPABASE_URL` | yes | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | yes | public anon (publishable) key |
-| `VITE_KLIPY_APP_KEY` | no | KLIPY app key that enables the cluster chat GIF picker |
+| `VITE_KLIPY_APP_KEY` | no | KLIPY app key that enables the chat/post GIF picker |
 | `VITE_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`); useful for pointing at a mirror in non-production |
 
-Only the anon key is used in the browser. All privileged operations run through Postgres RPC functions guarded by Row Level Security. No secrets ship in the client.
+The mobile app uses the `EXPO_PUBLIC_` equivalents (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT`); see [`../mobile/README.md`](../mobile/README.md).
 
-Server-side email secrets live only in the `send-emails` Edge Function environment and the matching `email_settings` DB row seeded by the migration workflows:
+Only the anon/publishable key is used in the clients. All privileged operations run through Postgres RPC functions guarded by Row Level Security. No secrets ship in the client.
+
+Server-side secrets live only in the Edge Function environments and the matching DB rows seeded by the migration workflows:
 
 | Variable | Environment | Used by |
 |---|---|---|
 | `RESEND_API_KEY` | staging + prod, edge fn env | `send-emails` → Resend |
 | `RESEND_FROM` | `no-reply@thesensorium.online` | `send-emails` sender |
-| `SENSORIUM_EMAIL_SECRET` | shared, per environment | DB cron header vs edge fn check |
-| `SENSORIUM_APP_URL` | staging / prod | seed of `email_settings.app_url` (cron CTA links) |
+| `SENSORIUM_EMAIL_SECRET` | shared, per environment | email DB cron header vs edge fn check |
+| `SENSORIUM_PUSH_SECRET` | shared, per environment | push DB cron header vs edge fn check |
+| `EXPO_ACCESS_TOKEN` | edge fn env | `send-push` → Expo Push (optional but recommended) |
+| `LIVEKIT_URL` | edge fn env | `create-call-token` + returned to the client as the room URL |
+| `LIVEKIT_API_KEY` | edge fn env | `create-call-token` signing |
+| `LIVEKIT_API_SECRET` | edge fn env | `create-call-token` signing |
+
+The email workflow also seeds `email_settings.app_url` (cron CTA links) per environment (`https://preview.thesensorium.online` on staging, `https://www.thesensorium.online` on production).
 
 ## Local Development
 
@@ -226,11 +263,14 @@ main
 
 ### GitHub Actions
 
-Three workflows validate and deploy:
+Six workflows validate and deploy:
 
-- **`ci.yml`**: runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with the v8 coverage gate, the production build (artifact uploaded), applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
-- **`migrate-staging.yml`**: applies pending migrations to the **staging** Supabase project on merge/push to `develop`, then deploys `send-emails` + sets its secrets and points the DB cron at the staging Edge Function.
+- **`ci.yml`** (web CI): runs on push and pull requests to `main` and `develop`, and on push to `feature/**`, `fix/**`, and `docs/**`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with the v8 coverage gate, the production build (artifact uploaded), applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
+- **`mobile.yml`** (mobile CI): runs when `mobile/**` changes; lints, typechecks, runs `expo-doctor`, and does a production `expo export` for Android.
+- **`migrate-staging.yml`**: applies pending migrations to the **staging** Supabase project on merge/push to `develop`, then deploys `send-emails` + `send-push` + `create-call-token` and sets their secrets, points the DB crons at the staging Edge Functions, and seeds `email_settings.app_url`.
 - **`migrate-production.yml`**: applies the same migrations to the **production** Supabase project on merge/push to `main`, and does the same edge-function/secret/cron wiring for production.
+- **`eas-build.yml`** (manual): builds the mobile app through EAS for a chosen profile/platform; requires the `EXPO_TOKEN` secret.
+- **`android-apk-build.yml`** (manual): builds an installable release APK in CI and uploads it as an artifact; reads `EXPO_PUBLIC_*` values per environment from repository variables and restores `google-services.json` from a secret.
 
 ### Deployments
 
@@ -240,29 +280,33 @@ The order matters: migrations land on staging first, are tested there, and only 
 
 ### GitHub Secrets
 
-The migration workflows are environment-aware and expect the following repository secrets. Add these in **Settings → Secrets and variables → Actions**:
+The migration workflows are environment-aware and expect the following repository secrets. Add these in **Settings → Secrets and variables → Actions**. Staging and production use **separate Supabase access tokens** so a token leak in one environment cannot touch the other.
 
-**Production**
+**Shared / both environments**
 
 | Secret | Purpose |
 |---|---|
-| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (shared by both environments) |
+| `SUPABASE_PROD_ACCESS_TOKEN` | Supabase personal access token for the production project |
+| `SUPABASE_STAGING_ACCESS_TOKEN` | Supabase personal access token for the staging project |
 | `SUPABASE_PROD_PROJECT_ID` | Production Supabase project reference |
-| `SUPABASE_PROD_DB_PASSWORD` | Production database password for `db push` |
-| `RESEND_API_KEY` | Resend API key for the `send-emails` edge function |
-| `SENSORIUM_EMAIL_SECRET` | shared secret between the production DB cron and the edge function |
-
-**Staging**
-
-| Secret | Purpose |
-|---|---|
-| `SUPABASE_ACCESS_TOKEN` | Supabase personal access token (reused) |
 | `SUPABASE_STAGING_PROJECT_ID` | Staging Supabase project reference |
+| `SUPABASE_PROD_DB_PASSWORD` | Production database password for `db push` |
 | `SUPABASE_STAGING_DB_PASSWORD` | Staging database password for `db push` |
 | `RESEND_API_KEY` | Resend API key for the `send-emails` edge function |
-| `SENSORIUM_EMAIL_SECRET` | shared secret between the staging DB cron and the edge function |
+| `SENSORIUM_EMAIL_SECRET` | shared secret between the email DB cron and the edge function |
+| `SENSORIUM_PUSH_SECRET` | shared secret between the push DB cron and the edge function |
+| `LIVEKIT_URL` | LiveKit server URL for `create-call-token` |
+| `LIVEKIT_API_KEY` | LiveKit API key for `create-call-token` |
+| `LIVEKIT_API_SECRET` | LiveKit API secret for `create-call-token` |
 
-`RESEND_API_KEY` and `SENSORIUM_EMAIL_SECRET` are also required for production (same layout as the production table above, using the prod project ref).
+**Mobile**
+
+| Secret | Purpose |
+|---|---|
+| `EXPO_TOKEN` | Expo access token for `eas-build.yml` |
+| `GOOGLE_SERVICES_JSON` | base64-encoded `google-services.json` restored for Android builds |
+
+`RESEND_FROM` (`no-reply@thesensorium.online`) is set by the migration workflow, not stored as a secret.
 
 ## Scripts
 
@@ -278,3 +322,7 @@ The migration workflows are environment-aware and expect the following repositor
 | `npm run test:watch` | run Vitest in watch mode |
 | `npm run test:e2e` | run the Playwright suite |
 | `npm run seed:demo` | seed the local database with demo data |
+| `npm run check:release` | dry-run the `develop` → `main` release merge (touches nothing) |
+| `npm run sync:legal` | refresh the legal content pages |
+
+Mobile scripts live in `mobile/package.json` (`npm start`, `npm run android`, `npm test`, `npm run lint`, `npm run sync:db-types`). See [`../mobile/README.md`](../mobile/README.md).

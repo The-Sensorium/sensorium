@@ -115,7 +115,7 @@ Effort: 2–3 days incl. device testing.
 
 ## 4. Phase 3 — Server fan-out (the big piece)
 
-Design constraints (mirror the email pipeline in `docs/EMAIL_NOTIFICATIONS_APPEALS_PLAN.md`):
+Design constraints (mirror the email pipeline in `docs/archive/EMAIL_NOTIFICATIONS_APPEALS_PLAN.md`):
 - Never send from the browser. DB is the source of truth.
 - Respect per-cluster prefs (`notification_allowed` read-time gating already
   exists — reuse it at send time).
