@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { RoomView } from './RoomView'
 import type { Message } from '../../features/cluster'
+import type { Call, CallParticipant } from '../../features/cluster-calls'
 import type { Signal } from '../../features/signals'
 import type { Vote } from '../../features/votes'
 
@@ -52,6 +53,12 @@ const hooks = vi.hoisted(() => ({
     resetTyping: vi.fn(),
   },
   myMutes: { data: [] as string[], isLoading: false, isError: false },
+  activeCall: { data: null as Call | null, isSuccess: true },
+  callParticipants: { data: [] as CallParticipant[] },
+  startCall: { mutateAsync: vi.fn().mockResolvedValue('call-1'), isPending: false },
+  joinCall: { mutateAsync: vi.fn().mockResolvedValue('call-1'), isPending: false },
+  endCall: { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false },
+  leaveCall: { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false },
   reportMember: {
     mutateAsync: vi.fn().mockResolvedValue(undefined),
     reset: vi.fn(),
@@ -107,6 +114,19 @@ vi.mock('../../features/moderation', () => ({
   ],
 }))
 vi.mock('../../features/realtime', () => ({ usePresence: () => hooks.presence }))
+vi.mock('../../features/cluster-calls', () => ({
+  useActiveCall: () => hooks.activeCall,
+  useCallParticipants: () => hooks.callParticipants,
+  useStartCall: () => hooks.startCall,
+  useJoinCall: () => hooks.joinCall,
+  useEndCall: () => hooks.endCall,
+  useLeaveCall: () => hooks.leaveCall,
+}))
+vi.mock('./room/CallOverlay', () => ({
+  CallOverlay: ({ callId }: { callId: string }) => (
+    <div data-testid="call-overlay-stub">{callId}</div>
+  ),
+}))
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: () => ({ data: undefined }) }))
 vi.mock('../../features/gifs', () => ({
   gifSearchEnabled: false,
@@ -199,6 +219,12 @@ function resetHooks() {
     signalTyping: vi.fn(),
     resetTyping: vi.fn(),
   }
+  hooks.activeCall = { data: null, isSuccess: true }
+  hooks.callParticipants = { data: [] }
+  hooks.startCall = { mutateAsync: vi.fn().mockResolvedValue('call-1'), isPending: false }
+  hooks.joinCall = { mutateAsync: vi.fn().mockResolvedValue('call-1'), isPending: false }
+  hooks.endCall = { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false }
+  hooks.leaveCall = { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false }
 }
 
 function makeUi() {
@@ -480,5 +506,64 @@ describe('RoomView timeline', () => {
 
     expect(within(dialog).getByRole('region', { name: 'Seen by' }).textContent).toContain('Bo')
     expect(within(dialog).getByRole('region', { name: 'Not seen yet' }).textContent).not.toContain('Bo')
+  })
+})
+
+function liveCall(): Call {
+  return {
+    id: 'call-1',
+    cluster_id: 'c1',
+    initiated_by: 'u2',
+    status: 'ringing',
+    created_at: '2026-01-01T12:00:00Z',
+    ended_at: null,
+    expires_at: '2026-01-01T12:30:00Z',
+  }
+}
+
+describe('RoomView calls', () => {
+  it('starts a call from the room actions menu when none is live', async () => {
+    renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+    expect(hooks.startCall.mutateAsync).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the ringing banner with Join and hides Start a call while live', async () => {
+    hooks.activeCall.data = liveCall()
+    renderRoom()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Start a call' })).not.toBeInTheDocument()
+    const banner = screen.getByRole('region', { name: 'Cluster call' })
+    expect(within(banner).getByText('Bo started a call')).toBeInTheDocument()
+
+    await userEvent.click(within(banner).getByRole('button', { name: 'Join' }))
+    expect(hooks.joinCall.mutateAsync).toHaveBeenCalledWith('call-1')
+  })
+
+  it('offers Return to call when the user already joined', () => {
+    hooks.activeCall.data = liveCall()
+    hooks.callParticipants.data = [
+      { call_id: 'call-1', user_id: 'u1', joined_at: '2026-01-01T12:00:00Z', left_at: null },
+    ]
+    renderRoom()
+
+    const banner = screen.getByRole('region', { name: 'Cluster call' })
+    expect(within(banner).getByText('You are in this call')).toBeInTheDocument()
+    expect(within(banner).getByRole('button', { name: 'Return to call' })).toBeInTheDocument()
+  })
+
+  it('keeps the overlay open after Start while the call query refetch lands', async () => {
+    const { rerender } = renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+
+    // The mutation invalidates ['active-call'] but the cached row is still null
+    // until the refetch resolves; simulate the row arriving on the next render.
+    hooks.activeCall.data = liveCall()
+    rerender(makeUi())
+
+    expect(screen.getByTestId('call-overlay-stub')).toHaveTextContent('call-1')
   })
 })

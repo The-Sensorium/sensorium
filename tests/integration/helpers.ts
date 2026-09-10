@@ -41,6 +41,13 @@ export function resolveConfig(): StackConfig {
   return config
 }
 
+/** Postgres connection string for tests that need raw catalog access (pg). */
+export function dbUrl(): string {
+  const url = process.env.INTEGRATION_DB_URL ?? stackStatus().DB_URL
+  if (!url) throw new Error('Could not resolve the local DB URL for integration tests.')
+  return url
+}
+
 /** Service-role client (bypasses RLS) used for fixture setup and cleanup. */
 export function adminClient(): SupabaseClient {
   const { url, serviceRole } = resolveConfig()

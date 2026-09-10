@@ -175,6 +175,35 @@ describe('useClusterChannel', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-members', 'c1'] })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['message-reads', 'c1'] })
   })
+
+  it('invalidates the live call when a call row is inserted or updated', () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    const client = requireSupabaseMock.mock.results[0].value
+    const insert = findBy(channelHandlers(client), 'calls', 'INSERT')
+    const update = findBy(channelHandlers(client), 'calls', 'UPDATE')
+    act(() => {
+      insert?.({} as never)
+      update?.({} as never)
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['active-call', 'c1'] })
+  })
+
+  it('routes a participant event to its cluster call caches', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    mockResult.value = { data: { cluster_id: 'c1' }, error: null }
+    const handler = findBy(
+      channelHandlers(requireSupabaseMock.mock.results[0].value),
+      'call_participants',
+      'INSERT',
+    )
+    act(() => {
+      handler?.({ new: { call_id: 'call-1', user_id: 'u2' } } as never)
+    })
+    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['active-call', 'c1'] }))
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['call-participants', 'call-1'] })
+  })
 })
 
 describe('usePresence', () => {

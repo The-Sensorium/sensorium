@@ -32,8 +32,11 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
     onStopTyping: vi.fn(),
     onSend: vi.fn().mockResolvedValue(undefined),
     onSendImage: vi.fn().mockResolvedValue(undefined),
+    onSendGif: vi.fn().mockResolvedValue(undefined),
     onCancelReply: vi.fn(),
     onOpenSignal: vi.fn(),
+    onStartCall: vi.fn(),
+    callActive: false,
   }
   const props = { ...base, ...overrides }
   const utils = render(
@@ -49,8 +52,11 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
       onStopTyping={props.onStopTyping}
       onSend={props.onSend}
       onSendImage={props.onSendImage}
+      onSendGif={props.onSendGif}
       onCancelReply={props.onCancelReply}
       onOpenSignal={props.onOpenSignal}
+      onStartCall={props.onStartCall}
+      callActive={props.callActive}
     />,
   )
   return { ...utils, props }
@@ -94,6 +100,19 @@ describe('Composer', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Raise a signal' }))
     expect(props.onOpenSignal).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers Start a call from the room actions menu only when no call is live', async () => {
+    const { props } = setup()
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+    expect(props.onStartCall).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides Start a call from the menu while a call is live', async () => {
+    setup({ callActive: true })
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Start a call' })).not.toBeInTheDocument()
   })
 
   it('does not submit the message when Enter is pressed in the GIF search box', async () => {

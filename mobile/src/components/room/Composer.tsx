@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Plus, Send, X } from 'lucide-react-native'
+import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Phone, Plus, Send, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
 import {
   filterMentionCandidates,
@@ -38,6 +38,8 @@ export function Composer({
   onSendImage,
   onSendGif,
   onOpenSignal,
+  onStartCall,
+  callActive,
   onCancelReply,
 }: {
   members: MentionMember[]
@@ -53,6 +55,8 @@ export function Composer({
   onSendImage(image: PickedImage, caption: string | null): Promise<void>
   onSendGif(gif: Gif): Promise<void>
   onOpenSignal(): void
+  onStartCall(): void
+  callActive: boolean
   onCancelReply(): void
 }) {
   const t = useTheme()
@@ -255,6 +259,18 @@ export function Composer({
           >
             <Megaphone size={16} color={t.onSurface} strokeWidth={1.5} />
           </MenuRow>
+          {!callActive ? (
+            <MenuRow
+              label="Start a call"
+              disabled={raisePending}
+              onPress={() => {
+                setMenuOpen(false)
+                onStartCall()
+              }}
+            >
+              <Phone size={16} color={t.onSurface} strokeWidth={1.5} />
+            </MenuRow>
+          ) : null}
         </View>
       ) : null}
       {mention && mentionCandidates.length > 0 ? (

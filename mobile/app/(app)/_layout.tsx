@@ -94,6 +94,10 @@ export default function AppTabs() {
       <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ href: null }} />
       <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null }} />
       <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, animation: 'fade' }} />
+      <Tabs.Screen
+        name="cluster/[clusterId]/call"
+        options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }}
+      />
       <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null }} />
