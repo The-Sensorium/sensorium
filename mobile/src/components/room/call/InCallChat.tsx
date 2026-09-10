@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -14,17 +14,28 @@ import { useTheme } from '../../../lib/use-theme'
 
 type InCallMessage = ReturnType<typeof useChat>['chatMessages'][number]
 
-function ChatRow({ item }: { item: InCallMessage }) {
+const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
+
+function isSameSender(a: InCallMessage, b: InCallMessage): boolean {
+  return Boolean(a.from && b.from && a.from.identity === b.from.identity)
+}
+
+function ChatRow({ item, showName }: { item: InCallMessage; showName: boolean }) {
   const t = useTheme()
   const mine = item.from?.isLocal === true
   const sender = item.from?.name || 'Member'
 
   return (
-    <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginVertical: 2 }}>
-      {!mine ? (
-        <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant, marginBottom: 2 }}>
-          {sender}
-        </Text>
+    <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginTop: showName ? 12 : 2 }}>
+      {showName ? (
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 4, paddingHorizontal: 2 }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
+            {sender}
+          </Text>
+          <Text style={{ fontSize: 11, color: t.onSurfaceVariant, opacity: 0.7 }}>
+            {timeFormatter.format(new Date(item.timestamp))}
+          </Text>
+        </View>
       ) : null}
       <View
         style={{
@@ -45,11 +56,29 @@ function ChatRow({ item }: { item: InCallMessage }) {
  * In-call chat over LiveKit's data channel, so it works with the web call's
  * Messages panel too. Ephemeral by design: history lives only for the session.
  */
-export function InCallChat() {
+export function InCallChat({
+  open,
+  onUnreadChange,
+}: {
+  open: boolean
+  onUnreadChange?: (count: number) => void
+}) {
   const t = useTheme()
   const { chatMessages, send, isSending } = useChat()
   const [draft, setDraft] = useState('')
   const listRef = useRef<FlatList<InCallMessage> | null>(null)
+  const [readCount, setReadCount] = useState(0)
+
+  // Unread = messages that arrived while the sheet was closed; opening marks
+  // everything read. Mirrors the count LiveKit shows on the web chat toggle.
+  useEffect(() => {
+    if (open) setReadCount(chatMessages.length)
+  }, [open, chatMessages.length])
+
+  const unread = open ? 0 : Math.max(0, chatMessages.length - readCount)
+  useEffect(() => {
+    onUnreadChange?.(unread)
+  }, [unread, onUnreadChange])
 
   async function handleSend() {
     const text = draft.trim()
@@ -64,8 +93,11 @@ export function InCallChat() {
         ref={listRef}
         data={chatMessages}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ChatRow item={item} />}
-        contentContainerStyle={{ flexGrow: 1, paddingVertical: 8 }}
+        renderItem={({ item, index }) => {
+          const prev = index > 0 ? chatMessages[index - 1] : undefined
+          return <ChatRow item={item} showName={!prev || !isSameSender(prev, item)} />
+        }}
+        contentContainerStyle={{ flexGrow: 1, paddingVertical: 8, paddingHorizontal: 2 }}
         keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         ListEmptyComponent={

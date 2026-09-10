@@ -42,16 +42,28 @@ export default function CallScreen() {
   const call = useCall(callId || null)
   const leftRef = useRef(false)
 
-  // Single exit path: leave the call (best effort) and go back once. Both the
-  // hang-up control and a LiveKit disconnect route through here, so the guard
-  // stops a manual disconnect from popping two screens. Leaving does not end
-  // the call for others; the server ends it when the last participant leaves.
+  // The cluster routes live in a tab navigator, whose default back behavior
+  // sends `goBack` to the first tab (Home) rather than the room the call was
+  // opened from. Navigate to the room explicitly so leaving a call lands where
+  // the user started.
+  const exitToRoom = useCallback(() => {
+    if (!clusterId) {
+      router.back()
+      return
+    }
+    router.navigate({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
+  }, [clusterId])
+
+  // Single exit path: leave the call (best effort) and return to the room once.
+  // Both the hang-up control and a LiveKit disconnect route through here, so
+  // the guard stops a manual disconnect from navigating twice. Leaving does not
+  // end the call for others; the server ends it when the last participant leaves.
   const finishCall = useCallback(() => {
     if (leftRef.current) return
     leftRef.current = true
-    router.back()
+    exitToRoom()
     void leaveCall.mutateAsync(callId).catch(() => {})
-  }, [callId, leaveCall])
+  }, [callId, exitToRoom, leaveCall])
 
   // Calls are audio-first on mobile: the PreJoin sheet starts the camera off
   // and narrows the join instead of blocking it when permissions are denied.
@@ -59,6 +71,7 @@ export default function CallScreen() {
   const [micOn, setMicOn] = useState(true)
   const [cameraOn, setCameraOn] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const [callUnread, setCallUnread] = useState(0)
 
   function handleJoinCall(choices: PreJoinChoices) {
     setMicOn(choices.mic)
@@ -83,8 +96,15 @@ export default function CallScreen() {
   }, [expires, remaining, finishCall])
 
   useEffect(() => {
-    if (tokenQuery.isSuccess && !tokenQuery.data) router.back()
-  }, [tokenQuery.isSuccess, tokenQuery.data])
+    if (tokenQuery.isSuccess && !tokenQuery.data) exitToRoom()
+  }, [tokenQuery.isSuccess, tokenQuery.data, exitToRoom])
+
+  // Navigate out of a malformed route in an effect rather than during render,
+  // so the imperative navigation isn't a render-phase side effect.
+  const missingParams = !callId || !clusterId
+  useEffect(() => {
+    if (missingParams) exitToRoom()
+  }, [missingParams, exitToRoom])
 
   // Safety net: room.tsx inserts the participant row before navigating here, so
   // if the screen is dismissed without finishCall (e.g. Android hardware back,
@@ -104,6 +124,7 @@ export default function CallScreen() {
       leftRef.current = false
       setJoined(false)
       setChatOpen(false)
+      setCallUnread(0)
       return () => {
         // Leaving the screen must drop the LiveKit connection however it was
         // left (explicit hang-up, hardware back, or navigating away), otherwise
@@ -129,10 +150,7 @@ export default function CallScreen() {
     }
   }, [])
 
-  if (!callId || !clusterId) {
-    router.back()
-    return null
-  }
+  if (missingParams) return null
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
@@ -193,9 +211,14 @@ export default function CallScreen() {
               initialMicOn={micOn}
               initialCameraOn={cameraOn}
               chatOpen={chatOpen}
+              unread={callUnread}
               onChatPress={() => setChatOpen((open) => !open)}
             />
-            <CallChatSheet open={chatOpen} onClose={() => setChatOpen(false)} />
+            <CallChatSheet
+              open={chatOpen}
+              onClose={() => setChatOpen(false)}
+              onUnreadChange={setCallUnread}
+            />
           </View>
         </LiveKitRoom>
       )}

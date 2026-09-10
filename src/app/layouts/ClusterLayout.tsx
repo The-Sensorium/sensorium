@@ -133,7 +133,7 @@ export function ClusterLayout() {
                 id="cluster-sections-menu"
                 role="menu"
                 aria-label="Cluster sections"
-                className="absolute right-0 top-full z-40 mt-2 flex w-48 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-lift"
+                className="absolute right-0 top-full z-40 mt-2 flex w-48 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift"
                 onClick={(e) => e.stopPropagation()}
               >
                 {SECTIONS.map((section) => (

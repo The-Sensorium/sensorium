@@ -128,7 +128,7 @@ export function MessageItem({
 
           {menuOpen && (
             <div
-              className="mb-1 flex w-max gap-1 rounded-xl border border-outline-variant/60 bg-surface p-1 shadow-soft"
+              className="mb-1 flex w-max gap-1 rounded-xl border border-outline-variant/60 bg-surface p-2 shadow-soft"
               role="menu"
               onClick={(e) => e.stopPropagation()}
             >
