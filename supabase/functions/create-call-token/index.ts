@@ -110,14 +110,27 @@ async function rpc<T>(
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// The web app calls this function cross-origin from the browser, so every
+// response (including the OPTIONS preflight) must carry CORS headers. Native
+// (mobile) fetch ignores CORS, which is why this only bit the web client.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+}
+
 function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 }
 
 Deno.serve(async (request) => {
+  if (request.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
   const livekitUrl = Deno.env.get('LIVEKIT_URL')
@@ -183,43 +196,56 @@ Deno.serve(async (request) => {
     return json({ error: 'call_ended' }, 403)
   }
 
-  const [members, clusters, participants, profiles] = await Promise.all([
-    rest<{ user_id: string }[]>(
-      supabaseUrl,
-      serviceRoleKey,
-      `cluster_members?cluster_id=eq.${call.cluster_id}&user_id=eq.${callerId}&left_at=is.null&select=user_id`,
-    ),
-    rest<{ status: string }[]>(
-      supabaseUrl,
-      serviceRoleKey,
-      `clusters?id=eq.${call.cluster_id}&select=status`,
-    ),
-    rest<{ user_id: string }[]>(
-      supabaseUrl,
-      serviceRoleKey,
-      `call_participants?call_id=eq.${call.id}&user_id=eq.${callerId}&left_at=is.null&select=user_id`,
-    ),
-    rest<{ display_name: string | null }[]>(
-      supabaseUrl,
-      serviceRoleKey,
-      `profiles?id=eq.${callerId}&select=display_name`,
-    ),
-  ])
-  if (members.length === 0) return json({ error: 'not_member' }, 403)
-  if (clusters[0]?.status === 'archived') return json({ error: 'cluster_archived' }, 403)
-  // Membership is not enough: the caller must have joined via join_call/start_call,
-  // so the participant list (and its cap) is the real gate to the media plane.
-  if (participants.length === 0) return json({ error: 'not_participant' }, 403)
+  let members: { user_id: string }[]
+  let clusters: { status: string }[]
+  let participants: { user_id: string }[]
+  let profiles: { display_name: string | null }[]
+  let token: string
+  try {
+    ;[members, clusters, participants, profiles] = await Promise.all([
+      rest<{ user_id: string }[]>(
+        supabaseUrl,
+        serviceRoleKey,
+        `cluster_members?cluster_id=eq.${call.cluster_id}&user_id=eq.${callerId}&left_at=is.null&select=user_id`,
+      ),
+      rest<{ status: string }[]>(
+        supabaseUrl,
+        serviceRoleKey,
+        `clusters?id=eq.${call.cluster_id}&select=status`,
+      ),
+      rest<{ user_id: string }[]>(
+        supabaseUrl,
+        serviceRoleKey,
+        `call_participants?call_id=eq.${call.id}&user_id=eq.${callerId}&left_at=is.null&select=user_id`,
+      ),
+      rest<{ display_name: string | null }[]>(
+        supabaseUrl,
+        serviceRoleKey,
+        `profiles?id=eq.${callerId}&select=display_name`,
+      ),
+    ])
+    if (members.length === 0) return json({ error: 'not_member' }, 403)
+    if (clusters[0]?.status === 'archived') return json({ error: 'cluster_archived' }, 403)
+    // Membership is not enough: the caller must have joined via join_call/start_call,
+    // so the participant list (and its cap) is the real gate to the media plane.
+    if (participants.length === 0) return json({ error: 'not_participant' }, 403)
 
-  // Room is unique per call, not per cluster: a stable name would surface any
-  // lingering connection from a previous call in the same cluster (ghost
-  // participant) inside the new call. call.id is shared by every joiner.
-  const token = await mintLiveKitToken(
-    `cluster:${call.cluster_id}:${call.id}`,
-    callerId,
-    profiles[0]?.display_name ?? null,
-    apiKey,
-    apiSecret,
-  )
+    // Room is unique per call, not per cluster: a stable name would surface any
+    // lingering connection from a previous call in the same cluster (ghost
+    // participant) inside the new call. call.id is shared by every joiner.
+    token = await mintLiveKitToken(
+      `cluster:${call.cluster_id}:${call.id}`,
+      callerId,
+      profiles[0]?.display_name ?? null,
+      apiKey,
+      apiSecret,
+    )
+  } catch (error) {
+    // Keep even unexpected failures CORS-clean so the browser surfaces the error
+    // instead of an opaque CORS failure.
+    console.error('token mint failed:', error)
+    return json({ error: 'server_error' }, 500)
+  }
+
   return json({ token, url: livekitUrl }, 200)
 })
