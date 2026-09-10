@@ -26,11 +26,28 @@ For a quick start and the front-door overview, see the [README](../README.md).
 | Layer | Choice |
 |---|---|
 | Database | Supabase Postgres |
-| Auth | Supabase Auth (email/password) |
+| Auth | Supabase Auth (email/password + Google OAuth) |
 | Storage | Supabase Storage (private buckets) |
 | Realtime | Supabase Realtime |
+| Edge Functions | Deno: `send-emails` (Resend), `send-push` (Expo), `create-call-token` (LiveKit) |
+| Calls | LiveKit (audio/video rooms per cluster) |
 | Scheduled jobs | pg_cron over database functions |
 | CLI | Supabase CLI (local stack via Docker) |
+
+### Mobile
+
+The member-only Android app lives in `mobile/` and shares the web backend. See [`../mobile/README.md`](../mobile/README.md) for setup and conventions.
+
+| Layer | Choice |
+|---|---|
+| Runtime | Expo SDK 57, React Native 0.86, React 19 |
+| Router | `expo-router` (file-based, typed routes) |
+| Data fetching | TanStack Query 5 + Supabase Realtime |
+| Auth | Supabase Auth (email/password + Google OAuth via `expo-web-browser`) |
+| Calls | `@livekit/react-native` + `@livekit/react-native-webrtc` |
+| Push | `expo-notifications` → Expo Push → FCM on Android (`google-services.json`, gitignored) |
+| GIFs | KLIPY |
+| Builds | EAS + the Android APK CI workflow |
 
 ## Repository Layout
 
@@ -219,6 +236,7 @@ Security lives in the database, not in the client. The browser holds only the pu
 | `VITE_SUPABASE_ANON_KEY` | yes | public anon (publishable) key |
 | `VITE_KLIPY_APP_KEY` | no | KLIPY app key that enables the chat/post GIF picker |
 | `VITE_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`); useful for pointing at a mirror in non-production |
+| `VITE_GEOCODING_ENDPOINT` | no | Geocoding endpoint override used by Local mode (falls back to keyless BigDataCloud, then raw coordinates) |
 
 The mobile app uses the `EXPO_PUBLIC_` equivalents (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT`); see [`../mobile/README.md`](../mobile/README.md).
 
@@ -324,5 +342,10 @@ The migration workflows are environment-aware and expect the following repositor
 | `npm run seed:demo` | seed the local database with demo data |
 | `npm run check:release` | dry-run the `develop` → `main` release merge (touches nothing) |
 | `npm run sync:legal` | refresh the legal content pages |
+
+Non-npm helpers live in `scripts/`:
+
+- `scripts/push-local.ps1` - after `supabase db reset`, `push_settings` is re-seeded as inert (`edge_url=null`, `enabled=false`). This script re-points it at the locally served `send-push` Edge Function and starts that worker in the background so the cron pump can drain `push_outbox` again. Only needed when testing push locally. Run from the repo root: `powershell -ExecutionPolicy Bypass -File scripts/push-local.ps1`.
+- `scripts/seed-demo.mjs`, `scripts/sync-legal.mjs`, `scripts/check-release-merge.mjs` - the implementations behind the npm scripts above.
 
 Mobile scripts live in `mobile/package.json` (`npm start`, `npm run android`, `npm test`, `npm run lint`, `npm run sync:db-types`). See [`../mobile/README.md`](../mobile/README.md).

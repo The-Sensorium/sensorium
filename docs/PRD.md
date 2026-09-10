@@ -85,6 +85,10 @@ Open question: should Interest based clusters remain as a mode? Beta interest fo
 
 ### Thin Pool Handling
 
+> **Not implemented today.** There is no wait/broaden prompt in the app yet. Users
+> simply wait in whatever queues they joined and can add or leave modes from the
+> Clusters page. The behavior below is the intended design.
+
 If a selected matching mode doesn't have enough people to fill a cluster (for example, very few users share an exact birthdate), the user is presented a choice rather than the system deciding automatically:
 - Keep waiting in the current mode's queue, or
 - Broaden to a wider mode (Exact Birthdate to Birth Year + Month to Birth Year)
