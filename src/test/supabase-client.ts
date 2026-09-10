@@ -35,6 +35,7 @@ export function makeSupabaseClient(ref: { value: MockSupabaseResult }) {
   return {
     from: vi.fn(() => sharedChain),
     rpc: vi.fn(() => Promise.resolve(ref.value)),
+    functions: { invoke: vi.fn(() => Promise.resolve(ref.value)) },
     channel: vi.fn(() => channel),
     removeChannel: vi.fn(),
     storage: { from: vi.fn(() => storageBucket) },

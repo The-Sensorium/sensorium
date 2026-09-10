@@ -158,6 +158,27 @@ async function patchCommentLike(
 }
 
 /**
+ * Route a call-participant INSERT/UPDATE/DELETE to the caches of the cluster
+ * its call belongs to (participants carry no cluster id). Patches only caches
+ * that already exist.
+ */
+async function patchCallParticipants(
+  queryClient: ReturnType<typeof useQueryClient>,
+  participant: { call_id: string },
+) {
+  const supabase = requireSupabase()
+  const { data, error } = await supabase
+    .from('calls')
+    .select('cluster_id')
+    .eq('id', participant.call_id)
+    .maybeSingle()
+  if (error || !data) return
+  const clusterId = (data as { cluster_id: string }).cluster_id
+  void queryClient.invalidateQueries({ queryKey: ['active-call', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['call-participants', participant.call_id] })
+}
+
+/**
  * Subscribes to Postgres Changes for one cluster and patches the TanStack caches in
  * place (docs 04 §1 / §3). Safe to mount once per cluster shell - RLS keeps locked
  * clusters from delivering anything. Message-reaction and signal-reply events carry no
@@ -426,6 +447,51 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
         { event: 'DELETE', schema: 'public', table: 'comment_likes' },
         (payload) => {
           void patchCommentLike(queryClient, payload.old as CommentLikeRealtime, 'delete')
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'calls',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ['active-call', clusterId] })
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'calls',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ['active-call', clusterId] })
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'call_participants' },
+        (payload) => {
+          void patchCallParticipants(queryClient, payload.new as { call_id: string })
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'call_participants' },
+        (payload) => {
+          void patchCallParticipants(queryClient, payload.new as { call_id: string })
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'call_participants' },
+        (payload) => {
+          void patchCallParticipants(queryClient, payload.old as { call_id: string })
         },
       )
       .subscribe()

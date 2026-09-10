@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Plus, Send, X } from 'lucide-react'
+import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import {
@@ -29,6 +29,8 @@ export function Composer({
   onSendImage,
   onSendGif,
   onOpenSignal,
+  onStartCall,
+  callActive,
   onCancelReply,
 }: {
   members: MentionMember[]
@@ -44,6 +46,8 @@ export function Composer({
   onSendImage(file: File): Promise<void>
   onSendGif(gif: Gif): Promise<void>
   onOpenSignal(): void
+  onStartCall(): void
+  callActive: boolean
   onCancelReply(): void
 }) {
   const [draft, setDraft] = useState('')
@@ -298,6 +302,21 @@ export function Composer({
               >
                 <Megaphone className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Raise a signal
               </button>
+              {!callActive && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-e2e="start-call"
+                  disabled={raisePending}
+                  onClick={() => {
+                    setComposerOpen(false)
+                    onStartCall()
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+                >
+                  <Phone className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Start a call
+                </button>
+              )}
             </div>
           )}
         </div>

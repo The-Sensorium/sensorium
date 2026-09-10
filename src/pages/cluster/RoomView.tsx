@@ -26,6 +26,13 @@ import {
 } from '../../features/cluster'
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../features/signals'
 import { useClusterVotes, type Vote } from '../../features/votes'
+import {
+  useActiveCall,
+  useCallParticipants,
+  useJoinCall,
+  useLeaveCall,
+  useStartCall,
+} from '../../features/cluster-calls'
 import { useMarkClusterRead } from '../../features/notifications'
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
 import { MutedPlaceholder } from '../../components/MutedPlaceholder'
@@ -38,6 +45,8 @@ import { MessageInfoModal } from './room/MessageInfoModal'
 import { notSeenByMembers, seenByMembers } from './room/seen-by'
 import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { TypingBubble } from './room/TypingBubble'
+import { CallBanner } from './room/CallBanner'
+import { CallOverlay } from './room/CallOverlay'
 import { SignalRow } from './room/SignalRow'
 import { VoteRow } from './room/VoteRow'
 import { ReportModal } from '../../components/ReportModal'
@@ -74,6 +83,15 @@ export function RoomView() {
   const markRead = useMarkClusterRead()
   const myMutes = useMyMutes(clusterId !== '')
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const roomClusterId = clusterId === '' ? null : clusterId
+  const activeCall = useActiveCall(roomClusterId)
+  const callParticipants = useCallParticipants(activeCall.data?.id ?? null)
+  const startCall = useStartCall(roomClusterId)
+  const joinCall = useJoinCall(roomClusterId)
+  const leaveCall = useLeaveCall(roomClusterId)
+  const [inCall, setInCall] = useState(false)
+  const joinedCall = (callParticipants.data ?? []).some((p) => p.user_id === userId)
+  const callPending = startCall.isPending || joinCall.isPending
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   function reveal(id: string) {
     setRevealed((prev) => {
@@ -250,6 +268,7 @@ export function RoomView() {
     setHasMore(false)
     prevOldestIdRef.current = null
     setReplyTo(null)
+    setInCall(false)
   }, [clusterId])
 
   // Auto-follow the newest message while the user is near the bottom. Once they
@@ -501,6 +520,49 @@ export function RoomView() {
     }
   }
 
+  async function handleStartCall() {
+    setError(null)
+    try {
+      await startCall.mutateAsync()
+      setInCall(true)
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not start the call. Try again.'))
+    }
+  }
+
+  async function handleJoinCall(callId: string) {
+    setError(null)
+    try {
+      await joinCall.mutateAsync(callId)
+      setInCall(true)
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not join the call. Try again.'))
+    }
+  }
+
+  async function handleHangUp(callId: string) {
+    setError(null)
+    try {
+      await leaveCall.mutateAsync(callId)
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not leave the call. Try again.'))
+    } finally {
+      setInCall(false)
+    }
+  }
+
+  // Close the overlay only when a call we were in disappears. Tracking the
+  // previous call id (not just data presence) avoids closing immediately after
+  // Start: the mutation invalidates the query while its cached data is still
+  // null, then the refetch supplies the new call.
+  const prevCallIdRef = useRef<string | null>(null)
+  useEffect(() => {
+    const id = activeCall.data?.id ?? null
+    const prev = prevCallIdRef.current
+    prevCallIdRef.current = id
+    if (inCall && prev !== null && id === null) setInCall(false)
+  }, [inCall, activeCall.data])
+
   const typingMembers = [...typing]
     .map((id) => memberMap.get(id))
     .filter((m): m is NonNullable<typeof m> => Boolean(m))
@@ -560,6 +622,17 @@ export function RoomView() {
           </ul>
         </div>
       </section>
+      {activeCall.data && !inCall && (
+        <CallBanner
+          call={activeCall.data}
+          initiatorName={memberMap.get(activeCall.data.initiated_by)?.display_name ?? 'A member'}
+          participantCount={(callParticipants.data ?? []).length}
+          joined={joinedCall}
+          pending={callPending}
+          onJoin={() => void handleJoinCall(activeCall.data!.id)}
+          onOpen={() => setInCall(true)}
+        />
+      )}
       {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
        the timeline scrolls inside the container and the page never moves. */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -729,6 +802,8 @@ export function RoomView() {
         onSendImage={persistSendImage}
         onSendGif={persistSendGif}
         onOpenSignal={() => setSignalOpen(true)}
+        onStartCall={() => void handleStartCall()}
+        callActive={Boolean(activeCall.data)}
         onCancelReply={cancelReply}
       />
 
@@ -760,6 +835,16 @@ export function RoomView() {
             name: memberMap.get(reportFor.author_id)?.display_name ?? 'Member',
           }}
           messageId={reportFor.id}
+        />
+      )}
+
+      {inCall && activeCall.data && (
+        <CallOverlay
+          callId={activeCall.data.id}
+          videoOnJoin
+          startedAt={activeCall.data.created_at}
+          expiresAt={activeCall.data.expires_at}
+          onHangUp={() => void handleHangUp(activeCall.data!.id)}
         />
       )}
     </section>

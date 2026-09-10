@@ -149,6 +149,87 @@ export type Database = {
           },
         ]
       }
+      call_participants: {
+        Row: {
+          call_id: string
+          joined_at: string
+          left_at: string | null
+          user_id: string
+        }
+        Insert: {
+          call_id: string
+          joined_at?: string
+          left_at?: string | null
+          user_id: string
+        }
+        Update: {
+          call_id?: string
+          joined_at?: string
+          left_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_participants_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calls: {
+        Row: {
+          cluster_id: string
+          created_at: string
+          ended_at: string | null
+          expires_at: string
+          id: string
+          initiated_by: string
+          status: string
+        }
+        Insert: {
+          cluster_id: string
+          created_at?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          initiated_by: string
+          status?: string
+        }
+        Update: {
+          cluster_id?: string
+          created_at?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          initiated_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calls_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calls_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cluster_members: {
         Row: {
           cluster_id: string
@@ -1741,6 +1822,8 @@ export type Database = {
         Args: { p_content: string; p_post_id: string; p_title?: string }
         Returns: undefined
       }
+      end_call: { Args: { p_call_id: string }; Returns: undefined }
+      end_expired_calls: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: {
           p_params?: Json
@@ -2130,6 +2213,7 @@ export type Database = {
         Args: { p_reason: string; p_report_id?: string; p_user_id: string }
         Returns: undefined
       }
+      join_call: { Args: { p_call_id: string }; Returns: string }
       join_queue: {
         Args: {
           p_mode: Database["public"]["Enums"]["matching_mode"]
@@ -2140,6 +2224,7 @@ export type Database = {
           waiting: number
         }[]
       }
+      leave_call: { Args: { p_call_id: string }; Returns: undefined }
       leave_cluster: { Args: { p_cluster_id: string }; Returns: undefined }
       leave_queue: {
         Args: { p_mode: Database["public"]["Enums"]["matching_mode"] }
@@ -2349,6 +2434,7 @@ export type Database = {
         Args: { p_round_id: string; p_system_user: string }
         Returns: undefined
       }
+      start_call: { Args: { p_cluster_id: string }; Returns: string }
       start_name_vote: {
         Args: { p_cluster_id: string; p_name: string }
         Returns: string
