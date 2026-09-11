@@ -46,11 +46,11 @@ export function SessionRolePage() {
     <main className="min-h-screen overflow-hidden bg-background px-4 py-4 text-on-surface sm:px-6 sm:py-6 lg:px-8 lg:py-7">
       <div className="mx-auto w-full max-w-5xl">
         <section className="flex min-w-0 flex-col px-1 py-2 sm:px-4 sm:py-4 lg:px-6 lg:py-6">
-          <header className="flex items-start justify-between gap-6">
-            <Link to="/" className="flex items-center gap-2 transition-colors hover:text-on-surface">
-              <BrandMark size={24} />
-              <span className="font-brand text-base tracking-[0.18em] text-primary">Sensorium</span>
-            </Link>
+            <header className="flex items-start justify-between gap-6">
+              <Link to="/" className="flex flex-col items-center gap-2 transition-colors hover:text-on-surface">
+                <BrandMark size={64} />
+                <span className="font-brand text-lg tracking-[0.15em] text-primary">Sensorium</span>
+              </Link>
             <div className="ml-auto">
               <ThemeToggle />
             </div>
