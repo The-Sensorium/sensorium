@@ -1,5 +1,7 @@
 # Admin And Moderation Production Readiness Plan
 
+> Status: shipped — all 8 phases plus review fixes landed on `feat/admin-moderation-production` (migrations `0117`–`0127`).
+
 ## Purpose
 
 This document reviews the current Sensorium web admin and moderation flow and lays out a detailed implementation plan to make it production-ready. It is based on the current React/Supabase implementation in:
