@@ -14,14 +14,38 @@ import { timeAgo } from '../../features/notifications'
 const ACTION_OPTIONS = Constants.public.Enums.moderation_action_type as readonly string[]
 const EXPORT_CAP = 1000
 
+function formatMetadataValue(value: unknown): string {
+  if (value === null || value === undefined) return '—'
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
 function MetadataView({ metadata }: { metadata: unknown }) {
   if (metadata == null || (typeof metadata === 'object' && Object.keys(metadata).length === 0)) {
     return <p className="text-sm text-on-surface-variant">No metadata recorded.</p>
   }
+  if (typeof metadata !== 'object') {
+    return (
+      <p className="rounded-md bg-surface-container/60 p-3 text-sm text-on-surface">
+        {formatMetadataValue(metadata)}
+      </p>
+    )
+  }
   return (
-    <pre className="overflow-x-auto rounded-md bg-surface-container/60 p-3 text-xs leading-5 text-on-surface">
-      {JSON.stringify(metadata, null, 2)}
-    </pre>
+    <dl className="space-y-2">
+      {Object.entries(metadata).map(([key, value]) => {
+        const label = key.replace(/_/g, ' ')
+        return (
+          <div key={key} className="flex justify-between gap-3 rounded-md bg-surface-container/60 px-3 py-2 text-sm">
+            <dt className="shrink-0 font-medium text-on-surface-variant">{label.charAt(0).toUpperCase() + label.slice(1)}</dt>
+            <dd className="break-all text-right font-medium text-on-surface" title={typeof value === 'string' ? value : undefined}>
+              {formatMetadataValue(value)}
+            </dd>
+          </div>
+        )
+      })}
+    </dl>
   )
 }
 
