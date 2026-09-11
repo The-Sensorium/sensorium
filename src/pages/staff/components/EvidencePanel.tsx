@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { Loader2 } from 'lucide-react'
 import {
   commentSummary,
@@ -224,11 +223,6 @@ function ReportedPost({
       <p className="mt-2 text-xs text-on-surface-variant">
         by {post.author_display_name ?? 'Unknown'} · {post.cluster_name ?? 'Unknown cluster'}
       </p>
-      {post.id && (
-        <Link to={`/posts/${post.id}`} className="mt-1 inline-block text-xs font-semibold text-primary">
-          Open member view
-        </Link>
-      )}
       {canAct && post.id && !deleted ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {!hidden ? (
@@ -284,11 +278,6 @@ function ReportedComment({
         <img src={imageSrc} alt="Reported comment media" className="mt-2 max-h-64 rounded-xl object-cover" />
       )}
       <p className="mt-2 text-xs text-on-surface-variant">by {comment.author_display_name ?? 'Unknown'}</p>
-      {comment.post_id && (
-        <Link to={`/posts/${comment.post_id}`} className="mt-1 inline-block text-xs font-semibold text-primary">
-          Open member view
-        </Link>
-      )}
       {canAct && comment.id && !deleted ? (
         <div className="mt-3 flex flex-wrap gap-2">
           {!hidden ? (

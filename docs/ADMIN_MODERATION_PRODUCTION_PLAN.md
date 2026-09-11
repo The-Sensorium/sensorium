@@ -543,6 +543,7 @@ Frontend:
 - add hide/restore comment actions
 - link audit rows to the correct content/report
 - shipped in `0120_moderation_post_comment_case.sql` + `EvidencePanel`: case v2 carries `post`/`comment` payloads (author, media, moderation/deleted state, parent post context); staff image preview reuses signed URLs via new `posts-images`/`chat-images` staff-read storage policies (buckets stay private); audit rows link to the case via `report_id`
+- deliberately no member-view link on reported posts/comments: staff are rarely members of the reported cluster, so the member route would bounce to the workspace picker; the evidence panel is the reliable preview
 
 Tests:
 

@@ -144,7 +144,7 @@ describe('case context panels', () => {
     expect(screen.getByText('Reported title')).toBeInTheDocument()
     expect(screen.getByText('Reported post body')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hide post' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open member view' })).toHaveAttribute('href', '/posts/p-1')
+    expect(screen.queryByRole('link', { name: 'Open member view' })).not.toBeInTheDocument()
   })
 
   it('EvidencePanel renders a reported comment with parent post context', () => {
