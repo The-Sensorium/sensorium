@@ -300,7 +300,7 @@ export function ModerationQueuePage() {
                     </span>
                     <span className="shrink-0 text-xs text-on-surface-variant">{timeAgo(row.created_at)}</span>
                   </span>
-                  <span className="mt-1 block text-sm text-on-surface-variant">
+                  <span className="mt-1 line-clamp-2 block text-sm text-on-surface-variant">
                     {row.cluster_name} · {row.snippet ? row.snippet : 'no details'}
                   </span>
                   <span className="mt-2 flex flex-wrap gap-1.5">
