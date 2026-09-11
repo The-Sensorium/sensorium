@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { ArrowLeft } from 'lucide-react'
 import {
   MODERATION_SEVERITY_LABELS,
@@ -14,7 +13,7 @@ import {
 import { timeAgo, timeUntil } from '../../../features/notifications'
 
 export function CaseHeader({
-  backPath,
+  onBack,
   data,
   claimedByMe,
   open,
@@ -24,7 +23,7 @@ export function CaseHeader({
   onRelease,
   onDismiss,
 }: {
-  backPath: string
+  onBack: () => void
   data: ModerationCaseV2Row
   claimedByMe: boolean
   open: boolean
@@ -41,12 +40,14 @@ export function CaseHeader({
     <div className="space-y-4">
       <header className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3">
-          <Link
-            to={backPath}
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back"
             className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container"
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-          </Link>
+          </button>
           <div>
             <h1 className="font-display text-3xl font-semibold text-on-surface">Report case</h1>
             <p className="mt-1 text-sm text-on-surface-variant">

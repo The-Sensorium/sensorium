@@ -44,7 +44,7 @@ function renderHeader(overrides: Partial<ModerationCaseV2Row> = {}, extra: Recor
   return render(
     <MemoryRouter>
       <CaseHeader
-        backPath="/reports"
+        onBack={noop}
         data={{ ...baseRow, ...overrides }}
         claimedByMe={false}
         open

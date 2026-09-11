@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router'
 import { ArrowLeft, CheckCircle2, Loader2, MessageSquareWarning } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
+import { useBackOr } from '../../lib/use-back-or'
 import { cn } from '../../lib/utils'
 import {
   APPEAL_STATUS_LABELS,
@@ -42,8 +43,8 @@ export function AdminAppealCasePage() {
   useDocumentTitle('Appeal case')
   const { appealId } = useParams<{ appealId: string }>()
   const { pathname } = useLocation()
-  const backPath = pathname.replace(/\/[^/]+$/, '')
   const base = '/admin'
+  const goBack = useBackOr(pathname.replace(/\/[^/]+$/, ''))
   const appeal = useAdminAppealV2(appealId)
   const access = useMyAccess()
   const policies = useModerationPolicies()
@@ -161,9 +162,14 @@ export function AdminAppealCasePage() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-3">
-          <Link to={backPath} className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container">
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Back"
+            className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container"
+          >
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-          </Link>
+          </button>
           <div>
             <h1 className="font-display text-3xl font-semibold text-on-surface">Appeal case</h1>
             <p className="mt-1 text-sm text-on-surface-variant">

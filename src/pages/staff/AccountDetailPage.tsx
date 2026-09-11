@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { ArrowLeft, ArrowRight, ClipboardList, History, Loader2, User } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
+import { useBackOr } from '../../lib/use-back-or'
 import { formatError } from '../../features/admin-moderation'
 import { useMyAccess, type Capability } from '../../features/access'
 import {
@@ -47,6 +48,7 @@ export function AccountDetailPage() {
   useDocumentTitle('Account')
   const { userId } = useParams<{ userId: string }>()
   const base = useStaffBase()
+  const goBack = useBackOr(`${base}/accounts`)
   const detail = useStaffAccountDetail(userId)
   const history = useAccountHistory(userId)
   const access = useMyAccess()
@@ -108,12 +110,14 @@ export function AccountDetailPage() {
   return (
     <div className="space-y-6">
       <header className="flex items-center gap-3 pt-2">
-        <Link
-          to={`${base}/accounts`}
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="Back"
           className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container"
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-        </Link>
+        </button>
         <div>
           <h1 className="font-display text-3xl font-semibold text-on-surface">{data.display_name}</h1>
           <p className="mt-1 text-sm capitalize text-on-surface-variant">

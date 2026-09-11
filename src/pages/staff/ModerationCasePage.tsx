@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation, useParams } from 'react-router'
 import { Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
+import { useBackOr } from '../../lib/use-back-or'
 import {
   formatError,
   reporterSummary,
@@ -33,7 +34,7 @@ export function ModerationCasePage() {
   const { reportId } = useParams<{ reportId: string }>()
   const { pathname } = useLocation()
   const base = useStaffBase()
-  const backPath = pathname.replace(/\/[^/]+$/, '')
+  const goBack = useBackOr(pathname.replace(/\/[^/]+$/, ''))
   const report = useModerationCaseV2(reportId)
   const messageQuery = useModeratedMessage(reportId)
   const timeline = useCaseTimeline(reportId)
@@ -99,7 +100,7 @@ export function ModerationCasePage() {
   return (
     <div className="space-y-6">
       <CaseHeader
-        backPath={backPath}
+        onBack={goBack}
         data={data}
         claimedByMe={claimedByMe}
         open={open}
