@@ -1,21 +1,23 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { LiveKitRoom } from '@livekit/react-native'
 import {
   CALL_WARNING_SECONDS,
   useCall,
   useCallToken,
   useLeaveCall,
 } from '../../../../src/features/cluster-calls'
-import { CallControls } from '../../../../src/components/room/call/CallControls'
-import { CallGrid } from '../../../../src/components/room/call/CallGrid'
-import { CallHeader } from '../../../../src/components/room/call/CallHeader'
-import { CallChatSheet } from '../../../../src/components/room/call/CallChatSheet'
 import { PreJoin, type PreJoinChoices } from '../../../../src/components/room/call/PreJoin'
+import { isLiveKitAvailable } from '../../../../src/lib/livekit'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
+
+const CallSession = lazy(() =>
+  import('../../../../src/components/room/call/CallSession').then((mod) => ({
+    default: mod.CallSession,
+  })),
+)
 
 function TitleBar() {
   const t = useTheme()
@@ -37,7 +39,8 @@ function TitleBar() {
 export default function CallScreen() {
   const t = useTheme()
   const { clusterId = '', callId = '' } = useLocalSearchParams<{ clusterId: string; callId: string }>()
-  const tokenQuery = useCallToken(callId || null, true)
+  const liveKitReady = isLiveKitAvailable()
+  const tokenQuery = useCallToken(callId || null, liveKitReady)
   const leaveCall = useLeaveCall(clusterId || null)
   const call = useCall(callId || null)
   const leftRef = useRef(false)
@@ -70,8 +73,6 @@ export default function CallScreen() {
   const [joined, setJoined] = useState(false)
   const [micOn, setMicOn] = useState(true)
   const [cameraOn, setCameraOn] = useState(false)
-  const [chatOpen, setChatOpen] = useState(false)
-  const [callUnread, setCallUnread] = useState(0)
 
   function handleJoinCall(choices: PreJoinChoices) {
     setMicOn(choices.mic)
@@ -123,8 +124,6 @@ export default function CallScreen() {
     useCallback(() => {
       leftRef.current = false
       setJoined(false)
-      setChatOpen(false)
-      setCallUnread(0)
       return () => {
         // Leaving the screen must drop the LiveKit connection however it was
         // left (explicit hang-up, hardware back, or navigating away), otherwise
@@ -151,6 +150,32 @@ export default function CallScreen() {
   }, [])
 
   if (missingParams) return null
+
+  if (!liveKitReady) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+        <TitleBar />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
+          <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}>
+            Calls need the Sensorium development build — Expo Go can’t load the native WebRTC module.
+          </Text>
+          <Pressable
+            accessibilityLabel="Close"
+            onPress={finishCall}
+            style={{
+              borderWidth: 1,
+              borderColor: t.outlineVariant,
+              borderRadius: radii.pill,
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Close</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
@@ -195,32 +220,26 @@ export default function CallScreen() {
           />
         </>
       ) : (
-        <LiveKitRoom
-          serverUrl={tokenQuery.data.url}
-          token={tokenQuery.data.token}
-          connect
-          audio={micOn}
-          video={cameraOn}
-          onDisconnected={finishCall}
+        <Suspense
+          fallback={
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <ActivityIndicator color={t.primary} />
+              <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>Joining the call…</Text>
+            </View>
+          }
         >
-          <View style={{ flex: 1 }}>
-            <CallHeader elapsed={elapsed} remaining={remaining} warning={warning} />
-            <CallGrid />
-            <CallControls
-              onHangUp={finishCall}
-              initialMicOn={micOn}
-              initialCameraOn={cameraOn}
-              chatOpen={chatOpen}
-              unread={callUnread}
-              onChatPress={() => setChatOpen((open) => !open)}
-            />
-            <CallChatSheet
-              open={chatOpen}
-              onClose={() => setChatOpen(false)}
-              onUnreadChange={setCallUnread}
-            />
-          </View>
-        </LiveKitRoom>
+          <CallSession
+            serverUrl={tokenQuery.data.url}
+            token={tokenQuery.data.token}
+            micOn={micOn}
+            cameraOn={cameraOn}
+            elapsed={elapsed}
+            remaining={remaining}
+            warning={warning}
+            onDisconnected={finishCall}
+            onHangUp={finishCall}
+          />
+        </Suspense>
       )}
     </SafeAreaView>
   )
