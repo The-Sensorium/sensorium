@@ -188,13 +188,13 @@ export function HomePage() {
 
 function GetStarted() {
   return (
-    <section aria-label="Get started" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-6 shadow-soft">
+    <section aria-label="Get started" className="max-w-5xl rounded-2xl border border-primary/30 bg-primary-container/10 p-6 shadow-soft">
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
         <h2 className="font-display text-xl font-semibold text-on-surface">Welcome to Sensorium</h2>
       </div>
       <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-        You’re matched into clusters of 8 strangers. Here’s how to get started.
+        You’ll be matched into clusters of 8 strangers. Here’s how to get started.
       </p>
       <ol className="mt-5 space-y-3">
         {GET_STARTED_STEPS.map((step, i) => (
