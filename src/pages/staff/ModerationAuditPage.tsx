@@ -141,7 +141,7 @@ export function ModerationAuditPage() {
                     {row.report_id && (
                       <Link
                         to={`${staffBase}/reports/${row.report_id}`}
-                        className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary-container/15 px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary-container/25"
+                        className="inline-flex items-center gap-1 rounded-md bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container/70"
                       >
                         Open case
                         <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
