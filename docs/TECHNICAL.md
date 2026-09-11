@@ -153,7 +153,10 @@ Calls are audio/video rooms scoped to a cluster, backed by LiveKit, on both the 
 
 Room members each carry a read watermark, `cluster_members.last_read_message_at`
 (migration 0038), maintained by `mark_cluster_read` / `mark_all_read` and cleared
-on join. It drives unread counts. The watermark is a cursor — it advances to
+on join. It drives unread counts. Unread chat surfaces in the notification
+center as one `message` entry per cluster (0051), and the header badge is derived
+from that same projection (0114), so the two never disagree even when a cluster
+has several unread messages. The watermark is a cursor — it advances to
 `now()` on every read — so it is **not** the read time shown in receipts.
 
 Per-message read times live in `message_reads` (0049): one immutable
@@ -201,6 +204,9 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Messaging polish (0095–0096, 0098–0099, 0106)**: idempotent message deletion, self-likes on posts and comments, and the atomic `toggle_message_reaction` RPC.
 - **Cluster calls (0107–0112)**: the `calls` / `call_participants` schema, call RPCs, leave/end, the duration limit, membership cleanup, and service-role grants. See the Cluster calls subsection above.
 - **Public table grants (0113)**: the explicit grant surface for public tables.
+- **Consistent unread badge (0114)**: `get_unread_notification_count` is derived from `get_my_notifications`, so the badge always equals the number of unread rows the center shows — one consolidated entry per cluster for chat, and excluding moderation-hidden messages.
+- **Chat volume in the center (0115)**: the consolidated chat entry titles itself "N new messages" when a cluster has more than one unread message (single messages keep "X sent a message").
+- **Unread-only center (0116)**: `get_my_notifications` returns only rows with `read_at is null`, so read items never linger. Marking a stored row read (individually or via "Mark all read") drops it; opening a room advances the cluster watermark that clears that cluster's synthesized chat entry. The derived badge matches.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
