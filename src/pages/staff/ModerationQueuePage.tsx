@@ -342,7 +342,7 @@ export function ModerationQueuePage() {
                   <Link
                     to={`${staffBase}/accounts/${row.target_user_id}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="text-xs font-semibold text-primary"
+                    className="rounded-md border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
                   >
                     Account
                   </Link>
