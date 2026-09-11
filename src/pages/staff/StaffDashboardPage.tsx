@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Clock, Eye, Flag, Inbox, Loader2, Timer, UserRound, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Clock, Eye, Flag, Inbox, Loader2, Timer, UserRound, type LucideIcon } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { timeAgo } from '../../features/notifications'
 import { useModerationQueueV2, useStaffModerationSummary } from '../../features/admin-moderation'
@@ -81,8 +81,12 @@ export function StaffDashboardPage() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-on-surface">Urgent open cases</h2>
-          <Link to="./reports?severity=urgent" className="text-xs font-semibold text-primary">
+          <Link
+            to="./reports?severity=urgent"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
             Open queue
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
           </Link>
         </div>
         {urgent.isLoading ? (
