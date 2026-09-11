@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useLocation, useParams } from 'react-router'
 import { Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
@@ -60,7 +60,7 @@ export function ModerationCasePage() {
 
   if (report.isError || !data) {
     return (
-      <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+      <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
         <p className="text-sm font-semibold text-error">Could not load this report.</p>
         <button
           type="button"
@@ -110,8 +110,8 @@ export function ModerationCasePage() {
         onDismiss={() => void run(resolve, { p_report_id: data.id, p_status: 'dismissed', p_note: 'no action taken' })}
       />
 
-      {error && <p role="alert" className="rounded-2xl border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
-      {success && <p role="status" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
+      {error && <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
+      {success && <p role="status" className="rounded-md border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
 
       <div className="grid gap-4 md:grid-cols-2">
         <EvidencePanel
@@ -164,10 +164,11 @@ export function ModerationCasePage() {
       />
 
       {!claimedByMe && !open ? (
-        <p className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-4 text-sm text-on-surface-variant">
+        <p className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-4 text-sm text-on-surface-variant">
           This case is closed. Link it to a follow-up report if further action is needed.
         </p>
       ) : null}
     </div>
   )
 }
+

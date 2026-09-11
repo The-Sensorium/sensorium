@@ -41,7 +41,7 @@ export function ModerationAuditPage() {
         <p className="mt-1 text-sm text-on-surface-variant">Append-only record of staff actions across the platform.</p>
       </header>
 
-      <section aria-label="Audit filters" className="grid gap-2 rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft sm:grid-cols-[1fr_auto_auto]">
+      <section aria-label="Audit filters" className="grid gap-2 rounded-lg border border-outline-variant/60 bg-surface p-4 sm:grid-cols-[1fr_auto_auto]">
         <label className="block text-xs font-semibold text-on-surface">
           Search
           <input
@@ -51,7 +51,7 @@ export function ModerationAuditPage() {
               setPage(0)
             }}
             placeholder="Actor, target, reason..."
-            className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
           />
         </label>
         <label className="block text-xs font-semibold text-on-surface">
@@ -62,7 +62,7 @@ export function ModerationAuditPage() {
               setActionFilter(event.target.value)
               setPage(0)
             }}
-            className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
           >
             <option value="all">All actions</option>
             {actionOptions.map((action) => <option key={action} value={action}>{action.replace(/_/g, ' ')}</option>)}
@@ -76,7 +76,7 @@ export function ModerationAuditPage() {
               setDateFilter(event.target.value as typeof dateFilter)
               setPage(0)
             }}
-            className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
           >
             <option value="all">Any time</option>
             <option value="today">Last 24 hours</option>
@@ -91,7 +91,7 @@ export function ModerationAuditPage() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
         </div>
       ) : audit.isError ? (
-        <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+        <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
           <p className="text-sm font-semibold text-error">Couldn’t load the audit log.</p>
           <button
             type="button"
@@ -102,12 +102,12 @@ export function ModerationAuditPage() {
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
           <ScrollText className="mx-auto h-7 w-7 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
           <p className="mt-3 text-sm text-on-surface-variant">No audit entries yet.</p>
         </div>
       ) : filteredRows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
           <ScrollText className="mx-auto h-7 w-7 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
           <p className="mt-3 text-sm text-on-surface-variant">No entries match these filters.</p>
         </div>
@@ -120,8 +120,8 @@ export function ModerationAuditPage() {
           <ul className="space-y-2">
           {visibleRows.map((row) => (
             <li key={row.id}>
-              <div className="flex items-start gap-4 rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-container text-on-surface-variant">
+              <div className="flex items-start gap-4 rounded-lg border border-outline-variant/60 bg-surface p-4">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-container text-on-surface-variant">
                   <ScrollText className="h-5 w-5" strokeWidth={1.5} aria-hidden />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -197,3 +197,4 @@ export function ModerationAuditPage() {
     </div>
   )
 }
+

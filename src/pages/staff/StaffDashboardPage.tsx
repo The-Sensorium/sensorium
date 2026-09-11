@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Loader2 } from 'lucide-react'
+import { Clock, Eye, Flag, Inbox, Loader2, Timer, UserRound, type LucideIcon } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { timeAgo } from '../../features/notifications'
 import { useModerationQueueV2, useStaffModerationSummary } from '../../features/admin-moderation'
@@ -21,7 +21,7 @@ export function StaffDashboardPage() {
 
   if (summary.isError || !data) {
     return (
-      <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+      <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
         <p className="text-sm font-semibold text-error">Couldn’t load the dashboard.</p>
         <button
           type="button"
@@ -36,13 +36,13 @@ export function StaffDashboardPage() {
 
   const openCount = data.pending_count + data.reviewing_count
 
-  const cards = [
-    { label: 'Pending', value: data.pending_count, to: './reports?sla=open&status=pending', e2e: 'staff-stat-pending' },
-    { label: 'Reviewing', value: data.reviewing_count, to: './reports?sla=open&status=reviewing', e2e: 'staff-stat-reviewing' },
-    { label: 'Assigned to me', value: data.assigned_to_me_count, to: './reports?assignee=mine', e2e: 'staff-stat-mine' },
-    { label: 'Unassigned', value: data.unassigned_open_count, to: './reports?assignee=unassigned', e2e: 'staff-stat-unassigned' },
-    { label: 'Overdue', value: data.breached_open_count, to: './reports?sla=breached', e2e: 'staff-stat-breached' },
-    { label: 'Urgent open', value: data.urgent_open_count, to: './reports?severity=urgent', e2e: 'staff-stat-urgent' },
+  const cards: { label: string; value: number; to: string; e2e: string; icon: LucideIcon }[] = [
+    { label: 'Pending', value: data.pending_count, to: './reports?sla=open&status=pending', e2e: 'staff-stat-pending', icon: Inbox },
+    { label: 'Reviewing', value: data.reviewing_count, to: './reports?sla=open&status=reviewing', e2e: 'staff-stat-reviewing', icon: Eye },
+    { label: 'Assigned to me', value: data.assigned_to_me_count, to: './reports?assignee=mine', e2e: 'staff-stat-mine', icon: UserRound },
+    { label: 'Unassigned', value: data.unassigned_open_count, to: './reports?assignee=unassigned', e2e: 'staff-stat-unassigned', icon: Clock },
+    { label: 'Overdue', value: data.breached_open_count, to: './reports?sla=breached', e2e: 'staff-stat-breached', icon: Timer },
+    { label: 'Urgent open', value: data.urgent_open_count, to: './reports?severity=urgent', e2e: 'staff-stat-urgent', icon: Flag },
   ]
 
   return (
@@ -67,10 +67,13 @@ export function StaffDashboardPage() {
             key={card.label}
             to={card.to}
             data-e2e={card.e2e}
-            className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-colors hover:border-primary/40"
+            className="rounded-lg border border-outline-variant/60 bg-surface p-4 transition-colors hover:border-primary/40"
           >
             <p className="text-2xl font-semibold text-on-surface">{card.value}</p>
-            <p className="mt-1 text-xs font-medium text-on-surface-variant">{card.label}</p>
+            <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+              <card.icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+              {card.label}
+            </p>
           </Link>
         ))}
       </div>
@@ -87,7 +90,7 @@ export function StaffDashboardPage() {
             <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
           </div>
         ) : urgent.isError ? (
-          <div className="rounded-2xl border border-error/30 bg-error/10 p-6 text-center">
+          <div className="rounded-lg border border-error/30 bg-error/10 p-6 text-center">
             <p className="text-sm font-semibold text-error">Couldn’t load urgent cases.</p>
             <button
               type="button"
@@ -98,7 +101,7 @@ export function StaffDashboardPage() {
             </button>
           </div>
         ) : urgentRows.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-6 text-center text-sm text-on-surface-variant">
+          <p className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-6 text-center text-sm text-on-surface-variant">
             No urgent open cases.
           </p>
         ) : (
@@ -108,7 +111,7 @@ export function StaffDashboardPage() {
                 <Link
                   to={`./reports/${row.id}`}
                   data-e2e="staff-urgent-row"
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 text-sm transition-colors hover:border-primary/40"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-outline-variant/60 bg-surface px-4 py-3 text-sm transition-colors hover:border-primary/40"
                 >
                   <span className="truncate font-medium text-on-surface">
                     {row.reason.replace(/_/g, ' ')}: {row.target_display_name ?? 'Unknown member'}

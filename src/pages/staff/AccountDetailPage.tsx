@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, ClipboardList, History, Loader2, User } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { formatError } from '../../features/admin-moderation'
 import { useMyAccess, type Capability } from '../../features/access'
@@ -65,7 +65,7 @@ export function AccountDetailPage() {
 
   if (detail.isError || !data) {
     return (
-      <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+      <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
         <p className="text-sm font-semibold text-error">Could not load this account.</p>
         <button
           type="button"
@@ -96,11 +96,11 @@ export function AccountDetailPage() {
         </div>
       </header>
 
-      {error && <p role="alert" className="rounded-2xl border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
-      {success && <p role="status" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
+      {error && <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
+      {success && <p role="status" className="rounded-md border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
 
       {restricted && (
-        <section className="rounded-2xl border border-error/30 bg-error/10 p-5">
+        <section className="rounded-lg border border-error/30 bg-error/10 p-5">
           <h2 className="text-sm font-semibold capitalize text-error">Account {data.account_status}</h2>
           <p className="mt-1 text-sm text-on-surface">
             {data.restriction_reason ?? 'No reason recorded.'}
@@ -126,7 +126,7 @@ export function AccountDetailPage() {
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Why is this restriction being lifted…"
                     maxLength={2000}
-                    className="w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+                    className="w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
                   />
                   <div className="flex justify-end gap-2">
                     <button
@@ -153,8 +153,11 @@ export function AccountDetailPage() {
       )}
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-          <h2 className="text-sm font-semibold text-on-surface">Identity</h2>
+        <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+            <User className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+            Identity
+          </h2>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-on-surface-variant">Member since</dt>
@@ -165,7 +168,7 @@ export function AccountDetailPage() {
                 <dt className="text-on-surface-variant">Roles</dt>
                 <dd className="flex flex-wrap justify-end gap-1">
                   {data.roles.map((role) => (
-                    <span key={role} className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
+                    <span key={role} className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
                       {role}
                     </span>
                   ))}
@@ -188,8 +191,11 @@ export function AccountDetailPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-          <h2 className="text-sm font-semibold text-on-surface">Moderation summary</h2>
+        <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+            <ClipboardList className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+            Moderation summary
+          </h2>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-on-surface-variant">Open reports against</dt>
@@ -215,14 +221,17 @@ export function AccountDetailPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-        <h2 className="text-sm font-semibold text-on-surface">Moderation history</h2>
+      <section className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+          <History className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+          Moderation history
+        </h2>
         {history.isLoading ? (
           <div className="grid place-items-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
           </div>
         ) : history.isError ? (
-          <div className="mt-3 rounded-xl border border-error/30 bg-error/10 p-4 text-center">
+          <div className="mt-3 rounded-md border border-error/30 bg-error/10 p-4 text-center">
             <p className="text-sm font-semibold text-error">Couldn’t load history.</p>
             <button
               type="button"
@@ -233,14 +242,14 @@ export function AccountDetailPage() {
             </button>
           </div>
         ) : entries.length === 0 ? (
-          <p className="mt-3 rounded-xl bg-surface-container/60 p-4 text-sm text-on-surface-variant">
+          <p className="mt-3 rounded-md bg-surface-container/60 p-4 text-sm text-on-surface-variant">
             No moderation history for this account.
           </p>
         ) : (
           <>
             <ol className="mt-3 space-y-2">
               {entries.map((entry) => (
-                <li key={`${entry.kind}-${entry.entry_id}`} data-e2e="account-history-row" className="rounded-xl bg-surface-container/60 p-3">
+                <li key={`${entry.kind}-${entry.entry_id}`} data-e2e="account-history-row" className="rounded-md bg-surface-container/60 p-3">
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-sm text-on-surface">
                       <span className="rounded-pill bg-surface px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
@@ -274,3 +283,4 @@ export function AccountDetailPage() {
     </div>
   )
 }
+

@@ -147,7 +147,7 @@ export function CaseHeader({
         )}
       </div>
       {confirmDismiss && open && (
-        <div className="rounded-xl border border-outline-variant/60 bg-surface-container/50 p-3">
+        <div className="rounded-md border border-outline-variant/60 bg-surface-container/50 p-3">
           <p className="text-sm font-semibold text-on-surface">Dismiss this report?</p>
           <p className="mt-1 text-xs leading-5 text-on-surface-variant">The report will be closed without an account action.</p>
           <div className="mt-3 flex justify-end gap-2">
@@ -173,7 +173,7 @@ export function CaseHeader({
         </div>
       )}
       {data.resolution_note ? (
-        <p className="rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface-variant">
+        <p className="rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface-variant">
           Resolution note: {data.resolution_note}
         </p>
       ) : null}

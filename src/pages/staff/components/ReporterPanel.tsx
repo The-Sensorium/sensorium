@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { Megaphone } from 'lucide-react'
 import type { ReporterSummary } from '../../../features/admin-moderation'
 
 function accountAge(createdAt: string | null): string {
@@ -16,8 +17,11 @@ export function ReporterPanel({ reporter, accountHref }: { reporter: ReporterSum
     reporter.total_reports > 0 ? Math.round((reporter.dismissed_reports / reporter.total_reports) * 100) : null
 
   return (
-    <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-      <h2 className="text-sm font-semibold text-on-surface">Reporter</h2>
+    <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+        <Megaphone className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+        Reporter
+      </h2>
       <dl className="mt-3 space-y-2 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-on-surface-variant">Member</dt>

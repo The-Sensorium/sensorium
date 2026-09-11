@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Ban, ShieldAlert } from 'lucide-react'
+import { Ban, Gauge, ShieldAlert } from 'lucide-react'
 import {
   MODERATION_SEVERITY_LABELS,
   formatError,
@@ -104,12 +104,15 @@ export function CaseActionPanel({
 
   return (
     <div className="space-y-4">
-      {error && <p role="alert" className="rounded-2xl border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
-      {success && <p role="status" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
+      {error && <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
+      {success && <p role="status" className="rounded-md border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
 
       {canTriage && (
-        <section className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-          <h2 className="text-sm font-semibold text-on-surface">Triage</h2>
+        <section className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+            <Gauge className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+            Triage
+          </h2>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-1.5 text-sm">
               <span className="font-medium text-on-surface-variant">Severity</span>
@@ -130,7 +133,7 @@ export function CaseActionPanel({
               onChange={(e) => setTriageReason(e.target.value)}
               placeholder="Why this severity or escalation…"
               maxLength={2000}
-              className="min-w-44 flex-1 rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+              className="min-w-44 flex-1 rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
             />
             <button
               type="button"
@@ -151,7 +154,7 @@ export function CaseActionPanel({
             )}
           </div>
           {escalateOpen && !data.escalated_at && (
-            <div className="mt-3 rounded-xl border border-outline-variant/60 bg-surface-container/50 p-3">
+            <div className="mt-3 rounded-md border border-outline-variant/60 bg-surface-container/50 p-3">
               <p className="text-sm font-semibold text-on-surface">Escalate this case?</p>
               <p className="mt-1 text-xs leading-5 text-on-surface-variant">
                 Flags the case as escalated and raises low/medium severity to high. Uses the triage reason above.
@@ -187,7 +190,7 @@ export function CaseActionPanel({
                     setAssigneeId(null)
                   }}
                   placeholder="Search staff by name or email…"
-                  className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+                  className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
                 />
               </label>
               {accountSearch.data && accountSearch.data.length > 0 && assigneeId === null && (
@@ -200,7 +203,7 @@ export function CaseActionPanel({
                           setAssigneeId(account.user_id)
                           setAssignQuery(account.display_name ?? account.email ?? account.user_id)
                         }}
-                        className="w-full rounded-xl px-3 py-2 text-left text-sm text-on-surface transition-colors hover:bg-surface-container"
+                        className="w-full rounded-md px-3 py-2 text-left text-sm text-on-surface transition-colors hover:bg-surface-container"
                       >
                         {account.display_name ?? account.email ?? account.user_id}
                       </button>
@@ -227,7 +230,7 @@ export function CaseActionPanel({
       )}
 
       {canEnforce ? (
-        <section className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+        <section className="rounded-lg border border-outline-variant/60 bg-surface p-4">
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
             <h2 className="text-sm font-semibold text-on-surface">Account action</h2>
@@ -249,7 +252,7 @@ export function CaseActionPanel({
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="What the member will be told"
                 maxLength={500}
-                className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
               />
             </label>
             <label className="block text-sm font-semibold text-on-surface" htmlFor="moderation-internal-note">
@@ -260,7 +263,7 @@ export function CaseActionPanel({
                 onChange={(e) => setInternalNote(e.target.value)}
                 placeholder="Rationale for the audit trail…"
                 maxLength={2000}
-                className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
               />
             </label>
             <div className="flex flex-wrap items-center gap-2">
@@ -281,7 +284,7 @@ export function CaseActionPanel({
                   value={expiryDays}
                   onChange={(e) => setExpiryDays(Number(e.target.value) || 0)}
                   aria-label="Suspension duration in days"
-                  className="w-16 rounded-xl border border-outline-variant/70 bg-surface-lowest px-2 py-1.5 text-center text-sm text-on-surface focus:border-primary focus:outline-none"
+                  className="w-16 rounded-lg border border-outline-variant/70 bg-surface-lowest px-2 py-1.5 text-center text-sm text-on-surface focus:border-primary focus:outline-none"
                 />
                 {isAdmin ? 'days' : 'days (max 7)'}
               </span>
@@ -305,7 +308,7 @@ export function CaseActionPanel({
               ) : null}
             </div>
             {confirmSuspend && (
-              <div className="rounded-xl border border-outline-variant/60 bg-surface-container/50 p-3">
+              <div className="rounded-md border border-outline-variant/60 bg-surface-container/50 p-3">
                 <p className="text-sm font-semibold text-on-surface">Suspend {target.display_name} for {expiryDays} days?</p>
                 <p className="mt-1 text-xs leading-5 text-on-surface-variant">The account will be restricted until the suspension expires.</p>
                 <div className="mt-3 flex justify-end gap-2">
@@ -337,7 +340,7 @@ export function CaseActionPanel({
               </div>
             )}
             {ban && isAdmin ? (
-              <div className="rounded-xl border border-error/30 bg-error/5 p-3">
+              <div className="rounded-md border border-error/30 bg-error/5 p-3">
                 <p className="text-xs leading-5 text-on-surface-variant">
                   A permanent ban revokes all roles, removes the account from active clusters, starts replacements, and
                   cannot be reverted from this screen. It is a platform safety action.
@@ -358,3 +361,4 @@ export function CaseActionPanel({
     </div>
   )
 }
+

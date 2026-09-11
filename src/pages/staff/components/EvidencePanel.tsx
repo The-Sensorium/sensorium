@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { FileText, Loader2 } from 'lucide-react'
 import {
   commentSummary,
   formatError,
@@ -58,9 +58,12 @@ export function EvidencePanel({
   }
 
   return (
-    <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-      <h2 className="text-sm font-semibold text-on-surface">Reported content</h2>
-      {contentError && <p role="alert" className="mt-3 rounded-xl border border-error/30 bg-error/10 p-3 text-sm text-error">{contentError}</p>}
+    <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+        <FileText className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+        Reported content
+      </h2>
+      {contentError && <p role="alert" className="mt-3 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{contentError}</p>}
       <dl className="mt-3 space-y-2 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-on-surface-variant">Reason</dt>
@@ -79,7 +82,7 @@ export function EvidencePanel({
           <dd className="font-medium text-on-surface">{data.prior_reports} prior</dd>
         </div>
         {data.details ? (
-          <p className="mt-2 rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{data.details}</p>
+          <p className="mt-2 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{data.details}</p>
         ) : null}
       </dl>
 
@@ -87,11 +90,11 @@ export function EvidencePanel({
         <div className="mt-4 border-t border-outline-variant/50 pt-4">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-on-surface">Reported message</h3>
-            <span className="rounded-pill bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
+            <span className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
               {msg.content ? 'private chat message' : 'media attachment'}
             </span>
           </div>
-          {msg.content && <p className="mt-3 rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{msg.content}</p>}
+          {msg.content && <p className="mt-3 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{msg.content}</p>}
           {canAct ? (
             <div className="mt-3 flex flex-wrap gap-2">
               <button
@@ -150,12 +153,12 @@ function StatusBadges({ moderationStatus, deletedAt }: { moderationStatus: strin
   return (
     <span className="flex gap-1.5">
       {moderationStatus && moderationStatus !== 'approved' && (
-        <span className="rounded-pill bg-error/10 px-2.5 py-1 text-xs font-semibold text-error">
+        <span className="rounded-md bg-error/10 px-2 py-0.5 text-[11px] font-semibold text-error">
           {moderationStatus === 'rejected' ? 'Hidden' : moderationStatus}
         </span>
       )}
       {deletedAt && (
-        <span className="rounded-pill bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
+        <span className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
           Deleted
         </span>
       )}
@@ -216,9 +219,9 @@ function ReportedPost({
         <StatusBadges moderationStatus={post.moderation_status} deletedAt={post.deleted_at} />
       </div>
       {post.title && <p className="mt-2 text-sm font-semibold text-on-surface">{post.title}</p>}
-      {post.content && <p className="mt-2 rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{post.content}</p>}
+      {post.content && <p className="mt-2 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{post.content}</p>}
       {imageSrc && (
-        <img src={imageSrc} alt="Reported post media" className="mt-2 max-h-64 rounded-xl object-cover" />
+        <img src={imageSrc} alt="Reported post media" className="mt-2 max-h-64 rounded-lg object-cover" />
       )}
       <p className="mt-2 text-xs text-on-surface-variant">
         by {post.author_display_name ?? 'Unknown'} · {post.cluster_name ?? 'Unknown cluster'}
@@ -273,9 +276,9 @@ function ReportedComment({
           {!comment.post_title && comment.post_snippet ? `: ${comment.post_snippet}` : ''}
         </p>
       )}
-      {comment.content && <p className="mt-2 rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{comment.content}</p>}
+      {comment.content && <p className="mt-2 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{comment.content}</p>}
       {imageSrc && (
-        <img src={imageSrc} alt="Reported comment media" className="mt-2 max-h-64 rounded-xl object-cover" />
+        <img src={imageSrc} alt="Reported comment media" className="mt-2 max-h-64 rounded-lg object-cover" />
       )}
       <p className="mt-2 text-xs text-on-surface-variant">by {comment.author_display_name ?? 'Unknown'}</p>
       {canAct && comment.id && !deleted ? (

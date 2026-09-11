@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { History, Loader2 } from 'lucide-react'
 import {
   formatError,
   useAddCaseNote,
@@ -73,16 +73,19 @@ export function CaseTimeline({
   }
 
   return (
-    <section className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-      <h2 className="text-sm font-semibold text-on-surface">Case timeline</h2>
-      {error && <p role="alert" className="mt-3 rounded-xl border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
+    <section className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+        <History className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+        Case timeline
+      </h2>
+      {error && <p role="alert" className="mt-3 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
 
       {isLoading ? (
         <div className="grid place-items-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
         </div>
       ) : isError ? (
-        <div className="mt-3 rounded-xl border border-error/30 bg-error/10 p-4 text-center">
+        <div className="mt-3 rounded-md border border-error/30 bg-error/10 p-4 text-center">
           <p className="text-sm font-semibold text-error">Couldn’t load the timeline.</p>
           <button
             type="button"
@@ -93,7 +96,7 @@ export function CaseTimeline({
           </button>
         </div>
       ) : entries.length === 0 ? (
-        <p className="mt-3 rounded-xl bg-surface-container/60 p-4 text-sm text-on-surface-variant">
+        <p className="mt-3 rounded-md bg-surface-container/60 p-4 text-sm text-on-surface-variant">
           No activity yet. Notes and actions on this case will appear here.
         </p>
       ) : (
@@ -111,7 +114,7 @@ export function CaseTimeline({
               <li
                 key={`${entry.kind}-${entry.entry_id}`}
                 data-e2e={isNote ? 'case-note-row' : 'case-timeline-row'}
-                className="rounded-xl bg-surface-container/60 p-3"
+                className="rounded-md bg-surface-container/60 p-3"
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="text-xs font-semibold capitalize text-on-surface">
@@ -130,7 +133,7 @@ export function CaseTimeline({
                       onChange={(e) => setEditDraft(e.target.value)}
                       maxLength={2000}
                       rows={3}
-                      className="w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
+                      className="w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"
                     />
                     <div className="flex justify-end gap-2">
                       <button
@@ -199,7 +202,7 @@ export function CaseTimeline({
               maxLength={2000}
               rows={3}
               data-e2e="case-note-draft"
-              className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+              className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
             />
           </label>
           <div className="mt-2 flex justify-end">

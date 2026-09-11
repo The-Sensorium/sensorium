@@ -112,7 +112,7 @@ export function AdminAppealsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
         </div>
       ) : queue.isError ? (
-        <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+        <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
           <p className="text-sm font-semibold text-error">Couldn’t load the appeal queue.</p>
           <button
             type="button"
@@ -123,7 +123,7 @@ export function AdminAppealsPage() {
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
           <MessageSquareWarning className="mx-auto h-7 w-7 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
           <p className="mt-3 text-sm text-on-surface-variant">
             No {status === 'all' ? '' : APPEAL_STATUS_LABELS[status].toLowerCase()} appeals right now.
@@ -135,7 +135,7 @@ export function AdminAppealsPage() {
             {rows.map((row) => (
               <li
                 key={row.id}
-                className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-colors hover:border-primary/40 hover:bg-primary-container/5"
+                className="rounded-lg border border-outline-variant/60 bg-surface p-4 transition-colors hover:border-primary/40 hover:bg-primary-container/5"
               >
                 <Link to={`./${row.id}`} className="block">
                   <div className="flex items-baseline justify-between gap-3">
@@ -146,10 +146,10 @@ export function AdminAppealsPage() {
                   </div>
                   <p className="mt-1 line-clamp-2 text-sm text-on-surface-variant">{row.details}</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="rounded-pill bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
+                    <span className="rounded-md bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface-variant">
                       {APPEAL_STATUS_LABELS[row.status]}
                     </span>
-                    <span className="rounded-pill bg-surface-container px-2.5 py-1 text-xs font-semibold capitalize text-on-surface-variant">
+                    <span className="rounded-md bg-surface-container px-2 py-0.5 text-xs font-semibold capitalize text-on-surface-variant">
                       {row.appealed_status === 'suspended' ? 'suspended' : 'banned'}
                     </span>
                   </div>

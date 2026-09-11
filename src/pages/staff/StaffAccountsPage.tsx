@@ -36,7 +36,7 @@ export function StaffAccountsPage() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Type at least 2 characters…"
           data-e2e="account-search"
-          className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+          className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
         />
       </label>
 
@@ -45,7 +45,7 @@ export function StaffAccountsPage() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
         </div>
       ) : debounced.trim().length >= 2 && search.isError ? (
-        <div className="rounded-2xl border border-error/30 bg-error/10 p-8 text-center">
+        <div className="rounded-lg border border-error/30 bg-error/10 p-8 text-center">
           <p className="text-sm font-semibold text-error">Couldn’t search accounts.</p>
           <button
             type="button"
@@ -56,7 +56,7 @@ export function StaffAccountsPage() {
           </button>
         </div>
       ) : debounced.trim().length >= 2 && rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
           <UserSearch className="mx-auto h-7 w-7 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
           <p className="mt-3 text-sm text-on-surface-variant">No accounts match “{debounced.trim()}”.</p>
         </div>
@@ -67,7 +67,7 @@ export function StaffAccountsPage() {
               <Link
                 to={`${base}/accounts/${row.user_id}`}
                 data-e2e="account-row"
-                className="flex items-center justify-between gap-3 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 transition-colors hover:border-primary/40"
+                className="flex items-center justify-between gap-3 rounded-lg border border-outline-variant/60 bg-surface px-4 py-3 transition-colors hover:border-primary/40"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-on-surface">{row.display_name}</span>
@@ -80,7 +80,7 @@ export function StaffAccountsPage() {
                     </span>
                   )}
                   {row.roles.map((role) => (
-                    <span key={role} className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
+                    <span key={role} className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
                       {role}
                     </span>
                   ))}
@@ -93,3 +93,4 @@ export function StaffAccountsPage() {
     </div>
   )
 }
+

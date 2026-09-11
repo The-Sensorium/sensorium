@@ -178,7 +178,7 @@ export function ModerationQueuePage() {
               aria-label="Status filter"
               value={status ?? ''}
               onChange={(e) => update({ status: e.target.value || undefined })}
-              className="rounded-pill border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
+              className="rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
             >
               <option value="">All</option>
               {(['pending', 'reviewing', 'actioned', 'dismissed'] as const).map((s) => (
@@ -192,7 +192,7 @@ export function ModerationQueuePage() {
               aria-label="Content type filter"
               value={targetKind ?? ''}
               onChange={(e) => update({ target_kind: e.target.value || undefined })}
-              className="rounded-pill border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
+              className="rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
             >
               <option value="">All</option>
               {KINDS.map((k) => (
@@ -206,7 +206,7 @@ export function ModerationQueuePage() {
               aria-label="Reason filter"
               value={reason ?? ''}
               onChange={(e) => update({ reason: e.target.value || undefined })}
-              className="rounded-pill border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
+              className="rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
             >
               <option value="">All</option>
               {REASONS.map((r) => (
@@ -220,7 +220,7 @@ export function ModerationQueuePage() {
               aria-label="Severity filter"
               value={severity ?? ''}
               onChange={(e) => update({ severity: e.target.value || undefined })}
-              className="rounded-pill border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
+              className="rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-semibold text-on-surface"
             >
               <option value="">All</option>
               {SEVERITIES.map((s) => (
@@ -235,7 +235,7 @@ export function ModerationQueuePage() {
               value={searchInput}
               placeholder="Member, cluster, details…"
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-44 rounded-pill border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-medium text-on-surface"
+              className="w-44 rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 font-medium text-on-surface"
             />
           </label>
           <div role="group" aria-label="Report order" className="flex gap-1 rounded-pill border border-outline-variant/60 bg-surface p-1">
@@ -262,7 +262,7 @@ export function ModerationQueuePage() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
         </div>
       ) : queue.isError ? (
-        <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+        <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
           <p className="text-sm font-semibold text-error">Couldn’t load the queue.</p>
           <button
             type="button"
@@ -273,24 +273,24 @@ export function ModerationQueuePage() {
           </button>
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
           <Flag className="mx-auto h-7 w-7 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
           <p className="mt-3 text-sm text-on-surface-variant">No reports match these filters right now.</p>
         </div>
       ) : (
         <>
-          {claimError && <p role="alert" className="rounded-2xl border border-error/30 bg-error/10 p-3 text-sm text-error">{claimError}</p>}
-          {claimMessage && <p role="status" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{claimMessage}</p>}
+          {claimError && <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{claimError}</p>}
+          {claimMessage && <p role="status" className="rounded-md border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{claimMessage}</p>}
           <ul className="space-y-3">
           {rows.map((row) => {
             const breached = isBreached(row.due_at, row.status)
             return (
-            <li key={row.id} data-e2e="report-row" className="flex flex-col gap-3 rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-colors hover:border-primary/40 hover:bg-primary-container/5 sm:flex-row sm:items-center">
+            <li key={row.id} data-e2e="report-row" className="flex flex-col gap-3 rounded-lg border border-outline-variant/60 bg-surface p-4 transition-colors hover:border-primary/40 hover:bg-primary-container/5 sm:flex-row sm:items-center">
               <Link
                 to={`./${row.id}`}
                 className="flex min-w-0 flex-1 items-start gap-4 text-left"
               >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-container text-on-surface-variant">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-surface-container text-on-surface-variant">
                   <Flag className="h-5 w-5" strokeWidth={1.5} aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -306,13 +306,13 @@ export function ModerationQueuePage() {
                   <span className="mt-2 flex flex-wrap gap-1.5">
                     <span
                       title="What was reported: a member, a chat message, a post, or a comment."
-                      className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant"
+                      className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant"
                     >
                       {TARGET_KIND_LABELS[(row.target_kind as TargetKind) ?? 'member'] ?? row.target_kind}
                     </span>
                     <span
                       title="Triage severity, drives the SLA: urgent 4 hours, high 24 hours, medium 72 hours, low 7 days."
-                      className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant"
+                      className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant"
                     >
                       {MODERATION_SEVERITY_LABELS[(row.severity as ModerationSeverity) ?? 'medium'] ?? row.severity} severity
                     </span>
@@ -322,12 +322,12 @@ export function ModerationQueuePage() {
                       </span>
                     )}
                     {row.duplicate_open_reports > 0 && (
-                      <span className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
+                      <span className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
                         +{row.duplicate_open_reports} duplicate{row.duplicate_open_reports === 1 ? '' : 's'}
                       </span>
                     )}
                     {row.prior_target_reports > 0 && (
-                      <span className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
+                      <span className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
                         {row.prior_target_reports} prior report{row.prior_target_reports === 1 ? '' : 's'}
                       </span>
                     )}
@@ -335,7 +335,7 @@ export function ModerationQueuePage() {
                 </span>
               </Link>
               <div className="flex shrink-0 items-center justify-between gap-2 border-t border-outline-variant/50 pt-3 sm:border-t-0 sm:pt-0">
-                <span className="rounded-pill bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
+                <span className="rounded-md bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface-variant">
                   {REPORT_STATUS_LABELS[row.status]}
                 </span>
                 {row.target_user_id ? (
@@ -391,3 +391,4 @@ export function ModerationQueuePage() {
     </div>
   )
 }
+

@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { UserRound } from 'lucide-react'
 import type { TargetSummary } from '../../../features/admin-moderation'
 import { timeUntil } from '../../../features/notifications'
 
@@ -6,10 +7,13 @@ export function TargetPanel({ target, accountHref }: { target: TargetSummary; ac
   const restricted = target.account_status !== 'active'
 
   return (
-    <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-      <h2 className="text-sm font-semibold text-on-surface">Target account</h2>
+    <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+        <UserRound className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+        Target account
+      </h2>
       {restricted && (
-        <p role="alert" className="mt-3 rounded-xl border border-error/30 bg-error/10 p-3 text-sm text-error">
+        <p role="alert" className="mt-3 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
           Currently {target.account_status}
           {target.restriction_reason ? ` — ${target.restriction_reason}` : ''}
           {target.restriction_expires_at ? ` (expires ${timeUntil(target.restriction_expires_at)})` : ''}.
@@ -37,7 +41,7 @@ export function TargetPanel({ target, accountHref }: { target: TargetSummary; ac
             <dt className="text-on-surface-variant">Roles</dt>
             <dd className="flex flex-wrap justify-end gap-1">
               {target.roles.map((role) => (
-                <span key={role} className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
+                <span key={role} className="rounded-md bg-surface-container px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
                   {role}
                 </span>
               ))}

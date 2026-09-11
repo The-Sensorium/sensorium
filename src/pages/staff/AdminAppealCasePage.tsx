@@ -33,7 +33,7 @@ export function AdminAppealCasePage() {
 
   if (appeals.isError || !data) {
     return (
-      <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+      <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
         <p className="text-sm font-semibold text-error">Could not load this appeal.</p>
         <button
           type="button"
@@ -82,14 +82,14 @@ export function AdminAppealCasePage() {
       </header>
 
       {error && (
-        <p role="alert" className="rounded-2xl border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>
+        <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>
       )}
       {success && (
-        <p role="status" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>
+        <p role="status" className="rounded-md border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>
       )}
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+        <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
           <h2 className="text-sm font-semibold text-on-surface">Appeal details</h2>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3">
@@ -120,20 +120,20 @@ export function AdminAppealCasePage() {
             ) : null}
           </dl>
           {appeal.response ? (
-            <p className="mt-4 rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">
+            <p className="mt-4 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">
               Response: {appeal.response}
             </p>
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+        <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
           <h2 className="text-sm font-semibold text-on-surface">Their appeal</h2>
-          <p className="mt-3 rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{appeal.details}</p>
+          <p className="mt-3 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{appeal.details}</p>
         </div>
       </section>
 
       {open ? (
-        <section className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+        <section className="rounded-lg border border-outline-variant/60 bg-surface p-4">
           <h2 className="text-sm font-semibold text-on-surface">Decision</h2>
           <p className="mt-2 text-sm leading-6 text-on-surface-variant">
             Granting lifts the restriction and sends the appellant the outcome at their account email. The response below
@@ -178,7 +178,7 @@ export function AdminAppealCasePage() {
               maxLength={MAX_RESPONSE}
               rows={4}
               placeholder="Explain the decision in your own words."
-              className="mt-1.5 w-full resize-y rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+              className="mt-1.5 w-full resize-y rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
             />
           </label>
           <p className="mt-1 text-right text-xs text-on-surface-variant">
@@ -197,10 +197,12 @@ export function AdminAppealCasePage() {
           </button>
         </section>
       ) : (
-        <p className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-4 text-sm text-on-surface-variant">
+        <p className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-4 text-sm text-on-surface-variant">
           This appeal is resolved. The outcome was emailed to the appellant.
         </p>
       )}
     </div>
   )
 }
+
+

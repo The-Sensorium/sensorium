@@ -33,7 +33,7 @@ export function PolicySelector({
   const selectedCategory = categories.find((c) => c.category_code === choice.categoryCode) ?? null
 
   return (
-    <div className="space-y-2 rounded-xl bg-surface-container/50 p-3">
+    <div className="space-y-2 rounded-md bg-surface-container/50 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1.5 text-sm">
           <span className="font-medium text-on-surface-variant">Policy</span>
@@ -44,9 +44,9 @@ export function PolicySelector({
               const code = e.target.value || null
               onChange({ categoryCode: code, template: null })
             }}
-            className="rounded-pill border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-sm font-semibold text-on-surface"
-          >
-            <option value="">Custom / no policy</option>
+              className="rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-sm font-semibold text-on-surface"
+            >
+              <option value="">Custom / no policy</option>
             {categories.map((c) => (
               <option key={c.category_code} value={c.category_code}>
                 {c.category_title}
@@ -64,7 +64,7 @@ export function PolicySelector({
                 const template = templates.find((t) => t.template_code === e.target.value) ?? null
                 onChange({ categoryCode: choice.categoryCode, template })
               }}
-              className="rounded-pill border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-sm font-semibold text-on-surface"
+              className="rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-sm font-semibold text-on-surface"
             >
               <option value="">None</option>
               {templates.map((t) => (
@@ -82,7 +82,7 @@ export function PolicySelector({
         </p>
       )}
       {choice.template && (
-        <div className="space-y-2 rounded-xl bg-surface p-3">
+        <div className="space-y-2 rounded-md bg-surface p-3">
           <p className="text-xs leading-5 text-on-surface-variant">{choice.template.internal_guidance}</p>
           <p className="text-xs leading-5 text-on-surface">“{choice.template.user_notice}”</p>
           <div className="flex justify-end">
