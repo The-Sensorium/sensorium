@@ -358,7 +358,10 @@ export function AdminAppealCasePage() {
                     <span className="truncate text-on-surface">
                       {report.reason.replace(/_/g, ' ')} · {report.status}
                     </span>
-                    <Link to={`${base}/reports/${report.id}`} className="shrink-0 text-xs font-semibold text-primary">
+                    <Link
+                      to={`${base}/reports/${report.id}`}
+                      className="shrink-0 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                    >
                       Open case
                     </Link>
                   </li>
@@ -376,8 +379,7 @@ export function AdminAppealCasePage() {
         ) : (
           <p className="mt-3 text-sm text-on-surface-variant">No internal note yet. Staff-only; never shared with the appellant.</p>
         )}
-        {open && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
             <input
               aria-label="Appeal internal note"
               value={noteDraft}
@@ -397,7 +399,6 @@ export function AdminAppealCasePage() {
               {addNote.isPending ? 'Saving…' : 'Save note'}
             </button>
           </div>
-        )}
       </section>
 
       {open ? (
@@ -550,15 +551,11 @@ export function AdminAppealCasePage() {
         </section>
       ) : (
         <div className="space-y-3">
-          {data.internal_note && (
-            <p className="rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">
-              Internal rationale: {data.internal_note}
-            </p>
-          )}
           {data.response && (
-            <p className="rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">
-              Response sent: {data.response}
-            </p>
+            <div className="rounded-md bg-surface-container/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Response sent</p>
+              <p className="mt-1 text-sm leading-6 text-on-surface">{data.response}</p>
+            </div>
           )}
           <p className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-4 text-sm text-on-surface-variant">
             This appeal is resolved. The outcome was emailed to the appellant.

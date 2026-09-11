@@ -210,4 +210,16 @@ describe('AdminAppealCasePage', () => {
     expect(screen.getByText(/After review, you were right./)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Grant appeal' })).not.toBeInTheDocument()
   })
+
+  it('keeps the note composer available on resolved appeals', () => {
+    hooks.useAdminAppealV2.mockReturnValue({
+      data: { ...openAppeal, status: 'resolved', response: 'Done.' },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    renderPage()
+    expect(screen.getByLabelText('Appeal internal note')).toBeInTheDocument()
+    expect(screen.queryByText(/Internal rationale:/)).not.toBeInTheDocument()
+  })
 })
