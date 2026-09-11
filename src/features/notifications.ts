@@ -363,6 +363,19 @@ export function notificationTarget(
 
 const timeFormatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
 
+/** Future-aware relative time, e.g. "in 3 days" or "2h ago", for due dates and expiries. */
+export function timeUntil(iso: string): string {
+  const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000)
+  if (Math.abs(seconds) < 60) return seconds >= 0 ? 'due now' : 'overdue'
+  const minutes = Math.round(seconds / 60)
+  if (Math.abs(minutes) < 60) return timeFormatter.format(minutes, 'minute')
+  const hours = Math.round(minutes / 60)
+  if (Math.abs(hours) < 48) return timeFormatter.format(hours, 'hour')
+  const days = Math.round(hours / 24)
+  if (Math.abs(days) < 30) return timeFormatter.format(days, 'day')
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
 /** Compact relative time, e.g. "2h ago", for notification cards. */
 export function timeAgo(iso: string): string {
   const seconds = Math.round((Date.now() - new Date(iso).getTime()) / 1000)

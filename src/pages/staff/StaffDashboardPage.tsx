@@ -34,12 +34,14 @@ export function StaffDashboardPage() {
     )
   }
 
+  const openCount = data.pending_count + data.reviewing_count
+
   const cards = [
     { label: 'Pending', value: data.pending_count, to: './reports?sla=open&status=pending', e2e: 'staff-stat-pending' },
     { label: 'Reviewing', value: data.reviewing_count, to: './reports?sla=open&status=reviewing', e2e: 'staff-stat-reviewing' },
     { label: 'Assigned to me', value: data.assigned_to_me_count, to: './reports?assignee=mine', e2e: 'staff-stat-mine' },
     { label: 'Unassigned', value: data.unassigned_open_count, to: './reports?assignee=unassigned', e2e: 'staff-stat-unassigned' },
-    { label: 'SLA breached', value: data.breached_open_count, to: './reports?sla=breached', e2e: 'staff-stat-breached' },
+    { label: 'Overdue', value: data.breached_open_count, to: './reports?sla=breached', e2e: 'staff-stat-breached' },
     { label: 'Urgent open', value: data.urgent_open_count, to: './reports?severity=urgent', e2e: 'staff-stat-urgent' },
   ]
 
@@ -48,10 +50,14 @@ export function StaffDashboardPage() {
       <header className="pt-2">
         <h1 className="font-display text-3xl font-semibold text-on-surface">Staff dashboard</h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          {data.pending_count + data.reviewing_count} open reports
+          {openCount === 1 ? '1 open report' : `${openCount} open reports`}
           {data.oldest_pending_at ? ` · oldest pending ${timeAgo(data.oldest_pending_at)}` : ''}
           {` · ${data.actioned_7d_count} actioned / ${data.dismissed_7d_count} dismissed in 7 days`}
-          {data.appeals_submitted_count > 0 ? ` · ${data.appeals_submitted_count} appeals waiting` : ''}.
+          {data.appeals_submitted_count === 1
+            ? ' · 1 appeal waiting'
+            : data.appeals_submitted_count > 1
+              ? ` · ${data.appeals_submitted_count} appeals waiting`
+              : ''}.
         </p>
       </header>
 

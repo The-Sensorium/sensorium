@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Loader2, UserSearch } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
+import { useMyAccess } from '../../features/access'
 import { useStaffAccountSearch, useStaffBase } from '../../features/admin-accounts'
 
 export function StaffAccountsPage() {
   useDocumentTitle('Accounts')
   const base = useStaffBase()
+  const access = useMyAccess()
+  const canSearchEmail = access.data?.capabilities.includes('can_manage_roles') ?? false
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
   useEffect(() => {
@@ -26,7 +29,7 @@ export function StaffAccountsPage() {
       </header>
 
       <label className="block text-sm font-semibold text-on-surface" htmlFor="account-search">
-        Search by name{search.data?.some((r) => r.email) ? ' or email' : ''}
+        Search by name{canSearchEmail ? ' or email' : ''}
         <input
           id="account-search"
           value={query}

@@ -10,7 +10,7 @@ import {
   useStaffAccountDetail,
   useStaffBase,
 } from '../../features/admin-accounts'
-import { timeAgo } from '../../features/notifications'
+import { timeAgo, timeUntil } from '../../features/notifications'
 
 function has(access: ReturnType<typeof useMyAccess>['data'], cap: Capability) {
   return access?.capabilities.includes(cap) ?? false
@@ -104,7 +104,7 @@ export function AccountDetailPage() {
           <h2 className="text-sm font-semibold capitalize text-error">Account {data.account_status}</h2>
           <p className="mt-1 text-sm text-on-surface">
             {data.restriction_reason ?? 'No reason recorded.'}
-            {data.restriction_expires_at ? ` · expires ${timeAgo(data.restriction_expires_at)}` : ''}
+            {data.restriction_expires_at ? ` · expires ${timeUntil(data.restriction_expires_at)}` : ''}
           </p>
           {liftBlockedNote ? (
             <p className="mt-3 text-xs text-on-surface-variant">{liftBlockedNote}</p>

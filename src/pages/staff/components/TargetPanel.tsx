@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import type { TargetSummary } from '../../../features/admin-moderation'
-import { timeAgo } from '../../../features/notifications'
+import { timeUntil } from '../../../features/notifications'
 
 export function TargetPanel({ target, accountHref }: { target: TargetSummary; accountHref?: string | null }) {
   const restricted = target.account_status !== 'active'
@@ -12,7 +12,7 @@ export function TargetPanel({ target, accountHref }: { target: TargetSummary; ac
         <p role="alert" className="mt-3 rounded-xl border border-error/30 bg-error/10 p-3 text-sm text-error">
           Currently {target.account_status}
           {target.restriction_reason ? ` — ${target.restriction_reason}` : ''}
-          {target.restriction_expires_at ? ` (expires ${timeAgo(target.restriction_expires_at)})` : ''}.
+          {target.restriction_expires_at ? ` (expires ${timeUntil(target.restriction_expires_at)})` : ''}.
         </p>
       )}
       <dl className="mt-3 space-y-2 text-sm">

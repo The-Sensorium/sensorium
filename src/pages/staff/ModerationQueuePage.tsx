@@ -27,7 +27,7 @@ import { useStaffBase } from '../../features/admin-accounts'
 const TABS = [
   { key: 'unassigned', label: 'Unassigned', params: { assignee: 'unassigned', sla: 'open' } },
   { key: 'mine', label: 'Assigned to me', params: { assignee: 'mine', sla: 'open' } },
-  { key: 'breached', label: 'Breached', params: { sla: 'breached' } },
+  { key: 'breached', label: 'Overdue', params: { sla: 'breached' } },
   { key: 'open', label: 'All open', params: { sla: 'open' } },
   { key: 'closed', label: 'Closed', params: { sla: 'closed' } },
 ] as const

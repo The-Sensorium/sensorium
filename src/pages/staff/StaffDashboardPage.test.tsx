@@ -54,7 +54,7 @@ describe('StaffDashboardPage', () => {
     expect(screen.getByText('Staff dashboard')).toBeInTheDocument()
     expect(document.querySelector('[data-e2e="staff-stat-pending"]')).not.toBeNull()
     expect(screen.getByText('Pending')).toBeInTheDocument()
-    expect(screen.getByText('SLA breached')).toBeInTheDocument()
+    expect(screen.getByText('Overdue')).toBeInTheDocument()
   })
 
   it('shows the empty urgent state', () => {

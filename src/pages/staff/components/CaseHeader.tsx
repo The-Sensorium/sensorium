@@ -11,7 +11,7 @@ import {
   type ModerationSeverity,
   type TargetKind,
 } from '../../../features/admin-moderation'
-import { timeAgo } from '../../../features/notifications'
+import { timeAgo, timeUntil } from '../../../features/notifications'
 
 export function CaseHeader({
   backPath,
@@ -97,7 +97,7 @@ export function CaseHeader({
         {data.due_at && (
           <div className="flex gap-1.5">
             <dt className="font-medium">Due</dt>
-            <dd>{timeAgo(data.due_at)}</dd>
+            <dd>{timeUntil(data.due_at)}</dd>
           </div>
         )}
         {data.escalated_at && (
