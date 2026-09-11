@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useLocation } from 'react-router'
 import { ChevronLeft, ChevronRight, Loader2, ScrollText } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { useModerationAudit } from '../../features/admin-moderation'
@@ -6,6 +7,8 @@ import { timeAgo } from '../../features/notifications'
 
 export function ModerationAuditPage() {
   useDocumentTitle('Moderation audit')
+  const { pathname } = useLocation()
+  const staffBase = pathname.startsWith('/moderator') ? '/moderator' : '/admin'
   const audit = useModerationAudit(100)
   const rows = audit.data?.pages.flat() ?? []
   const [actionFilter, setActionFilter] = useState('all')
@@ -129,7 +132,17 @@ export function ModerationAuditPage() {
                   <p className="mt-0.5 truncate text-sm text-on-surface-variant">
                     {row.target_user_id ? `target: ${row.target_display_name || row.target_user_id}` : ''} · {row.reason}
                   </p>
-                  <p className="mt-1 text-xs text-on-surface-variant">{timeAgo(row.created_at)}</p>
+                  <p className="mt-1 flex items-center gap-2 text-xs text-on-surface-variant">
+                    <span>{timeAgo(row.created_at)}</span>
+                    {row.report_id && (
+                      <Link
+                        to={`${staffBase}/reports/${row.report_id}`}
+                        className="font-semibold text-primary"
+                      >
+                        Open case
+                      </Link>
+                    )}
+                  </p>
                 </div>
               </div>
             </li>

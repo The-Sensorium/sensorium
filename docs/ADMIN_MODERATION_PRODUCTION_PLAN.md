@@ -539,9 +539,10 @@ Required fields:
 Frontend:
 
 - render post/comment cases with the same quality as chat message cases
-- add hide/restore post/comment buttons
-- show whether content is already deleted or hidden
-- show linked member-facing post route if visible to staff through a safe link
+- add hide/restore post actions
+- add hide/restore comment actions
+- link audit rows to the correct content/report
+- shipped in `0120_moderation_post_comment_case.sql` + `EvidencePanel`: case v2 carries `post`/`comment` payloads (author, media, moderation/deleted state, parent post context); staff image preview reuses signed URLs via new `posts-images`/`chat-images` staff-read storage policies (buckets stay private); audit rows link to the case via `report_id`
 
 Tests:
 
@@ -549,6 +550,7 @@ Tests:
 - unit tests for comment case render
 - integration tests that staff read RPCs do not leak to members
 - E2E covering reported post/comment case action
+- shipped as `tests/integration/moderation-posts-case.test.ts` (payload shape, member denial, hide-closes-case, timeline entry); the live hide-post flow is additionally verified manually per phase because the demo seed has no posts for scripted E2E
 
 ### Account Operations Page
 

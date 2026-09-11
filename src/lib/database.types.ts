@@ -2046,6 +2046,7 @@ export type Database = {
           assigned_to_display_name: string | null
           cluster_id: string | null
           cluster_name: string
+          comment: Json | null
           comment_id: string | null
           created_at: string
           details: string | null
@@ -2057,6 +2058,7 @@ export type Database = {
           id: string
           last_activity_at: string
           message_id: string | null
+          post: Json | null
           post_id: string | null
           prior_reports: number
           priority_score: number

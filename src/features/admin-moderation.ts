@@ -62,6 +62,76 @@ const EMPTY_TARGET: TargetSummary = {
   prior_actions: 0,
 }
 
+export interface PostSummary {
+  id: string | null
+  title: string | null
+  content: string | null
+  image_path: string | null
+  gif_url: string | null
+  author_id: string | null
+  author_display_name: string | null
+  cluster_id: string | null
+  cluster_name: string | null
+  moderation_status: string | null
+  deleted_at: string | null
+  created_at: string | null
+}
+
+export interface CommentSummary {
+  id: string | null
+  content: string | null
+  image_path: string | null
+  gif_url: string | null
+  author_id: string | null
+  author_display_name: string | null
+  post_id: string | null
+  post_title: string | null
+  post_snippet: string | null
+  moderation_status: string | null
+  deleted_at: string | null
+  created_at: string | null
+}
+
+const EMPTY_POST: PostSummary = {
+  id: null,
+  title: null,
+  content: null,
+  image_path: null,
+  gif_url: null,
+  author_id: null,
+  author_display_name: null,
+  cluster_id: null,
+  cluster_name: null,
+  moderation_status: null,
+  deleted_at: null,
+  created_at: null,
+}
+
+const EMPTY_COMMENT: CommentSummary = {
+  id: null,
+  content: null,
+  image_path: null,
+  gif_url: null,
+  author_id: null,
+  author_display_name: null,
+  post_id: null,
+  post_title: null,
+  post_snippet: null,
+  moderation_status: null,
+  deleted_at: null,
+  created_at: null,
+}
+
+export function postSummary(row: ModerationCaseV2Row): PostSummary | null {
+  if (row.post == null) return null
+  return parseSummary(row.post, EMPTY_POST)
+}
+
+export function commentSummary(row: ModerationCaseV2Row): CommentSummary | null {
+  if (row.comment == null) return null
+  return parseSummary(row.comment, EMPTY_COMMENT)
+}
+
 export function reporterSummary(row: ModerationCaseV2Row): ReporterSummary {
   return parseSummary(row.reporter, EMPTY_REPORTER)
 }
@@ -373,6 +443,28 @@ export function useRestoreMessage() {
   ])
 }
 
+export function useHidePost() {
+  return useModerationMutation<{ p_post_id: string; p_reason: string; p_report_id?: string }>('hide_post', [])
+}
+
+export function useRestorePost() {
+  return useModerationMutation<{ p_post_id: string; p_reason: string; p_report_id?: string }>('restore_post', [])
+}
+
+export function useHidePostComment() {
+  return useModerationMutation<{ p_comment_id: string; p_reason: string; p_report_id?: string }>(
+    'hide_post_comment',
+    [],
+  )
+}
+
+export function useRestorePostComment() {
+  return useModerationMutation<{ p_comment_id: string; p_reason: string; p_report_id?: string }>(
+    'restore_post_comment',
+    [],
+  )
+}
+
 export function useIssueWarning() {
   return useSanctionMutation('issue_warning')
 }
@@ -514,6 +606,15 @@ export function formatError(error: unknown): string {
     return 'Only the assigned moderator or an admin can escalate this case.'
   if (message.includes('cannot_retriage_not_assigned_to_you'))
     return 'Only the assigned moderator or an admin can change severity.'
+  if (message.includes('report_post_mismatch'))
+    return 'That action does not match the post reported in this case.'
+  if (message.includes('report_comment_mismatch'))
+    return 'That action does not match the comment reported in this case.'
+  if (message.includes('post_not_found_or_already_hidden')) return 'That post is already hidden or no longer exists.'
+  if (message.includes('post_not_found_or_not_hidden')) return 'That post is not hidden or no longer exists.'
+  if (message.includes('comment_not_found_or_already_hidden'))
+    return 'That comment is already hidden or no longer exists.'
+  if (message.includes('comment_not_found_or_not_hidden')) return 'That comment is not hidden or no longer exists.'
   if (message.includes('report_not_open')) return 'That report is already closed.'
   if (message.includes('appeal_not_found')) return 'That appeal could not be found.'
   if (message.includes('appeal_already_resolved')) return 'That appeal has already been decided.'
