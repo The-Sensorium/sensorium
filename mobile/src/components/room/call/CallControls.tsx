@@ -4,6 +4,7 @@ import { useConnectionState, useLocalParticipant } from '@livekit/react-native'
 import { ConnectionState } from 'livekit-client'
 import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff } from 'lucide-react-native'
 import { useTheme } from '../../../lib/use-theme'
+import { useResolvedScheme } from '../../../lib/theme-choice'
 
 interface CallControlsProps {
   onHangUp: () => void
@@ -24,6 +25,7 @@ export function CallControls({
   onChatPress,
 }: CallControlsProps) {
   const t = useTheme()
+  const scheme = useResolvedScheme()
   const { localParticipant } = useLocalParticipant()
   const connection = useConnectionState()
   const live = connection === ConnectionState.Connected
@@ -131,7 +133,7 @@ export function CallControls({
             borderRadius: 28,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: t.error,
+            backgroundColor: scheme === 'dark' ? t.errorContainer : t.error,
           }}
         >
           <PhoneOff size={20} color="#fff" strokeWidth={2} />
