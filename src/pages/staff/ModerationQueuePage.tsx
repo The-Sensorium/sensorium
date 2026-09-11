@@ -22,7 +22,7 @@ import {
   useMarkStaffNotificationsRead,
   useStaffUnreadCounts,
 } from '../../features/notifications'
-import { useStaffBase } from '../../features/admin-accounts'
+
 
 const TABS = [
   { key: 'unassigned', label: 'Unassigned', params: { assignee: 'unassigned', sla: 'open' } },
@@ -64,7 +64,7 @@ function parseAssignee(value: string | null): string {
 export function ModerationQueuePage() {
   useDocumentTitle('Report queue')
   const [searchParams, setSearchParams] = useSearchParams()
-  const staffBase = useStaffBase()
+
   const [claimError, setClaimError] = useState<string | null>(null)
   const [claimMessage, setClaimMessage] = useState<string | null>(null)
 
@@ -338,15 +338,7 @@ export function ModerationQueuePage() {
                 <span className="rounded-md bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface-variant">
                   {REPORT_STATUS_LABELS[row.status]}
                 </span>
-                {row.target_user_id ? (
-                  <Link
-                    to={`${staffBase}/accounts/${row.target_user_id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="rounded-md border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
-                  >
-                    Account
-                  </Link>
-                ) : null}
+
                 {row.status === 'pending' && !row.assigned_to ? (
                   <button
                     type="button"
