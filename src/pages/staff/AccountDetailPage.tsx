@@ -299,7 +299,7 @@ export function AccountDetailPage() {
                       {entry.report_id && (
                         <Link
                           to={`${base}/reports/${entry.report_id}`}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/60 bg-surface px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary-container/15 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary-container/25"
                         >
                           Open case
                           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -308,7 +308,7 @@ export function AccountDetailPage() {
                       {entry.appeal_id && isAdmin && (
                         <Link
                           to={`/admin/appeals/${entry.appeal_id}`}
-                          className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/60 bg-surface px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary-container/15 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary-container/25"
                         >
                           Open appeal
                           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
