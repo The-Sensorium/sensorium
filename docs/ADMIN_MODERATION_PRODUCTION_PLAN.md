@@ -986,11 +986,14 @@ Frontend:
 - audit detail drawer
 - links to case/account/appeal
 - CSV export
+- shipped in `0125_audit_filters_and_export.sql` + rewritten `ModerationAuditPage`: `appeal_id` graduated to a first-class audit column (backfilled, written by all appeal RPCs), `get_moderation_audit_v2` with action/actor/target/report/appeal/date/search filters, row-click detail drawer with metadata and deep links, client-side CSV export capped at 1,000 rows
+- review fixes: backfill joins appeals so orphaned metadata references cannot break the migration; integration empty-assertions are target-scoped because the shared stack keeps append-only history across runs
 
 Tests:
 
 - integration tests for audit filters
 - component tests for audit metadata rendering
+- shipped as `tests/integration/moderation-audit-v2.test.ts` (moderator denial, action/actor/target/report/search filters, appeal-id linkage) plus `ModerationAuditPage.test.tsx` (drawer, metadata, export affordance)
 
 ### Phase 8: Rate Limiting, SLA Alerts, And Ops Health
 

@@ -702,6 +702,7 @@ export type Database = {
         Row: {
           action: Database["public"]["Enums"]["moderation_action_type"]
           actor_id: string | null
+          appeal_id: string | null
           comment_id: string | null
           created_at: string
           id: string
@@ -716,6 +717,7 @@ export type Database = {
         Insert: {
           action: Database["public"]["Enums"]["moderation_action_type"]
           actor_id?: string | null
+          appeal_id?: string | null
           comment_id?: string | null
           created_at?: string
           id?: string
@@ -730,6 +732,7 @@ export type Database = {
         Update: {
           action?: Database["public"]["Enums"]["moderation_action_type"]
           actor_id?: string | null
+          appeal_id?: string | null
           comment_id?: string | null
           created_at?: string
           id?: string
@@ -768,6 +771,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_actions_appeal_id_fkey"
+            columns: ["appeal_id"]
+            isOneToOne: false
+            referencedRelation: "appeals"
             referencedColumns: ["id"]
           },
           {
@@ -2086,6 +2096,25 @@ export type Database = {
           response: string
           status: Database["public"]["Enums"]["appeal_status"]
           user_id: string
+        }[]
+      }
+      get_moderation_audit_v2: {
+        Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
+        Returns: {
+          action: Database["public"]["Enums"]["moderation_action_type"]
+          actor_display_name: string
+          actor_id: string
+          appeal_id: string
+          comment_id: string
+          created_at: string
+          id: string
+          message_id: string
+          metadata: Json
+          post_id: string
+          reason: string
+          report_id: string
+          target_display_name: string
+          target_user_id: string
         }[]
       }
       get_candidate_profiles: {

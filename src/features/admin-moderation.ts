@@ -564,6 +564,87 @@ export function useAccountSearch(query: string) {
   })
 }
 
+export type ModerationAuditV2Row =
+  Database['public']['Functions']['get_moderation_audit_v2']['Returns'][number]
+
+export type ModerationActionType = Database['public']['Enums']['moderation_action_type']
+
+export interface AuditV2Filters {
+  action?: ModerationActionType
+  actorId?: string
+  targetId?: string
+  reportId?: string
+  appealId?: string
+  dateFrom?: string
+  dateTo?: string
+  search?: string
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function uuidOrNull(value: string | undefined): string | null {
+  const trimmed = value?.trim()
+  return trimmed && UUID_RE.test(trimmed) ? trimmed : null
+}
+
+export function useModerationAuditV2(filters: AuditV2Filters, limit = 100) {
+  const normalized = {
+    action: filters.action ?? null,
+    actor_id: uuidOrNull(filters.actorId),
+    target_id: uuidOrNull(filters.targetId),
+    report_id: uuidOrNull(filters.reportId),
+    appeal_id: uuidOrNull(filters.appealId),
+    date_from: filters.dateFrom?.trim() ? new Date(`${filters.dateFrom}T00:00:00`).toISOString() : null,
+    date_to: filters.dateTo?.trim() ? new Date(`${filters.dateTo}T23:59:59`).toISOString() : null,
+    search: filters.search?.trim() ? filters.search.trim() : null,
+  }
+  return useInfiniteQuery({
+    queryKey: ['moderation', 'audit-v2', normalized, limit],
+    placeholderData: keepPreviousData,
+    initialPageParam: null as { created_at: string; id: string } | null,
+    queryFn: async ({ pageParam }) => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_moderation_audit_v2', {
+        p_filters: normalized,
+        p_limit: limit,
+        p_cursor: pageParam ?? null,
+      })
+      if (error) throw error
+      return (data ?? []) as ModerationAuditV2Row[]
+    },
+    getNextPageParam: (lastPage) => {
+      const last = lastPage[lastPage.length - 1]
+      if (!last || lastPage.length < limit) return undefined
+      return { created_at: last.created_at, id: last.id }
+    },
+  })
+}
+
+export function auditRowsToCsv(rows: ModerationAuditV2Row[]): string {
+  const escape = (value: string | null): string => {
+    const text = value ?? ''
+    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+  }
+  const header = 'id,created_at,action,actor_id,actor,target_user_id,target,report_id,appeal_id,reason'
+  const lines = rows.map((row) =>
+    [
+      row.id,
+      row.created_at,
+      row.action,
+      row.actor_id,
+      row.actor_display_name,
+      row.target_user_id,
+      row.target_display_name,
+      row.report_id,
+      row.appeal_id,
+      row.reason,
+    ]
+      .map((cell) => escape(cell))
+      .join(','),
+  )
+  return [header, ...lines].join('\n')
+}
+
 export function useModerationAudit(limit = 100) {
   return useInfiniteQuery({
     queryKey: ['moderation', 'audit', limit],
