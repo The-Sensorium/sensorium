@@ -94,6 +94,12 @@ function AuditDetailDrawer({ row, onClose, staffBase }: { row: ModerationAuditV2
             <dt className="text-on-surface-variant">Reason</dt>
             <dd className="max-w-56 truncate font-medium text-on-surface" title={row.reason}>{row.reason}</dd>
           </div>
+          {row.policy_code && (
+            <div className="flex justify-between gap-3">
+              <dt className="text-on-surface-variant">Policy</dt>
+              <dd className="font-medium capitalize text-on-surface">{row.policy_code.replace(/_/g, ' ')}</dd>
+            </div>
+          )}
         </dl>
         <div className="mt-3 flex flex-wrap gap-2">
           {row.report_id && (

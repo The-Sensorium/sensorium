@@ -119,6 +119,7 @@ export function ModerationCasePage() {
           data={data}
           msg={msg ?? null}
           canAct={claimedByMe && open}
+          canRestore={isModerator}
           busy={contentBusy}
           hidePending={hideMessage.isPending}
           restorePending={restoreMessage.isPending}
