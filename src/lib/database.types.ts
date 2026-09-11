@@ -721,6 +721,51 @@ export type Database = {
           },
         ]
       }
+      moderation_case_notes: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          note: string
+          report_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          note: string
+          report_id: string
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
+          id?: string
+          note?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_case_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "moderation_case_notes_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_prefs: {
         Row: {
           cluster_id: string
@@ -1981,6 +2026,52 @@ export type Database = {
           target_user_id: string
         }[]
       }
+      get_moderation_case_timeline: {
+        Args: { p_report_id: string }
+        Returns: {
+          action: string
+          actor_display_name: string
+          actor_id: string
+          body: string
+          created_at: string
+          entry_id: string
+          kind: string
+          metadata: Json
+        }[]
+      }
+      get_moderation_case_v2: {
+        Args: { p_report_id: string }
+        Returns: {
+          assigned_to: string | null
+          assigned_to_display_name: string | null
+          cluster_id: string | null
+          cluster_name: string
+          comment_id: string | null
+          created_at: string
+          details: string | null
+          due_at: string | null
+          escalated_at: string | null
+          escalated_by: string | null
+          escalation_reason: string | null
+          evidence: Json | null
+          id: string
+          last_activity_at: string
+          message_id: string | null
+          post_id: string | null
+          prior_reports: number
+          priority_score: number
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter: Json | null
+          resolution_note: string | null
+          reviewed_by: string | null
+          severity: Database["public"]["Enums"]["moderation_severity"]
+          status: Database["public"]["Enums"]["report_status"]
+          target: Json | null
+          target_kind: string
+          target_user_id: string | null
+          updated_at: string
+        }[]
+      }
       get_moderation_message: {
         Args: { p_report_id: string }
         Returns: {
@@ -2767,6 +2858,10 @@ export const Constants = {
         "post_restored",
         "post_comment_hidden",
         "post_comment_restored",
+        "note_added",
+        "case_assigned",
+        "case_escalated",
+        "severity_changed",
       ],
       moderation_severity: ["low", "medium", "high", "urgent"],
       notification_type: [

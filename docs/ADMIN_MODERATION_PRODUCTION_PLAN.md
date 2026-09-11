@@ -864,12 +864,15 @@ Frontend:
 - add target/reporter summaries
 - show current assignment and stale-page warnings
 - add action confirmation modals
+- shipped as `src/pages/staff/components/`: `CaseHeader`, `EvidencePanel`, `ReporterPanel`, `TargetPanel`, `CaseTimeline` (owns note composer/edit/delete), `CaseActionPanel` (triage + enforcement)
+- review fixes: UNION timeline aliases output columns explicitly (ORDER BY sees first-SELECT names); queue-v2 row types mark LEFT JOIN columns nullable
 
 Tests:
 
 - component coverage for each case panel
 - mutation tests for claim, release, assign, notes, and actions
 - integration tests for notes and assignment permissions
+- integration spec `tests/integration/moderation-case.test.ts`: member denial, context shape, note CRUD scoping, admin-only assign, escalation severity bump, severity guard + audit
 
 ### Phase 3: Post/Comment Staff Moderation
 

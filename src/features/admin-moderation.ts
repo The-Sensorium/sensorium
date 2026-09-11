@@ -12,6 +12,63 @@ export type ModerationQueueRow = Database['public']['Functions']['get_moderation
 export type ModerationQueueV2Row = Database['public']['Functions']['get_moderation_queue_v2']['Returns'][number]
 export type StaffModerationSummary = Database['public']['Functions']['get_staff_moderation_summary']['Returns'][number]
 export type ModerationReportRow = Database['public']['Functions']['get_moderation_report']['Returns'][number]
+export type ModerationCaseV2Row = Database['public']['Functions']['get_moderation_case_v2']['Returns'][number]
+export type CaseTimelineEntry = Database['public']['Functions']['get_moderation_case_timeline']['Returns'][number]
+
+export interface ReporterSummary {
+  id: string | null
+  display_name: string | null
+  account_created_at: string | null
+  reports_30d: number
+  total_reports: number
+  dismissed_reports: number
+}
+
+export interface TargetSummary {
+  id: string | null
+  display_name: string | null
+  account_status: string
+  restriction_expires_at: string | null
+  restriction_reason: string | null
+  roles: string[]
+  cluster_names: string[]
+  prior_reports: number
+  prior_actions: number
+}
+
+function parseSummary<T>(value: unknown, fallback: T): T {
+  if (typeof value !== 'object' || value === null) return fallback
+  return { ...fallback, ...(value as Record<string, unknown>) } as T
+}
+
+const EMPTY_REPORTER: ReporterSummary = {
+  id: null,
+  display_name: null,
+  account_created_at: null,
+  reports_30d: 0,
+  total_reports: 0,
+  dismissed_reports: 0,
+}
+
+const EMPTY_TARGET: TargetSummary = {
+  id: null,
+  display_name: null,
+  account_status: 'active',
+  restriction_expires_at: null,
+  restriction_reason: null,
+  roles: [],
+  cluster_names: [],
+  prior_reports: 0,
+  prior_actions: 0,
+}
+
+export function reporterSummary(row: ModerationCaseV2Row): ReporterSummary {
+  return parseSummary(row.reporter, EMPTY_REPORTER)
+}
+
+export function targetSummary(row: ModerationCaseV2Row): TargetSummary {
+  return parseSummary(row.target, EMPTY_TARGET)
+}
 export type PlatformRolePageRow = Database['public']['Functions']['list_platform_roles_page']['Returns'][number]
 export type ModeratedMessageRow = Database['public']['Functions']['get_moderation_message']['Returns'][number]
 export type AccountSearchRow = Database['public']['Functions']['search_accounts']['Returns'][number]
@@ -147,6 +204,70 @@ export function useModerationQueueV2(filters: QueueV2Filters, limit = 25) {
       return { created_at: last.created_at, id: last.id }
     },
   })
+}
+
+export function useModerationCaseV2(reportId: string | undefined) {
+  return useQuery({
+    queryKey: ['moderation', 'case-v2', reportId],
+    enabled: reportId != null,
+    queryFn: async () => {
+      if (!reportId) throw new Error('No report id')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_moderation_case_v2', { p_report_id: reportId })
+      if (error) throw error
+      return (data?.[0] ?? null) as ModerationCaseV2Row | null
+    },
+  })
+}
+
+export function useCaseTimeline(reportId: string | undefined) {
+  return useQuery({
+    queryKey: ['moderation', 'timeline', reportId],
+    enabled: reportId != null,
+    queryFn: async () => {
+      if (!reportId) throw new Error('No report id')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_moderation_case_timeline', { p_report_id: reportId })
+      if (error) throw error
+      return (data ?? []) as CaseTimelineEntry[]
+    },
+  })
+}
+
+export function useAddCaseNote() {
+  return useModerationMutation<{ p_report_id: string; p_note: string }>('add_moderation_case_note', [
+    ['moderation', 'timeline'],
+  ])
+}
+
+export function useEditCaseNote() {
+  return useModerationMutation<{ p_note_id: string; p_note: string }>('edit_moderation_case_note', [
+    ['moderation', 'timeline'],
+  ])
+}
+
+export function useDeleteCaseNote() {
+  return useModerationMutation<{ p_note_id: string }>('delete_moderation_case_note', [
+    ['moderation', 'timeline'],
+  ])
+}
+
+export function useAssignCase() {
+  return useModerationMutation<{ p_report_id: string; p_assignee: string; p_reason: string }>(
+    'assign_moderation_case',
+    [],
+  )
+}
+
+export function useEscalateCase() {
+  return useModerationMutation<{ p_report_id: string; p_reason: string }>('escalate_moderation_case', [])
+}
+
+export function useSetCaseSeverity() {
+  return useModerationMutation<{ p_report_id: string; p_severity: ModerationSeverity; p_reason: string }>(
+    'set_moderation_case_severity',
+    [],
+  )
 }
 
 export function useModerationReport(reportId: string | undefined) {
@@ -382,6 +503,17 @@ export function formatError(error: unknown): string {
     return 'That action does not match the message reported in this case.'
   if (message.includes('report_target_mismatch'))
     return 'That action does not match the account reported in this case.'
+  if (message.includes('note_required')) return 'Write the note before saving it.'
+  if (message.includes('note_too_long')) return 'Notes are limited to 2,000 characters.'
+  if (message.includes('note_not_found')) return 'That note could not be found.'
+  if (message.includes('note_deleted')) return 'That note has already been deleted.'
+  if (message.includes('reason_required')) return 'A short reason is required so the audit trail stays useful.'
+  if (message.includes('reason_too_long')) return 'Reasons are limited to 2,000 characters.'
+  if (message.includes('assignee_not_staff')) return 'Cases can only be assigned to moderators or admins.'
+  if (message.includes('cannot_escalate_not_assigned_to_you'))
+    return 'Only the assigned moderator or an admin can escalate this case.'
+  if (message.includes('cannot_retriage_not_assigned_to_you'))
+    return 'Only the assigned moderator or an admin can change severity.'
   if (message.includes('report_not_open')) return 'That report is already closed.'
   if (message.includes('appeal_not_found')) return 'That appeal could not be found.'
   if (message.includes('appeal_already_resolved')) return 'That appeal has already been decided.'

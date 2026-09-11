@@ -1,0 +1,173 @@
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { ArrowLeft } from 'lucide-react'
+import {
+  MODERATION_SEVERITY_LABELS,
+  REPORT_STATUS_LABELS,
+  TARGET_KIND_LABELS,
+  isBreached,
+  targetSummary,
+  type ModerationCaseV2Row,
+  type ModerationSeverity,
+  type TargetKind,
+} from '../../../features/admin-moderation'
+import { timeAgo } from '../../../features/notifications'
+
+export function CaseHeader({
+  backPath,
+  data,
+  claimedByMe,
+  open,
+  busy,
+  claimPending,
+  onClaim,
+  onRelease,
+  onDismiss,
+}: {
+  backPath: string
+  data: ModerationCaseV2Row
+  claimedByMe: boolean
+  open: boolean
+  busy: boolean
+  claimPending: boolean
+  onClaim: () => void
+  onRelease: () => void
+  onDismiss: () => void
+}) {
+  const [confirmDismiss, setConfirmDismiss] = useState(false)
+  const breached = isBreached(data.due_at, data.status)
+
+  return (
+    <div className="space-y-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <div className="flex items-center gap-3">
+          <Link
+            to={backPath}
+            className="grid h-9 w-9 place-items-center rounded-pill border border-outline-variant/60 text-on-surface-variant transition-colors hover:bg-surface-container"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+          </Link>
+          <div>
+            <h1 className="font-display text-3xl font-semibold text-on-surface">Report case</h1>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              {data.reason.replace(/_/g, ' ')} report about {targetSummary(data).display_name ?? 'Unknown member'}.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
+            {REPORT_STATUS_LABELS[data.status]}
+          </span>
+          <span className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
+            {MODERATION_SEVERITY_LABELS[(data.severity as ModerationSeverity) ?? 'medium']}
+          </span>
+          <span className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
+            {TARGET_KIND_LABELS[(data.target_kind as TargetKind) ?? 'member'] ?? data.target_kind}
+          </span>
+          {breached && (
+            <span className="rounded-pill bg-error/10 px-3 py-1.5 text-xs font-semibold text-error">
+              SLA breached
+            </span>
+          )}
+        </div>
+      </header>
+
+      <dl className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-on-surface-variant">
+        <div className="flex gap-1.5">
+          <dt className="font-medium">Assignee</dt>
+          <dd className="font-semibold text-on-surface">{data.assigned_to_display_name ?? 'Unassigned'}</dd>
+        </div>
+        <div className="flex gap-1.5">
+          <dt className="font-medium">Submitted</dt>
+          <dd>{timeAgo(data.created_at)}</dd>
+        </div>
+        <div className="flex gap-1.5">
+          <dt className="font-medium">Last activity</dt>
+          <dd>{timeAgo(data.last_activity_at)}</dd>
+        </div>
+        {data.due_at && (
+          <div className="flex gap-1.5">
+            <dt className="font-medium">Due</dt>
+            <dd>{timeAgo(data.due_at)}</dd>
+          </div>
+        )}
+        {data.escalated_at && (
+          <div className="flex gap-1.5">
+            <dt className="font-medium">Escalated</dt>
+            <dd>{timeAgo(data.escalated_at)}{data.escalation_reason ? ` — ${data.escalation_reason}` : ''}</dd>
+          </div>
+        )}
+      </dl>
+
+      {open && data.assigned_to && !claimedByMe && (
+        <p role="alert" className="rounded-2xl border border-error/30 bg-error/10 p-3 text-sm text-error">
+          This case is being reviewed by {data.assigned_to_display_name ?? 'another moderator'}. Your actions are
+          limited until it is released or reassigned.
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {claimedByMe && open ? (
+          <button
+            type="button"
+            onClick={onRelease}
+            disabled={busy}
+            className="rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
+          >
+            Release case
+          </button>
+        ) : data.status === 'pending' && !data.assigned_to ? (
+          <button
+            type="button"
+            onClick={onClaim}
+            disabled={busy}
+            className="rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+          >
+            {claimPending ? 'Claiming...' : 'Claim case'}
+          </button>
+        ) : null}
+        {open && (claimedByMe || (data.status === 'pending' && !data.assigned_to)) && (
+          <button
+            type="button"
+            onClick={() => setConfirmDismiss(true)}
+            disabled={busy}
+            className="rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
+          >
+            Dismiss report
+          </button>
+        )}
+      </div>
+      {confirmDismiss && open && (
+        <div className="rounded-xl border border-outline-variant/60 bg-surface-container/50 p-3">
+          <p className="text-sm font-semibold text-on-surface">Dismiss this report?</p>
+          <p className="mt-1 text-xs leading-5 text-on-surface-variant">The report will be closed without an account action.</p>
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmDismiss(false)}
+              className="rounded-pill px-3 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmDismiss(false)
+                onDismiss()
+              }}
+              disabled={busy}
+              className="rounded-pill bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-40"
+            >
+              Confirm dismiss
+            </button>
+          </div>
+        </div>
+      )}
+      {data.resolution_note ? (
+        <p className="rounded-xl bg-surface-container/60 p-3 text-sm leading-6 text-on-surface-variant">
+          Resolution note: {data.resolution_note}
+        </p>
+      ) : null}
+    </div>
+  )
+}
