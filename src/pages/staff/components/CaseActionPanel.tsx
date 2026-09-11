@@ -266,11 +266,17 @@ export function CaseActionPanel({
                 className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
               />
             </label>
+            {!actionArgs() && (
+              <p className="text-xs text-on-surface-variant">
+                Enter a user-facing reason above to enable warning and suspension.
+              </p>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => enforce(warn, { p_user_id: targetUserId, p_reason: actionArgs(), p_report_id: data.id, p_policy_code: policyCode() })}
                 disabled={accountBusy || !actionArgs()}
+                title={!actionArgs() ? 'Enter a user-facing reason above first' : undefined}
                 className="rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40"
               >
                 Issue warning
@@ -292,6 +298,7 @@ export function CaseActionPanel({
                 type="button"
                   onClick={() => setConfirmSuspend(true)}
                   disabled={accountBusy || !actionArgs() || !expiryValid}
+                  title={!actionArgs() ? 'Enter a user-facing reason above first' : undefined}
                 className="rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40"
               >
                 Suspend for {expiryDays} days
