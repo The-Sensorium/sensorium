@@ -13,6 +13,8 @@ function formatError(message: string): string {
   if (message.includes('details_too_long')) return `Appeals are limited to ${MAX_DETAILS.toLocaleString()} characters.`
   if (message.includes('account_not_restricted'))
     return 'Your account is not restricted, so there is nothing to appeal right now.'
+  if (message.includes('appeal_rate_limited'))
+    return 'You have already submitted several appeals recently. Please wait before appealing again.'
   return message
 }
 
