@@ -55,14 +55,23 @@ export function CaseHeader({
           </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <span className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
-            {REPORT_STATUS_LABELS[data.status]}
+          <span
+            title="Case status: pending, reviewing, actioned, or dismissed."
+            className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant"
+          >
+            Status: {REPORT_STATUS_LABELS[data.status]}
           </span>
-          <span className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
-            {MODERATION_SEVERITY_LABELS[(data.severity as ModerationSeverity) ?? 'medium']}
+          <span
+            title="Triage severity, drives the SLA: urgent 4 hours, high 24 hours, medium 72 hours, low 7 days."
+            className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant"
+          >
+            Severity: {MODERATION_SEVERITY_LABELS[(data.severity as ModerationSeverity) ?? 'medium']}
           </span>
-          <span className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
-            {TARGET_KIND_LABELS[(data.target_kind as TargetKind) ?? 'member'] ?? data.target_kind}
+          <span
+            title="What was reported: a member, a chat message, a post, or a comment."
+            className="rounded-pill bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant"
+          >
+            Target: {TARGET_KIND_LABELS[(data.target_kind as TargetKind) ?? 'member'] ?? data.target_kind}
           </span>
           {breached && (
             <span className="rounded-pill bg-error/10 px-3 py-1.5 text-xs font-semibold text-error">

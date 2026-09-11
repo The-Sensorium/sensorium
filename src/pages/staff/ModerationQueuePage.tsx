@@ -304,11 +304,17 @@ export function ModerationQueuePage() {
                     {row.cluster_name} · {row.snippet ? row.snippet : 'no details'}
                   </span>
                   <span className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
+                    <span
+                      title="What was reported: a member, a chat message, a post, or a comment."
+                      className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant"
+                    >
                       {TARGET_KIND_LABELS[(row.target_kind as TargetKind) ?? 'member'] ?? row.target_kind}
                     </span>
-                    <span className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
-                      {MODERATION_SEVERITY_LABELS[(row.severity as ModerationSeverity) ?? 'medium'] ?? row.severity}
+                    <span
+                      title="Triage severity, drives the SLA: urgent 4 hours, high 24 hours, medium 72 hours, low 7 days."
+                      className="rounded-pill bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant"
+                    >
+                      {MODERATION_SEVERITY_LABELS[(row.severity as ModerationSeverity) ?? 'medium'] ?? row.severity} severity
                     </span>
                     {breached && (
                       <span className="rounded-pill bg-error/10 px-2 py-0.5 text-[11px] font-semibold text-error">

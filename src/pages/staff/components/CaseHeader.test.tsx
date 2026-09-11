@@ -60,11 +60,11 @@ function renderHeader(overrides: Partial<ModerationCaseV2Row> = {}, extra: Recor
 }
 
 describe('CaseHeader', () => {
-  it('renders status, severity, and target-kind badges', () => {
+  it('renders labeled status, severity, and target badges', () => {
     renderHeader()
-    expect(screen.getByText('Reviewing')).toBeInTheDocument()
-    expect(screen.getByText('Low')).toBeInTheDocument()
-    expect(screen.getByText('Member')).toBeInTheDocument()
+    expect(screen.getByText('Status: Reviewing')).toBeInTheDocument()
+    expect(screen.getByText('Severity: Low')).toBeInTheDocument()
+    expect(screen.getByText('Target: Member')).toBeInTheDocument()
   })
 
   it('warns when another moderator holds the case', () => {
