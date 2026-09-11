@@ -130,7 +130,11 @@ export function ModerationAuditPage() {
                     <span className="font-normal text-on-surface-variant">by {row.actor_display_name || 'unknown'}</span>
                   </p>
                   <p className="mt-0.5 truncate text-sm text-on-surface-variant">
-                    {row.target_user_id ? `target: ${row.target_display_name || row.target_user_id}` : ''} · {row.reason}
+                    {row.target_user_id ? (
+                      <>target: <Link to={`${staffBase}/accounts/${row.target_user_id}`} className="font-semibold text-primary">{row.target_display_name || row.target_user_id}</Link> · {row.reason}</>
+                    ) : (
+                      <>{row.reason}</>
+                    )}
                   </p>
                   <p className="mt-1 flex items-center gap-2 text-xs text-on-surface-variant">
                     <span>{timeAgo(row.created_at)}</span>

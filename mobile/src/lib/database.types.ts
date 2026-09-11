@@ -1926,6 +1926,18 @@ export type Database = {
         Returns: string
       }
       fn_quorum: { Args: { p_active: number }; Returns: number }
+      get_account_moderation_history: {
+        Args: { p_cursor?: Json; p_limit?: number; p_user_id: string }
+        Returns: {
+          appeal_id: string
+          created_at: string
+          entry_id: string
+          kind: string
+          report_id: string
+          status: string
+          summary: string
+        }[]
+      }
       get_admin_appeal: {
         Args: { p_appeal_id: string }
         Returns: {
@@ -2132,6 +2144,25 @@ export type Database = {
           target_display_name: string | null
           target_kind: string
           target_user_id: string | null
+        }[]
+      }
+      get_staff_account_detail: {
+        Args: { p_user_id: string }
+        Returns: {
+          account_created_at: string
+          account_status: Database["public"]["Enums"]["account_status"]
+          appeals_count: number
+          cluster_names: string[]
+          display_name: string
+          email: string
+          enforcement_count: number
+          open_reports_against: number
+          reports_filed: number
+          restriction_expires_at: string
+          restriction_reason: string
+          roles: string[]
+          total_reports_against: number
+          user_id: string
         }[]
       }
       get_staff_moderation_summary: {
@@ -2448,6 +2479,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      lift_account_restriction: {
+        Args: { p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
       mark_all_read: { Args: never; Returns: undefined }
       mark_cluster_read: { Args: { p_cluster_id: string }; Returns: undefined }
       mark_outbound_email: {
@@ -2568,6 +2603,16 @@ export type Database = {
         Returns: {
           display_name: string
           email: string
+          user_id: string
+        }[]
+      }
+      search_accounts_v2: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          display_name: string
+          email: string
+          roles: string[]
           user_id: string
         }[]
       }

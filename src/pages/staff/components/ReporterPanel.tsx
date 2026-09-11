@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import type { ReporterSummary } from '../../../features/admin-moderation'
 
 function accountAge(createdAt: string | null): string {
@@ -10,7 +11,7 @@ function accountAge(createdAt: string | null): string {
   return months === 1 ? '1 month' : `${months} months`
 }
 
-export function ReporterPanel({ reporter }: { reporter: ReporterSummary }) {
+export function ReporterPanel({ reporter, accountHref }: { reporter: ReporterSummary; accountHref?: string | null }) {
   const dismissedRatio =
     reporter.total_reports > 0 ? Math.round((reporter.dismissed_reports / reporter.total_reports) * 100) : null
 
@@ -20,7 +21,15 @@ export function ReporterPanel({ reporter }: { reporter: ReporterSummary }) {
       <dl className="mt-3 space-y-2 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-on-surface-variant">Member</dt>
-          <dd className="font-medium text-on-surface">{reporter.display_name ?? 'Deleted account'}</dd>
+          <dd className="font-medium text-on-surface">
+            {accountHref ? (
+              <Link to={accountHref} className="font-semibold text-primary">
+                {reporter.display_name ?? 'Deleted account'}
+              </Link>
+            ) : (
+              (reporter.display_name ?? 'Deleted account')
+            )}
+          </dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-on-surface-variant">Account age</dt>

@@ -16,6 +16,7 @@ import {
   useRestoreMessage,
 } from '../../features/admin-moderation'
 import { useMyAccess, type Capability } from '../../features/access'
+import { useStaffBase } from '../../features/admin-accounts'
 import { CaseHeader } from './components/CaseHeader'
 import { EvidencePanel } from './components/EvidencePanel'
 import { ReporterPanel } from './components/ReporterPanel'
@@ -31,6 +32,7 @@ export function ModerationCasePage() {
   useDocumentTitle('Report case')
   const { reportId } = useParams<{ reportId: string }>()
   const { pathname } = useLocation()
+  const base = useStaffBase()
   const backPath = pathname.replace(/\/[^/]+$/, '')
   const report = useModerationCaseV2(reportId)
   const messageQuery = useModeratedMessage(reportId)
@@ -70,6 +72,11 @@ export function ModerationCasePage() {
       </div>
     )
   }
+
+  const reporter = reporterSummary(data)
+  const target = targetSummary(data)
+  const reporterHref = reporter.id ? `${base}/accounts/${reporter.id}` : null
+  const targetHref = target.id ? `${base}/accounts/${target.id}` : null
 
   const claimedByMe = data.assigned_to === access.data?.user_id
   const isModerator = has(access.data, 'can_moderate')
@@ -132,8 +139,8 @@ export function ModerationCasePage() {
           }
         />
         <div className="grid content-start gap-4">
-          <ReporterPanel reporter={reporterSummary(data)} />
-          <TargetPanel target={targetSummary(data)} />
+          <ReporterPanel reporter={reporter} accountHref={reporterHref} />
+          <TargetPanel target={target} accountHref={targetHref} />
         </div>
       </div>
 

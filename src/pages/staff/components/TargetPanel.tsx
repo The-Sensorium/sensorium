@@ -1,7 +1,8 @@
+import { Link } from 'react-router'
 import type { TargetSummary } from '../../../features/admin-moderation'
 import { timeAgo } from '../../../features/notifications'
 
-export function TargetPanel({ target }: { target: TargetSummary }) {
+export function TargetPanel({ target, accountHref }: { target: TargetSummary; accountHref?: string | null }) {
   const restricted = target.account_status !== 'active'
 
   return (
@@ -17,7 +18,15 @@ export function TargetPanel({ target }: { target: TargetSummary }) {
       <dl className="mt-3 space-y-2 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-on-surface-variant">Member</dt>
-          <dd className="font-medium text-on-surface">{target.display_name ?? 'Deleted account'}</dd>
+          <dd className="font-medium text-on-surface">
+            {accountHref ? (
+              <Link to={accountHref} className="font-semibold text-primary">
+                {target.display_name ?? 'Deleted account'}
+              </Link>
+            ) : (
+              (target.display_name ?? 'Deleted account')
+            )}
+          </dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-on-surface-variant">Status</dt>

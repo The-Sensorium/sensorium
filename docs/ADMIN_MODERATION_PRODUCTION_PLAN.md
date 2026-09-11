@@ -911,12 +911,15 @@ Frontend:
 - add account detail page
 - link target names in queue/cases/audit/appeals to account detail
 - expose lift restriction for permitted staff
+- shipped as `src/features/admin-accounts.ts` (search v2, detail, history, lift hooks) + `StaffAccountsPage` (shared by both shells) + `AccountDetailPage` (banner, identity, summary, history with case/appeal links, guarded lift flow); queue rows, case Target/Reporter panels, and audit target names all link to account detail
+- review fixes: `get_staff_account_detail` gained its missing FROM clause (caught live by the integration spec); tests search moderators by display name because email search is admin-only by design
 
 Tests:
 
 - permissions tests for moderator vs admin views
 - integration tests for account detail redaction
 - component tests for account pages
+- shipped as `tests/integration/admin-accounts.test.ts` (member denial, moderator email redaction vs admin email visibility, history aggregation, lift round-trip, unknown-account errors)
 
 ### Phase 5: Structured Policies And Decision Templates
 
