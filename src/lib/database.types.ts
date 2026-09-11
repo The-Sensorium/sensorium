@@ -1473,6 +1473,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           severity: Database["public"]["Enums"]["moderation_severity"]
+          sla_breach_notified_at: string | null
           status: Database["public"]["Enums"]["report_status"]
           target_user_id: string | null
           updated_at: string
@@ -1499,6 +1500,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           severity?: Database["public"]["Enums"]["moderation_severity"]
+          sla_breach_notified_at?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           target_user_id?: string | null
           updated_at?: string
@@ -1525,6 +1527,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           severity?: Database["public"]["Enums"]["moderation_severity"]
+          sla_breach_notified_at?: string | null
           status?: Database["public"]["Enums"]["report_status"]
           target_user_id?: string | null
           updated_at?: string
@@ -2115,6 +2118,24 @@ export type Database = {
           report_id: string
           target_display_name: string
           target_user_id: string
+        }[]
+      }
+      get_admin_ops_health: {
+        Args: never
+        Returns: {
+          appeals_overdue_open: number
+          email_abandoned: number
+          email_failed_24h: number
+          email_queued: number
+          email_stuck_sending: number
+          last_email_pump_at: string
+          last_push_pump_at: string
+          last_sla_watch_at: string
+          push_abandoned: number
+          push_failed_24h: number
+          push_queued: number
+          push_stuck_sending: number
+          reports_breached_open: number
         }[]
       }
       get_candidate_profiles: {

@@ -1,14 +1,24 @@
 import { Link } from 'react-router'
-import { ArrowRight, Clock, Eye, Flag, Inbox, Loader2, Timer, UserRound, type LucideIcon } from 'lucide-react'
+import { ArrowRight, BellRing, Clock, Eye, Flag, Inbox, Loader2, MailWarning, Send, Timer, UserRound, type LucideIcon } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { timeAgo } from '../../features/notifications'
-import { useModerationQueueV2, useStaffModerationSummary } from '../../features/admin-moderation'
+import { useMyAccess } from '../../features/access'
+import { useAdminOpsHealth, useModerationQueueV2, useStaffModerationSummary } from '../../features/admin-moderation'
+
+function heartbeatLabel(iso: string | null): string {
+  if (!iso) return 'No successful run recorded'
+  return `Last success ${timeAgo(iso)}`
+}
 
 export function StaffDashboardPage() {
   useDocumentTitle('Staff dashboard')
   const summary = useStaffModerationSummary()
   const urgent = useModerationQueueV2({ sla: 'open', severity: 'urgent', order: 'desc' }, 5)
   const urgentRows = urgent.data?.pages.flat() ?? []
+  const access = useMyAccess()
+  const isAdmin = access.data?.capabilities.includes('can_manage_roles') ?? false
+  const ops = useAdminOpsHealth(isAdmin)
+  const health = ops.data
   const data = summary.data
 
   if (summary.isLoading) {
@@ -127,6 +137,77 @@ export function StaffDashboardPage() {
           </ul>
         )}
       </section>
+
+      {isAdmin && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-on-surface">Operations health</h2>
+          {ops.isLoading ? (
+            <div className="grid place-items-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
+            </div>
+          ) : ops.isError || !health ? (
+            <div className="rounded-lg border border-error/30 bg-error/10 p-6 text-center">
+              <p className="text-sm font-semibold text-error">Couldn’t load operations health.</p>
+              <button
+                type="button"
+                onClick={() => void ops.refetch()}
+                className="mt-3 rounded-pill bg-primary px-5 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  { label: 'Emails queued', value: health.email_queued, icon: MailWarning, alert: health.email_queued > 50 },
+                  { label: 'Emails failed · 24h', value: health.email_failed_24h, icon: MailWarning, alert: health.email_failed_24h > 0 },
+                  { label: 'Push queued', value: health.push_queued, icon: Send, alert: health.push_queued > 50 },
+                  { label: 'Push failed · 24h', value: health.push_failed_24h, icon: Send, alert: health.push_failed_24h > 0 },
+                ].map((card) => (
+                  <div
+                    key={card.label}
+                    data-e2e="ops-health-card"
+                    className="rounded-lg border border-outline-variant/60 bg-surface p-4"
+                  >
+                    <p className={`text-2xl font-semibold ${card.alert ? 'text-error' : 'text-on-surface'}`}>{card.value}</p>
+                    <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+                      <card.icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                      {card.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {(health.email_stuck_sending > 0 || health.push_stuck_sending > 0 || health.email_abandoned > 0 || health.push_abandoned > 0) && (
+                <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
+                  Stuck or abandoned deliveries need attention: {health.email_stuck_sending} emails stuck
+                  , {health.push_stuck_sending} push stuck, {health.email_abandoned} emails and {health.push_abandoned} push abandoned.
+                </p>
+              )}
+              <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+                  <BellRing className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                  Scheduler
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-on-surface">
+                  <li className="flex justify-between gap-3">
+                    <span className="text-on-surface-variant">Email pump</span>
+                    <span>{heartbeatLabel(health.last_email_pump_at)}</span>
+                  </li>
+                  <li className="flex justify-between gap-3">
+                    <span className="text-on-surface-variant">Push pump</span>
+                    <span>{heartbeatLabel(health.last_push_pump_at)}</span>
+                  </li>
+                  <li className="flex justify-between gap-3">
+                    <span className="text-on-surface-variant">SLA watch</span>
+                    <span>{heartbeatLabel(health.last_sla_watch_at)}</span>
+                  </li>
+                </ul>
+              </div>
+            </>
+          )}
+        </section>
+      )}
     </div>
   )
 }

@@ -1009,12 +1009,14 @@ Frontend:
 - friendly rate-limit errors
 - dashboard SLA cards
 - ops health cards
+- shipped in `0126_moderation_rate_limits_sla_ops.sql` + dashboard: trigger-enforced caps (10 reports/hour, 3 appeals/24h, so all writers are covered without touching RPC bodies), a 15-minute SLA-watch cron that badges moderators once per breach, and an admin-only ops-health section (outbox queues/failures, stuck deliveries, scheduler heartbeats); member surfaces map the new errors to slow-down copy
 
 Tests:
 
 - integration tests for rate limits
 - integration tests for SLA cron
 - component tests for ops health states
+- shipped as `tests/integration/moderation-ops.test.ts` (trigger caps via direct inserts, notify-once SLA watch, admin-only health shape) plus dashboard ops tests (admin visibility, failure highlight, stuck-delivery alert); role-change notifications deferred as the plan allows
 
 ## Migration Strategy
 

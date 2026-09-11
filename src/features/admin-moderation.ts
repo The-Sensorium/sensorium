@@ -231,6 +231,22 @@ export interface QueueV2Filters {
   order?: QueueOrder
 }
 
+export type AdminOpsHealth = Database['public']['Functions']['get_admin_ops_health']['Returns'][number]
+
+export function useAdminOpsHealth(enabled = true) {
+  return useQuery({
+    queryKey: ['moderation', 'ops-health'],
+    enabled,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_admin_ops_health')
+      if (error) throw error
+      return (data?.[0] ?? null) as AdminOpsHealth | null
+    },
+  })
+}
+
 export function useStaffModerationSummary() {
   return useQuery({
     queryKey: ['moderation', 'summary'],

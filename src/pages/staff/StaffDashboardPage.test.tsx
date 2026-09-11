@@ -7,16 +7,39 @@ import { StaffDashboardPage } from './StaffDashboardPage'
 const hooks = vi.hoisted(() => ({
   useStaffModerationSummary: vi.fn(),
   useModerationQueueV2: vi.fn(),
+  useAdminOpsHealth: vi.fn(),
+  useMyAccess: vi.fn(),
 }))
 
 vi.mock('../../features/admin-moderation', () => ({
   useStaffModerationSummary: hooks.useStaffModerationSummary,
   useModerationQueueV2: hooks.useModerationQueueV2,
+  useAdminOpsHealth: hooks.useAdminOpsHealth,
+}))
+
+vi.mock('../../features/access', () => ({
+  useMyAccess: hooks.useMyAccess,
 }))
 
 vi.mock('../../features/notifications', () => ({
   timeAgo: () => '2h ago',
 }))
+
+const health = {
+  email_queued: 3,
+  email_stuck_sending: 0,
+  email_failed_24h: 1,
+  email_abandoned: 0,
+  push_queued: 0,
+  push_stuck_sending: 0,
+  push_failed_24h: 0,
+  push_abandoned: 0,
+  reports_breached_open: 1,
+  appeals_overdue_open: 0,
+  last_email_pump_at: '2026-08-01T00:00:00Z',
+  last_push_pump_at: null,
+  last_sla_watch_at: null,
+}
 
 const summary = {
   pending_count: 3,
@@ -47,6 +70,8 @@ describe('StaffDashboardPage', () => {
     vi.clearAllMocks()
     hooks.useStaffModerationSummary.mockReturnValue({ data: summary, isLoading: false, isError: false, refetch: vi.fn() })
     hooks.useModerationQueueV2.mockReturnValue({ data: { pages: [[]] }, isLoading: false })
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: [] } })
+    hooks.useAdminOpsHealth.mockReturnValue({ data: null, isLoading: false, isError: false, refetch: vi.fn() })
   })
 
   it('renders operational counts with links into the queue', () => {
@@ -67,6 +92,31 @@ describe('StaffDashboardPage', () => {
     renderPage()
     expect(screen.getByText(/Couldn’t load urgent cases/)).toBeInTheDocument()
     expect(screen.queryByText('No urgent open cases.')).not.toBeInTheDocument()
+  })
+
+  it('hides operations health from non-admins', () => {
+    renderPage()
+    expect(screen.queryByText('Operations health')).not.toBeInTheDocument()
+  })
+
+  it('shows operations health to admins with failure highlights', () => {
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: ['can_manage_roles'] } })
+    hooks.useAdminOpsHealth.mockReturnValue({ data: health, isLoading: false, isError: false, refetch: vi.fn() })
+    renderPage()
+    expect(screen.getByText('Operations health')).toBeInTheDocument()
+    expect(screen.getByText('Emails failed · 24h')).toBeInTheDocument()
+  })
+
+  it('warns about stuck or abandoned deliveries', () => {
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: ['can_manage_roles'] } })
+    hooks.useAdminOpsHealth.mockReturnValue({
+      data: { ...health, email_stuck_sending: 2 },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    renderPage()
+    expect(screen.getByRole('alert')).toHaveTextContent('Stuck or abandoned')
   })
 
   it('lists urgent cases', () => {
