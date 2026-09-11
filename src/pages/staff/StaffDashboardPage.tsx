@@ -6,8 +6,13 @@ import { useMyAccess } from '../../features/access'
 import { useAdminOpsHealth, useModerationQueueV2, useStaffModerationSummary } from '../../features/admin-moderation'
 
 function heartbeatLabel(iso: string | null): string {
-  if (!iso) return 'No successful run recorded'
-  return `Last success ${timeAgo(iso)}`
+  if (!iso) return 'Never ran successfully'
+  return timeAgo(iso)
+}
+
+function jobFresh(iso: string | null, staleAfterMs: number): boolean {
+  if (!iso) return false
+  return Date.now() - new Date(iso).getTime() <= staleAfterMs
 }
 
 export function StaffDashboardPage() {
@@ -185,23 +190,34 @@ export function StaffDashboardPage() {
                 </p>
               )}
               <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
-                <p className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-                  <BellRing className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-                  Scheduler
-                </p>
-                <ul className="mt-2 space-y-1 text-sm text-on-surface">
-                  <li className="flex justify-between gap-3">
-                    <span className="text-on-surface-variant">Email pump</span>
-                    <span>{heartbeatLabel(health.last_email_pump_at)}</span>
-                  </li>
-                  <li className="flex justify-between gap-3">
-                    <span className="text-on-surface-variant">Push pump</span>
-                    <span>{heartbeatLabel(health.last_push_pump_at)}</span>
-                  </li>
-                  <li className="flex justify-between gap-3">
-                    <span className="text-on-surface-variant">SLA watch</span>
-                    <span>{heartbeatLabel(health.last_sla_watch_at)}</span>
-                  </li>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+                    <BellRing className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                    Scheduler
+                  </p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Last success</p>
+                </div>
+                <ul className="mt-2 space-y-2 text-sm text-on-surface">
+                  {[
+                    { label: 'Email pump', at: health.last_email_pump_at, staleAfterMs: 10 * 60_000 },
+                    { label: 'Push pump', at: health.last_push_pump_at, staleAfterMs: 10 * 60_000 },
+                    { label: 'SLA watch', at: health.last_sla_watch_at, staleAfterMs: 60 * 60_000 },
+                  ].map((job) => {
+                    const fresh = jobFresh(job.at, job.staleAfterMs)
+                    return (
+                      <li key={job.label} className="flex items-center justify-between gap-3">
+                        <span className="flex items-center gap-2">
+                          <span
+                            title={fresh ? 'Running normally' : 'Stale or never ran'}
+                            aria-label={fresh ? `${job.label} healthy` : `${job.label} stale`}
+                            className={`h-2 w-2 rounded-full ${fresh ? 'bg-primary' : 'bg-error'}`}
+                          />
+                          {job.label}
+                        </span>
+                        <span className="text-on-surface-variant">{heartbeatLabel(job.at)}</span>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             </>
