@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, useLocation } from 'react-router'
 import { Ellipsis, type LucideIcon } from 'lucide-react'
 import { cn } from '../lib/utils'
@@ -57,7 +58,24 @@ function useOverflowState(overflow: readonly StaffNavItem[]) {
   const active = overflow.some((item) =>
     item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`),
   )
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
   return { open, setOpen, active }
+}
+
+/** Full-viewport click-catcher. It must portal to the body: the sticky header
+ * uses backdrop-blur, which traps fixed descendants inside the header box. */
+function MenuBackdrop({ onClose }: { onClose: () => void }) {
+  return createPortal(
+    <button
+      type="button"
+      aria-label="Close menu"
+      onClick={onClose}
+      className="fixed inset-0 z-30 cursor-default"
+    />,
+    document.body,
+  )
 }
 
 export function StaffNavigation({ items }: { items: readonly StaffNavItem[] }) {
@@ -102,12 +120,7 @@ export function StaffNavigation({ items }: { items: readonly StaffNavItem[] }) {
           </button>
           {open && (
             <>
-              <button
-                type="button"
-                aria-label="Close menu"
-                onClick={() => setOpen(false)}
-                className="fixed inset-0 z-10 cursor-default"
-              />
+              <MenuBackdrop onClose={() => setOpen(false)} />
               <div role="menu" className="absolute right-0 z-20 mt-1 min-w-44 rounded-lg border border-outline-variant/60 bg-surface p-1 shadow-soft">
                 {overflow.map((item) => (
                   <NavLink
