@@ -265,7 +265,13 @@ export function useUpsertNotificationPrefs() {
 /**
  * Subscribes to the signed-in user's realtime channel (docs 04 §1): notification
  * INSERT bumps the badge + list; invitation INSERT refreshes the Home banner.
- * Mount once in the app shell.
+ * Plain chat writes no notification row (synthesized at read time), so message
+ * changes must also bump the badge + list or they only appear on poll/mention.
+ * Those bumps are throttled: each one runs two security-definer RPCs, so a chat
+ * burst would otherwise fan out a refetch per message per member. The first
+ * event bumps immediately and a trailing bump runs if more arrived during the
+ * 300ms window, so the newest message is never left to the 30s poll. Mount once
+ * in the app shell.
  */
 export function useNotificationsChannel(userId: string | null) {
   const queryClient = useQueryClient()
@@ -273,6 +279,24 @@ export function useNotificationsChannel(userId: string | null) {
   useEffect(() => {
     if (!userId) return
     const supabase = requireSupabase()
+
+    let chatCooldown: ReturnType<typeof setTimeout> | null = null
+    let chatPending = false
+    const bumpChat = () => {
+      if (chatCooldown !== null) {
+        chatPending = true
+        return
+      }
+      void queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+      chatCooldown = setTimeout(() => {
+        chatCooldown = null
+        if (chatPending) {
+          chatPending = false
+          bumpChat()
+        }
+      }, 300)
+    }
 
     const channel = supabase
       .channel(`user:${userId}`)
@@ -285,6 +309,7 @@ export function useNotificationsChannel(userId: string | null) {
           void queryClient.invalidateQueries({ queryKey: ['staff', 'unread'] })
         },
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, bumpChat)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'invitations', filter: `user_id=eq.${userId}` },
@@ -295,6 +320,7 @@ export function useNotificationsChannel(userId: string | null) {
       .subscribe()
 
     return () => {
+      if (chatCooldown !== null) clearTimeout(chatCooldown)
       supabase.removeChannel(channel)
     }
   }, [userId, queryClient])

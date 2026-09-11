@@ -74,7 +74,7 @@ describe('notifications', () => {
     expect(mentions).toHaveLength(2)
     for (const m of mentions) expect(m.title).toContain('mentioned you')
     expect(chat).toHaveLength(1)
-    expect(chat[0]!.title).toBe('Integration User sent a message')
+    expect(chat[0]!.title).toBe('2 new messages')
     expect(chat[0]!.body ?? '').toContain('Hey @Briana Mention')
 
     const { data: mine } = await a.client.rpc('get_my_notifications')
@@ -157,6 +157,49 @@ describe('notifications', () => {
     expect(bUnread2).toBe(0)
   })
 
+  it('badge matches the center rows when a cluster has several unread messages', async () => {
+    const a = await member('n-match-a')
+    const b = await member('n-match-b')
+    await admin.from('profiles').update({ display_name: 'Mina Match' }).eq('id', a.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'one' })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'two' })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'three' })
+
+    const { data: list } = await b.client.rpc('get_my_notifications')
+    const { data: count } = await b.client.rpc('get_unread_notification_count')
+    const unreadRows = ((list ?? []) as MyNotificationRow[]).filter((n) => n.read_at === null)
+    expect(unreadRows).toHaveLength(1)
+    expect(unreadRows[0]!.title).toBe('3 new messages')
+    expect(count).toBe(unreadRows.length)
+  })
+
+  it('does not badge a hidden message the center withholds', async () => {
+    const a = await member('n-hidden-a')
+    const b = await member('n-hidden-b')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: hiddenId } = await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'hidden content',
+    })
+    await admin.from('messages').update({ moderation_status: 'rejected' }).eq('id', hiddenId)
+
+    const { data: list } = await b.client.rpc('get_my_notifications')
+    const { data: count } = await b.client.rpc('get_unread_notification_count')
+    expect(list ?? []).toHaveLength(0)
+    expect(count).toBe(0)
+  })
+
   it('hides chat unread when the messages pref is disabled', async () => {
     const a = await member('n-pref')
     const b = await member('n-pref2')
@@ -208,6 +251,36 @@ describe('notifications', () => {
 
     const { data: after } = await b.client.rpc('get_unread_notification_count')
     expect(after).toBe(0)
+
+    // The center is unread-only, so every row is gone too.
+    const { data: listAfter } = await b.client.rpc('get_my_notifications')
+    expect(listAfter ?? []).toHaveLength(0)
+  })
+
+  it('marking one notification read removes it from the unread-only center', async () => {
+    const a = await member('n-single-a')
+    const b = await member('n-single-b')
+    await admin.from('profiles').update({ display_name: 'Sam Single' }).eq('id', b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'Hi @Sam Single' })
+
+    const { data: before } = await b.client.rpc('get_my_notifications')
+    const mention = ((before ?? []) as MyNotificationRow[]).find((n) => n.type === 'mention')
+    expect(mention).toBeDefined()
+
+    const { error } = await b.client
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', mention!.id)
+    expect(error).toBeNull()
+
+    const { data: after } = await b.client.rpc('get_my_notifications')
+    expect(((after ?? []) as MyNotificationRow[]).some((n) => n.id === mention!.id)).toBe(false)
   })
 
   it('a reaction to a message notifies its author', async () => {
