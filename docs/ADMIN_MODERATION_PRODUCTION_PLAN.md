@@ -937,12 +937,16 @@ Frontend:
 - add recommended action copy
 - add user notice templates
 - separate internal notes from user-facing messages
+- shipped as `PolicySelector` + `useModerationPolicies` inside `CaseActionPanel`: category defaults to the report reason, template picker shows guidance with a "Use this notice" fill, enforcement carries `p_policy_code`, and an optional staff-only note is saved to the timeline on success
+- `moderation_decision_reasons` was folded into action templates (template code + category code serve as the structured reason); the audit column is `moderation_actions.policy_code`
+- review fixes: `0123` adds the missing `reports.target_user_id` to case v2 (without it the account-action section never rendered — live-caught) and relaxes `add_moderation_case_note` to closed cases so post-action rationale survives enforcement closing the case in the same interaction
 
 Tests:
 
 - template rendering tests
 - integration tests for policy code validation
 - E2E case resolution with structured policy code
+- shipped as `PolicySelector.test.tsx` plus `tests/integration/moderation-policies.test.ts` (member empty-list, seed presence, invalid-code rejection, code stored on the audit row); enforcement-with-policy is additionally verified manually per phase
 
 ### Phase 6: Appeals V2
 

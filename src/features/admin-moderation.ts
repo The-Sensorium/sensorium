@@ -354,6 +354,22 @@ export function useModerationReport(reportId: string | undefined) {
   })
 }
 
+export type PolicyTemplateRow =
+  Database['public']['Functions']['list_moderation_policies']['Returns'][number]
+
+export function useModerationPolicies() {
+  return useQuery({
+    queryKey: ['moderation', 'policies'],
+    staleTime: 300_000,
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('list_moderation_policies')
+      if (error) throw error
+      return (data ?? []) as PolicyTemplateRow[]
+    },
+  })
+}
+
 export function useModeratedMessage(reportId: string | undefined) {
   return useQuery({
     queryKey: ['moderation', 'message', reportId],
@@ -402,6 +418,7 @@ function useSanctionMutation(rpc: string) {
       p_status?: AccountStatus
       p_expires_at?: string
       p_report_id?: string
+      p_policy_code?: string
     }) => {
       const { error } = await callRpc(rpc, args)
       if (error) throw new Error(error.message)
@@ -615,6 +632,7 @@ export function formatError(error: unknown): string {
   if (message.includes('comment_not_found_or_already_hidden'))
     return 'That comment is already hidden or no longer exists.'
   if (message.includes('comment_not_found_or_not_hidden')) return 'That comment is not hidden or no longer exists.'
+  if (message.includes('invalid_policy_code')) return 'Choose a valid policy category for this action.'
   if (message.includes('report_not_open')) return 'That report is already closed.'
   if (message.includes('appeal_not_found')) return 'That appeal could not be found.'
   if (message.includes('appeal_already_resolved')) return 'That appeal has already been decided.'

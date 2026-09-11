@@ -186,6 +186,30 @@ describe('moderation case workspace (phase 2)', () => {
     expect(actions).toContain('case_escalated')
   })
 
+  it('notes stay writable after the case is resolved', async () => {
+    const reporter = await member('cw-rep6')
+    const target = await member('cw-tgt6')
+    const mod = await moderator('cw-mod8')
+    const clusterId = await createCluster(admin, { memberIds: [reporter.id, target.id] })
+    clusterIds.push(clusterId)
+    const reportId = await openReportId(reporter, target, clusterId)
+
+    await mod.client.rpc('claim_moderation_report', { p_report_id: reportId })
+    const { error: warnErr } = await mod.client.rpc('issue_warning', {
+      p_user_id: target.id,
+      p_reason: 'spam',
+      p_report_id: reportId,
+    })
+    expect(warnErr).toBeNull()
+
+    const { data: noteId, error: noteErr } = await mod.client.rpc('add_moderation_case_note', {
+      p_report_id: reportId,
+      p_note: 'Post-action rationale.',
+    })
+    expect(noteErr).toBeNull()
+    expect(noteId).toBeDefined()
+  })
+
   it('severity changes are guarded and audited', async () => {
     const reporter = await member('cw-rep5')
     const target = await member('cw-tgt5')

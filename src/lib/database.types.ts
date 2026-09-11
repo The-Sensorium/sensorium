@@ -636,6 +636,44 @@ export type Database = {
           },
         ]
       }
+      moderation_action_templates: {
+        Row: {
+          active: boolean
+          category_code: string
+          code: string
+          internal_guidance: string
+          sort_order: number
+          title: string
+          user_notice: string
+        }
+        Insert: {
+          active?: boolean
+          category_code: string
+          code: string
+          internal_guidance: string
+          sort_order?: number
+          title: string
+          user_notice: string
+        }
+        Update: {
+          active?: boolean
+          category_code?: string
+          code?: string
+          internal_guidance?: string
+          sort_order?: number
+          title?: string
+          user_notice?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moderation_action_templates_category_code_fkey"
+            columns: ["category_code"]
+            isOneToOne: false
+            referencedRelation: "moderation_policy_categories"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       moderation_actions: {
         Row: {
           action: Database["public"]["Enums"]["moderation_action_type"]
@@ -645,6 +683,7 @@ export type Database = {
           id: string
           message_id: string | null
           metadata: Json
+          policy_code: string | null
           post_id: string | null
           reason: string
           report_id: string | null
@@ -658,6 +697,7 @@ export type Database = {
           id?: string
           message_id?: string | null
           metadata?: Json
+          policy_code?: string | null
           post_id?: string | null
           reason: string
           report_id?: string | null
@@ -671,6 +711,7 @@ export type Database = {
           id?: string
           message_id?: string | null
           metadata?: Json
+          policy_code?: string | null
           post_id?: string | null
           reason?: string
           report_id?: string | null
@@ -765,6 +806,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      moderation_policy_categories: {
+        Row: {
+          active: boolean
+          code: string
+          default_severity: Database["public"]["Enums"]["moderation_severity"]
+          description: string
+          recommended_action: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          default_severity?: Database["public"]["Enums"]["moderation_severity"]
+          description: string
+          recommended_action: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          default_severity?: Database["public"]["Enums"]["moderation_severity"]
+          description?: string
+          recommended_action?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
       }
       notification_prefs: {
         Row: {
@@ -1779,6 +1850,7 @@ export type Database = {
       apply_account_restriction: {
         Args: {
           p_expires_at?: string
+          p_policy_code?: string
           p_reason: string
           p_report_id?: string
           p_status: Database["public"]["Enums"]["account_status"]
@@ -2398,8 +2470,21 @@ export type Database = {
         Returns: boolean
       }
       issue_warning: {
-        Args: { p_reason: string; p_report_id?: string; p_user_id: string }
+        Args: { p_policy_code?: string; p_reason: string; p_report_id?: string; p_user_id: string }
         Returns: undefined
+      }
+      list_moderation_policies: {
+        Args: never
+        Returns: {
+          category_code: string
+          category_title: string
+          default_severity: Database["public"]["Enums"]["moderation_severity"]
+          internal_guidance: string
+          recommended_action: string
+          template_code: string
+          template_title: string
+          user_notice: string
+        }[]
       }
       join_call: { Args: { p_call_id: string }; Returns: string }
       join_queue: {

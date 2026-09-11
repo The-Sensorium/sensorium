@@ -5,6 +5,7 @@ import {
   formatError,
   targetSummary,
   useAccountSearch,
+  useAddCaseNote,
   useApplyRestriction,
   useAssignCase,
   useEscalateCase,
@@ -13,6 +14,7 @@ import {
   type ModerationCaseV2Row,
   type ModerationSeverity,
 } from '../../../features/admin-moderation'
+import { PolicySelector, type PolicyChoice } from './PolicySelector'
 
 const SEVERITIES: ModerationSeverity[] = ['urgent', 'high', 'medium', 'low']
 
@@ -35,8 +37,11 @@ export function CaseActionPanel({
   const setSeverity = useSetCaseSeverity()
   const escalate = useEscalateCase()
   const assign = useAssignCase()
+  const addNote = useAddCaseNote()
 
   const [reason, setReason] = useState('')
+  const [internalNote, setInternalNote] = useState('')
+  const [policy, setPolicy] = useState<PolicyChoice>({ categoryCode: data.reason, template: null })
   const [expiryDays, setExpiryDays] = useState(3)
   const [ban, setBan] = useState(false)
   const [confirmSuspend, setConfirmSuspend] = useState(false)
@@ -65,13 +70,36 @@ export function CaseActionPanel({
       setSuccess('Action completed successfully.')
       setConfirmSuspend(false)
       setEscalateOpen(false)
+      return true
     } catch (e) {
       setError(formatError(e))
+      return false
     }
   }
 
   function actionArgs() {
     return reason.trim()
+  }
+
+  function policyCode(): string | undefined {
+    return policy.categoryCode ?? undefined
+  }
+
+  async function saveInternalNote(): Promise<void> {
+    const note = internalNote.trim()
+    if (!note) return
+    try {
+      await addNote.mutateAsync({ p_report_id: data.id, p_note: note })
+      setInternalNote('')
+    } catch (e) {
+      setError(formatError(e))
+    }
+  }
+
+  function enforce<A extends object>(mut: { mutateAsync: (args: A) => Promise<unknown> }, args: A) {
+    void run(mut, args).then((ok) => {
+      if (ok) void saveInternalNote()
+    })
   }
 
   return (
@@ -208,21 +236,37 @@ export function CaseActionPanel({
             Affects {target.display_name ?? 'Unknown member'} directly. Every action is recorded in the audit log.
           </p>
           <div className="mt-3 space-y-2">
+            <PolicySelector
+              choice={policy}
+              onChange={setPolicy}
+              onUseNotice={(notice) => setReason(notice)}
+            />
             <label className="block text-sm font-semibold text-on-surface" htmlFor="moderation-reason">
-              Reason for account action
+              User-facing reason
               <input
                 id="moderation-reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Explain why this action is needed"
+                placeholder="What the member will be told"
                 maxLength={500}
+                className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+              />
+            </label>
+            <label className="block text-sm font-semibold text-on-surface" htmlFor="moderation-internal-note">
+              Internal note <span className="font-normal text-on-surface-variant">(staff only, optional)</span>
+              <input
+                id="moderation-internal-note"
+                value={internalNote}
+                onChange={(e) => setInternalNote(e.target.value)}
+                placeholder="Rationale for the audit trail…"
+                maxLength={2000}
                 className="mt-1.5 w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
               />
             </label>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => run(warn, { p_user_id: targetUserId, p_reason: actionArgs(), p_report_id: data.id })}
+                onClick={() => enforce(warn, { p_user_id: targetUserId, p_reason: actionArgs(), p_report_id: data.id, p_policy_code: policyCode() })}
                 disabled={accountBusy || !actionArgs()}
                 className="rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40"
               >
@@ -275,12 +319,13 @@ export function CaseActionPanel({
                   <button
                     type="button"
                     onClick={() =>
-                      void run(restrict, {
+                      enforce(restrict, {
                         p_user_id: targetUserId,
                         p_status: 'suspended',
                         p_reason: actionArgs(),
                         p_expires_at: new Date(Date.now() + expiryDays * 86_400_000).toISOString(),
                         p_report_id: data.id,
+                        p_policy_code: policyCode(),
                       })
                     }
                     disabled={accountBusy || !actionArgs() || !expiryValid}
@@ -299,7 +344,7 @@ export function CaseActionPanel({
                 </p>
                 <button
                   type="button"
-                  onClick={() => run(restrict, { p_user_id: targetUserId, p_status: 'banned', p_reason: actionArgs(), p_report_id: data.id })}
+                  onClick={() => enforce(restrict, { p_user_id: targetUserId, p_status: 'banned', p_reason: actionArgs(), p_report_id: data.id, p_policy_code: policyCode() })}
                   disabled={accountBusy || !actionArgs()}
                   className="mt-2 rounded-pill bg-error px-4 py-2 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-40"
                 >
