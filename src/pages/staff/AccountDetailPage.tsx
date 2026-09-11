@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { ArrowLeft, ClipboardList, History, Loader2, User } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ClipboardList, History, Loader2, User } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { formatError } from '../../features/admin-moderation'
 import { useMyAccess, type Capability } from '../../features/access'
@@ -295,9 +295,25 @@ export function AccountDetailPage() {
                       <span className="shrink-0 text-[11px] text-on-surface-variant">{timeAgo(entry.created_at)}</span>
                     </div>
                     {parts.detail && <p className="mt-1 text-sm text-on-surface-variant">{parts.detail}</p>}
-                    <div className="mt-1.5 flex gap-3 text-xs font-semibold">
-                      {entry.report_id && <Link to={`${base}/reports/${entry.report_id}`} className="text-primary">Open case</Link>}
-                      {entry.appeal_id && isAdmin && <Link to={`/admin/appeals/${entry.appeal_id}`} className="text-primary">Open appeal</Link>}
+                    <div className="mt-2 flex gap-2">
+                      {entry.report_id && (
+                        <Link
+                          to={`${base}/reports/${entry.report_id}`}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                        >
+                          Open case
+                          <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                        </Link>
+                      )}
+                      {entry.appeal_id && isAdmin && (
+                        <Link
+                          to={`/admin/appeals/${entry.appeal_id}`}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                        >
+                          Open appeal
+                          <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                        </Link>
+                      )}
                     </div>
                   </li>
                 )
