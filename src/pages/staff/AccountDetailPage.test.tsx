@@ -86,7 +86,7 @@ describe('AccountDetailPage', () => {
       hasNextPage: false,
     })
     renderPage()
-    expect(screen.getByText('Against')).toBeInTheDocument()
+    expect(screen.getByText('Reported')).toBeInTheDocument()
     expect(screen.getByText('spam · pending')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open case' })).toHaveAttribute('href', '/admin/reports/r-1')
   })

@@ -32,6 +32,14 @@ function historyParts(kind: string, summary: string): { title: string; detail: s
     const [next = '', ...tail] = rest
     return { title: capitalize(next), detail: tail.join(' · ') }
   }
+  // Report direction: "against" means this account was reported, "filed"
+  // means they filed the report themselves.
+  if (kind === 'report' && head.toLowerCase() === 'against') {
+    return { title: 'Reported', detail: rest.join(' · ') }
+  }
+  if (kind === 'report' && head.toLowerCase() === 'filed') {
+    return { title: 'Filed', detail: rest.join(' · ') }
+  }
   return { title: capitalize(head), detail: rest.join(' · ') }
 }
 
