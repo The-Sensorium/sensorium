@@ -83,18 +83,19 @@ export function CaseHeader({
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-variant/60 bg-outline-variant/60 sm:grid-cols-4">
         {[
-          { label: 'Assignee', value: data.assigned_to_display_name ?? 'Unassigned' },
-          { label: 'Submitted', value: timeAgo(data.created_at) },
-          { label: 'Last activity', value: timeAgo(data.last_activity_at) },
-          ...(data.due_at ? [{ label: 'Due', value: timeUntil(data.due_at) }] : []),
+          { label: 'Assignee', value: data.assigned_to_display_name ?? 'Unassigned', wide: false },
+          { label: 'Submitted', value: timeAgo(data.created_at), wide: false },
+          { label: 'Last activity', value: timeAgo(data.last_activity_at), wide: false },
+          ...(data.due_at ? [{ label: 'Due', value: timeUntil(data.due_at), wide: false }] : []),
           ...(data.escalated_at
             ? [{
               label: 'Escalated',
               value: `${timeAgo(data.escalated_at)}${data.escalation_reason ? ` — ${data.escalation_reason}` : ''}`,
+              wide: true,
             }]
             : []),
         ].map((item) => (
-          <div key={item.label} className="bg-surface px-3 py-2">
+          <div key={item.label} className={`bg-surface px-3 py-2 ${item.wide ? 'col-span-2 sm:col-span-4' : ''}`}>
             <dt className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{item.label}</dt>
             <dd className="mt-0.5 truncate text-sm font-semibold text-on-surface" title={item.value}>
               {item.value}
