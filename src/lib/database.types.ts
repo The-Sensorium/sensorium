@@ -1307,15 +1307,22 @@ export type Database = {
           comment_id: string | null
           created_at: string
           details: string | null
+          due_at: string | null
+          escalated_at: string | null
+          escalated_by: string | null
+          escalation_reason: string | null
           evidence: Json | null
           id: string
+          last_activity_at: string
           message_id: string | null
           post_id: string | null
+          priority_score: number
           reason: Database["public"]["Enums"]["report_reason"]
           reporter_id: string | null
           resolution_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          severity: Database["public"]["Enums"]["moderation_severity"]
           status: Database["public"]["Enums"]["report_status"]
           target_user_id: string | null
           updated_at: string
@@ -1326,15 +1333,22 @@ export type Database = {
           comment_id?: string | null
           created_at?: string
           details?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalation_reason?: string | null
           evidence?: Json | null
           id?: string
+          last_activity_at?: string
           message_id?: string | null
           post_id?: string | null
+          priority_score?: number
           reason: Database["public"]["Enums"]["report_reason"]
           reporter_id?: string | null
           resolution_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          severity?: Database["public"]["Enums"]["moderation_severity"]
           status?: Database["public"]["Enums"]["report_status"]
           target_user_id?: string | null
           updated_at?: string
@@ -1345,15 +1359,22 @@ export type Database = {
           comment_id?: string | null
           created_at?: string
           details?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          escalated_by?: string | null
+          escalation_reason?: string | null
           evidence?: Json | null
           id?: string
+          last_activity_at?: string
           message_id?: string | null
           post_id?: string | null
+          priority_score?: number
           reason?: Database["public"]["Enums"]["report_reason"]
           reporter_id?: string | null
           resolution_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          severity?: Database["public"]["Enums"]["moderation_severity"]
           status?: Database["public"]["Enums"]["report_status"]
           target_user_id?: string | null
           updated_at?: string
@@ -1993,6 +2014,49 @@ export type Database = {
           target_user_id: string
         }[]
       }
+      get_moderation_queue_v2: {
+        Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
+        Returns: {
+          assigned_to: string | null
+          assigned_to_display_name: string | null
+          cluster_id: string
+          cluster_name: string
+          comment_id: string | null
+          created_at: string
+          due_at: string | null
+          duplicate_open_reports: number
+          id: string
+          last_activity_at: string
+          message_id: string | null
+          post_id: string | null
+          prior_target_reports: number
+          priority_score: number
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_display_name: string | null
+          severity: Database["public"]["Enums"]["moderation_severity"]
+          snippet: string
+          status: Database["public"]["Enums"]["report_status"]
+          target_display_name: string | null
+          target_kind: string
+          target_user_id: string | null
+        }[]
+      }
+      get_staff_moderation_summary: {
+        Args: never
+        Returns: {
+          actioned_7d_count: number
+          appeals_submitted_count: number
+          assigned_to_me_count: number
+          breached_open_count: number
+          dismissed_7d_count: number
+          oldest_pending_at: string
+          pending_count: number
+          reports_by_reason: Json
+          reviewing_count: number
+          unassigned_open_count: number
+          urgent_open_count: number
+        }[]
+      }
       get_moderation_report: {
         Args: { p_report_id: string }
         Returns: {
@@ -2530,6 +2594,7 @@ export type Database = {
         | "inviting"
         | "filled"
         | "closed"
+      moderation_severity: "low" | "medium" | "high" | "urgent"
       report_reason:
         | "harassment"
         | "hate_speech"
@@ -2703,6 +2768,7 @@ export const Constants = {
         "post_comment_hidden",
         "post_comment_restored",
       ],
+      moderation_severity: ["low", "medium", "high", "urgent"],
       notification_type: [
         "message",
         "mention",

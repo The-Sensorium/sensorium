@@ -13,6 +13,7 @@ export type StaffNavItem = {
   label: string
   icon: LucideIcon
   unreadKey?: StaffNotificationType
+  end?: boolean
 }
 
 // Exhaustive: a new staff notification type must be mapped here or it fails at
@@ -45,7 +46,7 @@ export function StaffNavigation({ items }: { items: readonly StaffNavItem[] }) {
       {items.map((item) => {
         const count = unreadCountFor(item.unreadKey, unread.data)
         return (
-          <NavLink key={item.to} to={item.to} className={linkClass}>
+          <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
             <span className="relative">
               <item.icon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
               <UnreadBadge count={count} />
@@ -76,6 +77,7 @@ export function StaffMobileNav({ items }: { items: readonly StaffNavItem[] }) {
             <li key={item.to} className="flex h-full flex-1 items-center justify-center">
               <NavLink
                 to={item.to}
+                end={item.end}
                 className={({ isActive }) =>
                   cn(
                     'flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors',

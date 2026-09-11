@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router'
-import { Flag, MessageSquareWarning, ScrollText, UserCog } from 'lucide-react'
+import { Flag, LayoutDashboard, MessageSquareWarning, ScrollText, UserCog } from 'lucide-react'
 import { useAuth } from '../auth-context'
 import { BrandMark } from '../../components/BrandMark'
 import { ThemeToggle } from '../../components/theme-toggle'
@@ -8,6 +8,7 @@ import { StaffMobileNav, StaffNavigation, type StaffNavItem } from '../../compon
 import { useNotificationsChannel } from '../../features/notifications'
 
 const navItems: readonly StaffNavItem[] = [
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/admin/reports', label: 'Reports', icon: Flag, unreadKey: 'report_new' },
   { to: '/admin/appeals', label: 'Appeals', icon: MessageSquareWarning, unreadKey: 'appeal_new' },
   { to: '/admin/roles', label: 'Roles', icon: UserCog },

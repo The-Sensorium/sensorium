@@ -5,8 +5,12 @@ import { requireSupabase } from '../lib/supabase'
 export type ReportStatus = Database['public']['Enums']['report_status']
 export type PlatformRole = Database['public']['Enums']['platform_role']
 export type AccountStatus = Database['public']['Enums']['account_status']
+export type ModerationSeverity = Database['public']['Enums']['moderation_severity']
+export type ReportReason = Database['public']['Enums']['report_reason']
 export type ModerationAuditRow = Database['public']['Functions']['get_moderation_audit']['Returns'][number]
 export type ModerationQueueRow = Database['public']['Functions']['get_moderation_queue']['Returns'][number]
+export type ModerationQueueV2Row = Database['public']['Functions']['get_moderation_queue_v2']['Returns'][number]
+export type StaffModerationSummary = Database['public']['Functions']['get_staff_moderation_summary']['Returns'][number]
 export type ModerationReportRow = Database['public']['Functions']['get_moderation_report']['Returns'][number]
 export type PlatformRolePageRow = Database['public']['Functions']['list_platform_roles_page']['Returns'][number]
 export type ModeratedMessageRow = Database['public']['Functions']['get_moderation_message']['Returns'][number]
@@ -20,6 +24,28 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
 }
 
 export const REPORT_STATUS_ORDER: ReportStatus[] = ['pending', 'reviewing', 'actioned', 'dismissed']
+
+export const MODERATION_SEVERITY_LABELS: Record<ModerationSeverity, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  urgent: 'Urgent',
+}
+
+export const MODERATION_SEVERITY_ORDER: ModerationSeverity[] = ['urgent', 'high', 'medium', 'low']
+
+export type TargetKind = 'member' | 'message' | 'post' | 'comment'
+
+export const TARGET_KIND_LABELS: Record<TargetKind, string> = {
+  member: 'Member',
+  message: 'Message',
+  post: 'Post',
+  comment: 'Comment',
+}
+
+export function isBreached(dueAt: string | null, status: ReportStatus): boolean {
+  return dueAt != null && (status === 'pending' || status === 'reviewing') && new Date(dueAt).getTime() < Date.now()
+}
 
 export const PLATFORM_ROLE_LABELS: Record<PlatformRole, string> = {
   moderator: 'Moderator',
@@ -56,6 +82,64 @@ export function useModerationQueue({
       })
       if (error) throw error
       return (data ?? []) as ModerationQueueRow[]
+    },
+    getNextPageParam: (lastPage) => {
+      const last = lastPage[lastPage.length - 1]
+      if (!last || lastPage.length < limit) return undefined
+      return { created_at: last.created_at, id: last.id }
+    },
+  })
+}
+
+export type QueueV2Sla = 'breached' | 'open' | 'closed' | 'all' | 'all_open'
+
+export interface QueueV2Filters {
+  status?: ReportStatus
+  assignee?: string
+  targetKind?: TargetKind
+  reason?: ReportReason
+  severity?: ModerationSeverity
+  sla?: QueueV2Sla
+  search?: string
+  order?: QueueOrder
+}
+
+export function useStaffModerationSummary() {
+  return useQuery({
+    queryKey: ['moderation', 'summary'],
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_staff_moderation_summary')
+      if (error) throw error
+      return (data?.[0] ?? null) as StaffModerationSummary | null
+    },
+  })
+}
+
+export function useModerationQueueV2(filters: QueueV2Filters, limit = 25) {
+  const normalized = {
+    status: filters.status ?? null,
+    assignee: filters.assignee ?? 'all',
+    target_kind: filters.targetKind ?? null,
+    reason: filters.reason ?? null,
+    severity: filters.severity ?? null,
+    sla: filters.sla ?? 'all_open',
+    search: filters.search?.trim() ? filters.search.trim() : null,
+    order: filters.order ?? 'desc',
+  }
+  return useInfiniteQuery({
+    queryKey: ['moderation', 'queue-v2', normalized, limit],
+    placeholderData: keepPreviousData,
+    initialPageParam: null as { created_at: string; id: string } | null,
+    queryFn: async ({ pageParam }) => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_moderation_queue_v2', {
+        p_filters: normalized,
+        p_limit: limit,
+        p_cursor: pageParam ?? null,
+      })
+      if (error) throw error
+      return (data ?? []) as ModerationQueueV2Row[]
     },
     getNextPageParam: (lastPage) => {
       const last = lastPage[lastPage.length - 1]

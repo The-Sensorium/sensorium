@@ -43,6 +43,7 @@ import { RestrictedAccountPage } from '../pages/RestrictedAccountPage'
 import { AppealPage } from '../pages/AppealPage'
 import { AdminAppealsPage } from '../pages/staff/AdminAppealsPage'
 import { AdminAppealCasePage } from '../pages/staff/AdminAppealCasePage'
+import { StaffDashboardPage } from '../pages/staff/StaffDashboardPage'
 import { ModerationQueuePage } from '../pages/staff/ModerationQueuePage'
 import { ModerationCasePage } from '../pages/staff/ModerationCasePage'
 import { ModerationRolesPage } from '../pages/staff/ModerationRolesPage'
@@ -162,7 +163,7 @@ export function AppRouter() {
               </RequireActiveAccount>
             }
           >
-            <Route path="/moderator" element={<Navigate to="/moderator/reports" replace />} />
+            <Route path="/moderator" element={<StaffDashboardPage />} />
             <Route path="/moderator/reports" element={<ModerationQueuePage />} />
             <Route path="/moderator/reports/:reportId" element={<ModerationCasePage />} />
           </Route>
@@ -179,7 +180,7 @@ export function AppRouter() {
               </RequireActiveAccount>
             }
           >
-            <Route path="/admin" element={<Navigate to="/admin/reports" replace />} />
+            <Route path="/admin" element={<StaffDashboardPage />} />
             <Route path="/admin/reports" element={<ModerationQueuePage />} />
             <Route path="/admin/reports/:reportId" element={<ModerationCasePage />} />
             <Route path="/admin/appeals" element={<AdminAppealsPage />} />
