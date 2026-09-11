@@ -108,7 +108,7 @@ export function StaffNavigation({ items }: { items: readonly StaffNavItem[] }) {
                 onClick={() => setOpen(false)}
                 className="fixed inset-0 z-10 cursor-default"
               />
-              <div role="menu" className="absolute right-0 z-20 mt-1 min-w-44 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-soft">
+              <div role="menu" className="absolute right-0 z-20 mt-1 min-w-44 rounded-lg border border-outline-variant/60 bg-surface p-1 shadow-soft">
                 {overflow.map((item) => (
                   <NavLink
                     key={item.to}
@@ -118,7 +118,7 @@ export function StaffNavigation({ items }: { items: readonly StaffNavItem[] }) {
                     onClick={() => setOpen(false)}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
                         isActive
                           ? 'bg-primary-container/15 text-primary'
                           : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -159,7 +159,7 @@ export function StaffMobileNav({ items }: { items: readonly StaffNavItem[] }) {
         />
       )}
       {open && overflow.length > 0 && (
-        <div role="menu" className="fixed inset-x-4 bottom-[calc(var(--bottom-nav-offset)+8px)] z-20 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-soft lg:hidden">
+        <div role="menu" className="fixed inset-x-4 bottom-[calc(var(--bottom-nav-offset)+8px)] z-20 rounded-lg border border-outline-variant/60 bg-surface p-1 shadow-soft lg:hidden">
           {overflow.map((item) => {
             const count = unreadCountFor(item.unreadKey, unread.data)
             return (
@@ -171,7 +171,7 @@ export function StaffMobileNav({ items }: { items: readonly StaffNavItem[] }) {
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-primary-container/15 text-primary'
                       : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
