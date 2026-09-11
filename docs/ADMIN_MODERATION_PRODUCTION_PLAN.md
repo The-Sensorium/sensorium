@@ -962,12 +962,15 @@ Frontend:
 - improve appeal case page with original decision context and account history
 - separate internal rationale from user-facing response
 - add second-review flow for permanent ban appeal rejection
+- shipped in `0124_appeals_v2.sql` + `appeals.ts` + rewritten `AdminAppealsPage`/`AdminAppealCasePage`: queue V2 tabs (Unassigned/Mine/Overdue/All open/Closed) with claim buttons, case page with assignment workflow, appellant panel with account link, original decision plus recent reports, staff-only internal notes, decision templates, and a guided second-review flow for ban rejections
+- review fixes: qualified the `appeals.id` EXISTS check in case v2 (OUT params made bare `id` ambiguous); members get an empty policy list rather than an error, asserted as no-leak
 
 Tests:
 
 - integration tests for appeal assignment and second review
 - component tests for appeal decision states
 - E2E admin appeal grant/reject
+- shipped as `tests/integration/appeals-v2.test.ts` (moderator denial, claim/assign/note flow, queue filters, ban second-review rule with same-admin rejection, suspension grant with lift); enforcement-with-policy is additionally verified manually per phase
 
 ### Phase 7: Audit And Export
 

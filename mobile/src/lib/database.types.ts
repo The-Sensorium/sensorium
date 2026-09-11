@@ -94,12 +94,20 @@ export type Database = {
           appealed_expires_at: string | null
           appealed_reason: string
           appealed_status: Database["public"]["Enums"]["account_status"]
+          assigned_to: string | null
           created_at: string
           decided_at: string | null
           decided_by: string | null
+          decision_reason_code: string | null
           details: string
           id: string
+          internal_note: string | null
+          original_action_id: string | null
+          original_report_id: string | null
           response: string | null
+          review_due_at: string | null
+          second_review_requested_at: string | null
+          second_review_requested_by: string | null
           status: Database["public"]["Enums"]["appeal_status"]
           updated_at: string
           user_id: string | null
@@ -108,12 +116,20 @@ export type Database = {
           appealed_expires_at?: string | null
           appealed_reason: string
           appealed_status: Database["public"]["Enums"]["account_status"]
+          assigned_to?: string | null
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          decision_reason_code?: string | null
           details: string
           id?: string
+          internal_note?: string | null
+          original_action_id?: string | null
+          original_report_id?: string | null
           response?: string | null
+          review_due_at?: string | null
+          second_review_requested_at?: string | null
+          second_review_requested_by?: string | null
           status?: Database["public"]["Enums"]["appeal_status"]
           updated_at?: string
           user_id?: string | null
@@ -122,12 +138,20 @@ export type Database = {
           appealed_expires_at?: string | null
           appealed_reason?: string
           appealed_status?: Database["public"]["Enums"]["account_status"]
+          assigned_to?: string | null
           created_at?: string
           decided_at?: string | null
           decided_by?: string | null
+          decision_reason_code?: string | null
           details?: string
           id?: string
+          internal_note?: string | null
+          original_action_id?: string | null
+          original_report_id?: string | null
           response?: string | null
+          review_due_at?: string | null
+          second_review_requested_at?: string | null
+          second_review_requested_by?: string | null
           status?: Database["public"]["Enums"]["appeal_status"]
           updated_at?: string
           user_id?: string | null
@@ -1942,7 +1966,14 @@ export type Database = {
         Returns: string
       }
       decide_appeal: {
-        Args: { p_accept: boolean; p_appeal_id: string; p_response: string }
+        Args: {
+          p_accept: boolean
+          p_appeal_id: string
+          p_decision_reason_code?: string
+          p_internal_note?: string
+          p_response: string
+          p_second_review_confirmed?: boolean
+        }
         Returns: undefined
       }
       decline_invitation: {
@@ -2008,6 +2039,34 @@ export type Database = {
           report_id: string
           status: string
           summary: string
+        }[]
+      }
+      get_admin_appeal_v2: {
+        Args: { p_appeal_id: string }
+        Returns: {
+          appealed_expires_at: string
+          appealed_reason: string
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          appellant: Json
+          assigned_to: string
+          assigned_to_display_name: string
+          created_at: string
+          decided_at: string
+          decided_by: string
+          decision_reason_code: string
+          details: string
+          display_name: string
+          id: string
+          internal_note: string
+          original_action: Json
+          original_report_id: string
+          recent_reports: Json
+          response: string
+          review_due_at: string
+          second_review_requested_at: string
+          second_review_requested_by: string
+          status: Database["public"]["Enums"]["appeal_status"]
+          user_id: string
         }[]
       }
       get_admin_appeal: {
@@ -2524,6 +2583,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_appeals_page_v2: {
+        Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
+        Returns: {
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          assigned_to: string
+          assigned_to_display_name: string
+          created_at: string
+          decided_at: string
+          display_name: string
+          id: string
+          review_due_at: string
+          snippet: string
+          status: Database["public"]["Enums"]["appeal_status"]
+          user_id: string
+        }[]
+      }
       list_platform_roles: {
         Args: {
           p_include_revoked?: boolean
@@ -2994,6 +3069,11 @@ export const Constants = {
         "case_assigned",
         "case_escalated",
         "severity_changed",
+        "appeal_claimed",
+        "appeal_released",
+        "appeal_assigned",
+        "appeal_note_added",
+        "appeal_second_review_requested",
       ],
       moderation_severity: ["low", "medium", "high", "urgent"],
       notification_type: [
