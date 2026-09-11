@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { History, Loader2 } from 'lucide-react'
+import { History, Loader2, Pencil, Trash2 } from 'lucide-react'
 import {
   formatError,
   useAddCaseNote,
@@ -38,7 +38,12 @@ export function CaseTimeline({
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // The note_added audit echo duplicates the note row itself, and claim/release
+  // reasons repeat the action name, so both are folded away for readability.
+  const visibleEntries = entries.filter((entry) => !(entry.kind === 'action' && entry.action === 'note_added'))
 
   async function submitNote() {
     if (!draft.trim()) return
@@ -95,13 +100,13 @@ export function CaseTimeline({
             Try Again
           </button>
         </div>
-      ) : entries.length === 0 ? (
+      ) : visibleEntries.length === 0 ? (
         <p className="mt-3 rounded-md bg-surface-container/60 p-4 text-sm text-on-surface-variant">
           No activity yet. Notes and actions on this case will appear here.
         </p>
       ) : (
         <ol className="mt-3 space-y-3">
-          {entries.map((entry) => {
+          {visibleEntries.map((entry) => {
             const isNote = entry.kind === 'note'
             const canManageNote = isNote && (entry.actor_id === myUserId || isAdmin)
             const edited =
@@ -110,6 +115,8 @@ export function CaseTimeline({
               typeof entry.metadata === 'object' &&
               'edited_at' in (entry.metadata as Record<string, unknown>) &&
               (entry.metadata as Record<string, unknown>).edited_at != null
+            const bodyRepeatsAction =
+              !isNote && entry.body.trim().toLowerCase() === actionLabel(entry.action).toLowerCase()
             return (
               <li
                 key={`${entry.kind}-${entry.entry_id}`}
@@ -156,32 +163,57 @@ export function CaseTimeline({
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : bodyRepeatsAction ? null : (
                   <p className="mt-1 text-sm leading-6 text-on-surface">
                     {entry.body}
                     {edited && <span className="ml-2 text-[11px] text-on-surface-variant">(edited)</span>}
                   </p>
                 )}
                 {canManageNote && editingId !== entry.entry_id && (
-                  <div className="mt-2 flex gap-3">
+                  <div className="mt-2 flex gap-2">
                     <button
                       type="button"
                       onClick={() => {
                         setEditingId(entry.entry_id)
                         setEditDraft(entry.body)
                       }}
-                      className="text-xs font-semibold text-primary"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
                     >
+                      <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                       Edit
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => void removeNote(entry.entry_id)}
-                      disabled={deleteNote.isPending}
-                      className="text-xs font-semibold text-error disabled:opacity-40"
-                    >
-                      Delete
-                    </button>
+                    {confirmingDeleteId === entry.entry_id ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmingDeleteId(null)
+                            void removeNote(entry.entry_id)
+                          }}
+                          disabled={deleteNote.isPending}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-error/40 bg-error px-3 py-1.5 text-xs font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-40"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                          Confirm delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="rounded-md px-3 py-1.5 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmingDeleteId(entry.entry_id)}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-outline-variant/60 px-3 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-error/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                        Delete
+                      </button>
+                    )}
                   </div>
                 )}
               </li>

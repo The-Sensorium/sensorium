@@ -103,4 +103,37 @@ describe('CaseTimeline', () => {
     expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
+
+  it('hides the note_added audit echo next to the note itself', () => {
+    const echo = {
+      entry_id: 'a-2',
+      kind: 'action',
+      created_at: '2026-08-01T02:00:00Z',
+      actor_id: 'me',
+      actor_display_name: 'Me',
+      action: 'note_added',
+      body: 'Case note added',
+      metadata: {},
+    }
+    renderTimeline([actionEntry, noteEntry, echo])
+    expect(screen.queryByText('Case note added')).not.toBeInTheDocument()
+    expect(screen.getByText('Handoff: waiting on cluster context.')).toBeInTheDocument()
+  })
+
+  it('folds away bodies that repeat the action name', () => {
+    renderTimeline([actionEntry])
+    expect(screen.getByText('report claimed')).toBeInTheDocument()
+    expect(screen.queryByText('Report claimed')).not.toBeInTheDocument()
+  })
+
+  it('asks for confirmation before deleting a note', () => {
+    const mutateAsync = vi.fn().mockResolvedValue(undefined)
+    hooks.useDeleteCaseNote.mockReturnValue({ mutateAsync, isPending: false })
+    renderTimeline()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(screen.getByRole('button', { name: 'Confirm delete' })).toBeInTheDocument()
+    expect(mutateAsync).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm delete' }))
+    expect(mutateAsync).toHaveBeenCalledWith({ p_note_id: 'n-1' })
+  })
 })
