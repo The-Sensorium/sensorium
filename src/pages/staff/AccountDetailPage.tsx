@@ -295,11 +295,11 @@ export function AccountDetailPage() {
                       <span className="shrink-0 text-[11px] text-on-surface-variant">{timeAgo(entry.created_at)}</span>
                     </div>
                     {parts.detail && <p className="mt-1 text-sm text-on-surface-variant">{parts.detail}</p>}
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-2 flex justify-end gap-2">
                       {entry.report_id && (
                         <Link
                           to={`${base}/reports/${entry.report_id}`}
-                          className="inline-flex items-center gap-1.5 rounded-md bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container/70"
+                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
                         >
                           Open case
                           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -308,7 +308,7 @@ export function AccountDetailPage() {
                       {entry.appeal_id && isAdmin && (
                         <Link
                           to={`/admin/appeals/${entry.appeal_id}`}
-                          className="inline-flex items-center gap-1.5 rounded-md bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container/70"
+                          className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
                         >
                           Open appeal
                           <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
