@@ -229,9 +229,9 @@ export default function HomeScreen() {
             </Text>
           </View>
           <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-            You’re matched into clusters of 8 strangers. Here’s how to get started.
+            You’ll be matched into clusters of 8 strangers. Here’s how to get started.
           </Text>
-          <View style={{ marginTop: 16, gap: 12 }}>
+          <View style={{ marginTop: 12, gap: 8 }}>
             {GET_STARTED_STEPS.map((step, i) => (
               <Link key={step.title} href={step.to} asChild>
                 <Pressable
@@ -241,7 +241,8 @@ export default function HomeScreen() {
                     gap: 12,
                     backgroundColor: t.surface,
                     borderRadius: radii.md,
-                    padding: 16,
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
                   }}
                 >
                   <View
