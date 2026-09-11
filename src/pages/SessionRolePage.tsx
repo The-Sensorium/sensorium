@@ -1,6 +1,8 @@
-import { Link, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate } from 'react-router'
+import { useEffect } from 'react'
 import { ArrowRight, ArrowUpRight, Check, Info, Loader2, Shield, ShieldCheck, User } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { isMobileDevice } from '../lib/device'
 import { useAuth } from '../app/auth-context'
 import { useSessionRole } from '../app/session-role-context'
 import { BrandMark } from '../components/BrandMark'
@@ -31,9 +33,26 @@ export function SessionRolePage() {
   const navigate = useNavigate()
   const auth = useAuth()
   const access = useMyAccess()
-  const { setRole } = useSessionRole()
+  const { role: currentRole, setRole } = useSessionRole()
+  const mobile = isMobileDevice()
+
+  useEffect(() => {
+    if (mobile && currentRole !== 'member') setRole('member')
+  }, [mobile, currentRole, setRole])
 
   if (auth.state === 'signedOut') return <></>
+
+  // Staff shells are desktop-only: mobile browsers skip the picker entirely.
+  if (mobile) {
+    if (currentRole !== 'member') {
+      return (
+        <main className="grid min-h-screen place-items-center bg-background">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
+        </main>
+      )
+    }
+    return <Navigate to="/home" replace />
+  }
 
   const available = activeSessionRoles(access.data)
 
