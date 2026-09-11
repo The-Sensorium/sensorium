@@ -31,6 +31,7 @@ const row = {
   action: 'warning_issued',
   reason: 'spam warning',
   metadata: { type: 'warning' },
+  policy_code: 'spam',
 }
 
 function makeAudit(pages: unknown[][] = [[row]]) {
@@ -85,6 +86,20 @@ describe('ModerationAuditPage', () => {
     expect(screen.getByRole('link', { name: 'Open case' })).toHaveAttribute('href', '/admin/reports/r-1')
     fireEvent.click(screen.getByRole('button', { name: 'Close details' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('shows the stored policy code in the drawer', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /warning issued/i }))
+    expect(screen.getByText('Policy')).toBeInTheDocument()
+    expect(screen.getByText('spam')).toBeInTheDocument()
+  })
+
+  it('hides the policy row when no policy was stored', () => {
+    hooks.useModerationAuditV2.mockReturnValue(makeAudit([[{ ...row, policy_code: null }]]))
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /warning issued/i }))
+    expect(screen.queryByText('Policy')).not.toBeInTheDocument()
   })
 
   it('shows the empty state when filters match nothing', () => {

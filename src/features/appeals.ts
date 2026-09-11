@@ -109,6 +109,7 @@ export function useDecideAppeal() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'appeals'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'appeals-v2'] })
       void queryClient.invalidateQueries({ queryKey: ['appeals'] })
       void queryClient.invalidateQueries({ queryKey: ['access'] })
       void queryClient.invalidateQueries({ queryKey: ['moderation'] })
@@ -253,6 +254,7 @@ function useAppealMutation<TArgs extends Record<string, unknown>>(rpc: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'appeals'] })
+      void queryClient.invalidateQueries({ queryKey: ['admin', 'appeals-v2'] })
       void queryClient.invalidateQueries({ queryKey: ['moderation'] })
     },
   })

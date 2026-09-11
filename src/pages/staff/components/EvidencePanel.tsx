@@ -20,6 +20,7 @@ export function EvidencePanel({
   data,
   msg,
   canAct,
+  canRestore,
   busy,
   hidePending,
   restorePending,
@@ -29,6 +30,7 @@ export function EvidencePanel({
   data: ModerationCaseV2Row
   msg: ModeratedMessageRow | null
   canAct: boolean
+  canRestore: boolean
   busy: boolean
   hidePending: boolean
   restorePending: boolean
@@ -95,26 +97,30 @@ export function EvidencePanel({
             </span>
           </div>
           {msg.content && <p className="mt-3 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{msg.content}</p>}
-          {canAct ? (
+          {canAct || canRestore ? (
             <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={onHide}
-                disabled={busy || hidePending}
-                className="inline-flex items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40"
-              >
-                {hidePending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                Hide message
-              </button>
-              <button
-                type="button"
-                onClick={onRestore}
-                disabled={busy || restorePending}
-                className="inline-flex items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40"
-              >
-                {restorePending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                Restore message
-              </button>
+              {canAct ? (
+                <button
+                  type="button"
+                  onClick={onHide}
+                  disabled={busy || hidePending}
+                  className="inline-flex items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40"
+                >
+                  {hidePending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                  Hide message
+                </button>
+              ) : null}
+              {canRestore ? (
+                <button
+                  type="button"
+                  onClick={onRestore}
+                  disabled={busy || restorePending}
+                  className="inline-flex items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-40"
+                >
+                  {restorePending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                  Restore message
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -125,6 +131,7 @@ export function EvidencePanel({
           post={post}
           signedImageUrl={signedImageUrl ?? null}
           canAct={canAct}
+          canRestore={canRestore}
           busy={contentBusy}
           hidePending={hidePost.isPending}
           restorePending={restorePost.isPending}
@@ -138,6 +145,7 @@ export function EvidencePanel({
           comment={comment}
           signedImageUrl={signedImageUrl ?? null}
           canAct={canAct}
+          canRestore={canRestore}
           busy={contentBusy}
           hidePending={hideComment.isPending}
           restorePending={restoreComment.isPending}
@@ -194,6 +202,7 @@ function ReportedPost({
   post,
   signedImageUrl,
   canAct,
+  canRestore,
   busy,
   hidePending,
   restorePending,
@@ -203,6 +212,7 @@ function ReportedPost({
   post: PostSummary
   signedImageUrl: string | null
   canAct: boolean
+  canRestore: boolean
   busy: boolean
   hidePending: boolean
   restorePending: boolean
@@ -226,13 +236,14 @@ function ReportedPost({
       <p className="mt-2 text-xs text-on-surface-variant">
         by {post.author_display_name ?? 'Unknown'} · {post.cluster_name ?? 'Unknown cluster'}
       </p>
-      {canAct && post.id && !deleted ? (
+      {((canAct && !hidden) || (canRestore && hidden)) && post.id && !deleted ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          {!hidden ? (
+          {canAct && !hidden ? (
             <ContentAction label="Hide post" pending={hidePending} disabled={busy} onClick={() => onHide(post.id as string)} />
-          ) : (
+          ) : null}
+          {canRestore && hidden ? (
             <ContentAction label="Restore post" pending={restorePending} disabled={busy} onClick={() => onRestore(post.id as string)} />
-          )}
+          ) : null}
         </div>
       ) : null}
       {deleted && (
@@ -246,6 +257,7 @@ function ReportedComment({
   comment,
   signedImageUrl,
   canAct,
+  canRestore,
   busy,
   hidePending,
   restorePending,
@@ -255,6 +267,7 @@ function ReportedComment({
   comment: CommentSummary
   signedImageUrl: string | null
   canAct: boolean
+  canRestore: boolean
   busy: boolean
   hidePending: boolean
   restorePending: boolean
@@ -281,13 +294,14 @@ function ReportedComment({
         <img src={imageSrc} alt="Reported comment media" className="mt-2 max-h-64 rounded-lg object-cover" />
       )}
       <p className="mt-2 text-xs text-on-surface-variant">by {comment.author_display_name ?? 'Unknown'}</p>
-      {canAct && comment.id && !deleted ? (
+      {((canAct && !hidden) || (canRestore && hidden)) && comment.id && !deleted ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          {!hidden ? (
+          {canAct && !hidden ? (
             <ContentAction label="Hide comment" pending={hidePending} disabled={busy} onClick={() => onHide(comment.id as string)} />
-          ) : (
+          ) : null}
+          {canRestore && hidden ? (
             <ContentAction label="Restore comment" pending={restorePending} disabled={busy} onClick={() => onRestore(comment.id as string)} />
-          )}
+          ) : null}
         </div>
       ) : null}
       {deleted && (

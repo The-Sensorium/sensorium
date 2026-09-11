@@ -2113,6 +2113,7 @@ export type Database = {
           id: string
           message_id: string
           metadata: Json
+          policy_code: string
           post_id: string
           reason: string
           report_id: string

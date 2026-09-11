@@ -72,6 +72,7 @@ describe('case context panels', () => {
         data={row}
         msg={{ message_id: 'm-1', author_id: 'u-1', content: 'Reported text', image_url: '', created_at: '' }}
         canAct={false}
+        canRestore={false}
         busy={false}
         hidePending={false}
         restorePending={false}
@@ -82,6 +83,7 @@ describe('case context panels', () => {
     expect(screen.getByText('Heated thread')).toBeInTheDocument()
     expect(screen.getByText('Reported text')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Hide message' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restore message' })).not.toBeInTheDocument()
   })
 
   it('EvidencePanel offers hide/restore when the viewer can act', () => {
@@ -90,6 +92,7 @@ describe('case context panels', () => {
         data={row}
         msg={{ message_id: 'm-1', author_id: 'u-1', content: 'Reported text', image_url: '', created_at: '' }}
         canAct
+        canRestore
         busy={false}
         hidePending={false}
         restorePending={false}
@@ -98,6 +101,25 @@ describe('case context panels', () => {
       />,
     )
     expect(screen.getByRole('button', { name: 'Hide message' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore message' })).toBeInTheDocument()
+  })
+
+  it('EvidencePanel offers only restore message when the viewer cannot act', () => {
+    renderEvidence(
+      <EvidencePanel
+        data={row}
+        msg={{ message_id: 'm-1', author_id: 'u-1', content: 'Reported text', image_url: '', created_at: '' }}
+        canAct={false}
+        canRestore
+        busy={false}
+        hidePending={false}
+        restorePending={false}
+        onHide={() => {}}
+        onRestore={() => {}}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: 'Hide message' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore message' })).toBeInTheDocument()
   })
 
   it('ReporterPanel shows history and dismissed ratio', () => {
@@ -133,6 +155,7 @@ describe('case context panels', () => {
         data={postRow}
         msg={null}
         canAct
+        canRestore
         busy={false}
         hidePending={false}
         restorePending={false}
@@ -144,7 +167,48 @@ describe('case context panels', () => {
     expect(screen.getByText('Reported title')).toBeInTheDocument()
     expect(screen.getByText('Reported post body')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hide post' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restore post' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Open member view' })).not.toBeInTheDocument()
+  })
+
+  it('EvidencePanel offers restore on a hidden post even when the viewer cannot act', () => {
+    const hiddenPostRow = {
+      ...row,
+      target_kind: 'post',
+      post_id: 'p-1',
+      message_id: null,
+      post: {
+        id: 'p-1',
+        title: null,
+        content: 'Hidden post',
+        image_path: null,
+        gif_url: null,
+        author_id: 'u-1',
+        author_display_name: 'Rio Mendez',
+        cluster_id: 'c-1',
+        cluster_name: 'Aurora',
+        moderation_status: 'rejected',
+        deleted_at: null,
+        created_at: '2026-08-01T00:00:00Z',
+      },
+      comment: null,
+    } as unknown as ModerationCaseV2Row
+    renderEvidence(
+      <EvidencePanel
+        data={hiddenPostRow}
+        msg={null}
+        canAct={false}
+        canRestore
+        busy={false}
+        hidePending={false}
+        restorePending={false}
+        onHide={() => {}}
+        onRestore={() => {}}
+      />,
+    )
+    expect(screen.getByText('Hidden')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore post' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hide post' })).not.toBeInTheDocument()
   })
 
   it('EvidencePanel renders a reported comment with parent post context', () => {
@@ -174,6 +238,7 @@ describe('case context panels', () => {
         data={commentRow}
         msg={null}
         canAct
+        canRestore
         busy={false}
         hidePending={false}
         restorePending={false}
@@ -185,6 +250,46 @@ describe('case context panels', () => {
     expect(screen.getByText('Reported comment body')).toBeInTheDocument()
     expect(screen.getByText(/Parent post body/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hide comment' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restore comment' })).not.toBeInTheDocument()
+  })
+
+  it('EvidencePanel offers restore on a hidden comment even when the viewer cannot act', () => {
+    const hiddenCommentRow = {
+      ...row,
+      target_kind: 'comment',
+      comment_id: 'cm-1',
+      message_id: null,
+      post: null,
+      comment: {
+        id: 'cm-1',
+        content: 'Hidden comment body',
+        image_path: null,
+        gif_url: null,
+        author_id: 'u-1',
+        author_display_name: 'Rio Mendez',
+        post_id: 'p-1',
+        post_title: null,
+        post_snippet: 'Parent post body',
+        moderation_status: 'rejected',
+        deleted_at: null,
+        created_at: '2026-08-01T00:00:00Z',
+      },
+    } as unknown as ModerationCaseV2Row
+    renderEvidence(
+      <EvidencePanel
+        data={hiddenCommentRow}
+        msg={null}
+        canAct={false}
+        canRestore
+        busy={false}
+        hidePending={false}
+        restorePending={false}
+        onHide={() => {}}
+        onRestore={() => {}}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Restore comment' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hide comment' })).not.toBeInTheDocument()
   })
 
   it('EvidencePanel flags hidden and deleted content without actions', () => {
@@ -214,6 +319,7 @@ describe('case context panels', () => {
         data={hiddenRow}
         msg={null}
         canAct
+        canRestore
         busy={false}
         hidePending={false}
         restorePending={false}

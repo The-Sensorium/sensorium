@@ -641,7 +641,7 @@ export function auditRowsToCsv(rows: ModerationAuditV2Row[]): string {
     const text = value ?? ''
     return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
   }
-  const header = 'id,created_at,action,actor_id,actor,target_user_id,target,report_id,appeal_id,reason'
+  const header = 'id,created_at,action,actor_id,actor,target_user_id,target,report_id,appeal_id,reason,policy_code'
   const lines = rows.map((row) =>
     [
       row.id,
@@ -654,6 +654,7 @@ export function auditRowsToCsv(rows: ModerationAuditV2Row[]): string {
       row.report_id,
       row.appeal_id,
       row.reason,
+      row.policy_code ?? '',
     ]
       .map((cell) => escape(cell))
       .join(','),
