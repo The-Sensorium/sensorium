@@ -255,7 +255,7 @@ export function AccountDetailPage() {
                       <span className="rounded-pill bg-surface px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
                         {entry.kind}
                       </span>{' '}
-                      {entry.summary}
+                      {entry.summary.replace(/_/g, ' ')}
                     </p>
                     <span className="shrink-0 text-[11px] text-on-surface-variant">{timeAgo(entry.created_at)}</span>
                   </div>
