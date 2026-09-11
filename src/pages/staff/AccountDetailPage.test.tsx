@@ -86,8 +86,23 @@ describe('AccountDetailPage', () => {
       hasNextPage: false,
     })
     renderPage()
-    expect(screen.getByText('against · spam · pending')).toBeInTheDocument()
+    expect(screen.getByText('Against')).toBeInTheDocument()
+    expect(screen.getByText('spam · pending')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open case' })).toHaveAttribute('href', '/admin/reports/r-1')
+  })
+
+  it('drops a head segment that repeats the kind', () => {
+    hooks.useAccountHistory.mockReturnValue({
+      data: { pages: [[{ entry_id: 'h-2', kind: 'appeal', created_at: '', summary: 'appeal · submitted', status: 'submitted', report_id: null, appeal_id: 'a-1' }]] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+      hasNextPage: false,
+    })
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: ['can_moderate', 'can_manage_roles'], user_id: 'me' } })
+    renderPage()
+    expect(screen.getByText('Submitted')).toBeInTheDocument()
+    expect(screen.queryByText('Appeal appeal')).not.toBeInTheDocument()
   })
 
   it('hides lift for banned accounts when the viewer is not an admin', () => {

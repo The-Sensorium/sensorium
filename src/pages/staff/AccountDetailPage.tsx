@@ -16,6 +16,25 @@ function has(access: ReturnType<typeof useMyAccess>['data'], cap: Capability) {
   return access?.capabilities.includes(cap) ?? false
 }
 
+function capitalize(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1)
+}
+
+// History summaries are "head · detail" strings; the head sometimes repeats
+// the kind (e.g. "appeal · submitted"), in which case it is dropped.
+function historyParts(kind: string, summary: string): { title: string; detail: string } {
+  const segments = summary
+    .split('·')
+    .map((part) => part.trim().replace(/_/g, ' '))
+    .filter(Boolean)
+  const [head = '', ...rest] = segments
+  if (head.toLowerCase() === kind.toLowerCase()) {
+    const [next = '', ...tail] = rest
+    return { title: capitalize(next), detail: tail.join(' · ') }
+  }
+  return { title: capitalize(head), detail: rest.join(' · ') }
+}
+
 export function AccountDetailPage() {
   useDocumentTitle('Account')
   const { userId } = useParams<{ userId: string }>()
@@ -248,23 +267,27 @@ export function AccountDetailPage() {
         ) : (
           <>
             <ol className="mt-3 space-y-2">
-              {entries.map((entry) => (
-                <li key={`${entry.kind}-${entry.entry_id}`} data-e2e="account-history-row" className="rounded-md bg-surface-container/60 p-3">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-sm text-on-surface">
-                      <span className="rounded-pill bg-surface px-2 py-0.5 text-[11px] font-semibold capitalize text-on-surface-variant">
-                        {entry.kind}
-                      </span>{' '}
-                      {entry.summary.replace(/_/g, ' ')}
-                    </p>
-                    <span className="shrink-0 text-[11px] text-on-surface-variant">{timeAgo(entry.created_at)}</span>
-                  </div>
-                  <div className="mt-1 flex gap-3 text-xs font-semibold">
-                    {entry.report_id && <Link to={`${base}/reports/${entry.report_id}`} className="text-primary">Open case</Link>}
-                    {entry.appeal_id && isAdmin && <Link to={`/admin/appeals/${entry.appeal_id}`} className="text-primary">Open appeal</Link>}
-                  </div>
-                </li>
-              ))}
+              {entries.map((entry) => {
+                const parts = historyParts(entry.kind, entry.summary)
+                return (
+                  <li key={`${entry.kind}-${entry.entry_id}`} data-e2e="account-history-row" className="rounded-md bg-surface-container/60 p-3">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <p className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                        <span className="rounded bg-surface px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-on-surface">
+                          {entry.kind}
+                        </span>
+                        <span className="font-semibold text-on-surface">{parts.title}</span>
+                      </p>
+                      <span className="shrink-0 text-[11px] text-on-surface-variant">{timeAgo(entry.created_at)}</span>
+                    </div>
+                    {parts.detail && <p className="mt-1 text-sm text-on-surface-variant">{parts.detail}</p>}
+                    <div className="mt-1.5 flex gap-3 text-xs font-semibold">
+                      {entry.report_id && <Link to={`${base}/reports/${entry.report_id}`} className="text-primary">Open case</Link>}
+                      {entry.appeal_id && isAdmin && <Link to={`/admin/appeals/${entry.appeal_id}`} className="text-primary">Open appeal</Link>}
+                    </div>
+                  </li>
+                )
+              })}
             </ol>
             {history.hasNextPage && !history.isFetchingNextPage && (
               <div className="mt-3 flex justify-center">
