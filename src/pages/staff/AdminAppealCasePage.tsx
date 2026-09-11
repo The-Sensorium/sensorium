@@ -194,7 +194,11 @@ export function AdminAppealCasePage() {
         </div>
       </header>
 
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-variant/60 bg-outline-variant/60 sm:grid-cols-3">
+      <dl
+        className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-variant/60 bg-outline-variant/60 ${
+          data.decided_at ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
+        }`}
+      >
         {[
           { label: 'Submitted', value: timeAgo(data.created_at) },
           { label: 'Review due', value: data.review_due_at ? timeUntil(data.review_due_at) : 'No due date' },
