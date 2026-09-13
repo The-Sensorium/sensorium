@@ -411,6 +411,8 @@ function SignOutConfirmModal({ open, onClose }: { open: boolean; onClose: () => 
     setPending(true)
     try {
       const supabase = requireSupabase()
+      const { unregisterPushToken } = await import('../../src/lib/push')
+      await unregisterPushToken()
       await supabase.auth.signOut()
       queryClient.clear()
       router.replace('/(auth)/login')

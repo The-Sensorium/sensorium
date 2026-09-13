@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   adminClient,
+  anonClient,
   cleanup,
   createCluster,
   createUser,
@@ -303,5 +304,82 @@ describe('push outbox fan-out', () => {
     const u = await member('push-j')
     const { data } = await u.client.from('push_outbox').select('id')
     expect(data ?? []).toHaveLength(0)
+  })
+
+  it('register steals a shared device token so one device gets one push', async () => {
+    const a = await member('push-steal-a')
+    const b = await member('push-steal-b')
+    const token = `ExponentPushToken[steal-${a.id.slice(0, 8)}]`
+
+    const { error: regA } = await a.client.rpc('register_push_token', { p_expo_push_token: token })
+    expect(regA).toBeNull()
+    const { error: regB } = await b.client.rpc('register_push_token', { p_expo_push_token: token })
+    expect(regB).toBeNull()
+
+    const { data: rows, error } = await admin.from('push_tokens').select('user_id').eq('expo_push_token', token)
+    expect(error).toBeNull()
+    expect(rows!.map((r) => r.user_id)).toEqual([b.id])
+
+    const { error: unreg } = await b.client.rpc('unregister_push_token', { p_expo_push_token: token })
+    expect(unreg).toBeNull()
+    const { data: after } = await admin.from('push_tokens').select('user_id').eq('expo_push_token', token)
+    expect(after ?? []).toHaveLength(0)
+  })
+
+  it('register is rejected for inactive accounts and without auth', async () => {
+    const u = await member('push-inactive')
+    const { error: restrictErr } = await admin.from('account_restrictions').insert({
+      user_id: u.id,
+      status: 'banned',
+      reason: 'test ban',
+    })
+    expect(restrictErr).toBeNull()
+    const { error: regErr } = await u.client.rpc('register_push_token', {
+      p_expo_push_token: `ExponentPushToken[banned-${u.id.slice(0, 8)}]`,
+    })
+    expect(regErr).not.toBeNull()
+
+    const { error: anonErr } = await anonClient().rpc('register_push_token', {
+      p_expo_push_token: 'ExponentPushToken[anon]',
+    })
+    expect(anonErr).not.toBeNull()
+    const { error: anonUnreg } = await anonClient().rpc('unregister_push_token', {
+      p_expo_push_token: 'ExponentPushToken[anon]',
+    })
+    expect(anonUnreg).not.toBeNull()
+  })
+
+  it('unregister only removes the caller token, even when banned', async () => {
+    const a = await member('push-unreg-a')
+    const b = await member('push-unreg-b')
+    const tokenA = `ExponentPushToken[unreg-${a.id.slice(0, 8)}]`
+
+    expect((await a.client.rpc('register_push_token', { p_expo_push_token: tokenA })).error).toBeNull()
+    expect((await b.client.rpc('unregister_push_token', { p_expo_push_token: tokenA })).error).toBeNull()
+    const { data: survived } = await admin.from('push_tokens').select('user_id').eq('expo_push_token', tokenA)
+    expect(survived!.map((r) => r.user_id)).toEqual([a.id])
+
+    const { error: restrictErr } = await admin.from('account_restrictions').insert({
+      user_id: a.id,
+      status: 'banned',
+      reason: 'test ban',
+    })
+    expect(restrictErr).toBeNull()
+    expect((await a.client.rpc('unregister_push_token', { p_expo_push_token: tokenA })).error).toBeNull()
+    const { data: gone } = await admin.from('push_tokens').select('user_id').eq('expo_push_token', tokenA)
+    expect(gone ?? []).toHaveLength(0)
+  })
+
+  it('legacy direct inserts also steal the token via trigger', async () => {
+    const a = await member('push-trig-a')
+    const b = await member('push-trig-b')
+    const token = `ExponentPushToken[trig-${a.id.slice(0, 8)}]`
+
+    expect((await admin.from('push_tokens').insert({ user_id: a.id, expo_push_token: token })).error).toBeNull()
+    expect((await admin.from('push_tokens').insert({ user_id: b.id, expo_push_token: token })).error).toBeNull()
+
+    const { data: rows, error } = await admin.from('push_tokens').select('user_id').eq('expo_push_token', token)
+    expect(error).toBeNull()
+    expect(rows!.map((r) => r.user_id)).toEqual([b.id])
   })
 })
