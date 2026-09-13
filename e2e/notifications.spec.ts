@@ -28,7 +28,9 @@ test.beforeAll(async () => {
   url = creds.url
   serviceRole = creds.serviceRole
   const admin = createClient(url, serviceRole, { auth: { persistSession: false } })
-  const { data, error } = await admin.auth.admin.listUsers()
+  // The local stack accumulates auth users beyond the seed set, so request a
+  // wide page - the default listing can leave the demo user off page one.
+  const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 })
   if (error) throw error
   const user = data.users.find((u) => u.email === EMAIL)
   if (!user) throw new Error(`Demo user ${EMAIL} not found; run seed:demo`)

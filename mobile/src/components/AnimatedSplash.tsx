@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { StyleSheet, View } from 'react-native'
+import * as SplashScreen from 'expo-splash-screen'
 import Animated, {
   Easing,
   runOnJS,
@@ -25,6 +26,14 @@ const VIEWBOX = '880 1065 2200 1610'
 const EIGHT_CX = 1980
 const EIGHT_CY = 1900
 const REVEAL_R = 1300
+
+let nativeSplashHidden = false
+
+export function hideNativeSplash() {
+  if (nativeSplashHidden) return
+  nativeSplashHidden = true
+  void SplashScreen.hideAsync().catch(() => {})
+}
 
 export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   const scheme = useResolvedScheme()
@@ -54,7 +63,7 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   }))
 
   return (
-    <View style={[styles.fill, { backgroundColor }]}>
+    <View style={[styles.fill, { backgroundColor }]} onLayout={hideNativeSplash}>
       <Animated.View style={markStyle}>
         <Svg width={220} height={161} viewBox={VIEWBOX} accessibilityLabel="Sensorium logo">
           <Mask id="splashReveal" maskUnits="userSpaceOnUse" x={880} y={1065} width={2200} height={1610}>
