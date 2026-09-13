@@ -33,19 +33,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # No `supabase link` here: link fetches the project's legacy api-keys and
-      # the platform 403s that call even for owners (supabase/cli#6392), so the
-      # db steps below connect directly via --db-url instead of --linked.
-      - name: Build production database URL
-        run: |-
-          ENCODED_PASSWORD=$(python3 -c 'import os,urllib.parse; print(urllib.parse.quote(os.environ["SUPABASE_PROD_DB_PASSWORD"], safe=""))')
-          echo "PROD_DB_URL=postgresql://postgres:${ENCODED_PASSWORD}@db.${SUPABASE_PROD_PROJECT_ID}.supabase.co:5432/postgres" >> "$GITHUB_ENV"
-        env:
-          SUPABASE_PROD_DB_PASSWORD: ${{ secrets.SUPABASE_PROD_DB_PASSWORD }}
-          SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
-
+      # Target the project directly instead of `supabase link` first: link
+      # fetches the project's legacy api-keys and the platform 403s that call
+      # even for owners (supabase/cli#6392). db push does not need those keys.
       - name: Apply migrations to production
-        run: npx supabase db push --db-url "$PROD_DB_URL"
+        run: npx supabase db push --project-ref "$SUPABASE_PROD_PROJECT_ID" --password "$SUPABASE_PROD_DB_PASSWORD"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
+          SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
+          SUPABASE_PROD_DB_PASSWORD: ${{ secrets.SUPABASE_PROD_DB_PASSWORD }}
 
       - name: Deploy send-emails edge function to production
         run: npx supabase functions deploy send-emails --project-ref "$SUPABASE_PROD_PROJECT_ID" --no-verify-jwt
@@ -71,13 +67,14 @@ jobs:
 
       - name: Point the DB push cron at the production edge function
         run: >-
-          npx supabase db query --db-url "$PROD_DB_URL"
+          npx supabase db query --project-ref "$SUPABASE_PROD_PROJECT_ID"
           "update public.push_settings
              set edge_url = 'https://$SUPABASE_PROD_PROJECT_ID.functions.supabase.co/send-push',
                  secret = '$SENSORIUM_PUSH_SECRET',
                  enabled = true,
                  updated_at = now();"
         env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
           SENSORIUM_PUSH_SECRET: ${{ secrets.SENSORIUM_PUSH_SECRET }}
 
@@ -96,7 +93,7 @@ jobs:
 
       - name: Point the DB cron at the production edge function
         run: >-
-          npx supabase db query --db-url "$PROD_DB_URL"
+          npx supabase db query --project-ref "$SUPABASE_PROD_PROJECT_ID"
           "update public.email_settings
              set edge_url = 'https://$SUPABASE_PROD_PROJECT_ID.functions.supabase.co/send-emails',
                  secret = '$SENSORIUM_EMAIL_SECRET',
@@ -104,6 +101,7 @@ jobs:
                  enabled = true,
                  updated_at = now();"
         env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
           SENSORIUM_EMAIL_SECRET: ${{ secrets.SENSORIUM_EMAIL_SECRET }}
 
