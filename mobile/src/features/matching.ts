@@ -98,7 +98,15 @@ export function useClusterMembers(clusterId: string | null, enabled = true) {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_member_profiles', { p_cluster_id: clusterId })
       if (error) throw error
-      return data ?? []
+      // get_member_profiles has no ORDER BY, so Postgres may return rows in a
+      // different order on every refetch (read receipts invalidate this query
+      // constantly). Sort client-side so the presence strip never reshuffles.
+      return [...(data ?? [])].sort(
+        (a, b) =>
+          (a.display_name ?? '').localeCompare(b.display_name ?? '', undefined, {
+            sensitivity: 'base',
+          }) || String(a.id).localeCompare(String(b.id)),
+      )
     },
   })
 }

@@ -106,6 +106,21 @@ describe('matching', () => {
     })
   })
 
+  it('useClusterMembers sorts members stably by display name', async () => {
+    mockResult.value = {
+      data: [
+        { id: 'u3', display_name: 'rio' },
+        { id: 'u1', display_name: 'Diya' },
+        { id: 'u2', display_name: 'diya' },
+        { id: 'u4', display_name: null },
+      ],
+      error: null,
+    }
+    const { result } = renderHook(() => useClusterMembers('c1'), { wrapper })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.map((m) => m.id)).toEqual(['u4', 'u1', 'u2', 'u3'])
+  })
+
   it('useQueueCount polls the RPC and subscribes to the channel', async () => {
     mockResult.value = { data: 5, error: null }
     const { result } = renderHook(() => useQueueCount('local', 'k1'), { wrapper })

@@ -3,11 +3,13 @@ import { AlertOctagon, Loader2, LogOut, MailWarning, ShieldAlert } from 'lucide-
 import { Link, useNavigate } from 'react-router'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { BrandMark } from '../components/BrandMark'
-import { ThemeToggle } from '../components/theme-toggle'
+import { FixedThemeToggle } from '../components/FixedThemeToggle'
 import { requireSupabase } from '../lib/supabase'
 import { useMyAppeal } from '../features/appeals'
 import { useMyAccess } from '../features/access'
 import { useDeleteAccount } from '../features/moderation'
+import { cn } from '../lib/utils'
+import { useOnline } from '../lib/use-online'
 
 export function RestrictedAccountPage() {
   useDocumentTitle('Account restricted')
@@ -17,6 +19,7 @@ export function RestrictedAccountPage() {
   const deleteAccount = useDeleteAccount()
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const online = useOnline()
 
   if (access.isLoading || access.isError || !access.data) {
     return (
@@ -66,15 +69,13 @@ export function RestrictedAccountPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
-      <div className="fixed left-4 top-4 z-30">
+      <div className={cn('fixed left-4 z-30', online ? 'top-4' : 'top-16')}>
         <Link to="/" className="flex items-center gap-2 transition-colors hover:text-on-surface">
           <BrandMark size={24} />
           <span className="font-brand text-lg tracking-[0.15em] text-primary">Sensorium</span>
         </Link>
       </div>
-      <div className="fixed right-4 top-4 z-30">
-        <ThemeToggle />
-      </div>
+      <FixedThemeToggle />
       <div className="w-full max-w-md space-y-6">
         <div className="rounded-2xl bg-surface-lowest p-8 text-center shadow-soft">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-error/10 text-error">
