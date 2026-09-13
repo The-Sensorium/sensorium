@@ -149,9 +149,9 @@ export default function OnboardingScreen() {
         contentContainerStyle={{ padding: 24, paddingBottom: 64 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <BrandMark size={28} />
-          <BrandWordmark size={16} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1.5 }}>
+          <BrandMark size={38} />
+          <BrandWordmark size={18} />
         </View>
         <Text style={{ marginTop: 16, fontSize: 14, fontWeight: '600', color: t.primary }}>
           Step {step} of {TOTAL_STEPS}
