@@ -230,7 +230,13 @@ export function Composer({
       ) : null}
       {menuOpen ? (
         <View
-          style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 4, marginBottom: 8 }}
+          style={{
+            alignSelf: 'flex-start',
+            backgroundColor: t.surfaceLowest,
+            borderRadius: radii.xl,
+            padding: 4,
+            marginBottom: 8,
+          }}
         >
           <MenuRow
             label="Send an image"
@@ -380,7 +386,16 @@ function MenuRow({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, opacity: disabled ? 0.6 : 1 }}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderRadius: radii.md,
+        backgroundColor: pressed ? t.surfaceContainer : 'transparent',
+        opacity: disabled ? 0.6 : 1,
+      })}
     >
       {children}
       <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>{label}</Text>

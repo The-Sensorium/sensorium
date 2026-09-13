@@ -1,5 +1,5 @@
 ﻿<p align="center">
-  <img src="public/logo.png" alt="Sensorium logo" width="160" height="160" />
+  <img src="public/logo.png" alt="Sensorium logo" width="160" height="160" style="border-radius: 32px" />
 </p>
 
 <h1 align="center">Sensorium</h1>

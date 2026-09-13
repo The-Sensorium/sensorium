@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
 import { useChatImageUrl } from '../../features/cluster'
 import { radii } from '../../lib/theme-tokens'
@@ -62,6 +62,23 @@ export function MessageImage({
 
 export function MessageGif({ src, onLongPress }: { src: string; onLongPress?: () => void }) {
   const [open, setOpen] = useState(false)
+  const [aspect, setAspect] = useState<number | null>(null)
+
+  useEffect(() => {
+    setAspect(null)
+    let live = true
+    Image.getSize(
+      src,
+      (width, height) => {
+        if (live && width > 0 && height > 0) setAspect(width / height)
+      },
+      () => undefined,
+    )
+    return () => {
+      live = false
+    }
+  }, [src])
+
   return (
     <>
       <Pressable
@@ -73,8 +90,8 @@ export function MessageGif({ src, onLongPress }: { src: string; onLongPress?: ()
         <Image
           source={{ uri: src }}
           accessibilityLabel="GIF"
-          style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: radii.md }}
-          resizeMode="cover"
+          style={{ width: '100%', aspectRatio: aspect ?? 16 / 9, maxHeight: 320, borderRadius: radii.md }}
+          resizeMode="contain"
         />
       </Pressable>
       <ZoomableImage uri={src} accessibilityLabel="GIF" open={open} onClose={() => setOpen(false)} />

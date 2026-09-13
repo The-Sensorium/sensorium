@@ -1,6 +1,20 @@
 type MessageLike = { message?: unknown }
 
+const NETWORK_ERROR_PATTERN =
+  /network request failed|failed to fetch|fetch failed|load failed|networkerror|network error|connection failure|failed to connect|couldn't connect|could not connect|unable to connect|connection refused|no internet|internet connection|connectexception|econnrefused|econnreset|etimedout|socketexception|offline/i
+
+export function isNetworkError(error: unknown): boolean {
+  if (typeof error === 'string') return NETWORK_ERROR_PATTERN.test(error)
+  if (error instanceof Error) return NETWORK_ERROR_PATTERN.test(error.message)
+  if (error && typeof error === 'object' && 'message' in error) {
+    const raw = (error as MessageLike).message
+    return typeof raw === 'string' && NETWORK_ERROR_PATTERN.test(raw)
+  }
+  return false
+}
+
 export function toErrorMessage(error: unknown, fallback: string): string {
+  if (isNetworkError(error)) return fallback
   if (typeof error === 'string') return error.trim() || fallback
   if (error instanceof Error) return error.message.trim() || fallback
   if (error && typeof error === 'object' && 'message' in error) {

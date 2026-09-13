@@ -12,6 +12,7 @@ import {
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans'
 import { hideNativeSplash } from '../src/components/AnimatedSplash'
+import { OfflineBanner } from '../src/components/OfflineBanner'
 import { AppProviders } from '../src/app-providers'
 import { colors, darkColors } from '../src/lib/theme-tokens'
 import { useResolvedScheme } from '../src/lib/theme-choice'
@@ -65,6 +66,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
     <AppProviders>
       <ThemedStatusBar />
+      <OfflineBanner />
       <ThemedNavigator>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />

@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { HeartHandshake, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { BrandMark } from '../components/BrandMark'
-import { ThemeToggle } from '../components/theme-toggle'
+import { FixedThemeToggle } from '../components/FixedThemeToggle'
 import { MATCHING_MODES } from '../lib/modes'
 
 const howItWorks = [
@@ -25,9 +25,7 @@ export function LandingPage() {
   useDocumentTitle('')
   return (
     <div className="bg-background text-on-surface">
-      <div className="fixed right-4 top-4 z-30">
-        <ThemeToggle />
-      </div>
+      <FixedThemeToggle />
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pb-20 pt-16 md:pt-24">
         <div className="flex flex-col items-start gap-2">

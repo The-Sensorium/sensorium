@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { BrandMark } from '../../components/BrandMark'
-import { ThemeToggle } from '../../components/theme-toggle'
+import { FixedThemeToggle } from '../../components/FixedThemeToggle'
 import { useAuth } from '../../app/auth-context'
 import { requireSupabase } from '../../lib/supabase'
 import { useProfile, profileKey } from '../../lib/use-profile'
@@ -138,9 +138,7 @@ export function OnboardingPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-on-surface">
-      <div className="fixed right-4 top-4 z-30">
-        <ThemeToggle />
-      </div>
+      <FixedThemeToggle />
 
       <header className="mx-auto flex w-full max-w-xl items-center justify-between px-6 pt-8">
         <Link to="/" className="flex items-center gap-2">
