@@ -1,17 +1,16 @@
+import { useState } from 'react'
 import { Redirect } from 'expo-router'
-import { View, ActivityIndicator } from 'react-native'
 import { useAuth } from '../src/auth-context'
-import { colors } from '../src/lib/theme-tokens'
+import { AnimatedSplash } from '../src/components/AnimatedSplash'
 
 export default function Index() {
   const auth = useAuth()
+  const [splashDone, setSplashDone] = useState(false)
 
-  if (auth.state === 'loading' || auth.state === 'unconfigured') {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator />
-      </View>
-    )
+  // Custom animated splash takes over seamlessly from the static native
+  // splash (same bg). It runs a minimum duration while auth resolves.
+  if (!splashDone || auth.state === 'loading' || auth.state === 'unconfigured') {
+    return <AnimatedSplash onFinish={() => setSplashDone(true)} />
   }
 
   return <Redirect href={auth.state === 'signedIn' ? '/(app)/home' : '/(auth)/login'} />
