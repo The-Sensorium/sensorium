@@ -9,10 +9,10 @@ const STORAGE_KEY = 'sensorium:theme'
 const ThemeChoiceContext = createContext<{
   choice: ThemeChoice
   setChoice: (choice: ThemeChoice) => void
-}>({ choice: 'light', setChoice: () => {} })
+}>({ choice: 'system', setChoice: () => {} })
 
 export function ThemeChoiceProvider({ children }: { children: ReactNode }) {
-  const [choice, setChoiceState] = useState<ThemeChoice>('light')
+  const [choice, setChoiceState] = useState<ThemeChoice>('system')
 
   useEffect(() => {
     Appearance.setColorScheme(choice === 'system' ? 'unspecified' : choice)

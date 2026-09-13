@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ImageMinus, ImagePlus, Loader2, LogOut, ShieldCheck, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, Loader2, LogOut, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -434,6 +434,22 @@ function NotificationPreferences() {
   const [prefError, setPrefError] = useState<string | null>(null)
 
   const byCluster = new Map((prefs.data ?? []).map((p) => [p.cluster_id, p]))
+  const list = useMemo(() => clusters.data ?? [], [clusters.data])
+  const [expandedIds, setExpandedIds] = useState<readonly string[] | null>(null)
+  // Latch the single-cluster default once seen so joining a second cluster
+  // mid-session doesn't snap the open card shut. Other counts keep deriving
+  // until the user touches a card, so a lone remaining cluster still opens.
+  useEffect(() => {
+    setExpandedIds((prev) => prev ?? (list.length === 1 ? [list[0].cluster.id] : prev))
+  }, [list])
+  const openIds = expandedIds ?? (list.length === 1 ? [list[0].cluster.id] : [])
+
+  function setOpen(clusterId: string, open: boolean) {
+    setExpandedIds((prev) => {
+      const base = prev ?? (list.length === 1 ? [list[0].cluster.id] : [])
+      return open ? [...new Set([...base, clusterId])] : base.filter((id) => id !== clusterId)
+    })
+  }
 
   function prefFor(clusterId: string, toggle: PrefToggle): boolean {
     const pendingValue = pending[`${clusterId}:${toggle}`]
@@ -492,29 +508,93 @@ function NotificationPreferences() {
               {prefError}
             </p>
           )}
-          {(clusters.data ?? []).map(({ cluster }) => (
-            <div key={cluster.id} className="rounded-xl border border-outline-variant/60 p-4">
-              <h3 className="truncate text-sm font-semibold text-on-surface">{cluster.name}</h3>
-              <ul className="mt-3 space-y-3">
-                {PREF_TOGGLES.map((key) => {
-                  const value = prefFor(cluster.id, key)
-                  const saving = pending[`${cluster.id}:${key}`] !== undefined
-  return (
-                    <li key={key} className="flex items-center justify-between gap-4">
-                      <span className="text-sm text-on-surface-variant">{PREF_LABELS[key]}</span>
-                      <span className="flex items-center gap-2">
-                        {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-on-surface-variant" aria-hidden />}
-                        <Toggle checked={value} label={PREF_LABELS[key]} onChange={(v) => toggle(cluster.id, key, v)} />
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ))}
+          {list.map(({ cluster }) => {
+            const open = openIds.includes(cluster.id)
+            const off = PREF_TOGGLES.filter((key) => !prefFor(cluster.id, key)).length
+            const summary = off === 0 ? 'All on' : off === PREF_TOGGLES.length ? 'All off' : `${off} off`
+            return (
+              <ClusterPrefCard
+                key={cluster.id}
+                clusterId={cluster.id}
+                name={cluster.name}
+                summary={summary}
+                open={open}
+                onOpenChange={(next) => setOpen(cluster.id, next)}
+              >
+                <ul className="space-y-3">
+                  {PREF_TOGGLES.map((key) => {
+                    const value = prefFor(cluster.id, key)
+                    const saving = pending[`${cluster.id}:${key}`] !== undefined
+                    return (
+                      <li key={key} className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-on-surface-variant">{PREF_LABELS[key]}</span>
+                        <span className="flex items-center gap-2">
+                          {saving && <Loader2 className="h-3.5 w-3.5 animate-spin text-on-surface-variant" aria-hidden />}
+                          <Toggle checked={value} label={PREF_LABELS[key]} onChange={(v) => toggle(cluster.id, key, v)} />
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </ClusterPrefCard>
+            )
+          })}
         </div>
       )}
     </section>
+  )
+}
+
+function ClusterPrefCard({
+  clusterId,
+  name,
+  summary,
+  open,
+  onOpenChange,
+  children,
+}: {
+  clusterId: string
+  name: string
+  summary: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  children: ReactNode
+}) {
+  const regionId = `notif-prefs-${clusterId}`
+  return (
+    <div className="rounded-xl border border-outline-variant/60">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={regionId}
+        onClick={() => onOpenChange(!open)}
+        className="flex w-full items-center gap-3 rounded-xl p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-on-surface">{name}</span>
+          <span className="mt-0.5 block text-xs text-on-surface-variant">{summary}</span>
+        </span>
+        <ChevronDown
+          className={cn('h-4 w-4 shrink-0 text-on-surface-variant transition-transform motion-reduce:transition-none', open && 'rotate-180')}
+          strokeWidth={1.5}
+          aria-hidden
+        />
+      </button>
+      {/* Collapsed content stays mounted for the expand transition (inert, not
+          focusable). Tests must scope toggle queries to the expanded card. */}
+      <div
+        id={regionId}
+        inert={!open}
+        className={cn(
+          'grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none',
+          open ? '[grid-template-rows:1fr]' : '[grid-template-rows:0fr]',
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="px-4 pb-4">{children}</div>
+        </div>
+      </div>
+    </div>
   )
 }
 

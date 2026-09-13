@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
-import { DarkTheme, DefaultTheme, ThemeProvider, router, Stack } from 'expo-router'
+import { DarkTheme, DefaultTheme, ThemeProvider, router, Stack, useSegments } from 'expo-router'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
@@ -11,6 +11,7 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans'
+import { hideNativeSplash } from '../src/components/AnimatedSplash'
 import { AppProviders } from '../src/app-providers'
 import { colors, darkColors } from '../src/lib/theme-tokens'
 import { useResolvedScheme } from '../src/lib/theme-choice'
@@ -39,6 +40,7 @@ function useAuthDeepLinks() {
 
 export default function RootLayout() {
   useAuthDeepLinks()
+  const segments = useSegments()
   const [fontsLoaded, fontError] = useFonts({
     SpecialElite_400Regular,
     PlusJakartaSans_400Regular,
@@ -46,9 +48,16 @@ export default function RootLayout() {
     PlusJakartaSans_700Bold,
   })
 
+  // Deep-link cold starts land directly on a non-index route, so the animated
+  // splash never mounts - release the native splash here instead. The normal
+  // index path (empty segments) is still owned by AnimatedSplash's onLayout,
+  // with this timeout as a last resort if it ever fails to mount.
   useEffect(() => {
-    if (fontsLoaded || fontError) void SplashScreen.hideAsync()
-  }, [fontsLoaded, fontError])
+    if (!fontsLoaded && !fontError) return
+    if (segments.length > 0) hideNativeSplash()
+    const fallback = setTimeout(hideNativeSplash, 5000)
+    return () => clearTimeout(fallback)
+  }, [fontsLoaded, fontError, segments])
 
   if (!fontsLoaded && !fontError) return null
   return (
