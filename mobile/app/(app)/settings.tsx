@@ -342,7 +342,15 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
   const [error, setError] = useState<string | null>(null)
   const deleteAccount = useDeleteAccount()
 
+  useEffect(() => {
+    if (open) {
+      setConfirm('')
+      setError(null)
+    }
+  }, [open])
+
   async function handleDelete() {
+    if (confirm.trim() !== 'DELETE') return
     setError(null)
     try {
       await deleteAccount.mutateAsync()
@@ -384,6 +392,7 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
           title="Delete my account"
           loadingTitle="Deleting…"
           loading={deleteAccount.isPending}
+          disabled={confirm.trim() !== 'DELETE'}
           onPress={() => void handleDelete()}
         />
       </View>

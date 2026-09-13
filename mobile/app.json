@@ -20,7 +20,7 @@
       }
     },
     "android": {
-      "icon": "./assets/legacy-icon.png",
+      "icon": "./assets/legacy-icon-light.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-foreground.png",
         "backgroundColor": "#fef8f7"

@@ -44,10 +44,10 @@ export function AuthShell({
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ alignItems: 'center', marginBottom: 8 }}>
-            <BrandMark size={76} />
+          <View style={{ alignItems: 'center', marginBottom: -13 }}>
+            <BrandMark size={101} />
           </View>
-          <BrandWordmark size={20} />
+          <BrandWordmark size={18} />
           <View
             style={{
               marginTop: spacing.gutter,

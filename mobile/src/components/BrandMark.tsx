@@ -1,7 +1,7 @@
 import { Image } from 'react-native'
 import { useResolvedScheme } from '../lib/theme-choice'
-import lightMark from '../../assets/icon-mark-light.png'
-import darkMark from '../../assets/icon-mark-dark.png'
+import lightMark from '../../assets/legacy-icon-light.png'
+import darkMark from '../../assets/legacy-icon-dark.png'
 
 export function BrandMark({
   size = 32,
