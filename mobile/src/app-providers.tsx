@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { AppState } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
-import { refreshPushToken, registerPushToken, unregisterPushToken } from './lib/push'
+import { clearPushBadge, refreshPushToken, registerPushToken } from './lib/push'
 import { isPermanentQueryError } from './lib/query-retry'
 import { AuthContext, type AuthStatus } from './auth-context'
 import { ThemeChoiceProvider } from './lib/theme-choice'
@@ -36,7 +36,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
       const s = data.session
       if (s?.user) {
         setAuth({ state: 'signedIn', userId: s.user.id, email: s.user.email })
-        void registerPushToken(s.user.id)
+        void registerPushToken()
       } else {
         setAuth({ state: 'signedOut' })
       }
@@ -44,10 +44,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setAuth({ state: 'signedIn', userId: session.user.id, email: session.user.email })
-        void registerPushToken(session.user.id)
+        void registerPushToken()
       } else {
         setAuth({ state: 'signedOut' })
-        void unregisterPushToken()
+        void clearPushBadge()
       }
     })
     return () => sub.subscription.unsubscribe()
@@ -55,9 +55,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (auth.state !== 'signedIn') return
-    const userId = auth.userId
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void refreshPushToken(userId)
+      if (state === 'active') void refreshPushToken()
     })
     return () => sub.remove()
   }, [auth])

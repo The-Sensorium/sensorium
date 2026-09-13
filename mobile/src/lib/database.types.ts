@@ -2744,6 +2744,10 @@ export type Database = {
       }
       recover_stuck_push_sending: { Args: never; Returns: undefined }
       recover_stuck_sending: { Args: never; Returns: undefined }
+      register_push_token: {
+        Args: { p_expo_push_token: string }
+        Returns: undefined
+      }
       release_moderation_report: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -2871,6 +2875,10 @@ export type Database = {
         Returns: undefined
       }
       toggle_post_like: { Args: { p_post_id: string }; Returns: undefined }
+      unregister_push_token: {
+        Args: { p_expo_push_token: string }
+        Returns: undefined
+      }
       vote_on: {
         Args: { p_choice: string; p_vote_id: string }
         Returns: undefined

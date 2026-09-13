@@ -48,6 +48,8 @@ export default function RestrictedScreen() {
   async function signOut() {
     try {
       const supabase = requireSupabase()
+      const { unregisterPushToken } = await import('../src/lib/push')
+      await unregisterPushToken()
       await supabase.auth.signOut()
       router.replace('/(auth)/login')
     } catch {
