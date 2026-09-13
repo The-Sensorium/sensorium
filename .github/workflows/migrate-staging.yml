@@ -68,7 +68,7 @@ jobs:
 
       - name: Point the DB push cron at the staging edge function
         run: >-
-          npx supabase db query --linked --project-ref "$SUPABASE_STAGING_PROJECT_ID"
+          npx supabase db query --project-ref "$SUPABASE_STAGING_PROJECT_ID"
           "update public.push_settings
              set edge_url = 'https://$SUPABASE_STAGING_PROJECT_ID.functions.supabase.co/send-push',
                  secret = '$SENSORIUM_PUSH_SECRET',
@@ -94,7 +94,7 @@ jobs:
 
       - name: Point the DB cron at the staging edge function
         run: >-
-          npx supabase db query --linked --project-ref "$SUPABASE_STAGING_PROJECT_ID"
+          npx supabase db query --project-ref "$SUPABASE_STAGING_PROJECT_ID"
           "update public.email_settings
              set edge_url = 'https://$SUPABASE_STAGING_PROJECT_ID.functions.supabase.co/send-emails',
                  secret = '$SENSORIUM_EMAIL_SECRET',
