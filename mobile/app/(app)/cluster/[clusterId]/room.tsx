@@ -593,26 +593,50 @@ export default function RoomScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              {(members.data ?? []).slice(0, 8).map((m) => (
-                <View key={m.id} style={{ position: 'relative' }}>
-                  <Avatar name={m.display_name} src={m.avatar_url} size={24} />
-                  {online.has(m.id) || m.id === userId ? (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        bottom: -2,
-                        right: -2,
-                        width: 10,
-                        height: 10,
-                        borderRadius: 5,
-                        borderWidth: 2,
-                        borderColor: t.surface,
-                        backgroundColor: '#10b981',
-                      }}
-                    />
-                  ) : null}
-                </View>
-              ))}
+              {(members.data ?? []).slice(0, 8).map((m) => {
+                const isMe = m.id === userId
+                const face = (
+                  <View style={{ position: 'relative' }}>
+                    <Avatar name={m.display_name} src={m.avatar_url} size={24} />
+                    {online.has(m.id) || isMe ? (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: -2,
+                          right: -2,
+                          width: 10,
+                          height: 10,
+                          borderRadius: 5,
+                          borderWidth: 2,
+                          borderColor: t.surface,
+                          backgroundColor: '#10b981',
+                        }}
+                      />
+                    ) : null}
+                  </View>
+                )
+                // Own avatar gets a primary ring, mirroring web's
+                // `ring-2 ring-primary`. The -2 margin keeps the ring
+                // layout-neutral so the strip doesn't reshuffle.
+                return (
+                  <View key={m.id}>
+                    {isMe ? (
+                      <View
+                        style={{
+                          borderWidth: 2,
+                          borderColor: t.primary,
+                          borderRadius: 14,
+                          margin: -2,
+                        }}
+                      >
+                        {face}
+                      </View>
+                    ) : (
+                      face
+                    )}
+                  </View>
+                )
+              })}
               <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
                 <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>

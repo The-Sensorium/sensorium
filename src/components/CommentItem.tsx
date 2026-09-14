@@ -89,7 +89,7 @@ export function CommentItem({
               aria-pressed={likedByMe}
               onClick={() => onLike(comment.id)}
               className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition hover:text-primary active:scale-90"
-              style={{ color: likedByMe ? 'var(--color-error)' : undefined }}
+              style={{ color: likedByMe ? 'var(--color-like)' : undefined }}
             >
               <Heart
                 className="h-4 w-4"

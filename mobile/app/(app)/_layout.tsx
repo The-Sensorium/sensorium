@@ -44,6 +44,11 @@ export default function AppTabs() {
   }, [])
   return (
     <Tabs
+      // Hidden screens (room, post detail, profile…) are tab routes, not
+      // stack pushes, so the default 'firstRoute' back behavior drops users
+      // on Home. 'history' walks the actual visit trail instead, so back
+      // from a cluster room returns to the cluster list it came from.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: t.primary,

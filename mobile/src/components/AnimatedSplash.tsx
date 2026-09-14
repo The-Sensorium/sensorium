@@ -39,7 +39,7 @@ export function AnimatedSplash({ onFinish }: { onFinish: () => void }) {
   const scheme = useResolvedScheme()
   const palette = scheme === 'dark' ? darkColors : colors
   const stroke = palette.primary
-  const backgroundColor = scheme === 'dark' ? '#1a1919' : '#fef8f7'
+  const backgroundColor = scheme === 'dark' ? '#181818' : '#fef8f7'
 
   const reveal = useSharedValue(0)
   const settle = useSharedValue(0.96)
