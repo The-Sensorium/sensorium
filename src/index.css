@@ -113,16 +113,16 @@
   --color-outline: #78736f;
   --color-outline-variant: #2a2a2a;
 
-  /* primary - indigo for comfortable nighttime use */
-  --color-primary: #6366f1;
+  /* primary - blue for comfortable nighttime use */
+  --color-primary: #3b82f6;
   --color-on-primary: #ffffff;
-  --color-primary-container: #312e81;
-  --color-on-primary-container: #e0e7ff;
-  --color-inverse-primary: #818cf8;
-  --color-primary-fixed: #e0e7ff;
-  --color-primary-fixed-dim: #a5b4fc;
-  --color-on-primary-fixed: #1e1b4b;
-  --color-on-primary-fixed-variant: #4338ca;
+  --color-primary-container: #1e3a8a;
+  --color-on-primary-container: #dbeafe;
+  --color-inverse-primary: #60a5fa;
+  --color-primary-fixed: #dbeafe;
+  --color-primary-fixed-dim: #93c5fd;
+  --color-on-primary-fixed: #172554;
+  --color-on-primary-fixed-variant: #1d4ed8;
 
   /* secondary (cream/parchment) */
   --color-secondary: #cbc6be;
