@@ -21,6 +21,16 @@ on:
         options:
           - staging
           - production
+      distribute:
+        description: 'Also upload the APK to Firebase App Distribution'
+        required: false
+        default: false
+        type: boolean
+      tester-group:
+        description: 'App Distribution tester group alias (needs distribute)'
+        required: false
+        default: beta
+        type: string
 
 permissions:
   contents: read
@@ -81,3 +91,31 @@ jobs:
           path: mobile/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Distribute via Firebase App Distribution
+        # Opt-in: run the workflow with distribute=true. Requires the
+        # FIREBASE_SERVICE_ACCOUNT_JSON secret (base64-encoded service-account
+        # key with the Firebase App Distribution Admin role) and an existing
+        # tester group alias passed as tester-group.
+        if: inputs.distribute
+        working-directory: mobile
+        env:
+          # Firebase App ID for online.thesensorium.app (public identifier,
+          # also in google-services.json as mobilesdk_app_id).
+          FIREBASE_APP_ID: 1:805748164368:android:0fb45f0d0d295dcfbd4795
+        run: |
+          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" ]; then
+            echo "FIREBASE_SERVICE_ACCOUNT_JSON secret is not set."
+            echo "Create a service account with the Firebase App Distribution Admin role,"
+            echo "add its JSON key (base64-encoded) as that secret, then rerun."
+            exit 1
+          fi
+          npm i -g firebase-tools
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" | base64 -d > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          firebase appdistribution:distribute \
+            android/app/build/outputs/apk/release/app-release.apk \
+            --app "$FIREBASE_APP_ID" \
+            --groups "${{ inputs.tester-group }}" \
+            --release-notes "Sensorium ${{ inputs.environment }} beta (${{ github.sha }})"
+        shell: bash
