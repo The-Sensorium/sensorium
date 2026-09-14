@@ -13,9 +13,9 @@ import {
 } from '../../../../../src/features/signals'
 import { useAuth } from '../../../../../src/auth-context'
 import { Avatar } from '../../../../../src/components/Avatar'
-import { MutedPlaceholder } from '../../../../../src/components/MutedPlaceholder'
+import { MutedHideBar, MutedPlaceholder } from '../../../../../src/components/MutedPlaceholder'
 import { ClusterMenu, ClusterSectionHeader } from '../../../../../src/components/ClusterMenu'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../../../../src/features/moderation'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../../src/features/moderation'
 import { dateTimeFormatter } from '../../../../../src/components/room/format'
 import { radii } from '../../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../../src/lib/use-theme'
@@ -47,12 +47,8 @@ export default function SignalDetailScreen() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   const [articleRevealed, setArticleRevealed] = useState(false)
-  function reveal(id: string) {
-    setRevealed((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
   }
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
@@ -127,9 +123,18 @@ export default function SignalDetailScreen() {
         <MutedPlaceholder
           name={memberById.get(s.author_id)?.display_name ?? 'Member'}
           onToggle={() => setArticleRevealed(true)}
+          kind="signal"
         />
       ) : (
-        <Card>
+        <View style={{ gap: 8 }}>
+          {isMutedAuthor(mutedSet, s.author_id) ? (
+            <MutedHideBar
+              name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+              onToggle={() => setArticleRevealed(false)}
+              kind="signal"
+            />
+          ) : null}
+          <Card>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
             <Avatar name={raiser?.display_name ?? 'Member'} src={raiser?.avatar_url} size={24} />
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
@@ -213,6 +218,7 @@ export default function SignalDetailScreen() {
             </View>
           ) : null}
         </Card>
+        </View>
       )}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 12 }}>
@@ -227,36 +233,48 @@ export default function SignalDetailScreen() {
           No replies yet. Offer a hand below.
         </Text>
       ) : (
-        (replies.data ?? []).map((r) =>
-          isMutedAuthor(mutedSet, r.author_id) && !revealed.has(r.id) ? (
-            <MutedPlaceholder
-              key={r.id}
-              name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-              onToggle={() => reveal(r.id)}
-            />
-          ) : (
-            <Card key={r.id}>
-              <View style={{ marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Avatar
-                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                    src={memberById.get(r.author_id)?.avatar_url}
-                    size={20}
-                  />
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                    {memberById.get(r.author_id)?.display_name ?? 'Member'}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                    · {dateTimeFormatter.format(new Date(r.created_at))}
+        (replies.data ?? []).map((r) => {
+          const rMuted = isMutedAuthor(mutedSet, r.author_id)
+          if (rMuted && !revealed.has(r.id)) {
+            return (
+              <MutedPlaceholder
+                key={r.id}
+                name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                onToggle={() => toggleReveal(r.id)}
+              />
+            )
+          }
+          return (
+            <View key={r.id} style={{ gap: 8 }}>
+              {rMuted ? (
+                <MutedHideBar
+                  name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                  onToggle={() => toggleReveal(r.id)}
+                />
+              ) : null}
+              <Card>
+                <View style={{ marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Avatar
+                      name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      src={memberById.get(r.author_id)?.avatar_url}
+                      size={20}
+                    />
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
+                      {memberById.get(r.author_id)?.display_name ?? 'Member'}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                      · {dateTimeFormatter.format(new Date(r.created_at))}
+                    </Text>
+                  </View>
+                  <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurface }}>
+                    {r.content}
                   </Text>
                 </View>
-                <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurface }}>
-                  {r.content}
-                </Text>
-              </View>
-            </Card>
-          ),
-        )
+              </Card>
+            </View>
+          )
+        })
       )}
 
       <Card>

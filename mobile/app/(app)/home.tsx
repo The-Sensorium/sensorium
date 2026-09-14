@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, router, type Href } from 'expo-router'
@@ -25,7 +25,9 @@ import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { ClusterCard } from '../../src/components/ClusterCard'
+import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
 import { PostCard } from '../../src/components/PostCard'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
 
 function daypartGreeting(): string {
   const hour = new Date().getHours()
@@ -68,6 +70,7 @@ export default function HomeScreen() {
     () => invitations.refetch(),
     () => formed.refetch(),
     () => queryClient.refetchQueries({ queryKey: ['recent-posts'] }),
+    () => queryClient.refetchQueries({ queryKey: ['my-mutes'] }),
     () => queryClient.refetchQueries({ queryKey: ['post-likes'] }),
     () => queryClient.refetchQueries({ queryKey: ['post-comments'] }),
     () => queryClient.refetchQueries({ queryKey: ['cluster-members'] }),
@@ -311,6 +314,12 @@ function RecentFromClusters({
 }) {
   const t = useTheme()
   const recent = useRecentClusterPosts(clusterIds, 3)
+  const myMutes = useMyMutes(clusterIds.length > 0)
+  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
+  }
 
   return (
     <View style={{ marginTop: 24 }}>
@@ -329,7 +338,7 @@ function RecentFromClusters({
           </Pressable>
         </Link>
       </View>
-      {recent.isLoading ? (
+      {recent.isLoading || myMutes.isLoading ? (
         <LoadingView />
       ) : recent.isError ? (
         <Card>
@@ -349,6 +358,9 @@ function RecentFromClusters({
             key={post.id}
             post={post}
             clusterName={clusterNameById.get(post.cluster_id)}
+            muted={isMutedAuthor(mutedSet, post.author_id)}
+            revealed={revealed.has(post.id)}
+            onToggleMute={() => toggleReveal(post.id)}
           />
         ))
       )}
@@ -356,18 +368,62 @@ function RecentFromClusters({
   )
 }
 
-function RecentPostItem({ post, clusterName }: { post: Post; clusterName: string | undefined }) {
-  const auth = useAuth()
-  const userId = auth.state === 'signedIn' ? auth.userId : null
+function RecentPostItem({
+  post,
+  clusterName,
+  muted,
+  revealed,
+  onToggleMute,
+}: {
+  post: Post
+  clusterName: string | undefined
+  muted: boolean
+  revealed: boolean
+  onToggleMute: () => void
+}) {
   const members = useClusterMembers(post.cluster_id)
-  const likes = usePostLikes(post.id)
-  const comments = usePostComments(post.cluster_id, post.id)
-  const toggle = useTogglePostLike(post.cluster_id)
 
   const memberById = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.id, m])),
     [members.data],
   )
+  const author = memberById.get(post.author_id)
+  const authorName = author?.display_name ?? 'Member'
+
+  if (muted && !revealed) {
+    return (
+      <MutedPlaceholder name={authorName} onToggle={onToggleMute} kind="post" />
+    )
+  }
+
+  return (
+    <View style={{ gap: 8 }}>
+      {muted ? (
+        <MutedHideBar name={authorName} onToggle={onToggleMute} kind="post" />
+      ) : null}
+      <RecentPostEngagement
+        post={post}
+        clusterName={clusterName}
+        author={author}
+      />
+    </View>
+  )
+}
+
+function RecentPostEngagement({
+  post,
+  clusterName,
+  author,
+}: {
+  post: Post
+  clusterName: string | undefined
+  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+}) {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const likes = usePostLikes(post.id)
+  const comments = usePostComments(post.cluster_id, post.id)
+  const toggle = useTogglePostLike(post.cluster_id)
 
   return (
     <PostCard
@@ -375,7 +431,7 @@ function RecentPostItem({ post, clusterName }: { post: Post; clusterName: string
       clusterId={post.cluster_id}
       clusterName={clusterName}
       compact
-      author={memberById.get(post.author_id)}
+      author={author}
       likeCount={(likes.data ?? []).length}
       likedByMe={(likes.data ?? []).some((l) => l.user_id === userId)}
       commentCount={comments.data?.length ?? 0}

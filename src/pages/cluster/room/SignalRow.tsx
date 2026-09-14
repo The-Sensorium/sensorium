@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import type { ReactNode } from 'react'
 import { Megaphone } from 'lucide-react'
 import { DayDivider } from './DayDivider'
 import { dateTimeFormatter } from './format'
@@ -18,6 +19,7 @@ export function SignalRow({
   replyCount,
   clusterId,
   showDay,
+  mutedBanner,
 }: {
   signal: Signal
   author: { display_name: string; avatar_url: string | null } | undefined
@@ -25,10 +27,12 @@ export function SignalRow({
   replyCount: number
   clusterId: string
   showDay: boolean
+  mutedBanner?: ReactNode
 }) {
   return (
     <li>
       {showDay && <DayDivider iso={signal.created_at} />}
+      {mutedBanner}
       <Link
         to={`/cluster/${clusterId}/signals/${signal.id}`}
         className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-container px-3 py-2.5 transition-colors hover:border-outline/60"

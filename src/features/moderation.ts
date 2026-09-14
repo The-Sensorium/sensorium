@@ -42,6 +42,13 @@ export function mutedIds(mutes: MutedUser[] | undefined): Set<string> {
   return new Set((mutes ?? []).map((m) => m.muted_user_id))
 }
 
+export function toggleRevealedId(prev: Set<string>, id: string): Set<string> {
+  const next = new Set(prev)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  return next
+}
+
 export function useIsMuted(userId: string | null | undefined): boolean {
   const mutes = useMyMutes(userId != null)
   if (!userId) return false

@@ -9,7 +9,6 @@ import { ReportModal } from './ReportModal'
 import { useDeleteComment, type PostComment } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 import { dateTimeFormatter } from './room/format'
-import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { PrimaryButton } from './ui'
 

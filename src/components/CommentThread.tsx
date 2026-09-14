@@ -14,8 +14,8 @@ import {
 } from '../features/posts'
 import type { Gif } from '../features/gifs'
 import { toErrorMessage } from '../lib/error'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../features/moderation'
-import { MutedPlaceholder } from './MutedPlaceholder'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../features/moderation'
+import { MutedHideBar, MutedPlaceholder } from './MutedPlaceholder'
 import { cn } from '../lib/utils'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -95,12 +95,8 @@ export function CommentThread({
   const myMutes = useMyMutes(true)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
-  function reveal(id: string) {
-    setRevealed((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
   }
   const commentIds = comments.map((c) => c.id)
   const commentLikes = useClusterCommentLikes(clusterId, commentIds)
@@ -303,37 +299,53 @@ export function CommentThread({
         <ul className="space-y-4">
           {top.map((tc) => {
             const thread = threads.get(tc.id) ?? []
-            const tcHidden = isMutedAuthor(mutedSet, tc.author_id) && !revealed.has(tc.id)
+            const tcMuted = isMutedAuthor(mutedSet, tc.author_id)
+            const tcHidden = tcMuted && !revealed.has(tc.id)
             return (
               <li key={tc.id} className="space-y-3">
                 {tcHidden ? (
                   <MutedPlaceholder
                     name={memberById.get(tc.author_id)?.display_name ?? 'Member'}
-                    onToggle={() => reveal(tc.id)}
+                    onToggle={() => toggleReveal(tc.id)}
+                    kind="comment"
                   />
                 ) : (
-                <CommentItem
-                  comment={tc}
-                  clusterId={clusterId}
-                  author={memberById.get(tc.author_id)}
-                  onReply={() => setReplyTo({ id: tc.id, authorName: authorNameOf(tc.id) })}
-                  onLike={(id) => void toggleCommentLike.mutateAsync(id)}
-                  likeCount={likesByComment.get(tc.id)?.count ?? 0}
-                  likedByMe={likesByComment.get(tc.id)?.mine ?? false}
-                  replyCount={thread.length}
-                />
+                  <CommentItem
+                    comment={tc}
+                    clusterId={clusterId}
+                    author={memberById.get(tc.author_id)}
+                    onReply={() => setReplyTo({ id: tc.id, authorName: authorNameOf(tc.id) })}
+                    onLike={(id) => void toggleCommentLike.mutateAsync(id)}
+                    likeCount={likesByComment.get(tc.id)?.count ?? 0}
+                    likedByMe={likesByComment.get(tc.id)?.mine ?? false}
+                    replyCount={thread.length}
+                    mutedBanner={
+                      tcMuted ? (
+                        <MutedHideBar
+                          name={memberById.get(tc.author_id)?.display_name ?? 'Member'}
+                          onToggle={() => toggleReveal(tc.id)}
+                          kind="comment"
+                        />
+                      ) : undefined
+                    }
+                  />
                 )}
                 {thread.length > 0 && (
                   <ul className="ml-11 space-y-3 border-l border-outline-variant/40 pl-4">
-                    {thread.map((r) =>
-                      isMutedAuthor(mutedSet, r.author_id) && !revealed.has(r.id) ? (
-                        <li key={r.id}>
-                          <MutedPlaceholder
-                            name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                            onToggle={() => reveal(r.id)}
-                          />
-                        </li>
-                      ) : (
+                    {thread.map((r) => {
+                      const rMuted = isMutedAuthor(mutedSet, r.author_id)
+                      if (rMuted && !revealed.has(r.id)) {
+                        return (
+                          <li key={r.id}>
+                            <MutedPlaceholder
+                              name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                              onToggle={() => toggleReveal(r.id)}
+                              kind="comment"
+                            />
+                          </li>
+                        )
+                      }
+                      return (
                         <CommentItem
                           key={r.id}
                           comment={r}
@@ -346,37 +358,59 @@ export function CommentThread({
                           onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                           likeCount={likesByComment.get(r.id)?.count ?? 0}
                           likedByMe={likesByComment.get(r.id)?.mine ?? false}
+                          mutedBanner={
+                            rMuted ? (
+                              <MutedHideBar
+                                name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                                onToggle={() => toggleReveal(r.id)}
+                                kind="comment"
+                              />
+                            ) : undefined
+                          }
                         />
-                      ),
-                    )}
+                      )
+                    })}
                   </ul>
                 )}
               </li>
             )
           })}
-          {orphans.map((c) =>
-            isMutedAuthor(mutedSet, c.author_id) && !revealed.has(c.id) ? (
-              <li key={c.id}>
-                <MutedPlaceholder
-                  name={memberById.get(c.author_id)?.display_name ?? 'Member'}
-                  onToggle={() => reveal(c.id)}
-                />
-              </li>
-            ) : (
-            <li key={c.id}>
-              <CommentItem
-                comment={c}
-                clusterId={clusterId}
-                author={memberById.get(c.author_id)}
-                repliedToName={c.parent_comment_id ? authorNameOf(c.parent_comment_id) : undefined}
-                onReply={() => setReplyTo({ id: c.id, authorName: authorNameOf(c.id) })}
-                onLike={(id) => void toggleCommentLike.mutateAsync(id)}
-                likeCount={likesByComment.get(c.id)?.count ?? 0}
-                likedByMe={likesByComment.get(c.id)?.mine ?? false}
-              />
-            </li>
+          {orphans.map((c) => {
+            const cMuted = isMutedAuthor(mutedSet, c.author_id)
+            if (cMuted && !revealed.has(c.id)) {
+              return (
+                <li key={c.id}>
+                  <MutedPlaceholder
+                    name={memberById.get(c.author_id)?.display_name ?? 'Member'}
+                    onToggle={() => toggleReveal(c.id)}
+                    kind="comment"
+                  />
+                </li>
+              )
+            }
+            return (
+            <CommentItem
+              key={c.id}
+              comment={c}
+              clusterId={clusterId}
+              author={memberById.get(c.author_id)}
+              repliedToName={c.parent_comment_id ? authorNameOf(c.parent_comment_id) : undefined}
+              onReply={() => setReplyTo({ id: c.id, authorName: authorNameOf(c.id) })}
+              onLike={(id) => void toggleCommentLike.mutateAsync(id)}
+              likeCount={likesByComment.get(c.id)?.count ?? 0}
+              likedByMe={likesByComment.get(c.id)?.mine ?? false}
+              mutedBanner={
+                cMuted ? (
+                  <MutedHideBar
+                    name={memberById.get(c.author_id)?.display_name ?? 'Member'}
+                    onToggle={() => toggleReveal(c.id)}
+                    kind="comment"
+                  />
+                ) : undefined
+              }
+            />
             )
-          )}
+          })}
         </ul>
       )}
     </section>

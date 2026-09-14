@@ -17,8 +17,8 @@ import {
   useTogglePostLike,
 } from '../../features/posts'
 import { useClusterChannel } from '../../features/realtime'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
-import { MutedPlaceholder } from '../../components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { PostComposer } from '../../components/PostComposer'
 import { PostCard } from '../../components/PostCard'
 
@@ -49,6 +49,9 @@ export function PostsFeedPage() {
   const myMutes = useMyMutes(clusterId != null)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
+  }
 
   useClusterChannel(clusterId)
 
@@ -175,34 +178,38 @@ export function PostsFeedPage() {
             <>
               <div className="space-y-4">
                 {sorted.map((post) => {
-                  if (isMutedAuthor(mutedSet, post.author_id) && !revealed.has(post.id)) {
+                  const postMuted = isMutedAuthor(mutedSet, post.author_id)
+                  if (postMuted && !revealed.has(post.id)) {
                     const author = memberById.get(post.author_id)
                     return (
                       <MutedPlaceholder
                         key={post.id}
                         name={author?.display_name ?? 'Member'}
-                        onToggle={() =>
-                          setRevealed((prev) => {
-                            const next = new Set(prev)
-                            next.add(post.id)
-                            return next
-                          })
-                        }
+                        onToggle={() => toggleReveal(post.id)}
+                        kind="post"
                       />
                     )
                   }
                   const like = likesMap.get(post.id)
                   return (
-                    <PostCard
-                      key={post.id}
-                      post={post}
-                      clusterId={clusterId!}
-                      author={memberById.get(post.author_id)}
-                      likeCount={like?.count ?? 0}
-                      likedByMe={like?.mine ?? false}
-                      commentCount={commentCount.get(post.id) ?? 0}
-                      onLike={(postId) => void toggle.mutateAsync(postId)}
-                    />
+                    <div key={post.id} className="space-y-2">
+                      {postMuted ? (
+                        <MutedHideBar
+                          name={memberById.get(post.author_id)?.display_name ?? 'Member'}
+                          onToggle={() => toggleReveal(post.id)}
+                          kind="post"
+                        />
+                      ) : null}
+                      <PostCard
+                        post={post}
+                        clusterId={clusterId!}
+                        author={memberById.get(post.author_id)}
+                        likeCount={like?.count ?? 0}
+                        likedByMe={like?.mine ?? false}
+                        commentCount={commentCount.get(post.id) ?? 0}
+                        onLike={(postId) => void toggle.mutateAsync(postId)}
+                      />
+                    </div>
                   )
                 })}
               </div>
