@@ -46,6 +46,9 @@ jobs:
       - name: Check legal content sync
         run: node scripts/sync-legal.mjs --check
 
+      - name: Check mobile generated copies are in sync
+        run: node mobile/scripts/sync-db-types.mjs --check
+
       - name: Unit & component tests (with coverage gate)
         run: npm run test:coverage
 

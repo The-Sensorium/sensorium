@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "lint": "oxlint",
     "test": "vitest run",
-    "sync:db-types": "node scripts/sync-db-types.mjs"
+    "sync:db-types": "node scripts/sync-db-types.mjs",
+    "sync:db-types:check": "node scripts/sync-db-types.mjs --check"
   },
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
