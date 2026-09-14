@@ -1,20 +1,37 @@
 import { copyFileSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const from = (f) => join(root, 'src', 'lib', f)
 const to = (f) => join(root, 'mobile', 'src', 'lib', f)
-copyFileSync(from('database.types.ts'), to('database.types.ts'))
+
+// --check compares instead of writing (for CI): exits non-zero when any
+// generated copy is stale. Comparisons normalize CRLF so Windows checkouts
+// don't false-positive.
+const CHECK = process.argv.includes('--check')
+const pending = []
+const norm = (s) => String(s).replaceAll('\r\n', '\n')
+function planCopy(src, dest) {
+  pending.push({ src, dest, content: readFileSync(src, 'utf8'), verbatim: true })
+}
+function planWrite(dest, content) {
+  pending.push({ src: null, dest, content, verbatim: false })
+}
+function short(path) {
+  return relative(root, path)
+}
+
+planCopy(from('database.types.ts'), to('database.types.ts'))
 for (const f of ['availability.ts', 'countries.ts', 'constants.ts', 'error.ts', 'utils.ts', 'query-retry.ts']) {
-  copyFileSync(from(f), to(f))
+  planCopy(from(f), to(f))
 }
 for (const f of ['matching.ts', 'discovery.ts', 'introductions.ts', 'votes.ts', 'signals.ts', 'moderation.ts', 'mentions.ts', 'access.ts', 'appeals.ts']) {
   const src = readFileSync(join(root, 'src', 'features', f), 'utf8').replaceAll(
     "from '../app/auth-context'",
     "from '../auth-context'",
   )
-  writeFileSync(join(root, 'mobile', 'src', 'features', f), src)
+  planWrite(join(root, 'mobile', 'src', 'features', f), src)
 }
 
 {
@@ -44,7 +61,7 @@ for (const f of ['matching.ts', 'discovery.ts', 'introductions.ts', 'votes.ts', 
   if (web.includes('timeFormatter.format(-') || web.includes('const timeFormatter = new Intl')) {
     throw new Error('notifications RelativeTimeFormat transform failed')
   }
-  writeFileSync(join(root, 'mobile', 'src', 'features', 'notifications.ts'), web)
+  planWrite(join(root, 'mobile', 'src', 'features', 'notifications.ts'), web)
 }
 
 const rnUploads = [
@@ -102,7 +119,7 @@ for (const { file, anchor, replacement } of rnUploads) {
   if (!web.includes(anchor) || web.includes('prepareImage')) {
     throw new Error('upload transform failed for ' + file)
   }
-  writeFileSync(join(root, 'mobile', 'src', 'features', file), web)
+  planWrite(join(root, 'mobile', 'src', 'features', file), web)
 }
 
 // realtime.ts is PINNED (mobile divergence: ref-counted useClusterChannel for
@@ -118,10 +135,10 @@ for (const { file, anchor, replacement } of rnUploads) {
     .replaceAll('import.meta.env.VITE_KLIPY_APP_KEY', 'process.env.EXPO_PUBLIC_KLIPY_APP_KEY')
     .replaceAll('import.meta.env.VITE_KLIPY_ENDPOINT', 'process.env.EXPO_PUBLIC_KLIPY_ENDPOINT')
   if (web.includes('import.meta.env')) throw new Error('gifs transform failed')
-  writeFileSync(join(root, 'mobile', 'src', 'features', 'gifs.ts'), web)
+  planWrite(join(root, 'mobile', 'src', 'features', 'gifs.ts'), web)
 }
 let modes = readFileSync(from('modes.ts'), 'utf8').replaceAll("from 'lucide-react'", "from 'lucide-react-native'")
-writeFileSync(to('modes.ts'), modes)
+planWrite(to('modes.ts'), modes)
 let geo = readFileSync(from('geo.ts'), 'utf8')
   .replace(
     /\/\*\* Promise wrapper around the browser Geolocation API\. \*\/[\s\S]*?^\}/m,
@@ -135,5 +152,28 @@ let geo = readFileSync(from('geo.ts'), 'utf8')
   )
   .replaceAll('import.meta.env.VITE_GEOCODING_ENDPOINT', 'process.env.EXPO_PUBLIC_GEOCODING_ENDPOINT')
   .replaceAll('VITE_GEOCODING_ENDPOINT', 'EXPO_PUBLIC_GEOCODING_ENDPOINT')
-writeFileSync(to('geo.ts'), geo)
-console.log('synced database.types.ts + pure lib helpers from web src/lib (modes/geo adapted for RN)')
+planWrite(to('geo.ts'), geo)
+
+if (CHECK) {
+  const stale = pending.filter(({ dest, content }) => {
+    let current
+    try {
+      current = readFileSync(dest, 'utf8')
+    } catch {
+      return true
+    }
+    return norm(current) !== norm(content)
+  })
+  if (stale.length > 0) {
+    console.error('mobile generated copies are stale. Run `cd mobile && npm run sync:db-types` and commit:')
+    for (const { dest } of stale) console.error('  ' + short(dest))
+    process.exit(1)
+  }
+  console.log('mobile generated copies are in sync')
+} else {
+  for (const { src, dest, content, verbatim } of pending) {
+    if (verbatim && src) copyFileSync(src, dest)
+    else writeFileSync(dest, content)
+  }
+  console.log('synced database.types.ts + pure lib helpers from web src/lib (modes/geo adapted for RN)')
+}
