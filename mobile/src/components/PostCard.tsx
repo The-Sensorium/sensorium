@@ -261,6 +261,7 @@ export function PostCard({
             <PrimaryButton
               title="Save"
               loading={edit.isPending}
+              disabled={!draft.trim()}
               onPress={() => void handleEdit()}
             />
           </View>

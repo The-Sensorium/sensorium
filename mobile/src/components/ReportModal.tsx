@@ -175,6 +175,7 @@ export function ReportModal({
           <PrimaryButton
             title="Submit report"
             loading={submitting}
+            disabled={!reason}
             onPress={() => void handleSubmit()}
           />
         </View>
