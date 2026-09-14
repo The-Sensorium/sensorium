@@ -189,3 +189,20 @@ npm test
   `google-services.json` from the `GOOGLE_SERVICES_JSON` secret.
 - The app points at the **staging** Supabase project for preview builds and the
   **production** project for release builds, matching the web environments.
+
+### Beta testing via Firebase App Distribution
+
+- Build a **staging** APK: run the `Android APK (CI build)` workflow with
+  `environment: staging`, or `npx eas-cli build --profile preview --platform android`.
+- One-time console setup: open the Firebase console → App Distribution, select
+  the `online.thesensorium.app` app, click **Get started**, and create a tester
+  group (e.g. `beta`) with your testers' emails.
+- Manual upload: drag the APK onto the Releases page, pick the tester group,
+  add release notes, click Distribute. Or from your machine with the Firebase CLI:
+  `firebase login`, then `firebase appdistribution:distribute <apk> --app <app-id> --groups beta`
+  (the App ID is on the Firebase console General Settings page).
+- Automated upload: rerun the CI workflow with `distribute: true` and a
+  `tester-group`. It needs the `FIREBASE_SERVICE_ACCOUNT_JSON` secret —
+  a base64-encoded service-account key with the Firebase App Distribution Admin role.
+- Testers open the invite email on their phone, sign in, and download the APK
+  (the App Tester app is optional). Builds expire after 150 days.
