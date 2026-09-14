@@ -78,6 +78,24 @@ describe('parseKlipyResults', () => {
     expect(g?.height).toBe(480)
   })
 
+  it('upgrades cleartext media urls to https for release builds', () => {
+    const [g] = parseKlipyResults({
+      data: {
+        data: [
+          {
+            id: 'x',
+            file: {
+              md: { gif: { url: 'http://x/md.gif' } },
+              sm: { webp: { url: 'http://x/sm.webp' } },
+            },
+          },
+        ],
+      },
+    })
+    expect(g?.url).toBe('https://x/md.gif')
+    expect(g?.thumb).toBe('https://x/sm.webp')
+  })
+
   it('skips entries without a usable url', () => {
     const out = parseKlipyResults({
       data: {
