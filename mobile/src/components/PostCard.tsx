@@ -144,9 +144,9 @@ export function PostCard({
             >
               <Heart
                 size={22}
-                color={likedByMe ? t.error : t.onSurfaceVariant}
+                color={likedByMe ? t.like : t.onSurfaceVariant}
                 strokeWidth={2}
-                fill={likedByMe ? t.error : 'transparent'}
+                fill={likedByMe ? t.like : 'transparent'}
               />
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{likeCount}</Text>
             </Pressable>

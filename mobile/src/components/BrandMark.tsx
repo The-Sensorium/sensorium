@@ -1,7 +1,6 @@
-import { Image } from 'react-native'
-import { useResolvedScheme } from '../lib/theme-choice'
-import lightMark from '../../assets/legacy-icon-light.png'
-import darkMark from '../../assets/legacy-icon-dark.png'
+import Svg, { Path } from 'react-native-svg'
+import { useTheme } from '../lib/use-theme'
+import { LOGO_MARK_D, LOGO_MARK_VIEWBOX } from './logoMarkPath'
 
 export function BrandMark({
   size = 32,
@@ -10,12 +9,17 @@ export function BrandMark({
   size?: number
   accessibilityLabel?: string
 }) {
-  const scheme = useResolvedScheme()
+  const t = useTheme()
+  const [x, y, w, h] = LOGO_MARK_VIEWBOX.split(' ').map(Number)
   return (
-    <Image
-      source={scheme === 'dark' ? darkMark : lightMark}
+    <Svg
+      width={size}
+      height={size}
+      viewBox={`${x} ${y} ${w} ${h}`}
       accessibilityLabel={accessibilityLabel}
       style={{ width: size, height: size, borderRadius: size * 0.28 }}
-    />
+    >
+      <Path d={LOGO_MARK_D} fill={t.primary} />
+    </Svg>
   )
 }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   ThemeContext,
-  applyFavicon,
   applyTheme,
   getStoredMode,
   systemPrefersDark,
@@ -26,7 +25,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const resolved: ResolvedTheme =
       mode === 'dark' || (mode === 'system' && systemDark) ? 'dark' : 'light'
     applyTheme(resolved)
-    applyFavicon(resolved)
     try {
       localStorage.setItem('sensorium:theme', mode)
     } catch {

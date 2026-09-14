@@ -32,6 +32,7 @@ colors:
   on-error: '#ffffff'
   error-container: '#ffdad6'
   on-error-container: '#93000a'
+  like: '#ba1a1a'
   primary-fixed: '#ffdbd0'
   primary-fixed-dim: '#ffb59e'
   on-primary-fixed: '#3a0b00'
@@ -48,10 +49,10 @@ colors:
   on-background: '#211a17'
   surface-variant: '#eedfda'
 colors-dark:
-  background: '#1a1a1a'
+  background: '#181818'
   on-background: '#fcf9f2'
-  surface: '#1a1a1a'
-  surface-dim: '#1a1a1a'
+  surface: '#181818'
+  surface-dim: '#181818'
   surface-bright: '#2a2a2a'
   surface-lowest: '#111111'
   surface-low: '#1f1f1f'
@@ -59,20 +60,20 @@ colors-dark:
   surface-high: '#2a2a2a'
   surface-highest: '#333333'
   on-surface: '#fcf9f2'
-  on-surface-variant: '#8a847e'
+  on-surface-variant: '#A8A29E'
   inverse-surface: '#fcf9f2'
-  inverse-on-surface: '#1a1a1a'
-  inverse-primary: '#9d3d1c'
-  outline: '#6f6a64'
+  inverse-on-surface: '#181818'
+  inverse-primary: '#818cf8'
+  outline: '#78736F'
   outline-variant: '#2a2a2a'
-  primary: '#ff8a5c'
-  on-primary: '#3a0b00'
-  primary-container: '#8f2f0d'
-  on-primary-container: '#ffdbcf'
-  primary-fixed: '#ffdbcf'
-  primary-fixed-dim: '#ffb59e'
-  on-primary-fixed: '#3a0b00'
-  on-primary-fixed-variant: '#8f2f0d'
+  primary: '#6366F1'
+  on-primary: '#ffffff'
+  primary-container: '#312e81'
+  on-primary-container: '#e0e7ff'
+  primary-fixed: '#e0e7ff'
+  primary-fixed-dim: '#a5b4fc'
+  on-primary-fixed: '#1e1b4b'
+  on-primary-fixed-variant: '#4338ca'
   secondary: '#cbc6be'
   on-secondary: '#33312c'
   secondary-container: '#4a4842'
@@ -93,6 +94,7 @@ colors-dark:
   on-error: '#690005'
   error-container: '#93000a'
   on-error-container: '#ffdad6'
+  like: '#e5484d'
 typography:
   display:
     fontFamily: Plus Jakarta Sans
@@ -161,14 +163,14 @@ The palette is inspired by the "Golden Hour" (the transition between day and nig
 
 ## Dark Mode
 
-Dark mode is **"Ink & Parchment"**, a warm inversion inspired by the Brutal Luxury treatment of emmanuelmathew.dev. The warm cream surfaces of the light theme become a neutral warm charcoal (`#1a1a1a`), text becomes warm cream (`#fcf9f2`), and the terracotta primary brightens to a vivid tone (`#ff8a5c`) that holds contrast on dark. Surfaces stay **neutral** (not brown-tinted) so the dark theme reads clean, editorial, and calm, never cold, never muddy.
+Dark mode is **"Ink & Parchment"**, a warm inversion inspired by the Brutal Luxury treatment of emmanuelmathew.dev. The warm cream surfaces of the light theme become a neutral warm charcoal (`#181818`), text becomes warm cream (`#fcf9f2`), and interactive elements use indigo (`#6366F1`) that holds contrast on dark while staying comfortable for prolonged nighttime use. Surfaces stay **neutral** (not brown-tinted) so the dark theme reads clean, editorial, and calm, never cold, never muddy.
 
 Behavior:
 
 - **Three modes:** `light` (default), `system`, and `dark`. `system` follows the OS `prefers-color-scheme` and reacts to live changes.
 - **Mechanism:** a `dark` class on `<html>` swaps the design tokens; components never branch on theme. A `sensorium:theme` value in `localStorage` persists the choice. A tiny inline script in `index.html` applies the saved/system theme before first paint to prevent flash of the wrong theme.
 - **Tokens:** the dark values live in the `colors-dark` front-matter above and mirror the light set 1:1 (every light token has a dark counterpart, including `fixed`/`inverse` roles). No new hue families are introduced.
-- **Accent:** `--color-primary: #ff8a5c` is the single vivid moment on dark, used for actions, active states, and brand highlights. It is the brightened sibling of the light theme's `#9d3d1c` terracotta and matches how the reference site uses `#d95d39`.
+- **Accent:** `--color-primary: #6366F1` (indigo) is the single vivid moment on dark, used for actions, active states, and brand highlights including the themeable logo mark (which inherits `primary`, so it renders terracotta `#9d3d1c` in light mode and indigo in dark mode). Semantic colors stay independent of the accent: the liked heart uses `--color-like` (red `#ba1a1a` in light, luminous red `#e5484d` in dark), destructive stays on the `error` roles, success green, warning amber.
 - **Elevation:** shadows go deeper and more neutral in dark mode; prefer the same token classes over `dark:shadow-*` variants.
 - **Identity preserved:** typography (Plus Jakarta Sans / Special Elite), radii, and the soft, tactile tone of the light theme are unchanged in dark mode; only the color treatment inverts.
 - **Toggle placement:** a theme toggle is available on the app shell header (top nav desktop, slim bar mobile) and on public pages (landing, auth) via a compact icon menu (Light / System / Dark).
@@ -210,8 +212,8 @@ The shape language is characterized by **Generous Radii**, mimicking organic for
 ## Components
 
 ### Buttons
-- **Primary:** Solid terracotta background with white text. High roundedness (pill-shaped). 
-- **Secondary/Ghost:** Outlined with 1px terracotta or neutral borders. Use the `font-brand` (Special Elite) treatment sparingly for wordmark moments; interface buttons stay in Plus Jakarta Sans.
+- **Primary:** Solid primary background (terracotta in light, indigo in dark) with white text. High roundedness (pill-shaped). 
+- **Secondary/Ghost:** Outlined with 1px primary or neutral borders. Use the `font-brand` (Special Elite) treatment sparingly for wordmark moments; interface buttons stay in Plus Jakarta Sans.
 
 ### Cards
 - Surfaces should be white or a very light cream.

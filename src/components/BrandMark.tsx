@@ -1,6 +1,5 @@
-import { useContext } from 'react'
 import { cn } from '../lib/utils'
-import { ThemeContext, systemPrefersDark } from '../lib/theme'
+import { LOGO_MARK_D, LOGO_MARK_VIEWBOX } from './logoMarkPath'
 
 export function BrandMark({
   size = 28,
@@ -11,15 +10,19 @@ export function BrandMark({
   className?: string
   alt?: string
 }) {
-  const ctx = useContext(ThemeContext)
-  const resolved = ctx?.resolved ?? (systemPrefersDark() ? 'dark' : 'light')
+  const labelled = alt.length > 0
   return (
-    <img
-      src={resolved === 'dark' ? '/logo-mark-dark.png' : '/logo-mark.png'}
-      alt={alt}
+    <svg
+      viewBox={LOGO_MARK_VIEWBOX}
       width={size}
       height={size}
-      className={cn('shrink-0 rounded-xl object-cover', className)}
-    />
+      role={labelled ? 'img' : undefined}
+      aria-label={labelled ? alt : undefined}
+      aria-hidden={labelled ? undefined : true}
+      className={cn('shrink-0 rounded-xl', className)}
+      style={{ color: 'var(--color-primary)' }}
+    >
+      <path d={LOGO_MARK_D} fill="currentColor" />
+    </svg>
   )
 }

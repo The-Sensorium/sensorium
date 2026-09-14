@@ -83,9 +83,9 @@ export function CommentItem({
             >
               <Heart
                 size={16}
-                color={likedByMe ? t.error : t.onSurfaceVariant}
+                color={likedByMe ? t.like : t.onSurfaceVariant}
                 strokeWidth={2}
-                fill={likedByMe ? t.error : 'transparent'}
+                fill={likedByMe ? t.like : 'transparent'}
               />
               <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
                 {likeCount}

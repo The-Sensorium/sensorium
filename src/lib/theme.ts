@@ -43,11 +43,3 @@ export function applyTheme(resolved: ResolvedTheme) {
   root.classList.toggle('dark', resolved === 'dark')
   root.style.colorScheme = resolved
 }
-
-export function applyFavicon(resolved: ResolvedTheme) {
-  if (typeof document === 'undefined') return
-  const links = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"][data-favicon]')
-  for (const link of links) {
-    link.media = link.dataset.favicon === resolved ? 'all' : 'not all'
-  }
-}
