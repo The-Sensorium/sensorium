@@ -13,7 +13,7 @@ import {
 import { useClusterChannel } from '../../features/realtime'
 import { PostCard } from '../../components/PostCard'
 import { CommentThread } from '../../components/CommentThread'
-import { MutedPlaceholder } from '../../components/MutedPlaceholder'
+import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
 
 export function PostDetailPage() {
@@ -79,18 +79,28 @@ export function PostDetailPage() {
         <MutedPlaceholder
           name={memberById.get(p.author_id)?.display_name ?? 'Member'}
           onToggle={() => setRevealed(true)}
+          kind="post"
         />
       ) : (
-        <PostCard
-          post={p}
-          clusterId={clusterId!}
-          author={memberById.get(p.author_id)}
-          likeCount={likeInfo.count}
-          likedByMe={likeInfo.mine}
-          commentCount={comments.data?.length ?? 0}
-          onLike={(id) => void toggle.mutateAsync(id)}
-          onDeleted={() => navigate(-1)}
-        />
+        <>
+          {isMutedAuthor(mutedSet, p.author_id) ? (
+            <MutedHideBar
+              name={memberById.get(p.author_id)?.display_name ?? 'Member'}
+              onToggle={() => setRevealed(false)}
+              kind="post"
+            />
+          ) : null}
+          <PostCard
+            post={p}
+            clusterId={clusterId!}
+            author={memberById.get(p.author_id)}
+            likeCount={likeInfo.count}
+            likedByMe={likeInfo.mine}
+            commentCount={comments.data?.length ?? 0}
+            onLike={(id) => void toggle.mutateAsync(id)}
+            onDeleted={() => navigate(-1)}
+          />
+        </>
       )}
 
       <CommentThread

@@ -6,10 +6,10 @@ import { useClusterMembers } from '../../../../src/features/matching'
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal, type SignalStatus } from '../../../../src/features/signals'
 import { useAuth } from '../../../../src/auth-context'
 import { Avatar } from '../../../../src/components/Avatar'
-import { MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalModal'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../../../src/features/moderation'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
@@ -46,12 +46,8 @@ export default function SignalsScreen() {
     () => myMutes.refetch(),
   ])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
-  function reveal(id: string) {
-    setRevealed((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
   }
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
@@ -106,24 +102,37 @@ export default function SignalsScreen() {
         </Card>
       ) : (
         <>
-          {active.map((s) =>
-            isMutedAuthor(mutedSet, s.author_id) && !revealed.has(s.id) ? (
-              <MutedPlaceholder
-                key={s.id}
-                name={memberById.get(s.author_id)?.display_name ?? 'Member'}
-                onToggle={() => reveal(s.id)}
-              />
-            ) : (
-              <SignalCard
-                key={s.id}
-                signal={s}
-                clusterId={clusterId}
-                memberById={memberById}
-                replyCount={replyCount.get(s.id) ?? 0}
-                isMine={s.author_id === userId}
-              />
-            ),
-          )}
+          {active.map((s) => {
+            const sMuted = isMutedAuthor(mutedSet, s.author_id)
+            if (sMuted && !revealed.has(s.id)) {
+              return (
+                <MutedPlaceholder
+                  key={s.id}
+                  name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                  onToggle={() => toggleReveal(s.id)}
+                  kind="signal"
+                />
+              )
+            }
+            return (
+              <View key={s.id} style={{ gap: 8 }}>
+                {sMuted ? (
+                  <MutedHideBar
+                    name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                    onToggle={() => toggleReveal(s.id)}
+                    kind="signal"
+                  />
+                ) : null}
+                <SignalCard
+                  signal={s}
+                  clusterId={clusterId}
+                  memberById={memberById}
+                  replyCount={replyCount.get(s.id) ?? 0}
+                  isMine={s.author_id === userId}
+                />
+              </View>
+            )
+          })}
           {resolved.length > 0 ? (
             <Card>
               <Pressable
@@ -139,25 +148,38 @@ export default function SignalsScreen() {
               </Pressable>
               {showResolved ? (
                 <View style={{ marginTop: 12, gap: 12 }}>
-                  {resolved.map((s) =>
-                    isMutedAuthor(mutedSet, s.author_id) && !revealed.has(s.id) ? (
-                      <MutedPlaceholder
-                        key={s.id}
-                        name={memberById.get(s.author_id)?.display_name ?? 'Member'}
-                        onToggle={() => reveal(s.id)}
-                      />
-                    ) : (
-                      <SignalCard
-                        key={s.id}
-                        signal={s}
-                        clusterId={clusterId}
-                        memberById={memberById}
-                        replyCount={replyCount.get(s.id) ?? 0}
-                        isMine={s.author_id === userId}
-                        compact
-                      />
-                    ),
-                  )}
+                  {resolved.map((s) => {
+                    const sMuted = isMutedAuthor(mutedSet, s.author_id)
+                    if (sMuted && !revealed.has(s.id)) {
+                      return (
+                        <MutedPlaceholder
+                          key={s.id}
+                          name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                          onToggle={() => toggleReveal(s.id)}
+                          kind="signal"
+                        />
+                      )
+                    }
+                    return (
+                      <View key={s.id} style={{ gap: 8 }}>
+                        {sMuted ? (
+                          <MutedHideBar
+                            name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                            onToggle={() => toggleReveal(s.id)}
+                            kind="signal"
+                          />
+                        ) : null}
+                        <SignalCard
+                          signal={s}
+                          clusterId={clusterId}
+                          memberById={memberById}
+                          replyCount={replyCount.get(s.id) ?? 0}
+                          isMine={s.author_id === userId}
+                          compact
+                        />
+                      </View>
+                    )
+                  })}
                 </View>
               ) : null}
             </Card>

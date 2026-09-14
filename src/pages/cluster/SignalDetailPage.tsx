@@ -14,8 +14,8 @@ import {
 import type { SignalStatus } from '../../features/signals'
 import { useAuth } from '../../app/auth-context'
 import { Avatar } from '../../components/Avatar'
-import { MutedPlaceholder } from '../../components/MutedPlaceholder'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
 
 const statusMeta: Record<SignalStatus, { label: string; className: string }> = {
   open: { label: 'Open', className: 'bg-primary/10 text-primary' },
@@ -52,6 +52,9 @@ export function SignalDetailPage() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   const [articleRevealed, setArticleRevealed] = useState(false)
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
+  }
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
   const s = (signals.data ?? []).find((x) => x.id === signalId)
@@ -118,9 +121,18 @@ export function SignalDetailPage() {
         <MutedPlaceholder
           name={memberById.get(s.author_id)?.display_name ?? 'Member'}
           onToggle={() => setArticleRevealed(true)}
+          kind="signal"
         />
       ) : (
-      <article className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
+      <>
+        {isMutedAuthor(mutedSet, s.author_id) ? (
+          <MutedHideBar
+            name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+            onToggle={() => setArticleRevealed(false)}
+            kind="signal"
+          />
+        ) : null}
+        <article className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Avatar
             name={raiser?.display_name ?? 'Member'}
@@ -198,6 +210,7 @@ export function SignalDetailPage() {
           </div>
         )}
       </article>
+      </>
       )}
 
       <section aria-label="Replies">
@@ -212,22 +225,27 @@ export function SignalDetailPage() {
           </p>
         ) : (
           <ul className="mt-3 space-y-3">
-            {(replies.data ?? []).map((r) =>
-              isMutedAuthor(mutedSet, r.author_id) && !revealed.has(r.id) ? (
-                <li key={r.id}>
-                  <MutedPlaceholder
+            {(replies.data ?? []).map((r) => {
+              const rMuted = isMutedAuthor(mutedSet, r.author_id)
+              if (rMuted && !revealed.has(r.id)) {
+                return (
+                  <li key={r.id}>
+                    <MutedPlaceholder
+                      name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      onToggle={() => toggleReveal(r.id)}
+                    />
+                  </li>
+                )
+              }
+              return (
+              <li key={r.id} className="space-y-2">
+                {rMuted ? (
+                  <MutedHideBar
                     name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                    onToggle={() =>
-                      setRevealed((prev) => {
-                        const next = new Set(prev)
-                        next.add(r.id)
-                        return next
-                      })
-                    }
+                    onToggle={() => toggleReveal(r.id)}
                   />
-                </li>
-              ) : (
-              <li key={r.id} className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
+                ) : null}
+                <div className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
                 <div className="flex items-center gap-2">
                   <Avatar
                     name={memberById.get(r.author_id)?.display_name ?? 'Member'}
@@ -243,9 +261,10 @@ export function SignalDetailPage() {
                   </span>
                 </div>
                 <p className="mt-2 text-sm leading-6 text-on-surface">{r.content}</p>
+                </div>
               </li>
               )
-            )}
+            })}
           </ul>
         )}
 

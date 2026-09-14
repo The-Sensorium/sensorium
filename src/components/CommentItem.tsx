@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { CornerUpLeft, Flag, Heart, Loader2, MessageSquare, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
@@ -25,6 +26,7 @@ export function CommentItem({
   likeCount = 0,
   likedByMe = false,
   replyCount,
+  mutedBanner,
 }: {
   comment: PostComment
   clusterId: string
@@ -35,6 +37,7 @@ export function CommentItem({
   likeCount?: number
   likedByMe?: boolean
   replyCount?: number
+  mutedBanner?: ReactNode
 }) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -55,7 +58,9 @@ export function CommentItem({
   }
 
   return (
-    <li className="flex gap-3">
+    <li className="space-y-2">
+      {mutedBanner}
+      <div className="flex gap-3">
       <Avatar
         name={author?.display_name ?? 'Member'}
         src={author?.avatar_url}
@@ -132,6 +137,7 @@ export function CommentItem({
               <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Report
             </button>
           )}
+        </div>
         </div>
       </div>
       {author && (

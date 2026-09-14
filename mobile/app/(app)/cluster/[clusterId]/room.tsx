@@ -42,8 +42,8 @@ import {
   useStartCall,
 } from '../../../../src/features/cluster-calls'
 import { useMarkClusterRead } from '../../../../src/features/notifications'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../../../src/features/moderation'
-import { MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { useClusterChannel, usePresence } from '../../../../src/features/realtime'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
@@ -94,12 +94,8 @@ export default function RoomScreen() {
   const myMutes = useMyMutes(clusterId !== '')
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
-  function reveal(id: string) {
-    setRevealed((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
   }
   const { typing, signalTyping, resetTyping, online } = usePresence(clusterId || null)
   const roomClusterId = clusterId || null
@@ -684,23 +680,34 @@ export default function RoomScreen() {
                 const { item, showDay } = row
                 if (item.kind === 'signal') {
                   const s = item.data
-                  if (isMutedAuthor(mutedSet, s.author_id) && !revealed.has(`signal-${s.id}`)) {
+                  const signalMuted = isMutedAuthor(mutedSet, s.author_id)
+                  if (signalMuted && !revealed.has(`signal-${s.id}`)) {
                     return (
                       <MutedPlaceholder
                         name={memberMap.get(s.author_id)?.display_name ?? 'Member'}
-                        onToggle={() => reveal(`signal-${s.id}`)}
+                        onToggle={() => toggleReveal(`signal-${s.id}`)}
+                        kind="signal"
                       />
                     )
                   }
                   return (
-                    <SignalRow
-                      signal={s}
-                      author={memberMap.get(s.author_id)}
-                      isMine={s.author_id === userId}
-                      replyCount={replyCount.get(s.id) ?? 0}
-                      clusterId={clusterId}
-                      showDay={showDay}
-                    />
+                    <View style={{ gap: 8 }}>
+                      {signalMuted ? (
+                        <MutedHideBar
+                          name={memberMap.get(s.author_id)?.display_name ?? 'Member'}
+                          onToggle={() => toggleReveal(`signal-${s.id}`)}
+                          kind="signal"
+                        />
+                      ) : null}
+                      <SignalRow
+                        signal={s}
+                        author={memberMap.get(s.author_id)}
+                        isMine={s.author_id === userId}
+                        replyCount={replyCount.get(s.id) ?? 0}
+                        clusterId={clusterId}
+                        showDay={showDay}
+                      />
+                    </View>
                   )
                 }
                 if (item.kind === 'vote') {
@@ -717,16 +724,24 @@ export default function RoomScreen() {
                   )
                 }
                 const m = item.data
-                if (isMutedAuthor(mutedSet, m.author_id) && !revealed.has(m.id)) {
+                const messageMuted = isMutedAuthor(mutedSet, m.author_id)
+                if (messageMuted && !revealed.has(m.id)) {
                   return (
                     <MutedPlaceholder
                       name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
-                      onToggle={() => reveal(m.id)}
+                      onToggle={() => toggleReveal(m.id)}
                     />
                   )
                 }
                 return (
-                  <MessageItem
+                  <View style={{ gap: 8 }}>
+                    {messageMuted ? (
+                      <MutedHideBar
+                        name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
+                        onToggle={() => toggleReveal(m.id)}
+                      />
+                    ) : null}
+                    <MessageItem
                     message={m}
                     mine={m.author_id === userId}
                     author={memberMap.get(m.author_id)}
@@ -754,7 +769,8 @@ export default function RoomScreen() {
                     onReply={startReply}
                     onReport={startReport}
                     onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
-                  />
+                    />
+                  </View>
                 )
               }}
             />

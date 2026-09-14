@@ -34,8 +34,8 @@ import {
   useStartCall,
 } from '../../features/cluster-calls'
 import { useMarkClusterRead } from '../../features/notifications'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
-import { MutedPlaceholder } from '../../components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { toErrorMessage } from '../../lib/error'
 import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
@@ -93,12 +93,8 @@ export function RoomView() {
   const joinedCall = (callParticipants.data ?? []).some((p) => p.user_id === userId)
   const callPending = startCall.isPending || joinCall.isPending
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
-  function reveal(id: string) {
-    setRevealed((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
   }
   const { typing, signalTyping, resetTyping, online } = usePresence(clusterId)
 
@@ -666,12 +662,13 @@ export function RoomView() {
 
                 if (item.kind === 'message') {
                   const m = item.data
-                  if (isMutedAuthor(mutedSet, m.author_id) && !revealed.has(m.id)) {
+                  const muted = isMutedAuthor(mutedSet, m.author_id)
+                  if (muted && !revealed.has(m.id)) {
                     return (
                       <li key={m.id}>
                         <MutedPlaceholder
                           name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
-                          onToggle={() => reveal(m.id)}
+                          onToggle={() => toggleReveal(m.id)}
                         />
                       </li>
                     )
@@ -697,6 +694,14 @@ export function RoomView() {
                         if (parent && isMutedAuthor(mutedSet, parent.author_id)) return undefined
                         return replyPreview(parent)
                       })()}
+                      mutedBanner={
+                        muted ? (
+                          <MutedHideBar
+                            name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
+                            onToggle={() => toggleReveal(m.id)}
+                          />
+                        ) : undefined
+                      }
                       onEditDraftChange={setEditDraft}
                       onSaveEdit={() => void saveEdit()}
                       onCancelEdit={() => setEditingId(null)}
@@ -716,12 +721,14 @@ export function RoomView() {
 
                 if (item.kind === 'signal') {
                   const s = item.data
-                  if (isMutedAuthor(mutedSet, s.author_id) && !revealed.has(`signal-${s.id}`)) {
+                  const signalMuted = isMutedAuthor(mutedSet, s.author_id)
+                  if (signalMuted && !revealed.has(`signal-${s.id}`)) {
                     return (
                       <li key={`signal-${s.id}`}>
                         <MutedPlaceholder
                           name={memberMap.get(s.author_id)?.display_name ?? 'Member'}
-                          onToggle={() => reveal(`signal-${s.id}`)}
+                          onToggle={() => toggleReveal(`signal-${s.id}`)}
+                          kind="signal"
                         />
                       </li>
                     )
@@ -735,6 +742,15 @@ export function RoomView() {
                       replyCount={replyCount.get(s.id) ?? 0}
                       clusterId={clusterId}
                       showDay={showDay}
+                      mutedBanner={
+                        signalMuted ? (
+                          <MutedHideBar
+                            name={memberMap.get(s.author_id)?.display_name ?? 'Member'}
+                            onToggle={() => toggleReveal(`signal-${s.id}`)}
+                            kind="signal"
+                          />
+                        ) : undefined
+                      }
                     />
                   )
                 }

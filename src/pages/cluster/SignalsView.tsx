@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { ChevronDown, Loader2, MessageSquare, Plus } from 'lucide-react'
@@ -9,8 +9,8 @@ import type { Signal, SignalStatus } from '../../features/signals'
 import { useAuth } from '../../app/auth-context'
 import { Avatar } from '../../components/Avatar'
 import { Modal } from '../../components/Modal'
-import { MutedPlaceholder } from '../../components/MutedPlaceholder'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
 
 const statusMeta: Record<SignalStatus, { label: string; className: string }> = {
   open: { label: 'Open', className: 'bg-primary/10 text-primary' },
@@ -44,6 +44,9 @@ export function SignalsView() {
   const myMutes = useMyMutes(clusterId !== '')
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
+  }
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
   const replyCount = new Map<string, number>()
@@ -100,30 +103,38 @@ export function SignalsView() {
             <>
               {active.length > 0 && (
                 <ul className="space-y-3">
-                  {active.map((s) =>
-                    isMutedAuthor(mutedSet, s.author_id) && !revealed.has(s.id) ? (
-                      <li key={s.id}>
-                        <MutedPlaceholder
-                          name={memberById.get(s.author_id)?.display_name ?? 'Member'}
-                          onToggle={() =>
-                            setRevealed((prev) => {
-                              const next = new Set(prev)
-                              next.add(s.id)
-                              return next
-                            })
-                          }
-                        />
-                      </li>
-                    ) : (
+                  {active.map((s) => {
+                    const sMuted = isMutedAuthor(mutedSet, s.author_id)
+                    if (sMuted && !revealed.has(s.id)) {
+                      return (
+                        <li key={s.id}>
+                          <MutedPlaceholder
+                            name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                            onToggle={() => toggleReveal(s.id)}
+                            kind="signal"
+                          />
+                        </li>
+                      )
+                    }
+                    return (
                       <SignalCard
                         key={s.id}
                         signal={s}
                         memberById={memberById}
                         replyCount={replyCount.get(s.id) ?? 0}
                         isMine={s.author_id === userId}
+                        mutedBanner={
+                          sMuted ? (
+                            <MutedHideBar
+                              name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                              onToggle={() => toggleReveal(s.id)}
+                              kind="signal"
+                            />
+                          ) : undefined
+                        }
                       />
-                    ),
-                  )}
+                    )
+                  })}
                 </ul>
               )}
 
@@ -138,21 +149,20 @@ export function SignalsView() {
                     </span>
                   </summary>
                   <ul className="divide-y divide-outline-variant/60 border-t border-outline-variant/60">
-                    {resolved.map((s) =>
-                      isMutedAuthor(mutedSet, s.author_id) && !revealed.has(s.id) ? (
-                        <li key={s.id} className="p-4">
-                          <MutedPlaceholder
-                            name={memberById.get(s.author_id)?.display_name ?? 'Member'}
-                            onToggle={() =>
-                              setRevealed((prev) => {
-                                const next = new Set(prev)
-                                next.add(s.id)
-                                return next
-                              })
-                            }
-                          />
-                        </li>
-                      ) : (
+                    {resolved.map((s) => {
+                      const sMuted = isMutedAuthor(mutedSet, s.author_id)
+                      if (sMuted && !revealed.has(s.id)) {
+                        return (
+                          <li key={s.id} className="p-4">
+                            <MutedPlaceholder
+                              name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                              onToggle={() => toggleReveal(s.id)}
+                              kind="signal"
+                            />
+                          </li>
+                        )
+                      }
+                      return (
                         <SignalCard
                           key={s.id}
                           signal={s}
@@ -160,9 +170,20 @@ export function SignalsView() {
                           replyCount={replyCount.get(s.id) ?? 0}
                           isMine={s.author_id === userId}
                           compact
+                          mutedBanner={
+                            sMuted ? (
+                              <div className="px-4 pt-3">
+                                <MutedHideBar
+                                  name={memberById.get(s.author_id)?.display_name ?? 'Member'}
+                                  onToggle={() => toggleReveal(s.id)}
+                                  kind="signal"
+                                />
+                              </div>
+                            ) : undefined
+                          }
                         />
-                      ),
-                    )}
+                      )
+                    })}
                   </ul>
                 </details>
               )}
@@ -224,18 +245,21 @@ function SignalCard({
   replyCount,
   isMine,
   compact = false,
+  mutedBanner,
 }: {
   signal: Signal
   memberById: Map<string, { display_name: string; avatar_url: string | null }>
   replyCount: number
   isMine: boolean
   compact?: boolean
+  mutedBanner?: ReactNode
 }) {
   const { clusterId = '' } = useParams()
   const meta = statusMeta[signal.status]
   const author = memberById.get(signal.author_id)
   return (
     <li>
+      {mutedBanner}
       <Link
         to={`/cluster/${clusterId}/signals/${signal.id}`}
         className={cn(
