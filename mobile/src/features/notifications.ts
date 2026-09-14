@@ -377,6 +377,19 @@ function formatRelative(value: number, unit: Intl.RelativeTimeFormatUnit): strin
   return abs + ' ' + label + (abs === 1 ? '' : 's') + ' ago'
 }
 
+/** Future-aware relative time, e.g. "in 3 days" or "2h ago", for due dates and expiries. */
+export function timeUntil(iso: string): string {
+  const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000)
+  if (Math.abs(seconds) < 60) return seconds >= 0 ? 'due now' : 'overdue'
+  const minutes = Math.round(seconds / 60)
+  if (Math.abs(minutes) < 60) return formatRelative(minutes, 'minute')
+  const hours = Math.round(minutes / 60)
+  if (Math.abs(hours) < 48) return formatRelative(hours, 'hour')
+  const days = Math.round(hours / 24)
+  if (Math.abs(days) < 30) return formatRelative(days, 'day')
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
 /** Compact relative time, e.g. "2h ago", for notification cards. */
 export function timeAgo(iso: string): string {
   const seconds = Math.round((Date.now() - new Date(iso).getTime()) / 1000)
