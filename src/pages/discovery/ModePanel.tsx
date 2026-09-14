@@ -9,8 +9,9 @@ import { LOCAL_RADII, type LocalRadius } from '../onboarding/draft'
 import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
+import { useQueryClient } from '@tanstack/react-query'
 import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
-import { useProfile } from '../../lib/use-profile'
+import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 
 /** The per-mode queue/join panel shown on a discovery mode page. */
 export function ModePanel({ mode }: { mode: MatchingMode }) {
@@ -190,6 +191,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
   const auth = useAuth()
   const status = useMyQueueStatus()
   const profile = useProfile()
+  const queryClient = useQueryClient()
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -210,6 +212,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
       const found = await reverseGeocode(coords)
       setPlace(found)
       if (auth.state === 'signedIn') {
+        setSaving(true)
         const supabase = requireSupabase()
         const inLocalQueue = status.data?.find((r) => r.mode === 'local' && r.joined)
         if (inLocalQueue) {
@@ -225,8 +228,17 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
           })
           .eq('id', auth.userId)
         if (upErr) throw upErr
-        setSaving(true)
-        await status.refetch()
+        {
+          const uid = auth.userId
+          queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
+            old ? { ...old, latitude: coords.lat, longitude: coords.lng, local_area: found.slug, local_radius_km: radius } : old,
+          )
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+            queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
+            queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+          ])
+        }
       }
       onDone?.()
     } catch (err) {
@@ -247,6 +259,16 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         .update({ local_radius_km: next })
         .eq('id', auth.userId)
       if (error) throw error
+      {
+        const uid = auth.userId
+        queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
+          old ? { ...old, local_radius_km: next } : old,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+          queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+        ])
+      }
     } catch (err) {
       setError(toErrorMessage(err, 'Couldn’t update your radius.'))
     }

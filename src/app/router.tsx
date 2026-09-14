@@ -43,6 +43,9 @@ import { RestrictedAccountPage } from '../pages/RestrictedAccountPage'
 import { AppealPage } from '../pages/AppealPage'
 import { AdminAppealsPage } from '../pages/staff/AdminAppealsPage'
 import { AdminAppealCasePage } from '../pages/staff/AdminAppealCasePage'
+import { StaffDashboardPage } from '../pages/staff/StaffDashboardPage'
+import { StaffAccountsPage } from '../pages/staff/StaffAccountsPage'
+import { AccountDetailPage } from '../pages/staff/AccountDetailPage'
 import { ModerationQueuePage } from '../pages/staff/ModerationQueuePage'
 import { ModerationCasePage } from '../pages/staff/ModerationCasePage'
 import { ModerationRolesPage } from '../pages/staff/ModerationRolesPage'
@@ -162,9 +165,11 @@ export function AppRouter() {
               </RequireActiveAccount>
             }
           >
-            <Route path="/moderator" element={<Navigate to="/moderator/reports" replace />} />
+            <Route path="/moderator" element={<StaffDashboardPage />} />
             <Route path="/moderator/reports" element={<ModerationQueuePage />} />
             <Route path="/moderator/reports/:reportId" element={<ModerationCasePage />} />
+            <Route path="/moderator/accounts" element={<StaffAccountsPage />} />
+            <Route path="/moderator/accounts/:userId" element={<AccountDetailPage />} />
           </Route>
 
           {/* Admin shell */}
@@ -179,11 +184,13 @@ export function AppRouter() {
               </RequireActiveAccount>
             }
           >
-            <Route path="/admin" element={<Navigate to="/admin/reports" replace />} />
+            <Route path="/admin" element={<StaffDashboardPage />} />
             <Route path="/admin/reports" element={<ModerationQueuePage />} />
             <Route path="/admin/reports/:reportId" element={<ModerationCasePage />} />
             <Route path="/admin/appeals" element={<AdminAppealsPage />} />
             <Route path="/admin/appeals/:appealId" element={<AdminAppealCasePage />} />
+            <Route path="/admin/accounts" element={<StaffAccountsPage />} />
+            <Route path="/admin/accounts/:userId" element={<AccountDetailPage />} />
             <Route path="/admin/roles" element={<ModerationRolesPage />} />
             <Route path="/admin/audit" element={<ModerationAuditPage />} />
           </Route>

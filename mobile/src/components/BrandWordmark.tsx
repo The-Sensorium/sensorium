@@ -9,7 +9,7 @@ export function BrandWordmark({ size = 20 }: { size?: number }) {
         textAlign: 'center',
         fontSize: size,
         fontWeight: '400',
-        letterSpacing: 3,
+        letterSpacing: 2.7,
         color: t.primary,
         fontFamily: 'SpecialElite_400Regular',
       }}

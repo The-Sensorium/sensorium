@@ -257,6 +257,33 @@ describe('SettingsPage', () => {
     )
   })
 
+  it('collapses notification preferences when there are multiple clusters', async () => {
+    hooks.useMyClusters.mockReturnValue({
+      data: [
+        { cluster: { id: 'c1', name: 'Aurora' }, joinedAt: '', memberCount: 2 },
+        { cluster: { id: 'c2', name: 'Borealis' }, joinedAt: '', memberCount: 3 },
+      ],
+      isLoading: false,
+      isError: false,
+    })
+    const upsert = vi.fn().mockResolvedValue({})
+    hooks.useUpsertNotificationPrefs.mockReturnValue({ mutateAsync: upsert })
+    renderPage()
+    const aurora = screen.getByRole('button', { name: /Aurora/ })
+    expect(aurora).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: /Borealis/ })).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(aurora)
+    expect(aurora).toHaveAttribute('aria-expanded', 'true')
+    const region = document.getElementById('notif-prefs-c1') as HTMLElement
+    fireEvent.click(within(region).getByRole('switch', { name: 'Messages' }))
+    await waitFor(() =>
+      expect(upsert).toHaveBeenCalledWith({
+        clusterId: 'c1',
+        toggles: expect.objectContaining({ messages: false, mentions: true }),
+      }),
+    )
+  })
+
   it('shows an empty state when there are no clusters yet', () => {
     renderPage()
     expect(screen.getByText('No clusters yet. Preferences appear here once you join a cluster.')).toBeInTheDocument()

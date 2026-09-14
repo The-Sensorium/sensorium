@@ -16,6 +16,7 @@ const REPORT_ERRORS: Record<string, string> = {
   not_a_member: 'Both you and the member you are reporting must be active in this cluster.',
   details_too_long: 'The details are too long. Please keep them under 2000 characters.',
   account_inactive: 'Your account is restricted right now and cannot submit reports.',
+  report_rate_limited: 'You have submitted a lot of reports recently. Please wait a little before reporting again.',
 }
 
 export function ReportModal({

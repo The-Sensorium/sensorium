@@ -12,19 +12,26 @@ function renderWithTheme(resolved: ThemeContextValue['resolved']) {
 }
 
 describe('BrandMark', () => {
-  it('uses the light logo in light mode', () => {
+  it('renders a themeable svg that inherits the primary token', () => {
     const { container } = renderWithTheme('light')
-    expect(container.querySelector('img')).toHaveAttribute('src', '/logo-mark.png')
+    const svg = container.querySelector('svg')
+    expect(svg).toBeInTheDocument()
+    expect(svg).toHaveStyle({ color: 'var(--color-primary)' })
+    expect(container.querySelector('path')).toHaveAttribute('fill', 'currentColor')
   })
 
-  it('uses the dark logo in dark mode', () => {
-    const { container } = renderWithTheme('dark')
-    expect(container.querySelector('img')).toHaveAttribute('src', '/logo-mark-dark.png')
+  it('renders identically in light and dark mode (the CSS var does the work)', () => {
+    const light = renderWithTheme('light')
+    const lightHtml = light.container.innerHTML
+    light.unmount()
+    const dark = renderWithTheme('dark')
+    expect(dark.container.innerHTML).toBe(lightHtml)
   })
 
   it('is decorative by default but accepts a label', () => {
     const { container } = renderWithTheme('light')
-    expect(container.querySelector('img')).toHaveAttribute('alt', '')
+    const svg = container.querySelector('svg')
+    expect(svg).not.toHaveAttribute('role', 'img')
     render(
       <ThemeContext.Provider value={{ mode: 'system', resolved: 'light', setMode: vi.fn() }}>
         <BrandMark alt="Sensorium logo" />
@@ -33,8 +40,8 @@ describe('BrandMark', () => {
     expect(screen.getByRole('img', { name: 'Sensorium logo' })).toBeInTheDocument()
   })
 
-  it('falls back to the system preference outside a provider', () => {
+  it('renders without a theme provider', () => {
     const { container } = render(<BrandMark />)
-    expect(container.querySelector('img')).toHaveAttribute('src', '/logo-mark.png')
+    expect(container.querySelector('svg')).toBeInTheDocument()
   })
 })

@@ -62,6 +62,9 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
+  /* like - stays red in both modes, independent of error */
+  --color-like: #ba1a1a;
+
   /* typography */
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -82,7 +85,7 @@
 
 /*
   Dark mode - "Ink & Parchment", a warm inversion inspired by emmanuelmathew.dev.
-  Neutral warm charcoal + warm cream + vivid terracotta. Values mirror colors-dark
+  Neutral warm charcoal + warm cream + indigo. Values mirror colors-dark
   in docs/DESIGN.md. `.dark` (set by ThemeProvider) swaps tokens; components never
   branch on theme.
 */
@@ -90,36 +93,36 @@
   color-scheme: dark;
 
   /* surfaces - neutral warm charcoal, never brown-tinted */
-  --color-surface: #1a1a1a;
-  --color-surface-dim: #1a1a1a;
+  --color-surface: #181818;
+  --color-surface-dim: #181818;
   --color-surface-bright: #2a2a2a;
   --color-surface-lowest: #111111;
   --color-surface-low: #1f1f1f;
   --color-surface-container: #222222;
   --color-surface-high: #2a2a2a;
   --color-surface-highest: #333333;
-  --color-background: #1a1a1a;
+  --color-background: #181818;
 
-  /* text - warm cream */
+  /* text - warm cream + soft warm grey */
   --color-on-surface: #fcf9f2;
-  --color-on-surface-variant: #8a847e;
+  --color-on-surface-variant: #a8a29e;
   --color-inverse-surface: #fcf9f2;
-  --color-inverse-on-surface: #1a1a1a;
+  --color-inverse-on-surface: #181818;
 
-  /* borders / outlines */
-  --color-outline: #6f6a64;
+  /* borders / outlines + muted warm grey */
+  --color-outline: #78736f;
   --color-outline-variant: #2a2a2a;
 
-  /* primary - vivid terracotta (brightened #d95d39) */
-  --color-primary: #ff8a5c;
-  --color-on-primary: #3a0b00;
-  --color-primary-container: #8f2f0d;
-  --color-on-primary-container: #ffdbcf;
-  --color-inverse-primary: #9d3d1c;
-  --color-primary-fixed: #ffdbcf;
-  --color-primary-fixed-dim: #ffb59e;
-  --color-on-primary-fixed: #3a0b00;
-  --color-on-primary-fixed-variant: #8f2f0d;
+  /* primary - blue for comfortable nighttime use */
+  --color-primary: #3b82f6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #1e3a8a;
+  --color-on-primary-container: #dbeafe;
+  --color-inverse-primary: #60a5fa;
+  --color-primary-fixed: #dbeafe;
+  --color-primary-fixed-dim: #93c5fd;
+  --color-on-primary-fixed: #172554;
+  --color-on-primary-fixed-variant: #1d4ed8;
 
   /* secondary (cream/parchment) */
   --color-secondary: #cbc6be;
@@ -142,6 +145,9 @@
   --color-on-error: #690005;
   --color-error-container: #93000a;
   --color-on-error-container: #ffdad6;
+
+  /* like - luminous red on dark so the heart keeps its light-mode identity */
+  --color-like: #e5484d;
 
   /* elevation - deeper + neutral in dark */
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);

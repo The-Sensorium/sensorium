@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Sensorium: React 19 SPA (Vite + TypeScript + Tailwind v4 + TanStack Query) with a fully Supabase backend (Postgres, Auth, Storage, Realtime, pg_cron). There is no separate backend service — security lives in the database (RLS + RPC functions).
+Sensorium: React 19 SPA (Vite + TypeScript + Tailwind v4 + TanStack Query) with a fully Supabase backend (Postgres, Auth, Storage, Realtime, pg_cron). There is no separate backend service — security lives in the database (RLS + RPC functions). A member-only Expo/React Native app in `mobile/` shares the same backend; staff/admin surfaces stay web-only.
 
 ## Commands
 
@@ -27,6 +27,7 @@ Env is just `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (both public). The br
 - Every table must have RLS enabled; frontend writes only via RPC functions or RLS-permitted inserts; privileged ops live in `security definer` functions guarded by grants.
 - Storage is private buckets + short-lived signed URLs; persist bare storage paths, never the URL.
 - `src/lib/database.types.ts` is generated from the schema and must be kept in sync after migration changes (no codegen script in `package.json`).
+- The mobile app copies that file plus a set of shared `src/lib` / `src/features` modules with `cd mobile && npm run sync:db-types`. Do not hand-edit the generated mobile copies; `mobile/src/features/realtime.ts` is pinned and reconciled by hand. See `mobile/README.md`.
 
 ## Git workflow
 
@@ -44,4 +45,4 @@ Env is just `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (both public). The br
 
 ## Docs are source of truth
 
-`docs/` is canonical and kept current; README and CONTRIBUTING point to it. Read order: `docs/ARCHITECTURE.md` → `docs/PRD.md` → `docs/DESIGN.md` → `docs/TECHNICAL.md`. CI skips markdown/docs-only changes (`paths-ignore` in `.github/workflows/ci.yml`).
+`docs/` is canonical and kept current; README and CONTRIBUTING point to it. Read order: `docs/ARCHITECTURE.md` → `docs/PRD.md` → `docs/DESIGN.md` → `docs/TECHNICAL.md`. `docs/archive/` holds design records for shipped features (not required reading). The mobile app is documented in `mobile/README.md`. CI skips markdown/docs-only changes (`paths-ignore` in `.github/workflows/ci.yml`).

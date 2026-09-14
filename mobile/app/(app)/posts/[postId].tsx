@@ -13,7 +13,7 @@ import {
 import { useClusterChannel } from '../../../src/features/realtime'
 import { PostCard } from '../../../src/components/PostCard'
 import { CommentThread } from '../../../src/components/CommentThread'
-import { MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
+import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../../src/features/moderation'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
@@ -82,18 +82,28 @@ export default function PostDetailScreen() {
         <MutedPlaceholder
           name={memberById.get(p.author_id)?.display_name ?? 'Member'}
           onToggle={() => setRevealed(true)}
+          kind="post"
         />
       ) : (
-        <PostCard
-          post={p}
-          clusterId={clusterId!}
-          author={memberById.get(p.author_id)}
-          likeCount={likeInfo.count}
-          likedByMe={likeInfo.mine}
-          commentCount={comments.data?.length ?? 0}
-          onLike={(id) => void toggle.mutateAsync(id)}
-          onDeleted={() => router.back()}
-        />
+        <View style={{ gap: 8 }}>
+          {isMutedAuthor(mutedSet, p.author_id) ? (
+            <MutedHideBar
+              name={memberById.get(p.author_id)?.display_name ?? 'Member'}
+              onToggle={() => setRevealed(false)}
+              kind="post"
+            />
+          ) : null}
+          <PostCard
+            post={p}
+            clusterId={clusterId!}
+            author={memberById.get(p.author_id)}
+            likeCount={likeInfo.count}
+            likedByMe={likeInfo.mine}
+            commentCount={comments.data?.length ?? 0}
+            onLike={(id) => void toggle.mutateAsync(id)}
+            onDeleted={() => router.back()}
+          />
+        </View>
       )}
 
       <CommentThread

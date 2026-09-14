@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import type { ReactNode } from 'react'
 import { CornerUpLeft, Flag, Info, Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
@@ -27,6 +28,7 @@ export function MessageItem({
   menuOpen,
   pickerOpen,
   replyParent,
+  mutedBanner,
   onEditDraftChange,
   onSaveEdit,
   onCancelEdit,
@@ -53,6 +55,7 @@ export function MessageItem({
   menuOpen: boolean
   pickerOpen: boolean
   replyParent: { authorName?: string; preview: string } | undefined
+  mutedBanner?: ReactNode
   onEditDraftChange(value: string): void
   onSaveEdit(): void
   onCancelEdit(): void
@@ -72,6 +75,7 @@ export function MessageItem({
   return (
     <li>
       {showDay && <DayDivider iso={message.created_at} />}
+      {mutedBanner}
       <div
         className={cn(
           'flex items-start gap-2 py-1',
@@ -128,7 +132,7 @@ export function MessageItem({
 
           {menuOpen && (
             <div
-              className="mb-1 flex w-max gap-1 rounded-xl border border-outline-variant/60 bg-surface p-1 shadow-soft"
+              className="mb-1 flex w-max gap-1 rounded-xl border border-outline-variant/60 bg-surface p-2 shadow-soft"
               role="menu"
               onClick={(e) => e.stopPropagation()}
             >

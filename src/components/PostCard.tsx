@@ -178,7 +178,7 @@ export function PostCard({
           aria-pressed={likedByMe}
           onClick={() => onLike(post.id)}
           className="inline-flex items-center gap-1.5 text-sm font-semibold transition hover:text-primary active:scale-90"
-          style={{ color: likedByMe ? 'var(--color-error)' : undefined }}
+          style={{ color: likedByMe ? 'var(--color-like)' : undefined }}
         >
           <Heart
             className="h-5 w-5"
@@ -221,7 +221,7 @@ export function PostCard({
                 role="menu"
                 aria-label="Post actions"
                 className={cn(
-                  'absolute right-0 z-20 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-1 shadow-lift',
+                  'absolute right-0 z-20 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift',
                   menuAbove ? 'bottom-full mb-2' : 'top-full mt-1',
                 )}
               >

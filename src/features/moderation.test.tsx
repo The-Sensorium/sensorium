@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { requireSupabase } from '../lib/supabase'
 import { useAuth } from '../app/auth-context'
 import { makeSupabaseClient, initialMockResult, asError, type MockSupabaseResult } from '../test/supabase-client'
-import { REPORT_REASONS, isMutedAuthor, mutedIds, useDeleteAccount, useMuteUser, useMyMutes, useMyReports, useReportMember, useUnmuteUser } from './moderation'
+import { REPORT_REASONS, isMutedAuthor, mutedIds, toggleRevealedId, useDeleteAccount, useMuteUser, useMyMutes, useMyReports, useReportMember, useUnmuteUser } from './moderation'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
 vi.mock('../app/auth-context', () => ({ useAuth: vi.fn() }))
@@ -159,6 +159,12 @@ describe('moderation', () => {
   it('mutedIds maps rows to an id set', () => {
     expect(mutedIds([{ muted_user_id: 'u2', display_name: 'Bo', avatar_url: null }])).toEqual(new Set(['u2']))
     expect(mutedIds(undefined)).toEqual(new Set())
+  })
+
+  it('toggleRevealedId adds then removes the id', () => {
+    expect(toggleRevealedId(new Set(), 'a')).toEqual(new Set(['a']))
+    expect(toggleRevealedId(new Set(['a']), 'a')).toEqual(new Set())
+    expect(toggleRevealedId(new Set(['a']), 'b')).toEqual(new Set(['a', 'b']))
   })
 
   it('useMyMutes is disabled while signed out', () => {

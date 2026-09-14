@@ -54,7 +54,7 @@ export async function getPushPermission(): Promise<'granted' | 'denied' | 'undet
   }
 }
 
-export async function registerPushToken(userId: string) {
+export async function registerPushToken() {
   try {
     const mod = await notifications()
     if (!mod || !supabase) return
@@ -64,26 +64,36 @@ export async function registerPushToken(userId: string) {
       current.status === 'granted' ? current.status : (await mod.requestPermissionsAsync()).status
     if (status !== 'granted') return
     const token = (await mod.getExpoPushTokenAsync()).data
-    await supabase
-      .from('push_tokens')
-      .upsert(
-        { user_id: userId, expo_push_token: token, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id,expo_push_token' },
-      )
+    const { error } = await supabase.rpc('register_push_token', { p_expo_push_token: token })
+    if (error) {
+      await supabase.rpc('register_push_token', { p_expo_push_token: token })
+    }
   } catch {
   }
 }
 
-export async function refreshPushToken(userId: string) {
-  await registerPushToken(userId)
+export async function refreshPushToken() {
+  await registerPushToken()
 }
 
 export async function unregisterPushToken() {
   try {
     const mod = await notifications()
     if (!mod || !supabase) return
-    const token = (await mod.getExpoPushTokenAsync()).data
-    await supabase.from('push_tokens').delete().eq('expo_push_token', token)
+    try {
+      const token = (await mod.getExpoPushTokenAsync()).data
+      await supabase.rpc('unregister_push_token', { p_expo_push_token: token })
+    } catch {
+    }
+    await mod.setBadgeCountAsync(0).catch(() => undefined)
+  } catch {
+  }
+}
+
+export async function clearPushBadge() {
+  try {
+    const mod = await notifications()
+    if (!mod) return
     await mod.setBadgeCountAsync(0).catch(() => undefined)
   } catch {
   }

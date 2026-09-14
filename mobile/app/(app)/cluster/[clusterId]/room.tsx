@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowLeft, Users } from 'lucide-react-native'
+import { ArrowDown, ArrowLeft, Phone, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import type { MentionMember } from '../../../../src/features/mentions'
@@ -35,9 +35,15 @@ import {
 import { useCluster } from '../../../../src/features/introductions'
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../../../src/features/signals'
 import { useClusterVotes, type Vote } from '../../../../src/features/votes'
+import {
+  useActiveCall,
+  useCallParticipants,
+  useJoinCall,
+  useStartCall,
+} from '../../../../src/features/cluster-calls'
 import { useMarkClusterRead } from '../../../../src/features/notifications'
-import { isMutedAuthor, mutedIds, useMyMutes } from '../../../../src/features/moderation'
-import { MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { useClusterChannel, usePresence } from '../../../../src/features/realtime'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
@@ -88,14 +94,17 @@ export default function RoomScreen() {
   const myMutes = useMyMutes(clusterId !== '')
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
-  function reveal(id: string) {
-    setRevealed((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      return next
-    })
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
   }
   const { typing, signalTyping, resetTyping, online } = usePresence(clusterId || null)
+  const roomClusterId = clusterId || null
+  const activeCall = useActiveCall(roomClusterId)
+  const callParticipants = useCallParticipants(activeCall.data?.id ?? null)
+  const startCall = useStartCall(roomClusterId)
+  const joinCall = useJoinCall(roomClusterId)
+  const joinedCall = (callParticipants.data ?? []).some((p) => p.user_id === userId)
+  const callPending = startCall.isPending || joinCall.isPending
 
   const memberCount = (members.data ?? []).length
   const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
@@ -113,6 +122,7 @@ export default function RoomScreen() {
   const [focused, setFocused] = useState(false)
   const [newCount, setNewCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const [declinedCalls, setDeclinedCalls] = useState<Set<string>>(new Set())
   const exhaustedRef = useRef(false)
   const prevOldestIdRef = useRef<string | null>(null)
   const pinnedRef = useRef(true)
@@ -128,6 +138,7 @@ export default function RoomScreen() {
     setHasMore(false)
     prevOldestIdRef.current = null
     setReplyTo(null)
+    setDeclinedCalls(new Set())
   }, [clusterId])
 
   const memberMap = useMemo(() => {
@@ -416,6 +427,31 @@ export default function RoomScreen() {
     }
   }
 
+  function openCall(callId: string) {
+    router.push({ pathname: '/cluster/[clusterId]/call', params: { clusterId, callId } })
+  }
+
+  async function handleStartCall() {
+    if (!clusterId) return
+    setError(null)
+    try {
+      const callId = await startCall.mutateAsync()
+      openCall(callId)
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not start the call. Try again.'))
+    }
+  }
+
+  async function handleJoinCall(callId: string) {
+    setError(null)
+    try {
+      await joinCall.mutateAsync(callId)
+      openCall(callId)
+    } catch (e) {
+      setError(toErrorMessage(e, 'Could not join the call. Try again.'))
+    }
+  }
+
   function scrollToLatest() {
     listRef.current?.scrollToOffset({ offset: 0, animated: true })
     pinnedRef.current = true
@@ -467,6 +503,84 @@ export default function RoomScreen() {
           <ClusterMenu clusterId={clusterId} active="room" />
         </View>
 
+        {activeCall.data && !declinedCalls.has(activeCall.data.id) && (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+            <View
+              accessibilityLabel="Cluster call"
+              style={{
+                backgroundColor: t.surfaceContainer,
+                borderWidth: 1,
+                borderColor: t.primary,
+                borderRadius: radii.xl,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: t.primary,
+                }}
+              >
+                <Phone size={16} color="#fff" strokeWidth={2} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+                  {joinedCall
+                    ? 'You are in this call'
+                    : activeCall.data.status === 'ringing'
+                      ? `${memberMap.get(activeCall.data.initiated_by)?.display_name ?? 'A member'} started a call`
+                      : 'A call is live'}
+                </Text>
+                <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                  {(callParticipants.data ?? []).length} in the call
+                </Text>
+              </View>
+              <Pressable
+                accessibilityLabel={joinedCall ? 'Return to call' : 'Join call'}
+                onPress={() =>
+                  joinedCall
+                    ? openCall(activeCall.data!.id)
+                    : void handleJoinCall(activeCall.data!.id)
+                }
+                disabled={callPending}
+                style={{
+                  backgroundColor: t.primary,
+                  borderRadius: radii.pill,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  opacity: callPending ? 0.6 : 1,
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                  {joinedCall ? 'Open' : 'Join'}
+                </Text>
+              </Pressable>
+              {!joinedCall ? (
+                <Pressable
+                  accessibilityLabel="Decline call"
+                  onPress={() =>
+                    setDeclinedCalls((prev) => new Set(prev).add(activeCall.data!.id))
+                  }
+                  style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+                    Decline
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        )}
+
+
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <View
             style={{
@@ -479,26 +593,50 @@ export default function RoomScreen() {
             }}
           >
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              {(members.data ?? []).slice(0, 8).map((m) => (
-                <View key={m.id} style={{ position: 'relative' }}>
-                  <Avatar name={m.display_name} src={m.avatar_url} size={24} />
-                  {online.has(m.id) || m.id === userId ? (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        bottom: -2,
-                        right: -2,
-                        width: 10,
-                        height: 10,
-                        borderRadius: 5,
-                        borderWidth: 2,
-                        borderColor: t.surface,
-                        backgroundColor: '#10b981',
-                      }}
-                    />
-                  ) : null}
-                </View>
-              ))}
+              {(members.data ?? []).slice(0, 8).map((m) => {
+                const isMe = m.id === userId
+                const face = (
+                  <View style={{ position: 'relative' }}>
+                    <Avatar name={m.display_name} src={m.avatar_url} size={24} />
+                    {online.has(m.id) || isMe ? (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: -2,
+                          right: -2,
+                          width: 10,
+                          height: 10,
+                          borderRadius: 5,
+                          borderWidth: 2,
+                          borderColor: t.surface,
+                          backgroundColor: '#10b981',
+                        }}
+                      />
+                    ) : null}
+                  </View>
+                )
+                // Own avatar gets a primary ring, mirroring web's
+                // `ring-2 ring-primary`. The -2 margin keeps the ring
+                // layout-neutral so the strip doesn't reshuffle.
+                return (
+                  <View key={m.id}>
+                    {isMe ? (
+                      <View
+                        style={{
+                          borderWidth: 2,
+                          borderColor: t.primary,
+                          borderRadius: 14,
+                          margin: -2,
+                        }}
+                      >
+                        {face}
+                      </View>
+                    ) : (
+                      face
+                    )}
+                  </View>
+                )
+              })}
               <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
                 <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
@@ -566,23 +704,34 @@ export default function RoomScreen() {
                 const { item, showDay } = row
                 if (item.kind === 'signal') {
                   const s = item.data
-                  if (isMutedAuthor(mutedSet, s.author_id) && !revealed.has(`signal-${s.id}`)) {
+                  const signalMuted = isMutedAuthor(mutedSet, s.author_id)
+                  if (signalMuted && !revealed.has(`signal-${s.id}`)) {
                     return (
                       <MutedPlaceholder
                         name={memberMap.get(s.author_id)?.display_name ?? 'Member'}
-                        onToggle={() => reveal(`signal-${s.id}`)}
+                        onToggle={() => toggleReveal(`signal-${s.id}`)}
+                        kind="signal"
                       />
                     )
                   }
                   return (
-                    <SignalRow
-                      signal={s}
-                      author={memberMap.get(s.author_id)}
-                      isMine={s.author_id === userId}
-                      replyCount={replyCount.get(s.id) ?? 0}
-                      clusterId={clusterId}
-                      showDay={showDay}
-                    />
+                    <View style={{ gap: 8 }}>
+                      {signalMuted ? (
+                        <MutedHideBar
+                          name={memberMap.get(s.author_id)?.display_name ?? 'Member'}
+                          onToggle={() => toggleReveal(`signal-${s.id}`)}
+                          kind="signal"
+                        />
+                      ) : null}
+                      <SignalRow
+                        signal={s}
+                        author={memberMap.get(s.author_id)}
+                        isMine={s.author_id === userId}
+                        replyCount={replyCount.get(s.id) ?? 0}
+                        clusterId={clusterId}
+                        showDay={showDay}
+                      />
+                    </View>
                   )
                 }
                 if (item.kind === 'vote') {
@@ -599,16 +748,24 @@ export default function RoomScreen() {
                   )
                 }
                 const m = item.data
-                if (isMutedAuthor(mutedSet, m.author_id) && !revealed.has(m.id)) {
+                const messageMuted = isMutedAuthor(mutedSet, m.author_id)
+                if (messageMuted && !revealed.has(m.id)) {
                   return (
                     <MutedPlaceholder
                       name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
-                      onToggle={() => reveal(m.id)}
+                      onToggle={() => toggleReveal(m.id)}
                     />
                   )
                 }
                 return (
-                  <MessageItem
+                  <View style={{ gap: 8 }}>
+                    {messageMuted ? (
+                      <MutedHideBar
+                        name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
+                        onToggle={() => toggleReveal(m.id)}
+                      />
+                    ) : null}
+                    <MessageItem
                     message={m}
                     mine={m.author_id === userId}
                     author={memberMap.get(m.author_id)}
@@ -636,7 +793,8 @@ export default function RoomScreen() {
                     onReply={startReply}
                     onReport={startReport}
                     onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
-                  />
+                    />
+                  </View>
                 )
               }}
             />
@@ -688,6 +846,8 @@ export default function RoomScreen() {
             onSendImage={persistSendImage}
             onSendGif={persistSendGif}
             onOpenSignal={() => setSignalOpen(true)}
+            onStartCall={() => void handleStartCall()}
+            callActive={Boolean(activeCall.data)}
             onCancelReply={() => setReplyTo(null)}
           />
         </View>

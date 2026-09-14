@@ -44,10 +44,10 @@ export function AuthShell({
           }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ alignItems: 'center', marginBottom: 8 }}>
-            <BrandMark size={76} />
+          <View style={{ alignItems: 'center', marginBottom: -13 }}>
+            <BrandMark size={101} />
           </View>
-          <BrandWordmark size={20} />
+          <BrandWordmark size={18} />
           <View
             style={{
               marginTop: spacing.gutter,
@@ -77,7 +77,7 @@ export function AuthShell({
   )
 }
 
-export function Field({ label, ...props }: { label: string } & TextInputProps) {
+export function Field({ label, style, ...props }: { label: string } & TextInputProps) {
   const t = useTheme()
   return (
     <View style={{ marginBottom: spacing.gutter }}>
@@ -89,16 +89,19 @@ export function Field({ label, ...props }: { label: string } & TextInputProps) {
       <TextInput
         autoCapitalize="none"
         placeholderTextColor={t.onSurfaceVariant}
-        style={{
-          backgroundColor: t.surfaceContainer,
-          borderWidth: 1,
-          borderColor: t.outlineVariant,
-          borderRadius: radii.md,
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          fontSize: 14,
-          color: t.onSurface,
-        }}
+        style={[
+          {
+            backgroundColor: t.surfaceContainer,
+            borderWidth: 1,
+            borderColor: t.outlineVariant,
+            borderRadius: radii.md,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            fontSize: 14,
+            color: t.onSurface,
+          },
+          style,
+        ]}
         {...props}
       />
     </View>

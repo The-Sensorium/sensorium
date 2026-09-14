@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -380,6 +380,38 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMyAccess).mockReturnValue(accessStates.suspended)
     renderGuarded(<SessionRoleEntry />)
     expect(screen.getByText('restricted page')).toBeInTheDocument()
+  })
+})
+
+describe('mobile member-only', () => {
+  const realUA = window.navigator.userAgent
+  beforeEach(() => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+      value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      configurable: true,
+    })
+    vi.mocked(useSessionRole).mockReturnValue({ role: null, setRole: vi.fn(), clearRole: vi.fn() })
+  })
+  afterEach(() => {
+    Object.defineProperty(window.navigator, 'userAgent', { value: realUA, configurable: true })
+  })
+
+  it('routes a multi-role account straight home from entry', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    renderGuarded(<SessionRoleEntry />)
+    expect(screen.getByText('home page')).toBeInTheDocument()
+  })
+
+  it('bounces staff shells home', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    renderGuarded(<RequireSessionRole role="admin">admin</RequireSessionRole>)
+    expect(screen.getByText('home page')).toBeInTheDocument()
+  })
+
+  it('renders the member shell once the role settles', () => {
+    vi.mocked(useSessionRole).mockReturnValue({ role: 'member', setRole: vi.fn(), clearRole: vi.fn() })
+    renderGuarded(<RequireSessionRole role="member">home</RequireSessionRole>)
+    expect(screen.getByText('home')).toBeInTheDocument()
   })
 })
 

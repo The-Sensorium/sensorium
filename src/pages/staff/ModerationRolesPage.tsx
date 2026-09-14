@@ -79,10 +79,10 @@ export function ModerationRolesPage() {
         </button>
       </header>
 
-      {error && <p role="alert" className="rounded-2xl border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
-      {success && <p role="status" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
+      {error && <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
+      {success && <p role="status" className="rounded-md border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
 
-      <section aria-label="Role assignment filters" className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
+      <section aria-label="Role assignment filters" className="rounded-lg border border-outline-variant/60 bg-surface p-4">
         <div className="flex flex-wrap items-end gap-3">
           <label className="block min-w-0 flex-1 basis-56 text-xs font-semibold text-on-surface">
             Search
@@ -91,7 +91,7 @@ export function ModerationRolesPage() {
               onChange={(event) => setSearchDraft(event.target.value)}
               placeholder="Search by name, email, or reason"
               autoComplete="off"
-              className="mt-1.5 block w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+              className="mt-1.5 block w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
             />
           </label>
           <label className="block w-40 text-xs font-semibold text-on-surface">
@@ -103,7 +103,7 @@ export function ModerationRolesPage() {
                   setRoleFilter(event.target.value as PlatformRole | 'all')
                   setPage(1)
                 }}
-                className="w-full appearance-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 pr-10 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
+                className="w-full appearance-none rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 pr-10 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
               >
                 <option value="all">All roles</option>
                 <option value="moderator">Moderator</option>
@@ -132,7 +132,7 @@ export function ModerationRolesPage() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
         </div>
       ) : assignments.isError ? (
-        <div className="rounded-2xl border border-error/30 bg-error/10 p-10 text-center">
+        <div className="rounded-lg border border-error/30 bg-error/10 p-10 text-center">
           <p className="text-sm font-semibold text-error">Couldn’t load role assignments.</p>
           <button
             type="button"
@@ -143,7 +143,7 @@ export function ModerationRolesPage() {
           </button>
         </div>
       ) : total === 0 ? (
-        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
           <ShieldCheck className="mx-auto h-7 w-7 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
           <p className="mt-3 text-sm text-on-surface-variant">
             {hasFilters ? 'No role assignments match these filters.' : includeRevoked ? 'There are no platform roles yet.' : 'No active platform roles.'}
@@ -156,7 +156,7 @@ export function ModerationRolesPage() {
             {pageCount > 1 && <span>Page {page} of {pageCount}</span>}
           </div>
 
-          <div className="hidden overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface shadow-soft md:block">
+          <div className="hidden overflow-hidden rounded-lg border border-outline-variant/60 bg-surface md:block">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] border-separate text-left text-sm">
                 <thead>
@@ -218,7 +218,7 @@ export function ModerationRolesPage() {
                       {pendingRevoke?.row.id === row.id && (
                         <tr>
                           <td colSpan={6} className="border-b border-outline-variant/40 px-4 py-3">
-                            <div className="rounded-xl border border-error/30 bg-error/5 p-3">
+                            <div className="rounded-md border border-error/30 bg-error/5 p-3">
                               <p className="text-sm font-semibold text-on-surface">
                                 Revoke {PLATFORM_ROLE_LABELS[row.role]} from {row.display_name || row.email}?
                               </p>
@@ -229,7 +229,7 @@ export function ModerationRolesPage() {
                                   onChange={(event) => setPendingRevoke({ row, reason: event.target.value })}
                                   placeholder="Reason for revoking (required)"
                                   maxLength={500}
-                                  className="min-w-0 flex-1 basis-52 rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+                                  className="min-w-0 flex-1 basis-52 rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
                                 />
                                 <button
                                   type="button"
@@ -261,7 +261,7 @@ export function ModerationRolesPage() {
           <ul className="space-y-2 md:hidden">
             {rows.map((row) => (
               <li key={row.id}>
-                <div className="flex items-start gap-3 rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
+                <div className="flex items-start gap-3 rounded-lg border border-outline-variant/60 bg-surface p-4">
                   <Avatar name={row.display_name || '?'} src={null} className="h-10 w-10 text-sm" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -289,7 +289,7 @@ export function ModerationRolesPage() {
                   )}
                 </div>
                 {pendingRevoke?.row.id === row.id && (
-                  <div className="mt-2 rounded-xl border border-error/30 bg-error/5 p-3">
+                  <div className="mt-2 rounded-md border border-error/30 bg-error/5 p-3">
                     <p className="text-sm font-semibold text-on-surface">
                       Revoke {PLATFORM_ROLE_LABELS[row.role]} from {row.display_name || row.email}?
                     </p>
@@ -300,7 +300,7 @@ export function ModerationRolesPage() {
                         onChange={(event) => setPendingRevoke({ row, reason: event.target.value })}
                         placeholder="Reason for revoking (required)"
                         maxLength={500}
-                        className="min-w-0 flex-1 basis-52 rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+                        className="min-w-0 flex-1 basis-52 rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
                       />
                       <button
                         type="button"
@@ -398,7 +398,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
 
   return (
     <Modal open={open} onClose={() => onClose()} title="Grant a role">
-      {error && <p role="alert" className="mb-4 rounded-xl border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
+      {error && <p role="alert" className="mb-4 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
       <label className="relative block min-w-0 text-sm font-semibold text-on-surface">
         Find an account
         <input
@@ -412,10 +412,10 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={!selectedAccount && email.trim().length >= 2 && (accountSearch.isFetching || accountSearch.data != null)}
-          className="mt-1.5 block w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+          className="mt-1.5 block w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
         />
         {!selectedAccount && email.trim().length >= 2 && (
-          <div role="listbox" className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface-lowest p-1 shadow-lift">
+          <div role="listbox" className="absolute inset-x-0 top-full z-20 mt-2 overflow-hidden rounded-lg border border-outline-variant/60 bg-surface-lowest p-1 shadow-lift">
             {accountSearch.isFetching ? (
               <p className="flex items-center gap-2 px-3 py-3 text-xs text-on-surface-variant">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />
@@ -434,7 +434,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
                     setSelectedAccount(account)
                     setEmail(account.email)
                   }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-surface-container"
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-surface-container"
                 >
                   <Avatar name={account.display_name || '?'} src={null} className="h-8 w-8 text-xs" />
                   <span className="min-w-0 flex-1">
@@ -449,7 +449,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
           </div>
         )}
         {selectedAccount && (
-          <div className="mt-2 flex min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-xl border border-primary/30 bg-primary-container/10 px-3 py-2">
+          <div className="mt-2 flex min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-md border border-primary/30 bg-primary-container/10 px-3 py-2">
             <Check className="h-4 w-4 shrink-0 text-primary" strokeWidth={2} aria-hidden />
             <span className="min-w-0 flex-1 truncate text-xs text-on-surface">
               Selected: <strong>{selectedAccount.display_name}</strong> ({selectedAccount.email})
@@ -474,7 +474,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
           <select
             value={role}
             onChange={(event) => setRole(event.target.value as PlatformRole)}
-            className="w-full appearance-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 pr-10 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
+            className="w-full appearance-none rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 pr-10 text-sm font-normal text-on-surface focus:border-primary focus:outline-none"
           >
             <option value="moderator">Moderator</option>
             <option value="admin">Admin</option>
@@ -489,7 +489,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
           onChange={(event) => setReason(event.target.value)}
           placeholder="Why is this role being granted?"
           maxLength={500}
-          className="mt-1.5 block w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
+          className="mt-1.5 block w-full rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2.5 text-sm font-normal text-on-surface placeholder:text-on-surface-variant/60 focus:border-primary focus:outline-none"
         />
       </label>
       <div className="mt-6 flex justify-end gap-2">
@@ -513,3 +513,4 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
     </Modal>
   )
 }
+

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { joinQueueErrorMessage, toErrorMessage } from './error'
+import { isNetworkError, joinQueueErrorMessage, toErrorMessage } from './error'
 
 describe('toErrorMessage', () => {
   it('returns the message from an Error instance', () => {
@@ -31,6 +31,30 @@ describe('toErrorMessage', () => {
     expect(toErrorMessage(null, 'fallback')).toBe('fallback')
     expect(toErrorMessage(undefined, 'fallback')).toBe('fallback')
     expect(toErrorMessage(42, 'fallback')).toBe('fallback')
+  })
+
+  it('returns the fallback for network errors instead of leaking raw text', () => {
+    expect(toErrorMessage(new Error('Network request failed'), 'fallback')).toBe('fallback')
+    expect(toErrorMessage(new Error('fetch failed: java.net.ConnectException'), 'fallback')).toBe(
+      'fallback',
+    )
+    expect(toErrorMessage('Error: fetch failed: ECONNREFUSED', 'fallback')).toBe('fallback')
+    expect(toErrorMessage({ message: 'Load failed' }, 'fallback')).toBe('fallback')
+  })
+})
+
+describe('isNetworkError', () => {
+  it('detects connectivity failures across shapes', () => {
+    expect(isNetworkError(new Error('Network request failed'))).toBe(true)
+    expect(isNetworkError('fetch failed')).toBe(true)
+    expect(isNetworkError({ message: 'Failed to connect to /192.168.1.1:54601' })).toBe(true)
+    expect(isNetworkError(new Error('You are offline'))).toBe(true)
+  })
+
+  it('ignores application errors', () => {
+    expect(isNetworkError(new Error('relation does not exist'))).toBe(false)
+    expect(isNetworkError('cooldown active')).toBe(false)
+    expect(isNetworkError(null)).toBe(false)
   })
 })
 

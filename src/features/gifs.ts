@@ -34,6 +34,13 @@ interface KlipyGif {
   }
 }
 
+/** Release Android builds block cleartext HTTP while Expo Go allows it, so
+ * KLIPY media over http:// loads in dev but not in the APK. Upgrade to
+ * https (KLIPY serves it); already-https URLs pass through untouched. */
+function https(url: string): string {
+  return url.replace(/^http:/, 'https:')
+}
+
 /** Extract the fields the room needs from a Klipy API payload. Pure + testable. */
 export function parseKlipyResults(payload: unknown): Gif[] {
   if (!payload || typeof payload !== 'object') return []
@@ -52,8 +59,8 @@ export function parseKlipyResults(payload: unknown): Gif[] {
       return {
         id: g.slug ?? String(g.id),
         title: g.title ?? '',
-        url,
-        thumb,
+        url: https(url),
+        thumb: https(thumb),
         width,
         height,
       }

@@ -13,6 +13,7 @@
 - [ ] `supabase db reset` produces a clean, lint-free database (if migrations changed)
 - [ ] `npm run test:integration` passes (if schema/RLS/RPC changed)
 - [ ] `npm run test:e2e` passes (if UI flows changed)
+- [ ] Mobile: `cd mobile && npm run lint && npx tsc --noEmit && npm test` passes (if `mobile/` changed)
 
 ## Type of change
 
@@ -27,6 +28,7 @@
 <!-- Tick anything this PR touches. If you check a backend area, migrations and integration tests are expected. -->
 
 - [ ] Frontend UI
+- [ ] Mobile app
 - [ ] Schema / RLS / migrations
 - [ ] Realtime contracts
 - [ ] Storage / signed URLs

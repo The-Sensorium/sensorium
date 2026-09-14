@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
-import { AlertTriangle, BellRing, ImageMinus, ImagePlus, LogOut, MonitorSmartphone, Moon, ShieldCheck, Sun, Trash2, UserRound } from 'lucide-react-native'
+import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, LogOut, MonitorSmartphone, Moon, ShieldCheck, Sun, Trash2, UserRound } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
@@ -342,7 +342,15 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
   const [error, setError] = useState<string | null>(null)
   const deleteAccount = useDeleteAccount()
 
+  useEffect(() => {
+    if (open) {
+      setConfirm('')
+      setError(null)
+    }
+  }, [open])
+
   async function handleDelete() {
+    if (confirm.trim() !== 'DELETE') return
     setError(null)
     try {
       await deleteAccount.mutateAsync()
@@ -384,6 +392,7 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
           title="Delete my account"
           loadingTitle="Deleting…"
           loading={deleteAccount.isPending}
+          disabled={confirm.trim() !== 'DELETE'}
           onPress={() => void handleDelete()}
         />
       </View>
@@ -402,6 +411,8 @@ function SignOutConfirmModal({ open, onClose }: { open: boolean; onClose: () => 
     setPending(true)
     try {
       const supabase = requireSupabase()
+      const { unregisterPushToken } = await import('../../src/lib/push')
+      await unregisterPushToken()
       await supabase.auth.signOut()
       queryClient.clear()
       router.replace('/(auth)/login')
@@ -556,6 +567,22 @@ function NotificationPreferences() {
   const [prefError, setPrefError] = useState<string | null>(null)
 
   const byCluster = new Map((prefs.data ?? []).map((p) => [p.cluster_id, p]))
+  const list = useMemo(() => clusters.data ?? [], [clusters.data])
+  const [expandedIds, setExpandedIds] = useState<readonly string[] | null>(null)
+  // Latch the single-cluster default once seen so joining a second cluster
+  // mid-session doesn't snap the open card shut. Other counts keep deriving
+  // until the user touches a card, so a lone remaining cluster still opens.
+  useEffect(() => {
+    setExpandedIds((prev) => prev ?? (list.length === 1 ? [list[0].cluster.id] : prev))
+  }, [list])
+  const openIds = expandedIds ?? (list.length === 1 ? [list[0].cluster.id] : [])
+
+  function setOpen(clusterId: string, open: boolean) {
+    setExpandedIds((prev) => {
+      const base = prev ?? (list.length === 1 ? [list[0].cluster.id] : [])
+      return open ? [...new Set([...base, clusterId])] : base.filter((id) => id !== clusterId)
+    })
+  }
 
   function prefFor(clusterId: string, toggle: PrefToggle): boolean {
     const pendingValue = pending[`${clusterId}:${toggle}`]
@@ -617,32 +644,81 @@ function NotificationPreferences() {
             {prefError ? (
               <Text style={{ fontSize: 14, color: t.error }}>{prefError}</Text>
             ) : null}
-            {(clusters.data ?? []).map(({ cluster }) => (
-              <View key={cluster.id} style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.md, padding: 16 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
-                  {cluster.name}
-                </Text>
-                <View style={{ marginTop: 12, gap: 12 }}>
-                  {PREF_TOGGLES.map((key) => {
-                    const value = prefFor(cluster.id, key)
-                    const saving = pending[`${cluster.id}:${key}`] !== undefined
-                    return (
-                      <View key={key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                        <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{PREF_LABELS[key]}</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          {saving ? <ActivityIndicator size="small" color={t.onSurfaceVariant} /> : null}
-                          <Toggle checked={value} label={PREF_LABELS[key]} onChange={(v) => toggle(cluster.id, key, v)} />
+            {list.map(({ cluster }) => {
+              const open = openIds.includes(cluster.id)
+              const off = PREF_TOGGLES.filter((key) => !prefFor(cluster.id, key)).length
+              const summary = off === 0 ? 'All on' : off === PREF_TOGGLES.length ? 'All off' : `${off} off`
+              return (
+                <ClusterPrefCard
+                  key={cluster.id}
+                  name={cluster.name}
+                  summary={summary}
+                  open={open}
+                  onOpenChange={(next) => setOpen(cluster.id, next)}
+                >
+                  <View style={{ gap: 12 }}>
+                    {PREF_TOGGLES.map((key) => {
+                      const value = prefFor(cluster.id, key)
+                      const saving = pending[`${cluster.id}:${key}`] !== undefined
+                      return (
+                        <View key={key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{PREF_LABELS[key]}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            {saving ? <ActivityIndicator size="small" color={t.onSurfaceVariant} /> : null}
+                            <Toggle checked={value} label={PREF_LABELS[key]} onChange={(v) => toggle(cluster.id, key, v)} />
+                          </View>
                         </View>
-                      </View>
-                    )
-                  })}
-                </View>
-              </View>
-            ))}
+                      )
+                    })}
+                  </View>
+                </ClusterPrefCard>
+              )
+            })}
           </View>
         )}
       </View>
     </Card>
+  )
+}
+
+function ClusterPrefCard({
+  name,
+  summary,
+  open,
+  onOpenChange,
+  children,
+}: {
+  name: string
+  summary: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  children: ReactNode
+}) {
+  const t = useTheme()
+  return (
+    <View style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.md }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${name}, notification settings, ${summary}`}
+        onPress={() => onOpenChange(!open)}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }}>{summary}</Text>
+        </View>
+        <ChevronDown
+          size={16}
+          color={t.onSurfaceVariant}
+          strokeWidth={1.5}
+          style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}
+        />
+      </Pressable>
+      {open ? <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>{children}</View> : null}
+    </View>
   )
 }
 

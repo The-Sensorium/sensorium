@@ -146,7 +146,7 @@ export default function ProfileScreen() {
               ) : null}
             </View>
             {member.bio ? (
-              <Text style={{ marginTop: 6, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+              <Text style={{ marginTop: 6, fontSize: 14, lineHeight: 20, color: t.onSurface }}>
                 {member.bio}
               </Text>
             ) : null}

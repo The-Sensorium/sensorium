@@ -50,18 +50,24 @@ if (-not $NoPrebuild) {
 }
 
 # Re-pin CMake (prebuild --clean deletes local.properties) and the SDK path.
+# Parenthesise each element: PowerShell's comma binds tighter than '+', so
+# `@( 'a=' + x, 'b=' + y )` collapses into one space-joined string and AGP
+# never sees cmake.dir.
 $props = @(
-  'sdk.dir=' + $sdkHome.Replace('\', '\\').Replace(':', '\:'),
-  'cmake.dir=' + $cmakeDir.Replace('\', '\\').Replace(':', '\:')
-) -join "`n"
-Set-Content -Path "$mobile\android\local.properties" -Value $props -NoNewline
+  ('sdk.dir=' + $sdkHome.Replace('\', '\\').Replace(':', '\:')),
+  ('cmake.dir=' + $cmakeDir.Replace('\', '\\').Replace(':', '\:'))
+)
+Set-Content -Path "$mobile\android\local.properties" -Value $props
 
 # Clear stale native caches that may reference deleted CMake dirs.
 $cxxDirs = @(
   "$mobile\node_modules\expo\node_modules\expo-modules-core\android\.cxx",
+  "$mobile\node_modules\expo-modules-core\android\.cxx",
   "$mobile\node_modules\react-native-reanimated\android\.cxx",
   "$mobile\node_modules\react-native-screens\android\.cxx",
-  "$mobile\node_modules\react-native-worklets\android\.cxx"
+  "$mobile\node_modules\react-native-worklets\android\.cxx",
+  "$mobile\node_modules\react-native-gesture-handler\android\.cxx",
+  "$mobile\node_modules\@livekit\react-native-webrtc\android\.cxx"
 )
 foreach ($dir in $cxxDirs) {
   if (Test-Path $dir) {

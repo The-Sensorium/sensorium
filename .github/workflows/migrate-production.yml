@@ -33,28 +33,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Link production Supabase project
-        run: npx supabase link --project-ref "$SUPABASE_PROD_PROJECT_ID"
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
-
+      # Target the project directly instead of `supabase link` first: link
+      # fetches the project's legacy api-keys and the platform 403s that call
+      # even for owners (supabase/cli#6392). db push does not need those keys.
       - name: Apply migrations to production
-        run: npx supabase db push --linked --password "$SUPABASE_PROD_DB_PASSWORD"
+        run: npx supabase db push --project-ref "$SUPABASE_PROD_PROJECT_ID" --password "$SUPABASE_PROD_DB_PASSWORD"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
+          SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
           SUPABASE_PROD_DB_PASSWORD: ${{ secrets.SUPABASE_PROD_DB_PASSWORD }}
 
       - name: Deploy send-emails edge function to production
         run: npx supabase functions deploy send-emails --project-ref "$SUPABASE_PROD_PROJECT_ID" --no-verify-jwt
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
 
       - name: Deploy send-push edge function to production
         run: npx supabase functions deploy send-push --project-ref "$SUPABASE_PROD_PROJECT_ID" --no-verify-jwt
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
 
       - name: Set push secrets on production edge function
@@ -63,20 +61,20 @@ jobs:
           --project-ref "$SUPABASE_PROD_PROJECT_ID"
           SENSORIUM_PUSH_SECRET="$SENSORIUM_PUSH_SECRET"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
           SENSORIUM_PUSH_SECRET: ${{ secrets.SENSORIUM_PUSH_SECRET }}
 
       - name: Point the DB push cron at the production edge function
         run: >-
-          npx supabase db query --linked
+          npx supabase db query --linked --project-ref "$SUPABASE_PROD_PROJECT_ID"
           "update public.push_settings
              set edge_url = 'https://$SUPABASE_PROD_PROJECT_ID.functions.supabase.co/send-push',
                  secret = '$SENSORIUM_PUSH_SECRET',
                  enabled = true,
                  updated_at = now();"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
           SENSORIUM_PUSH_SECRET: ${{ secrets.SENSORIUM_PUSH_SECRET }}
 
@@ -88,14 +86,14 @@ jobs:
           RESEND_FROM="no-reply@thesensorium.online"
           SENSORIUM_EMAIL_SECRET="$SENSORIUM_EMAIL_SECRET"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           SENSORIUM_EMAIL_SECRET: ${{ secrets.SENSORIUM_EMAIL_SECRET }}
 
       - name: Point the DB cron at the production edge function
         run: >-
-          npx supabase db query --linked
+          npx supabase db query --linked --project-ref "$SUPABASE_PROD_PROJECT_ID"
           "update public.email_settings
              set edge_url = 'https://$SUPABASE_PROD_PROJECT_ID.functions.supabase.co/send-emails',
                  secret = '$SENSORIUM_EMAIL_SECRET',
@@ -103,6 +101,28 @@ jobs:
                  enabled = true,
                  updated_at = now();"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
           SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
           SENSORIUM_EMAIL_SECRET: ${{ secrets.SENSORIUM_EMAIL_SECRET }}
+
+      # create-call-token is user-invoked (not cron), so JWT verification stays
+      # on (config.toml verify_jwt = true) — no --no-verify-jwt here.
+      - name: Deploy create-call-token edge function to production
+        run: npx supabase functions deploy create-call-token --project-ref "$SUPABASE_PROD_PROJECT_ID"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
+          SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
+
+      - name: Set LiveKit secrets on production edge function
+        run: >-
+          npx supabase secrets set
+          --project-ref "$SUPABASE_PROD_PROJECT_ID"
+          LIVEKIT_URL="$LIVEKIT_URL"
+          LIVEKIT_API_KEY="$LIVEKIT_API_KEY"
+          LIVEKIT_API_SECRET="$LIVEKIT_API_SECRET"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}
+          SUPABASE_PROD_PROJECT_ID: ${{ secrets.SUPABASE_PROD_PROJECT_ID }}
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}

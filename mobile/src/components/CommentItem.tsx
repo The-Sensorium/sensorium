@@ -9,7 +9,6 @@ import { ReportModal } from './ReportModal'
 import { useDeleteComment, type PostComment } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 import { dateTimeFormatter } from './room/format'
-import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { PrimaryButton } from './ui'
 
@@ -84,9 +83,9 @@ export function CommentItem({
             >
               <Heart
                 size={16}
-                color={likedByMe ? t.error : t.onSurfaceVariant}
+                color={likedByMe ? t.like : t.onSurfaceVariant}
                 strokeWidth={2}
-                fill={likedByMe ? t.error : 'transparent'}
+                fill={likedByMe ? t.like : 'transparent'}
               />
               <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
                 {likeCount}

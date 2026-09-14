@@ -44,6 +44,11 @@ export default function AppTabs() {
   }, [])
   return (
     <Tabs
+      // Hidden screens (room, post detail, profile…) are tab routes, not
+      // stack pushes, so the default 'firstRoute' back behavior drops users
+      // on Home. 'history' walks the actual visit trail instead, so back
+      // from a cluster room returns to the cluster list it came from.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: t.primary,
@@ -94,6 +99,10 @@ export default function AppTabs() {
       <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ href: null }} />
       <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null }} />
       <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, animation: 'fade' }} />
+      <Tabs.Screen
+        name="cluster/[clusterId]/call"
+        options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }}
+      />
       <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null }} />

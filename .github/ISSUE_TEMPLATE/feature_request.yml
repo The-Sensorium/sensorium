@@ -7,9 +7,9 @@ body:
     attributes:
       value: |
         Sensorium is a small, carefully scoped project. Before proposing a feature, please:
-        - Read the [PRD](../../blob/main/docs/PRD.md) to understand what the product is.
+        - Read the [PRD](https://github.com/The-Sensorium/sensorium/blob/develop/docs/PRD.md) to understand what the product is.
         - Check the [existing issues](https://github.com/The-Sensorium/sensorium/issues) for a duplicate or a related discussion.
-        - Read the [contributing guide](../../blob/main/CONTRIBUTING.md).
+        - Read the [contributing guide](https://github.com/The-Sensorium/sensorium/blob/develop/CONTRIBUTING.md).
   - type: textarea
     id: problem
     attributes:

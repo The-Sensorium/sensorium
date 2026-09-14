@@ -265,7 +265,13 @@ export function useUpsertNotificationPrefs() {
 /**
  * Subscribes to the signed-in user's realtime channel (docs 04 §1): notification
  * INSERT bumps the badge + list; invitation INSERT refreshes the Home banner.
- * Mount once in the app shell.
+ * Plain chat writes no notification row (synthesized at read time), so message
+ * changes must also bump the badge + list or they only appear on poll/mention.
+ * Those bumps are throttled: each one runs two security-definer RPCs, so a chat
+ * burst would otherwise fan out a refetch per message per member. The first
+ * event bumps immediately and a trailing bump runs if more arrived during the
+ * 300ms window, so the newest message is never left to the 30s poll. Mount once
+ * in the app shell.
  */
 export function useNotificationsChannel(userId: string | null) {
   const queryClient = useQueryClient()
@@ -273,6 +279,24 @@ export function useNotificationsChannel(userId: string | null) {
   useEffect(() => {
     if (!userId) return
     const supabase = requireSupabase()
+
+    let chatCooldown: ReturnType<typeof setTimeout> | null = null
+    let chatPending = false
+    const bumpChat = () => {
+      if (chatCooldown !== null) {
+        chatPending = true
+        return
+      }
+      void queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+      chatCooldown = setTimeout(() => {
+        chatCooldown = null
+        if (chatPending) {
+          chatPending = false
+          bumpChat()
+        }
+      }, 300)
+    }
 
     const channel = supabase
       .channel(`user:${userId}`)
@@ -285,6 +309,7 @@ export function useNotificationsChannel(userId: string | null) {
           void queryClient.invalidateQueries({ queryKey: ['staff', 'unread'] })
         },
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, bumpChat)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'invitations', filter: `user_id=eq.${userId}` },
@@ -295,6 +320,7 @@ export function useNotificationsChannel(userId: string | null) {
       .subscribe()
 
     return () => {
+      if (chatCooldown !== null) clearTimeout(chatCooldown)
       supabase.removeChannel(channel)
     }
   }, [userId, queryClient])
@@ -349,6 +375,19 @@ function formatRelative(value: number, unit: Intl.RelativeTimeFormatUnit): strin
   const abs = Math.abs(value)
   const label = unit === 'minute' ? 'min' : unit
   return abs + ' ' + label + (abs === 1 ? '' : 's') + ' ago'
+}
+
+/** Future-aware relative time, e.g. "in 3 days" or "2h ago", for due dates and expiries. */
+export function timeUntil(iso: string): string {
+  const seconds = Math.round((new Date(iso).getTime() - Date.now()) / 1000)
+  if (Math.abs(seconds) < 60) return seconds >= 0 ? 'due now' : 'overdue'
+  const minutes = Math.round(seconds / 60)
+  if (Math.abs(minutes) < 60) return formatRelative(minutes, 'minute')
+  const hours = Math.round(minutes / 60)
+  if (Math.abs(hours) < 48) return formatRelative(hours, 'hour')
+  const days = Math.round(hours / 24)
+  if (Math.abs(days) < 30) return formatRelative(days, 'day')
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 /** Compact relative time, e.g. "2h ago", for notification cards. */

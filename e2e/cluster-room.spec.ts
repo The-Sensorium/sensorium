@@ -42,7 +42,7 @@ async function openSection(page: Page, name: string) {
 test.describe('cluster room (seeded Aurora)', () => {
   test('renders the presence strip and the composer', async ({ page }) => {
     await openRoom(page)
-    await expect(page.getByRole('heading', { name: /In the room now/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /In the cluster now/i })).toBeVisible()
     await expect(page.getByRole('combobox', { name: 'Message' })).toBeVisible()
   })
 

@@ -67,6 +67,7 @@ export function RaiseSignalModal({
               title="Raise signal"
               loadingTitle="Raising…"
               loading={pending}
+              disabled={!prompt.trim()}
               onPress={onRaise}
             />
           </View>

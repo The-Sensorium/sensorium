@@ -48,6 +48,8 @@ export default function RestrictedScreen() {
   async function signOut() {
     try {
       const supabase = requireSupabase()
+      const { unregisterPushToken } = await import('../src/lib/push')
+      await unregisterPushToken()
       await supabase.auth.signOut()
       router.replace('/(auth)/login')
     } catch {
@@ -67,8 +69,8 @@ export default function RestrictedScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: spacing.containerMargin }}>
-        <View style={{ marginBottom: 24, alignItems: 'center', gap: 12 }}>
-          <BrandMark size={48} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1.5, alignSelf: 'flex-start', marginBottom: 24 }}>
+          <BrandMark size={38} />
           <BrandWordmark size={18} />
         </View>
         <View style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 32, alignItems: 'center' }}>

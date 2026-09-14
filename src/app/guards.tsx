@@ -13,6 +13,7 @@ import {
   type SessionRole,
 } from '../features/access'
 import { useSessionRole } from './session-role-context'
+import { isMobileDevice } from '../lib/device'
 import { BrandMark } from '../components/BrandMark'
 function SetupNotice() {
   return (
@@ -129,6 +130,7 @@ export function RequireSessionRole({ role, children }: { role: SessionRole; chil
 
 function SessionRoleGate({ access, role, children }: { access: MyAccessRow; role: SessionRole; children: ReactNode }) {
   const { role: current, setRole } = useSessionRole()
+  const mobile = isMobileDevice()
 
   const available = activeSessionRoles(access)
   const autoResolve = current === null && available.length === 1 && available[0] === role
@@ -138,6 +140,18 @@ function SessionRoleGate({ access, role, children }: { access: MyAccessRow; role
   useEffect(() => {
     if (autoResolve) setRole(available[0])
   }, [autoResolve, available, setRole])
+
+  // Staff shells are desktop-only: mobile browsers always land in the member
+  // shell, whatever role a previous tab stored.
+  useEffect(() => {
+    if (mobile && current !== 'member') setRole('member')
+  }, [mobile, current, setRole])
+
+  if (mobile) {
+    if (role !== 'member') return <Navigate to="/home" replace />
+    if (current !== 'member') return <LoadingScreen />
+    return <>{children}</>
+  }
 
   if (autoResolve) return <>{children}</>
   if (current === null && available.length === 1 && available[0] !== role) {
@@ -159,14 +173,17 @@ export function SessionRoleEntry() {
 
 function SessionRoleResolver({ access }: { access: MyAccessRow }) {
   const { setRole } = useSessionRole()
+  const mobile = isMobileDevice()
 
   const available = activeSessionRoles(access)
   const single = available.length === 1
 
   useEffect(() => {
-    if (single && available.length === 1) setRole(available[0])
-  }, [available, setRole, single])
+    if (mobile) setRole('member')
+    else if (single && available.length === 1) setRole(available[0])
+  }, [available, setRole, single, mobile])
 
+  if (mobile) return <Navigate to="/home" replace />
   if (!single) return <Navigate to="/select-role" replace />
   return <Navigate to={sessionRoleShell(available[0])} replace />
 }

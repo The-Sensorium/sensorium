@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { AlertTriangle, ArrowRight, Loader2, MailOpen, PartyPopper, Sparkles } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
@@ -23,7 +23,9 @@ import {
   type Post,
 } from '../features/posts'
 import { ClusterCard } from '../components/ClusterCard'
+import { MutedHideBar, MutedPlaceholder } from '../components/MutedPlaceholder'
 import { PostCard } from '../components/PostCard'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../features/moderation'
 import { toErrorMessage } from '../lib/error'
 
 const GET_STARTED_STEPS = [
@@ -188,13 +190,13 @@ export function HomePage() {
 
 function GetStarted() {
   return (
-    <section aria-label="Get started" className="rounded-2xl border border-primary/30 bg-primary-container/10 p-6 shadow-soft">
+    <section aria-label="Get started" className="max-w-5xl rounded-2xl border border-primary/30 bg-primary-container/10 p-6 shadow-soft">
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
         <h2 className="font-display text-xl font-semibold text-on-surface">Welcome to Sensorium</h2>
       </div>
       <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-        You’re matched into clusters of 8 strangers. Here’s how to get started.
+        You’ll be matched into clusters of 8 strangers. Here’s how to get started.
       </p>
       <ol className="mt-5 space-y-3">
         {GET_STARTED_STEPS.map((step, i) => (
@@ -248,6 +250,12 @@ function RecentFromClusters({
   clusterNameById: Map<string, string>
 }) {
   const recent = useRecentClusterPosts(clusterIds, 3)
+  const myMutes = useMyMutes(clusterIds.length > 0)
+  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  function toggleReveal(id: string) {
+    setRevealed((prev) => toggleRevealedId(prev, id))
+  }
 
   return (
     <section className="space-y-4">
@@ -260,7 +268,7 @@ function RecentFromClusters({
           View all posts <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
-      {recent.isLoading ? (
+      {recent.isLoading || myMutes.isLoading ? (
         <LoadingRow />
       ) : recent.isError ? (
         <div
@@ -282,6 +290,9 @@ function RecentFromClusters({
               key={post.id}
               post={post}
               clusterName={clusterNameById.get(post.cluster_id)}
+              muted={isMutedAuthor(mutedSet, post.author_id)}
+              revealed={revealed.has(post.id)}
+              onToggleMute={() => toggleReveal(post.id)}
             />
           ))}
         </div>
@@ -290,31 +301,83 @@ function RecentFromClusters({
   )
 }
 
-function RecentPostItem({ post, clusterName }: { post: Post; clusterName: string | undefined }) {
-  const auth = useAuth()
-  const userId = auth.state === 'signedIn' ? auth.userId : null
+function RecentPostItem({
+  post,
+  clusterName,
+  muted,
+  revealed,
+  onToggleMute,
+}: {
+  post: Post
+  clusterName: string | undefined
+  muted: boolean
+  revealed: boolean
+  onToggleMute: () => void
+}) {
   const members = useClusterMembers(post.cluster_id)
-  const likes = usePostLikes(post.id)
-  const comments = usePostComments(post.cluster_id, post.id)
-  const toggle = useTogglePostLike(post.cluster_id)
 
   const memberById = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.id, m])),
     [members.data],
   )
+  const authorName = memberById.get(post.author_id)?.display_name ?? 'Member'
+
+  if (muted && !revealed) {
+    return (
+      <MutedPlaceholder name={authorName} onToggle={onToggleMute} kind="post" />
+    )
+  }
 
   return (
-    <PostCard
+    <RecentPostEngagement
       post={post}
-      clusterId={post.cluster_id}
       clusterName={clusterName}
-      compact
       author={memberById.get(post.author_id)}
-      likeCount={(likes.data ?? []).length}
-      likedByMe={(likes.data ?? []).some((l) => l.user_id === userId)}
-      commentCount={comments.data?.length ?? 0}
-      onLike={(id) => void toggle.mutateAsync(id)}
+      muted={muted}
+      authorName={authorName}
+      onToggleMute={onToggleMute}
     />
+  )
+}
+
+function RecentPostEngagement({
+  post,
+  clusterName,
+  author,
+  muted,
+  authorName,
+  onToggleMute,
+}: {
+  post: Post
+  clusterName: string | undefined
+  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  muted: boolean
+  authorName: string
+  onToggleMute: () => void
+}) {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const likes = usePostLikes(post.id)
+  const comments = usePostComments(post.cluster_id, post.id)
+  const toggle = useTogglePostLike(post.cluster_id)
+
+  return (
+    <div className="space-y-2">
+      {muted ? (
+        <MutedHideBar name={authorName} onToggle={onToggleMute} kind="post" />
+      ) : null}
+      <PostCard
+        post={post}
+        clusterId={post.cluster_id}
+        clusterName={clusterName}
+        compact
+        author={author}
+        likeCount={(likes.data ?? []).length}
+        likedByMe={(likes.data ?? []).some((l) => l.user_id === userId)}
+        commentCount={comments.data?.length ?? 0}
+        onLike={(id) => void toggle.mutateAsync(id)}
+      />
+    </div>
   )
 }
 

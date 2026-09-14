@@ -228,8 +228,69 @@ describe('useNotificationsChannel', () => {
     const { unmount } = renderHook(() => useNotificationsChannel('u1'), { wrapper })
     expect(client.channel).toHaveBeenCalledWith('user:u1')
     expect(channelMock.subscribe).toHaveBeenCalledTimes(1)
+    expect(channelMock.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      expect.objectContaining({ table: 'messages' }),
+      expect.any(Function),
+    )
     unmount()
     expect(removeChannel).toHaveBeenCalledTimes(1)
+  })
+
+  it('bumps notifications on message changes', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
+    }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const messageCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'messages',
+    )
+    expect(messageCall).toBeDefined()
+    ;(messageCall![2] as () => void)()
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
+    })
+  })
+
+  it('trailing bump refetches when messages arrive during the throttle window', () => {
+    vi.useFakeTimers()
+    try {
+      const channelMock = {
+        on: vi.fn(() => channelMock),
+        subscribe: vi.fn(() => ({})),
+      }
+      const client = {
+        channel: vi.fn(() => channelMock),
+        removeChannel: vi.fn(),
+      } as unknown as SupabaseClient
+      requireSupabaseMock.mockReturnValue(client)
+      const spy = vi.spyOn(queryClient, 'invalidateQueries')
+
+      renderHook(() => useNotificationsChannel('u1'), { wrapper })
+      const messageCall = channelMock.on.mock.calls.find(
+        (c) => (c[1] as { table?: string }).table === 'messages',
+      )
+      const bump = messageCall![2] as () => void
+      spy.mockClear()
+
+      bump()
+      expect(spy).toHaveBeenCalledTimes(2)
+      bump()
+      expect(spy).toHaveBeenCalledTimes(2)
+      vi.advanceTimersByTime(300)
+      expect(spy).toHaveBeenCalledTimes(4)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not subscribe when there is no user', () => {
