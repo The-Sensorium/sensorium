@@ -171,6 +171,9 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
         <View style={{ marginTop: 8 }}>
           <GifPicker
             pending={create.isPending}
+            // ~4 rows of GIFs in a fixed window so the grid scrolls
+            // inside the page list instead of expanding into it.
+            gridHeight={280}
             onSelect={(g) => {
               setGif(g)
               setImage(null)
