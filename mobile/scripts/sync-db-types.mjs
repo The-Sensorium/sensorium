@@ -131,10 +131,21 @@ for (const { file, anchor, replacement } of rnUploads) {
   }
 }
 {
+  // Web prefers the smaller sm.webp thumb (<img> handles it). React Native's
+  // built-in Image cannot decode animated WebP in a standalone Android
+  // release build (Expo Go bundles the decoder, so dev looks fine while the
+  // APK grid stays blank), so the mobile copy prefers sm.gif — the last
+  // known-good APK behavior. Selection posts md.gif either way, which is why
+  // sending still worked while previews were empty.
   const web = readFileSync(join(root, 'src', 'features', 'gifs.ts'), 'utf8')
     .replaceAll('import.meta.env.VITE_KLIPY_APP_KEY', 'process.env.EXPO_PUBLIC_KLIPY_APP_KEY')
     .replaceAll('import.meta.env.VITE_KLIPY_ENDPOINT', 'process.env.EXPO_PUBLIC_KLIPY_ENDPOINT')
+    .replaceAll(
+      'g.file?.sm?.webp?.url ?? g.file?.sm?.gif?.url ?? url',
+      'g.file?.sm?.gif?.url ?? url',
+    )
   if (web.includes('import.meta.env')) throw new Error('gifs transform failed')
+  if (web.includes('sm?.webp?.url ??')) throw new Error('gifs webp->gif transform failed')
   planWrite(join(root, 'mobile', 'src', 'features', 'gifs.ts'), web)
 }
 let modes = readFileSync(from('modes.ts'), 'utf8').replaceAll("from 'lucide-react'", "from 'lucide-react-native'")
