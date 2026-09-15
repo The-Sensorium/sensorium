@@ -207,6 +207,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Consistent unread badge (0114)**: `get_unread_notification_count` is derived from `get_my_notifications`, so the badge always equals the number of unread rows the center shows — one consolidated entry per cluster for chat, and excluding moderation-hidden messages.
 - **Chat volume in the center (0115)**: the consolidated chat entry titles itself "N new messages" when a cluster has more than one unread message (single messages keep "X sent a message").
 - **Unread-only center (0116)**: `get_my_notifications` returns only rows with `read_at is null`, so read items never linger. Marking a stored row read (individually or via "Mark all read") drops it; opening a room advances the cluster watermark that clears that cluster's synthesized chat entry. The derived badge matches.
+- **Open Mix (0131–0132)**: the `open_mix` matching-mode enum value, `fn_queue_key` global `'open'` queue, `fn_mode_label` "Open Mix", `fn_cooldown_interval` (7 days for `open_mix`, 30 days otherwise) used by `leave_cluster` and vote-removal, and the `get_my_matching_status` branch.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 

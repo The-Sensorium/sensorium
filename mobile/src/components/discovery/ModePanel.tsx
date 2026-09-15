@@ -103,6 +103,11 @@ function JoinCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? waiting
   const profile = useProfile()
+  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
+  const displayBlurb =
+    mode === 'open_mix'
+      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are. Clusters are built to last.'
+      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match. Clusters are built to last.'
 
   return (
     <Card>
@@ -110,14 +115,13 @@ function JoinCard({
         Waiting in queue
       </Text>
       <Text style={{ marginTop: 4, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
-        {queueKey}
+        {displayKey}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
         {count} of {CLUSTER_SIZE} ready
       </Text>
       <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-        Join this queue and you’ll be grouped with 7 strangers sharing this match. Clusters are
-        permanent.
+        {displayBlurb}
       </Text>
       <View style={{ marginTop: 20 }}>
         <PrimaryButton
@@ -140,7 +144,7 @@ function JoinCard({
       ) : null}
       {join.isError ? (
         <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>
-          {joinQueueErrorMessage(join.error)}
+          {joinQueueErrorMessage(join.error, mode)}
         </Text>
       ) : null}
     </Card>
@@ -159,6 +163,7 @@ function JoinedCard({
   const t = useTheme()
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? 0
+  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
 
   return (
     <Card>
@@ -166,7 +171,7 @@ function JoinedCard({
         You’re queued
       </Text>
       <Text style={{ marginTop: 4, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
-        {queueKey}
+        {displayKey}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
         {count} of {CLUSTER_SIZE}

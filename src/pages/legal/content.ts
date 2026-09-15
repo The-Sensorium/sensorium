@@ -101,7 +101,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
           kind: 'email',
           before:
             'We may update these Terms, and the current version always applies; continued use after a change means you accept them. Questions? ',
-          address: 'legal@sensorium.app',
+          address: 'thesensoriumapp@gmail.com',
           after: '',
         },
       ],
@@ -192,7 +192,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
         {
           kind: 'email',
           before: 'Questions about this policy? Reach out at ',
-          address: 'privacy@sensorium.app',
+          address: 'thesensoriumapp@gmail.com',
           after: '.',
         },
       ],

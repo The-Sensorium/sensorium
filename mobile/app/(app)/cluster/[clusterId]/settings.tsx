@@ -5,7 +5,7 @@ import { CalendarDays, Compass, LogOut, Tag, Users } from 'lucide-react-native'
 import { useCluster } from '../../../../src/features/introductions'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useLeaveCluster } from '../../../../src/features/cluster'
-import { modeInfo } from '../../../../src/lib/modes'
+import { modeInfo, cooldownDaysForMode } from '../../../../src/lib/modes'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
@@ -87,8 +87,9 @@ export default function ClusterSettingsScreen() {
             </Text>
           </View>
           <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
-            Leaving starts a 30-day cooldown for this matching mode and triggers a replacement
-            search so the cluster can stay at 8.
+            Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 30}-day
+            cooldown for this matching mode and triggers a replacement search so the cluster can stay
+            at 8.
           </Text>
           {confirming ? (
             <View style={{ marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>

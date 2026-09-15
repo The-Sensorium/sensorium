@@ -5,7 +5,7 @@ import { CalendarDays, Compass, Loader2, LogOut, Tag, Users } from 'lucide-react
 import { useCluster } from '../../features/introductions'
 import { useClusterMembers } from '../../features/matching'
 import { useLeaveCluster } from '../../features/cluster'
-import { modeInfo } from '../../lib/modes'
+import { modeInfo, cooldownDaysForMode } from '../../lib/modes'
 import { toErrorMessage } from '../../lib/error'
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -89,8 +89,9 @@ export function SettingsView() {
           <h2 className="font-display text-lg font-semibold text-on-surface">Leave cluster</h2>
         </div>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Leaving starts a 30-day cooldown for this matching mode and triggers a replacement search so
-          the cluster can stay at 8.
+          Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 30}-day
+          cooldown for this matching mode and triggers a replacement search so the cluster can stay
+          at 8.
         </p>
         {confirming ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">

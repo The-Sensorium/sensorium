@@ -6,7 +6,7 @@ import { FixedThemeToggle } from '../components/FixedThemeToggle'
 import { MATCHING_MODES } from '../lib/modes'
 
 const howItWorks = [
-  { step: '01', title: 'Choose How You Want to Match', body: 'Pick from birth date or location-based matching modes.', icon: SlidersHorizontal },
+  { step: '01', title: 'Choose How You Want to Match', body: 'Pick from birth date, location-based, or open matching modes.', icon: SlidersHorizontal },
   { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose.', icon: UserPlus },
   { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.', icon: Users },
   { step: '04', title: 'Complete Introductions', body: 'Answer five questions within 72 hours so everyone can connect.', icon: MessageSquareText },
@@ -14,9 +14,9 @@ const howItWorks = [
 ]
 
 const faqs = [
-  { q: 'What is a Cluster?', a: 'A permanent group of exactly eight people built around genuine connection.' },
+  { q: 'What is a Cluster?', a: 'A lasting group of exactly eight people built around genuine connection.' },
   { q: 'Why exactly 8 people?', a: 'Small enough to feel intimate, large enough to stay alive when life gets busy.' },
-  { q: 'How does matching work, and can I choose how I\u2019m matched?', a: 'You choose the mode (birth date or location) and join its queue.' },
+  { q: 'How does matching work, and can I choose how I\u2019m matched?', a: 'You choose the mode (birth date, location, or Open Mix) and join its queue.' },
   { q: 'Can I be in more than one cluster at once?', a: 'Yes. Each mode forms its own independent cluster.' },
   { q: 'Can I leave a cluster?', a: 'Anytime. A replacement process finds a new member.' },
 ]
@@ -36,7 +36,7 @@ export function LandingPage() {
           Eight strangers. One cluster.
         </h1>
         <p className="mt-4 max-w-xl text-lg leading-7 text-on-surface-variant">
-          Build meaningful friendships through small permanent groups of exactly eight people.
+          Build meaningful friendships through small, lasting groups of exactly eight people.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link

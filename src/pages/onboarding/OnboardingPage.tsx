@@ -112,7 +112,7 @@ export function OnboardingPage() {
           p_mode: mode,
           p_radius_km: draft.radiusKm ?? undefined,
         })
-        if (joinError) failed.push(`${modeInfo(mode).label}: ${joinQueueErrorMessage(joinError)}`)
+        if (joinError) failed.push(`${modeInfo(mode).label}: ${joinQueueErrorMessage(joinError, mode)}`)
       }
 
       if (failed.length > 0) {

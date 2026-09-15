@@ -53,6 +53,7 @@ export function QueueCard({
   leaving?: boolean
 }) {
   const info = modeInfo(entry.mode)
+  const displayKey = entry.mode === 'open_mix' ? 'Open pool' : entry.queue_key
   return (
     <Link
       to={`/queue/${entry.mode}`}
@@ -65,7 +66,7 @@ export function QueueCard({
             <span className="truncate">{info.label}</span>
           </p>
           <h3 className="mt-1 truncate font-display text-lg font-semibold text-on-surface">
-            {entry.queue_key}
+            {displayKey}
           </h3>
         </div>
         {onLeave && (

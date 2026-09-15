@@ -2898,6 +2898,7 @@ export type Database = {
         | "birth_month"
         | "birth_year"
         | "local"
+        | "open_mix"
       moderation_action_type:
         | "report_claimed"
         | "report_released"
@@ -3104,6 +3105,7 @@ export const Constants = {
         "birth_month",
         "birth_year",
         "local",
+        "open_mix",
       ],
       moderation_action_type: [
         "report_claimed",

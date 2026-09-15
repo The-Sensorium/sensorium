@@ -94,6 +94,11 @@ function JoinCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? waiting
   const profile = useProfile()
+  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
+  const displayBlurb =
+    mode === 'open_mix'
+      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are. Clusters are built to last.'
+      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match. Clusters are built to last.'
 
   return (
     <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
@@ -102,16 +107,13 @@ function JoinCard({
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             Waiting in queue
           </p>
-          <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">{queueKey}</h2>
+          <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">{displayKey}</h2>
         </div>
         <span className="rounded-pill bg-surface-container px-3 py-1.5 text-sm font-semibold text-on-surface-variant">
           {count} of {CLUSTER_SIZE} ready
         </span>
       </div>
-      <p className="mt-3 text-sm leading-6 text-on-surface-variant">
-        Join this queue and you’ll be grouped with 7 strangers sharing this match. Clusters are
-        permanent.
-      </p>
+      <p className="mt-3 text-sm leading-6 text-on-surface-variant">{displayBlurb}</p>
       <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
         <button
           type="button"
@@ -137,7 +139,7 @@ function JoinCard({
         )}
       </div>
       {join.isError && (
-        <p className="mt-3 text-sm text-error">{joinQueueErrorMessage(join.error)}</p>
+        <p className="mt-3 text-sm text-error">{joinQueueErrorMessage(join.error, mode)}</p>
       )}
     </div>
   )
@@ -154,13 +156,14 @@ function JoinedCard({
 }) {
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? 0
+  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
 
   return (
     <div className="rounded-2xl border border-primary/30 bg-primary-container/10 p-6 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">You’re queued</p>
-          <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">{queueKey}</h2>
+          <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">{displayKey}</h2>
         </div>
         <span className="rounded-pill bg-surface-container px-3 py-1.5 text-sm font-semibold text-on-surface-variant">
           {count} of {CLUSTER_SIZE}
