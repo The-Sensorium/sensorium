@@ -72,6 +72,13 @@ export function VotesView() {
     return map
   }, [responses.data, userId])
 
+  const quorum = Math.floor((members.data ?? []).length / 2) + 1
+  const castCountByVote = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of responses.data ?? []) map.set(r.vote_id, (map.get(r.vote_id) ?? 0) + 1)
+    return map
+  }, [responses.data])
+
   async function castVote(voteId: string, choice: string) {
     setVoteError(null)
     setPendingVoteId(voteId)
@@ -109,7 +116,7 @@ export function VotesView() {
     }
   }
 
-  if (votes.isLoading || responses.isLoading) {
+  if (votes.isLoading || responses.isLoading || members.isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-on-surface-variant">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading votes…
@@ -182,6 +189,8 @@ export function VotesView() {
               memberById={memberById}
               pending={pendingVoteId === vote.id}
               onVote={castVote}
+              castCount={castCountByVote.get(vote.id) ?? 0}
+              quorum={quorum}
             />
           ))
         )}
@@ -307,7 +316,8 @@ function ReplacementBanner({
                 Finding replacement candidates
               </p>
               <p className="text-sm text-on-surface-variant">
-                A member recently left. We’re sourcing a new cluster member.
+                A member recently left. No one is waiting in line yet — we check hourly
+                and will invite or start a vote as soon as someone queues.
               </p>
             </>
           ) : round.status === 'inviting' ? (
@@ -343,6 +353,8 @@ function ActiveVoteCard({
   memberById,
   pending,
   onVote,
+  castCount,
+  quorum,
 }: {
   vote: VoteRow
   myChoice: string | null
@@ -351,6 +363,8 @@ function ActiveVoteCard({
   memberById: Map<string, MemberCard>
   pending: boolean
   onVote: (voteId: string, choice: string) => void
+  castCount: number
+  quorum: number
 }) {
   const target = vote.target_member_id ? memberById.get(vote.target_member_id) : null
 
@@ -379,7 +393,13 @@ function ActiveVoteCard({
 
       {vote.type === 'select_candidate' ? (
         showCandidates && candidates.length > 0 ? (
-          <ul className="mt-4 space-y-2">
+          <>
+            <p className="mt-3 text-xs font-medium text-on-surface-variant">
+              {castCount >= quorum
+                ? `Quorum reached (${castCount} of ${quorum} votes).`
+                : `${castCount} of ${quorum} votes needed.`}
+            </p>
+            <ul className="mt-3 space-y-2">
             {candidates.map((c) => {
               const selected = myChoice === c.user_id
               return (
@@ -413,7 +433,8 @@ function ActiveVoteCard({
                 </li>
               )
             })}
-          </ul>
+            </ul>
+          </>
         ) : (
           <p className="mt-4 text-sm text-on-surface-variant">
             Candidates are being prepared. Vote will open shortly.

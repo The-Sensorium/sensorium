@@ -68,6 +68,23 @@ describe('validateStep', () => {
     )
   })
 
+  it('step 5 hides join until local location is complete', () => {
+    expect(validateStep(5, { ...EMPTY_DRAFT, selectedModes: ['birth_year'] })).toBeNull()
+    expect(validateStep(5, { ...EMPTY_DRAFT, selectedModes: ['local'] })).toBe(
+      'Share your location to join the Local mode.',
+    )
+    expect(
+      validateStep(5, {
+        ...EMPTY_DRAFT,
+        selectedModes: ['local'],
+        shareLocation: true,
+        coordinates: { lat: 38.7, lng: -9.1 },
+        localArea: 'lisbon',
+        radiusKm: 50,
+      }),
+    ).toBeNull()
+  })
+
   it('unknown steps validate clean', () => {
     expect(validateStep(99, EMPTY_DRAFT)).toBeNull()
   })

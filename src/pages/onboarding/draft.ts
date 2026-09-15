@@ -82,6 +82,13 @@ export function validateStep(step: number, draft: OnboardingDraft): string | nul
       if (!draft.radiusKm) return 'Choose a matching radius.'
       return null
     }
+    case 5: {
+      if (!draft.selectedModes.includes('local')) return null
+      if (!draft.shareLocation) return 'Share your location to join the Local mode.'
+      if (!draft.coordinates || !draft.localArea) return 'We couldn’t determine your area yet.'
+      if (!draft.radiusKm) return 'Choose a matching radius.'
+      return null
+    }
     default:
       return null
   }

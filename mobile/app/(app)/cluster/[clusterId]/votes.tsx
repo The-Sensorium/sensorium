@@ -91,6 +91,13 @@ export default function VotesScreen() {
     return map
   }, [responses.data, userId])
 
+  const quorum = Math.floor((members.data ?? []).length / 2) + 1
+  const castCountByVote = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of responses.data ?? []) map.set(r.vote_id, (map.get(r.vote_id) ?? 0) + 1)
+    return map
+  }, [responses.data])
+
   async function castVote(voteId: string, choice: string) {
     setVoteError(null)
     setPendingVoteId(voteId)
@@ -128,7 +135,7 @@ export default function VotesScreen() {
     }
   }
 
-  if (votes.isLoading || responses.isLoading) {
+  if (votes.isLoading || responses.isLoading || members.isLoading) {
     return (
       <Screen>
         <ClusterSectionHeader title="Votes" clusterId={clusterId} section="votes" />
@@ -210,6 +217,8 @@ export default function VotesScreen() {
             memberById={memberById}
             pending={pendingVoteId === vote.id}
             onVote={castVote}
+            castCount={castCountByVote.get(vote.id) ?? 0}
+            quorum={quorum}
           />
         ))
       )}
@@ -345,7 +354,8 @@ function ReplacementBanner({
                   Finding replacement candidates
                 </Text>
                 <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
-                  A member recently left. We’re sourcing a new cluster member.
+                  A member recently left. No one is waiting in line yet — we check hourly
+                  and will invite or start a vote as soon as someone queues.
                 </Text>
               </>
             ) : round.status === 'inviting' ? (
@@ -382,6 +392,8 @@ function ActiveVoteCard({
   memberById,
   pending,
   onVote,
+  castCount,
+  quorum,
 }: {
   vote: VoteRow
   myChoice: string | null
@@ -390,6 +402,8 @@ function ActiveVoteCard({
   memberById: Map<string, MemberCard>
   pending: boolean
   onVote: (voteId: string, choice: string) => void
+  castCount: number
+  quorum: number
 }) {
   const t = useTheme()
   const target = vote.target_member_id ? memberById.get(vote.target_member_id) : null
@@ -419,7 +433,13 @@ function ActiveVoteCard({
 
       {vote.type === 'select_candidate' ? (
         showCandidates && candidates.length > 0 ? (
-          candidates.map((c) => {
+          <>
+            <Text style={{ marginTop: 8, fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
+              {castCount >= quorum
+                ? `Quorum reached (${castCount} of ${quorum} votes).`
+                : `${castCount} of ${quorum} votes needed.`}
+            </Text>
+            {candidates.map((c) => {
             const selected = myChoice === c.user_id
             return (
               <Pressable
@@ -456,7 +476,8 @@ function ActiveVoteCard({
                 {pending ? <ActivityIndicator size="small" color={t.primary} /> : null}
               </Pressable>
             )
-          })
+          })}
+          </>
         ) : (
           <Text style={{ marginTop: 16, fontSize: 14, color: t.onSurfaceVariant }}>
             Candidates are being prepared. Vote will open shortly.
