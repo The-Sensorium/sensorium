@@ -142,7 +142,7 @@ export function OnboardingPage() {
 
       <header className="mx-auto flex w-full max-w-xl items-center justify-between px-6 pt-8">
         <Link to="/" className="flex items-center gap-2">
-          <BrandMark size={24} />
+          <BrandMark size={40} />
           <span className="font-brand text-lg tracking-[0.15em]">Sensorium</span>
         </Link>
       </header>

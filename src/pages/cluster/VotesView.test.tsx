@@ -153,6 +153,63 @@ describe('VotesView', () => {
     renderPage()
     expect(screen.getByText('Pick the next cluster member')).toBeInTheDocument()
     expect(screen.getByText('Cara')).toBeInTheDocument()
+    expect(screen.getByText('0 of 2 votes needed.')).toBeInTheDocument()
+  })
+
+  it('explains the wait when no candidates are queued yet', () => {
+    hooks.useReplacementRound.mockReturnValue(
+      queryStub({ id: 'r1', cluster_id: 'c1', status: 'selecting_candidates' }),
+    )
+    renderPage()
+    expect(screen.getByText('Finding replacement candidates')).toBeInTheDocument()
+    expect(screen.getByText(/No one is waiting in line yet/)).toBeInTheDocument()
+  })
+
+  it('shows quorum progress on a select-candidate vote', () => {
+    const round = {
+      id: 'r1',
+      cluster_id: 'c1',
+      status: 'voting',
+      select_candidate_vote_id: 'v2',
+      invited_user_id: null,
+    }
+    hooks.useClusterVotes.mockReturnValue(
+      queryStub([{ ...baseVote, id: 'v2', type: 'select_candidate' }]),
+    )
+    hooks.useReplacementRound.mockReturnValue(queryStub(round))
+    hooks.useReplacementCandidates.mockReturnValue(
+      queryStub([{ user_id: 'c1', display_name: 'Cara', avatar_url: null }]),
+    )
+    hooks.useClusterVoteResponses.mockReturnValue(
+      queryStub([{ vote_id: 'v2', user_id: 'u1', choice: 'c1', created_at: '' }]),
+    )
+    renderPage()
+    expect(screen.getByText('1 of 2 votes needed.')).toBeInTheDocument()
+  })
+
+  it('confirms quorum without implying an early close', () => {
+    const round = {
+      id: 'r1',
+      cluster_id: 'c1',
+      status: 'voting',
+      select_candidate_vote_id: 'v2',
+      invited_user_id: null,
+    }
+    hooks.useClusterVotes.mockReturnValue(
+      queryStub([{ ...baseVote, id: 'v2', type: 'select_candidate' }]),
+    )
+    hooks.useReplacementRound.mockReturnValue(queryStub(round))
+    hooks.useReplacementCandidates.mockReturnValue(
+      queryStub([{ user_id: 'c1', display_name: 'Cara', avatar_url: null }]),
+    )
+    hooks.useClusterVoteResponses.mockReturnValue(
+      queryStub([
+        { vote_id: 'v2', user_id: 'u1', choice: 'c1', created_at: '' },
+        { vote_id: 'v2', user_id: 'm1', choice: 'c1', created_at: '' },
+      ]),
+    )
+    renderPage()
+    expect(screen.getByText('Quorum reached (2 of 2 votes).')).toBeInTheDocument()
   })
 
   it('starts a replacement vote from the modal', async () => {

@@ -106,8 +106,14 @@ export default function IntroductionsScreen() {
           key={q.id}
           style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 20, marginBottom: 16 }}
         >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-            {i + 1}. {q.prompt}
+          <Text
+            style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}
+            accessibilityLabel={`${i + 1}. ${q.prompt} (required)`}
+          >
+            {i + 1}. {q.prompt}{' '}
+            <Text style={{ color: t.error }} aria-hidden={true}>
+              *
+            </Text>
           </Text>
           <View style={{ marginTop: 12 }}>
             <Field
