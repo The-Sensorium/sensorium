@@ -101,7 +101,11 @@ export function IntroductionsPage() {
         {(questions.data ?? []).map((q, i) => (
           <div key={q.id} className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
             <label htmlFor={`intro-${q.id}`} className="block text-sm font-semibold text-on-surface">
-              {i + 1}. {q.prompt}
+              {i + 1}. {q.prompt}{' '}
+              <span aria-hidden="true" className="text-error">
+                *
+              </span>
+              <span className="sr-only">(required)</span>
             </label>
             <textarea
               id={`intro-${q.id}`}
@@ -110,6 +114,7 @@ export function IntroductionsPage() {
               value={answers[q.id] ?? ''}
               onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
               placeholder="Write a few honest sentences…"
+              aria-required="true"
               className="mt-3 w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-sm leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
             />
             <p
