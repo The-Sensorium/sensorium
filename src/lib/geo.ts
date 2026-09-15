@@ -10,6 +10,25 @@ export interface Place {
 
 /** Promise wrapper around the browser Geolocation API. */
 export function getCurrentPosition(): Promise<GeoPoint> {
+  const PERMISSION_DENIED = 1
+  const POSITION_UNAVAILABLE = 2
+  const TIMEOUT = 3
+
+  function isTransient(err: GeolocationPositionError): boolean {
+    return err.code === POSITION_UNAVAILABLE || err.code === TIMEOUT
+  }
+
+  function toGeoError(err: GeolocationPositionError): Error {
+    switch (err.code) {
+      case PERMISSION_DENIED:
+        return new Error('Location permission was denied.')
+      case POSITION_UNAVAILABLE:
+        return new Error('Your location is currently unavailable.')
+      default:
+        return new Error('Unable to determine your location.')
+    }
+  }
+
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
       reject(new Error('Geolocation is not supported by your browser.'))
@@ -41,25 +60,6 @@ export function getCurrentPosition(): Promise<GeoPoint> {
     }
     run()
   })
-}
-
-const PERMISSION_DENIED = 1
-const POSITION_UNAVAILABLE = 2
-const TIMEOUT = 3
-
-function isTransient(err: GeolocationPositionError): boolean {
-  return err.code === POSITION_UNAVAILABLE || err.code === TIMEOUT
-}
-
-function toGeoError(err: GeolocationPositionError): Error {
-  switch (err.code) {
-    case PERMISSION_DENIED:
-      return new Error('Location permission was denied.')
-    case POSITION_UNAVAILABLE:
-      return new Error('Your location is currently unavailable.')
-    default:
-      return new Error('Unable to determine your location.')
-  }
 }
 
 const GEOCODING_ENDPOINT = import.meta.env.VITE_GEOCODING_ENDPOINT as string | undefined
