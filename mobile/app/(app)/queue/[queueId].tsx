@@ -87,10 +87,13 @@ export default function QueueScreen() {
       <ErrorText message={pull.error} />
       <Pressable
         onPress={() => router.replace('/(app)/home')}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}
+        accessibilityRole="button"
+        accessibilityLabel="Back to home"
+        hitSlop={12}
+        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 8, paddingRight: 16, marginBottom: 16 }}
       >
-        <ArrowLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+        <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
+        <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
           Back to home
         </Text>
       </Pressable>

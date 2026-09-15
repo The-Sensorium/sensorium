@@ -56,6 +56,9 @@ export default function OnboardingScreen() {
 
   const userId = auth.userId
   const userEmail = auth.email
+  const hasLocalLocation =
+    !draft.selectedModes.includes('local') ||
+    (draft.shareLocation && draft.coordinates != null && draft.localArea != null && draft.radiusKm != null)
 
   function patch(updates: Partial<OnboardingDraft>) {
     setDraft((d) => ({ ...d, ...updates }))
@@ -172,15 +175,20 @@ export default function OnboardingScreen() {
           {step === 5 ? <StepReview draft={draft} /> : null}
 
           {error ? <Text style={{ marginTop: 16, fontSize: 14, color: t.error }}>{error}</Text> : null}
+          {step === TOTAL_STEPS && !hasLocalLocation ? (
+            <Text style={{ marginTop: 16, fontSize: 14, color: t.onSurfaceVariant }}>
+              Add your location to join the Local mode.
+            </Text>
+          ) : null}
 
           <View style={{ marginTop: 24, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <SecondaryButton title="Back" onPress={goBack} disabled={step === 1 || submitting} />
             <View style={{ flex: 2 }}>
               {step < TOTAL_STEPS ? (
                 <PrimaryButton title="Continue" onPress={goNext} />
-              ) : (
+              ) : hasLocalLocation ? (
                 <PrimaryButton title="Join Queue(s)" loadingTitle="Joining…" onPress={submit} loading={submitting} />
-              )}
+              ) : null}
             </View>
           </View>
         </View>

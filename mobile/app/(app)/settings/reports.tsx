@@ -30,10 +30,13 @@ export default function MyReportsScreen() {
     <Screen>
       <Pressable
         onPress={() => router.back()}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}
+        accessibilityRole="button"
+        accessibilityLabel="Back to settings"
+        hitSlop={12}
+        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 8, paddingRight: 16, marginBottom: 12 }}
       >
-        <ArrowLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+        <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
+        <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
           Back to settings
         </Text>
       </Pressable>

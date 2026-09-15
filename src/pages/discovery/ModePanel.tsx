@@ -18,9 +18,12 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
   const status = useMyQueueStatus()
   const row = status.data?.find((r) => r.mode === mode)
   const [editingLocal, setEditingLocal] = useState(false)
+  const profile = useProfile()
+  const hasLocalLocation =
+    !!profile.data?.local_area && profile.data?.local_radius_km != null
 
   let body: ReactNode
-  if (status.isLoading) {
+  if (status.isLoading || (mode === 'local' && profile.isLoading)) {
     body = (
       <div className="flex items-center gap-2 text-sm text-on-surface-variant">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
@@ -30,7 +33,10 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
     body = <div className="text-sm text-on-surface-variant">This mode isn’t available yet.</div>
   } else if (row.cluster_id) {
     body = <InClusterCard clusterId={row.cluster_id} />
-  } else if (mode === 'local' && (row.queue_key === null || editingLocal)) {
+  } else if (
+    mode === 'local' &&
+    (!row.queue_key || editingLocal || (!row.joined && !hasLocalLocation))
+  ) {
     body = <LocalSetupCard onDone={() => setEditingLocal(false)} />
   } else if (row.joined) {
     body = (
