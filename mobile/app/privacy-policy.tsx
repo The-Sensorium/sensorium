@@ -72,7 +72,7 @@ export default function PrivacyPolicyScreen() {
         </Card>
       ))}
       <View style={{ alignItems: 'center', padding: 12 }}>
-        <Pressable onPress={() => void Linking.openURL('mailto:thesenssensoriumapp@gmail.com')}>
+        <Pressable onPress={() => void Linking.openURL('mailto:thesensoriumapp@gmail.com')}>
           <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>Questions? Email us anytime.</Text>
         </Pressable>
       </View>
