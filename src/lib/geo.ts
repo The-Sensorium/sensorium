@@ -15,23 +15,51 @@ export function getCurrentPosition(): Promise<GeoPoint> {
       reject(new Error('Geolocation is not supported by your browser.'))
       return
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => {
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            reject(new Error('Location permission was denied.'))
-            break
-          case err.POSITION_UNAVAILABLE:
-            reject(new Error('Your location is currently unavailable.'))
-            break
-          default:
-            reject(new Error('Unable to determine your location.'))
-        }
-      },
+    // kCLErrorLocationUnknown surfaces as POSITION_UNAVAILABLE and is transient:
+    // CoreLocation may fail the first fix even when permission is granted
+    // (seen on macOS Tahoe + Edge). TIMEOUT is transient for the same reason.
+    // Retry once with low accuracy, which uses network-based positioning
+    // instead of the failing high-accuracy provider.
+    const attempts: PositionOptions[] = [
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
-    )
+      { enableHighAccuracy: false, timeout: 15_000, maximumAge: 60_000 },
+    ]
+    let attempt = 0
+    const run = () => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => {
+          if (isTransient(err) && attempt + 1 < attempts.length) {
+            attempt += 1
+            run()
+            return
+          }
+          reject(toGeoError(err))
+        },
+        attempts[attempt],
+      )
+    }
+    run()
   })
+}
+
+const PERMISSION_DENIED = 1
+const POSITION_UNAVAILABLE = 2
+const TIMEOUT = 3
+
+function isTransient(err: GeolocationPositionError): boolean {
+  return err.code === POSITION_UNAVAILABLE || err.code === TIMEOUT
+}
+
+function toGeoError(err: GeolocationPositionError): Error {
+  switch (err.code) {
+    case PERMISSION_DENIED:
+      return new Error('Location permission was denied.')
+    case POSITION_UNAVAILABLE:
+      return new Error('Your location is currently unavailable.')
+    default:
+      return new Error('Unable to determine your location.')
+  }
 }
 
 const GEOCODING_ENDPOINT = import.meta.env.VITE_GEOCODING_ENDPOINT as string | undefined
