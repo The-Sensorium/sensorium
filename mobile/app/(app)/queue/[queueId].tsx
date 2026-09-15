@@ -70,6 +70,7 @@ export default function QueueScreen() {
   const info = modeInfo(current.mode)
   const Icon = info.icon
   const leaving = leave.isPending
+  const displayKey = current.mode === 'open_mix' ? 'Open pool' : current.queue_key
 
   async function handleLeave() {
     setLeaveError(null)
@@ -102,7 +103,7 @@ export default function QueueScreen() {
           </Text>
         </View>
         <Text style={{ marginTop: 4, fontSize: 22, fontWeight: '600', color: t.onSurface }}>
-          {entry.queue_key}
+          {displayKey}
         </Text>
 
         <View style={{ marginTop: 24 }}>

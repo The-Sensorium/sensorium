@@ -74,6 +74,7 @@ Cluster formation is modular across multiple matching modes, each forming its ow
 | Birth Month | Matched with people born in the same month, any year |
 | Birth Year | Matched with people born in the same year, any month |
 | Local | Matched with people within a user selected radius of their location |
+| Open Mix | First 8 people in line, no birth-date or location filter (onboarding bridge) |
 
 A user can be active in multiple clusters at once, each formed via a different mode. For example, someone could be in a Birth Year cluster and a Local cluster at the same time.
 
@@ -148,6 +149,7 @@ Users may join any combination of available matching modes, each forming a separ
 - Birth Month
 - Birth Year
 - Local
+- Open Mix (pre-selected in onboarding; single global queue `open`)
 
 Each mode a user opts into puts them in a separate queue for that mode. A user is not required to join all modes. They can start with just one and add others later from the Discovery page.
 
@@ -359,7 +361,12 @@ User messages remain in cluster history.
 ---
 ## Cooldown Rules
 
-Leaving a cluster triggers a 30 day cooldown before joining another cluster of the same mode.
+Leaving a cluster triggers a cooldown before joining another cluster of the same mode.
+
+| Mode | Cooldown |
+|---|---|
+| Open Mix | 7 days |
+| All other modes | 30 days |
 
 Example:
 Leaving a Birth Year + Month cluster triggers a 30 day cooldown for that specific mode only. It does not affect other modes the user is in.
@@ -515,11 +522,11 @@ mode. Selecting a mode opens its page (`/discovery/{mode}`) with the queue/join
 flow for that mode and a directory of the mode's active clusters.
 
 Discovery tiles show:
-- Matching Mode (Exact Birthdate, Birth Year + Month, Birth Month, Birth Year, Local)
+- Matching Mode (Exact Birthdate, Birth Year + Month, Birth Month, Birth Year, Local, Open Mix)
 - Number of active clusters currently in that mode
 
 A mode page shows:
-- Queue Count for the relevant pool. For Local, the radius they've selected. For birth based modes, their relevant date grouping.
+- Queue Count for the relevant pool. For Local, the radius they've selected. For birth based modes, their relevant date grouping. For Open Mix, the single global pool.
 - Active clusters in that mode: cluster name, status, member count, and formation date only.
 
 Example:
@@ -670,6 +677,10 @@ Birth Year
 Local
 ```
 
+```text
+Open Mix
+```
+
 ---
 
 #### FAQ
@@ -813,6 +824,7 @@ Birth Year + Month
 Birth Month
 Birth Year
 Local
+Open Mix (pre-selected)
 ```
 
 Validation:
@@ -938,6 +950,7 @@ Birth Year + Month
 Birth Month
 Birth Year
 Local
+Open Mix
 ```
 
 ---

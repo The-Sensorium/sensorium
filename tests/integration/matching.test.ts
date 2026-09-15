@@ -202,6 +202,70 @@ describe('matching', () => {
     expect(birthYear.waiting).toBe(1)
     const exact = data.find((r: { mode: string }) => r.mode === 'exact_birthdate')
     expect(exact.joined).toBe(false)
+    const open = data.find((r: { mode: string }) => r.mode === 'open_mix')
+    expect(open).toBeDefined()
+    expect(open.queue_key).toBe('open')
+    expect(open.label).toBe('Open Mix')
+  })
+
+  it('joins the open_mix global queue without location data', async () => {
+    const u = await onboarded('m-open')
+    const { data, error } = await u.client.rpc('join_queue', { p_mode: 'open_mix' })
+    expect(error).toBeNull()
+    expect(data?.[0]?.queue_key).toBe('open')
+    expect(data?.[0]?.waiting).toBe(1)
+  })
+
+  it('forms an open_mix cluster from eight heterogeneous users', async () => {
+    const users: TestUser[] = []
+    for (let i = 0; i < 8; i++) {
+      const u = await createUser(admin, `m-openform-${i}`)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob: `199${i}-0${(i % 9) + 1}-1${i % 9}` })
+      users.push(u)
+    }
+    for (const u of users) {
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'open_mix' })
+      expect(error).toBeNull()
+    }
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id, matching_mode, queue_key, mode_label, status')
+      .eq('queue_key', 'open')
+      .eq('matching_mode', 'open_mix')
+    expect(clusters).toHaveLength(1)
+    expect(clusters![0].mode_label).toBe('Open Mix')
+    clusterIds.push(clusters![0].id)
+    const { data: members } = await admin
+      .from('cluster_members')
+      .select('user_id')
+      .eq('cluster_id', clusters![0].id)
+      .is('left_at', null)
+    expect(members).toHaveLength(8)
+  })
+
+  it('applies a 7-day cooldown when leaving an open_mix cluster', async () => {
+    const u = await onboarded('m-opencool')
+    const clusterId = await createCluster(admin, {
+      memberIds: [u.id],
+      name: 'Open Cooldown',
+      status: 'active',
+      mode: 'open_mix',
+    })
+    clusterIds.push(clusterId)
+    const { error: leaveErr } = await u.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+    const { data: cooldowns } = await admin
+      .from('mode_cooldowns')
+      .select('mode, available_at')
+      .eq('user_id', u.id)
+      .eq('mode', 'open_mix')
+    expect(cooldowns).toHaveLength(1)
+    const delta = new Date(cooldowns![0].available_at).getTime() - Date.now()
+    expect(delta).toBeGreaterThan(6 * 24 * 3600 * 1000)
+    expect(delta).toBeLessThan(8 * 24 * 3600 * 1000)
   })
 
   it('get_my_clusters returns memberships with their active-member count', async () => {

@@ -35,6 +35,16 @@ test.describe('golden path (seeded)', () => {
     await expect(page).toHaveURL(/\/discovery\/exact_birthdate/)
   })
 
+  test('open mix tile links to its mode page', async ({ page }) => {
+    await page.goto('/clusters')
+
+    const modes = page.getByRole('region', { name: 'Matching modes' })
+    const open = modes.getByRole('link', { name: /Open Mix/i })
+    await expect(open).toBeVisible()
+    await open.click()
+    await expect(page).toHaveURL(/\/discovery\/open_mix/)
+  })
+
   test('a formed cluster room renders its timeline', async ({ page }) => {
     await page.goto('/home')
     await page.getByRole('link', { name: /Aurora/i }).first().click()

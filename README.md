@@ -35,7 +35,7 @@ Sensorium is an open-source social platform that places you into a permanent gro
 
 ## Features
 
-- **Matching**: enter up to five queues (exact birth date, birth month and day, birth year and month, birth year, or local radius). A cluster forms when a mode reaches eight ready people.
+- **Matching**: enter up to six queues (exact birth date, birth month and day, birth year and month, birth year, local radius, or Open Mix). A cluster forms when a mode reaches eight ready people.
 - **Cluster chat**: realtime messaging with edits, reply threads, @-mentions, emoji reactions, image sharing, a GIF picker (KLIPY), and presence (who is here, who is typing, who is online).
 - **Read receipts**: per-message "seen by" detail with the time each member first read it, updated automatically as members scroll.
 - **Cluster calls**: start or join audio/video calls from the room on web and Android, with ringing state and membership gating powered by LiveKit.
