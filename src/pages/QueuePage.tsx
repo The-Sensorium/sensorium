@@ -50,6 +50,7 @@ export function QueuePage() {
   const current = entry
   const info = modeInfo(current.mode)
   const leaving = leave.isPending
+  const displayKey = current.mode === 'open_mix' ? 'Open pool' : current.queue_key
 
   async function handleLeave() {
     setLeaveError(null)
@@ -76,7 +77,7 @@ export function QueuePage() {
           <info.icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
           {info.label}
         </p>
-        <h1 className="mt-1 font-display text-2xl font-semibold text-on-surface">{entry.queue_key}</h1>
+        <h1 className="mt-1 font-display text-2xl font-semibold text-on-surface">{displayKey}</h1>
         <span className="mt-2 inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
           Matching mode
         </span>

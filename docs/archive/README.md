@@ -32,6 +32,7 @@ Status reflects the feature in the live app, not the doc's original framing.
 | [`EMAIL_NOTIFICATIONS_APPEALS_PLAN.md`](EMAIL_NOTIFICATIONS_APPEALS_PLAN.md) | Transactional email outbox + in-app appeals | Shipped |
 | [`PUSH_NOTIFICATIONS_PLAN.md`](PUSH_NOTIFICATIONS_PLAN.md) | Expo OS-level push notifications + `push_outbox` | Shipped |
 | [`MUTE_AND_MY_REPORTS_PLAN.md`](MUTE_AND_MY_REPORTS_PLAN.md) | Per-user mute and "My Reports" self-status view | Shipped |
+| [`OPEN_MIX_CLUSTER_PLAN.md`](OPEN_MIX_CLUSTER_PLAN.md) | Open Mix 6th matching mode (global FIFO queue, 7-day cooldown) | Shipped |
 | [`IMAGE_OPTIMIZATION_PLAN.md`](IMAGE_OPTIMIZATION_PLAN.md) | Avatar downscaling + lazy-loading coverage | Shipped |
 | [`POLISH_PLAN.md`](POLISH_PLAN.md) | Optimistic reactions, password visibility, pinned presence | Shipped |
 

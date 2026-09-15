@@ -77,7 +77,7 @@ export function QueueCard({ entry }: { entry: MyQueueEntry }) {
           style={{ marginTop: 4, fontSize: 18, fontWeight: '600', color: t.onSurface }}
           numberOfLines={1}
         >
-          {entry.queue_key}
+          {entry.mode === 'open_mix' ? 'Open pool' : entry.queue_key}
         </Text>
         <View style={{ marginTop: 16 }}>
           <QueueProgress mode={entry.mode} queueKey={entry.queue_key} />

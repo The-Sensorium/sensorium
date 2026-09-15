@@ -60,8 +60,13 @@ describe('isNetworkError', () => {
 
 describe('joinQueueErrorMessage', () => {
   it('maps cooldown errors', () => {
-    expect(joinQueueErrorMessage({ message: 'JOIN_COOLDOWN_ACTIVE' })).toContain('cooldown')
-    expect(joinQueueErrorMessage(new Error('cooldown'))).toContain('cooldown')
+    expect(joinQueueErrorMessage({ message: 'JOIN_COOLDOWN_ACTIVE' })).toContain('30-day')
+    expect(joinQueueErrorMessage(new Error('cooldown'))).toContain('30-day')
+  })
+
+  it('uses the 7-day cooldown copy for open_mix', () => {
+    expect(joinQueueErrorMessage(new Error('cooldown_active'), 'open_mix')).toContain('7-day')
+    expect(joinQueueErrorMessage(new Error('cooldown_active'), 'birth_year')).toContain('30-day')
   })
 
   it('maps missing-location errors', () => {

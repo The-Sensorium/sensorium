@@ -27,7 +27,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   photo: null,
   avatarUrl: null,
   bio: '',
-  selectedModes: [],
+  selectedModes: ['open_mix'],
   shareLocation: false,
   radiusKm: null,
   coordinates: null,

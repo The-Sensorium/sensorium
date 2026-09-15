@@ -17,8 +17,8 @@ export default function PrivacyPolicyScreen() {
         }}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}
       >
-        <ArrowLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+        <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
+        <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
           Back to settings
         </Text>
       </Pressable>
@@ -72,7 +72,7 @@ export default function PrivacyPolicyScreen() {
         </Card>
       ))}
       <View style={{ alignItems: 'center', padding: 12 }}>
-        <Pressable onPress={() => void Linking.openURL('mailto:privacy@sensorium.app')}>
+        <Pressable onPress={() => void Linking.openURL('mailto:thesenssensoriumapp@gmail.com')}>
           <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>Questions? Email us anytime.</Text>
         </Pressable>
       </View>

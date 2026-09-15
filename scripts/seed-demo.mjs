@@ -1,5 +1,5 @@
 // Seed the local Supabase stack with a rich, realistic demo dataset so every
-// discovery/matching state is visible: clusters across all five matching modes,
+// discovery/matching state is visible: clusters across all six matching modes,
 // in both active and introductions phases, with varied member counts. The E2E
 // golden path is preserved: diya@demo.example stays an active member of the
 // 8-person "Aurora" cluster alongside rio@demo.example, who is both a mention
@@ -279,6 +279,15 @@ const CLUSTERS = [
     status: 'active',
     formedDaysAgo: 100,
     members: [0, 4, 7, 10, 15, 18, 22, 27],
+  },
+  {
+    name: 'Harbor',
+    mode: 'open_mix',
+    modeLabel: 'Open Mix',
+    queueKey: 'open',
+    status: 'active',
+    formedDaysAgo: 12,
+    members: [1, 6, 11, 16, 21, 26, 31, 36],
   },
 ]
 

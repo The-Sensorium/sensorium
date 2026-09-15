@@ -50,8 +50,15 @@ describe('validateStep', () => {
   })
 
   it('step 3 requires at least one mode', () => {
-    expect(validateStep(3, EMPTY_DRAFT)).toBe('Pick at least one matching mode.')
+    expect(validateStep(3, { ...EMPTY_DRAFT, selectedModes: [] })).toBe(
+      'Pick at least one matching mode.',
+    )
     expect(validateStep(3, { ...EMPTY_DRAFT, selectedModes: ['local'] })).toBeNull()
+  })
+
+  it('pre-selects open_mix by default', () => {
+    expect(EMPTY_DRAFT.selectedModes).toEqual(['open_mix'])
+    expect(validateStep(3, EMPTY_DRAFT)).toBeNull()
   })
 
   it('step 4 enforces location + radius only when Local is selected', () => {

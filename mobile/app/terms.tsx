@@ -17,8 +17,8 @@ export default function TermsScreen() {
         }}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}
       >
-        <ArrowLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+        <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
+        <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
           Back to settings
         </Text>
       </Pressable>
