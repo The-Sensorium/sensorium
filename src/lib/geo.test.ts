@@ -41,35 +41,85 @@ describe('getCurrentPosition', () => {
   })
 
   it('rejects with an unavailable message', async () => {
-    vi.stubGlobal('navigator', {
-      geolocation: {
-        getCurrentPosition: (_cb: PositionCallback, err: PositionErrorCallback) =>
-          err({
-            code: 2,
-            message: 'unavailable',
-            PERMISSION_DENIED: 1,
-            POSITION_UNAVAILABLE: 2,
-          } as GeolocationPositionError),
-      },
-    })
+    const getCurrentPositionMock = vi.fn(
+      (_cb: PositionCallback, err: PositionErrorCallback) =>
+        err({
+          code: 2,
+          message: 'unavailable',
+          PERMISSION_DENIED: 1,
+          POSITION_UNAVAILABLE: 2,
+        } as GeolocationPositionError),
+    )
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition: getCurrentPositionMock } })
     await expect(getCurrentPosition()).rejects.toThrow(
       'Your location is currently unavailable.',
     )
+    expect(getCurrentPositionMock).toHaveBeenCalledTimes(2)
   })
 
   it('rejects with a fallback message for other errors', async () => {
-    vi.stubGlobal('navigator', {
-      geolocation: {
-        getCurrentPosition: (_cb: PositionCallback, err: PositionErrorCallback) =>
-          err({
-            code: 3,
-            message: 'timeout',
-            PERMISSION_DENIED: 1,
-            POSITION_UNAVAILABLE: 2,
-          } as GeolocationPositionError),
-      },
-    })
+    const getCurrentPositionMock = vi.fn(
+      (_cb: PositionCallback, err: PositionErrorCallback) =>
+        err({
+          code: 3,
+          message: 'timeout',
+          PERMISSION_DENIED: 1,
+          POSITION_UNAVAILABLE: 2,
+        } as GeolocationPositionError),
+    )
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition: getCurrentPositionMock } })
     await expect(getCurrentPosition()).rejects.toThrow('Unable to determine your location.')
+    expect(getCurrentPositionMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('retries with low accuracy after a transient unavailable error', async () => {
+    const getCurrentPositionMock = vi
+      .fn()
+      .mockImplementationOnce(
+        (_cb: PositionCallback, err: PositionErrorCallback, opts?: PositionOptions) => {
+          expect(opts?.enableHighAccuracy).toBe(true)
+          err({ code: 2 } as GeolocationPositionError)
+        },
+      )
+      .mockImplementationOnce(
+        (cb: PositionCallback, _err: PositionErrorCallback, opts?: PositionOptions) => {
+          expect(opts?.enableHighAccuracy).toBe(false)
+          cb({ coords: { latitude: 38.7223, longitude: -9.1393 } } as GeolocationPosition)
+        },
+      )
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition: getCurrentPositionMock } })
+    await expect(getCurrentPosition()).resolves.toEqual({ lat: 38.7223, lng: -9.1393 })
+    expect(getCurrentPositionMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not retry when permission is denied', async () => {
+    const getCurrentPositionMock = vi.fn(
+      (_cb: PositionCallback, err: PositionErrorCallback) =>
+        err({ code: 1 } as GeolocationPositionError),
+    )
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition: getCurrentPositionMock } })
+    await expect(getCurrentPosition()).rejects.toThrow('Location permission was denied.')
+    expect(getCurrentPositionMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries with low accuracy after a timeout', async () => {
+    const getCurrentPositionMock = vi
+      .fn()
+      .mockImplementationOnce(
+        (_cb: PositionCallback, err: PositionErrorCallback, opts?: PositionOptions) => {
+          expect(opts?.enableHighAccuracy).toBe(true)
+          err({ code: 3 } as GeolocationPositionError)
+        },
+      )
+      .mockImplementationOnce(
+        (cb: PositionCallback, _err: PositionErrorCallback, opts?: PositionOptions) => {
+          expect(opts?.enableHighAccuracy).toBe(false)
+          cb({ coords: { latitude: 1, longitude: 2 } } as GeolocationPosition)
+        },
+      )
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition: getCurrentPositionMock } })
+    await expect(getCurrentPosition()).resolves.toEqual({ lat: 1, lng: 2 })
+    expect(getCurrentPositionMock).toHaveBeenCalledTimes(2)
   })
 })
 
