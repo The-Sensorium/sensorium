@@ -42,11 +42,11 @@ export function DiscoveryModePage() {
       <header className="pt-2">
         <Link
           to="/clusters"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+          className="-ml-3 inline-flex items-center gap-2 self-start rounded-lg px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-container/15 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Clusters
+          <ArrowLeft className="h-5 w-5" aria-hidden /> Clusters
         </Link>
-        <h1 className="mt-2 font-display text-3xl font-semibold text-on-surface">{info.label}</h1>
+        <h1 className="mt-1 font-display text-3xl font-semibold text-on-surface">{info.label}</h1>
         <p className="mt-1 text-sm text-on-surface-variant">{info.detail}</p>
       </header>
 

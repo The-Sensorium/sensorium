@@ -44,6 +44,9 @@ export function OnboardingPage() {
 
   const userId = auth.userId
   const userEmail = auth.email
+  const hasLocalLocation =
+    !draft.selectedModes.includes('local') ||
+    (draft.shareLocation && draft.coordinates != null && draft.localArea != null && draft.radiusKm != null)
 
   function patch(updates: Partial<OnboardingDraft>) {
     setDraft((d) => ({ ...d, ...updates }))
@@ -164,6 +167,11 @@ export function OnboardingPage() {
           {step === 5 && <StepReview draft={draft} />}
 
           {error && <p className="mt-5 text-sm text-error">{error}</p>}
+          {step === TOTAL_STEPS && !hasLocalLocation && (
+            <p className="mt-5 text-sm text-on-surface-variant">
+              Add your location to join the Local mode.
+            </p>
+          )}
 
           <div className="mt-8 flex items-center justify-between gap-3">
             <button
@@ -182,7 +190,7 @@ export function OnboardingPage() {
               >
                 Continue
               </button>
-            ) : (
+            ) : hasLocalLocation ? (
               <button
                 type="button"
                 onClick={submit}
@@ -191,7 +199,7 @@ export function OnboardingPage() {
               >
                 {submitting ? 'Joining…' : 'Join Queue(s)'}
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       </main>

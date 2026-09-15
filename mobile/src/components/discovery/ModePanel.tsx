@@ -19,8 +19,11 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
   const status = useMyQueueStatus()
   const row = status.data?.find((r) => r.mode === mode)
   const [editingLocal, setEditingLocal] = useState(false)
+  const profile = useProfile()
+  const hasLocalLocation =
+    !!profile.data?.local_area && profile.data?.local_radius_km != null
 
-  if (status.isLoading) {
+  if (status.isLoading || (mode === 'local' && profile.isLoading)) {
     return (
       <Card>
         <LoadingView />
@@ -35,7 +38,10 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
     )
   }
   if (row.cluster_id) return <InClusterCard clusterId={row.cluster_id} />
-  if (mode === 'local' && (row.queue_key === null || editingLocal)) {
+  if (
+    mode === 'local' &&
+    (!row.queue_key || editingLocal || (!row.joined && !hasLocalLocation))
+  ) {
     return <LocalSetupCard onDone={() => setEditingLocal(false)} />
   }
   if (row.joined && row.queue_key) {

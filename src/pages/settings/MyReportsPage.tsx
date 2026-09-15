@@ -28,7 +28,7 @@ export function MyReportsPage() {
     <div className="mx-auto max-w-xl space-y-6 pt-2">
       <Link
         to="/settings"
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant transition-colors hover:text-primary"
+        className="-ml-3 inline-flex items-center gap-2 self-start rounded-lg px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-container/15 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back to settings
       </Link>

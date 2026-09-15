@@ -53,14 +53,27 @@ export default function DiscoveryModeScreen() {
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ErrorText message={pull.error} />
       <Link href="/(app)/clusters" asChild>
-        <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <ArrowLeft size={16} color={t.onSurfaceVariant} />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to clusters"
+          hitSlop={12}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            gap: 6,
+            paddingVertical: 8,
+            paddingRight: 16,
+            marginBottom: 8,
+          }}
+        >
+          <ArrowLeft size={18} color={t.primary} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
             Clusters
           </Text>
         </Pressable>
       </Link>
-      <Text style={{ marginTop: 8, fontSize: 28, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, fontSize: 28, fontWeight: '600', color: t.onSurface }}>
         {info.label}
       </Text>
       <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant, marginBottom: 16 }}>
