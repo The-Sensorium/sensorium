@@ -267,6 +267,65 @@ export function RoomView() {
     setInCall(false)
   }, [clusterId])
 
+  // The room is a fixed-height band with its own scroll container, so the
+  // page itself must never scroll. On iOS, Safari pans the document to reveal
+  // the focused composer and strands that offset when the keyboard closes,
+  // leaving a gap below the composer. Locking the root element (not body,
+  // which modals reset) keeps all panning inside the timeline container.
+  useEffect(() => {
+    const root = document.documentElement
+    const prev = root.style.overflow
+    root.style.overflow = 'hidden'
+    return () => {
+      root.style.overflow = prev
+    }
+  }, [])
+
+  // iOS does not resize the layout viewport when the keyboard opens; it
+  // floats the fixed bottom nav above the keys, stranding the page padding
+  // below the composer as a visible gap. While an input is focused and the
+  // visual viewport shrinks by keyboard amounts, size the room to the visible
+  // area and slide the nav away so the composer docks above the keyboard.
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const viewport: VisualViewport = vv
+    const root = document.documentElement
+    // Baseline for "keyboard closed": the visual height seen while no input
+    // is focused. innerHeight can't be the baseline - Android's
+    // interactive-widget=resizes-content shrinks it together with the visual
+    // viewport, so the keyboard would go undetected there.
+    let fullHeight = viewport.height
+    function sync() {
+      const typing =
+        document.activeElement instanceof HTMLTextAreaElement ||
+        document.activeElement instanceof HTMLInputElement
+      if (!typing) {
+        fullHeight = viewport.height
+        root.classList.remove('keyboard-open')
+        root.style.removeProperty('--vv-h')
+        return
+      }
+      const open = fullHeight - viewport.height > 150
+      root.classList.toggle('keyboard-open', open)
+      if (open) root.style.setProperty('--vv-h', `${viewport.height}px`)
+      else root.style.removeProperty('--vv-h')
+    }
+    viewport.addEventListener('resize', sync)
+    viewport.addEventListener('scroll', sync)
+    document.addEventListener('focusin', sync)
+    document.addEventListener('focusout', sync)
+    sync()
+    return () => {
+      viewport.removeEventListener('resize', sync)
+      viewport.removeEventListener('scroll', sync)
+      document.removeEventListener('focusin', sync)
+      document.removeEventListener('focusout', sync)
+      root.classList.remove('keyboard-open')
+      root.style.removeProperty('--vv-h')
+    }
+  }, [])
+
   // Auto-follow the newest message while the user is near the bottom. Once they
   // scroll up to read, stop following and count what arrives instead. The room
   // is a fixed-height band on every screen size, so the timeline always scrolls
@@ -578,7 +637,7 @@ export function RoomView() {
        instead of scrolling away with the timeline. */}
       <section
         aria-label="Who is in the cluster"
-        className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft"
+        className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft max-lg:[html.keyboard-open_&]:hidden"
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex flex-wrap items-center gap-2">

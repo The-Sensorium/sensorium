@@ -29,6 +29,7 @@ import { useThemeChoice, type ThemeChoice } from '../../src/lib/theme-choice'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, LoadingView, Screen } from '../../src/components/ui'
+import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 
 const ACCEPTED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
@@ -624,6 +625,10 @@ function NotificationPreferences() {
         <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
           Tune what lands in your notification center, per cluster.
         </Text>
+
+        <View style={{ marginTop: 16 }}>
+          <PushPermissionPrompt compact />
+        </View>
 
         {clusters.isLoading || prefs.isLoading ? (
           <View style={{ marginTop: 16 }}>

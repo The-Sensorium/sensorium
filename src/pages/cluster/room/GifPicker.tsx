@@ -41,7 +41,7 @@ export function GifPicker({
         onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
         placeholder="Search KLIPY…"
         disabled={!gifSearchEnabled}
-        className="min-w-0 rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface outline-none placeholder:text-on-surface-variant/60 focus:border-primary"
+        className="min-w-0 rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-base text-on-surface outline-none placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
       />
       {!gifSearchEnabled ? (
         <p className="px-1 py-3 text-center text-xs text-on-surface-variant">

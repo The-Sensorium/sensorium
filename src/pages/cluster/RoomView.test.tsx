@@ -257,6 +257,57 @@ afterEach(() => {
 })
 
 describe('RoomView timeline', () => {
+  it('locks page scroll while the room is mounted and restores it on exit', () => {
+    const prev = document.documentElement.style.overflow
+    const { unmount } = renderRoom()
+    expect(document.documentElement.style.overflow).toBe('hidden')
+    unmount()
+    expect(document.documentElement.style.overflow).toBe(prev)
+  })
+
+  it('docks the room to the visible viewport while the keyboard is open', async () => {
+    const originalVv = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+    const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+    let vvHeight = 844
+    const vv = {
+      get height() {
+        return vvHeight
+      },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true })
+    try {
+      const { unmount } = renderRoom()
+      // Android's interactive-widget=resizes-content shrinks the layout
+      // viewport together with the visual one, so detection must not lean on
+      // innerHeight: it stays small here while the keyboard still opens.
+      Object.defineProperty(window, 'innerHeight', { value: 500, configurable: true })
+      vvHeight = 500
+      await userEvent.click(screen.getByRole('combobox', { name: 'Message' }))
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(true)
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('500px')
+      // The resize path (how real devices report the keyboard) stays in sync too.
+      const resizeSync = vv.addEventListener.mock.calls.find((call) => call[0] === 'resize')?.[1] as
+        | (() => void)
+        | undefined
+      vvHeight = 450
+      resizeSync?.()
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('450px')
+      await userEvent.click(document.body)
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(false)
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('')
+      unmount()
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(false)
+    } finally {
+      document.documentElement.classList.remove('keyboard-open')
+      document.documentElement.style.removeProperty('--vv-h')
+      if (originalVv) Object.defineProperty(window, 'visualViewport', originalVv)
+      else delete (window as { visualViewport?: unknown }).visualViewport
+      if (originalInnerHeight) Object.defineProperty(window, 'innerHeight', originalInnerHeight)
+    }
+  })
+
   it('renders messages, signals and votes in created_at order', () => {
     hooks.messages.data = [msg({ content: 'a message in the middle' })]
     hooks.signals.data = [signal({ created_at: '2026-01-01T11:00:00Z' })]

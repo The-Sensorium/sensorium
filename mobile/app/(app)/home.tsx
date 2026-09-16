@@ -24,6 +24,7 @@ import { toErrorMessage } from '../../src/lib/error'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
+import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 import { ClusterCard } from '../../src/components/ClusterCard'
 import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
 import { PostCard } from '../../src/components/PostCard'
@@ -121,6 +122,7 @@ export default function HomeScreen() {
       </Text>
       <ErrorText message={pull.error} />
 
+      <PushPermissionPrompt compact />
       {(invitations.data ?? []).map((inv) => (
         <Card key={inv.id}>
           <View style={{ marginBottom: 16 }}>
