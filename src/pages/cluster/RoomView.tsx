@@ -296,72 +296,31 @@ export function RoomView() {
     // interactive-widget=resizes-content shrinks it together with the visual
     // viewport, so the keyboard would go undetected there.
     let fullHeight = viewport.height
-    let lastKeyboardHeight = 0
-    let optimisticApplied = false
-    let optimisticTimer: number | null = null
-    function setDocked(open: boolean, height: number) {
-      root.classList.toggle('keyboard-open', open)
-      if (open) root.style.setProperty('--vv-h', `${height}px`)
-      else root.style.removeProperty('--vv-h')
-    }
     function sync() {
       const typing =
         document.activeElement instanceof HTMLTextAreaElement ||
         document.activeElement instanceof HTMLInputElement
       if (!typing) {
         fullHeight = viewport.height
-        optimisticApplied = false
-        if (optimisticTimer !== null) {
-          window.clearTimeout(optimisticTimer)
-          optimisticTimer = null
-        }
-        setDocked(false, 0)
+        root.classList.remove('keyboard-open')
+        root.style.removeProperty('--vv-h')
         return
       }
-      const loss = fullHeight - viewport.height
-      if (loss > 150) {
-        lastKeyboardHeight = loss
-        optimisticApplied = false
-        setDocked(true, viewport.height)
-        return
-      }
-      // The keyboard animates in after focus while resize events lag behind;
-      // Safari pans in the meantime and strands a blank flash. Dock at once
-      // from the last measured keyboard height so there is nothing to pan
-      // for. Measured per device, so every screen size calibrates itself.
-      if (lastKeyboardHeight > 150 && !optimisticApplied) {
-        const height = fullHeight - lastKeyboardHeight
-        if (height > 240) {
-          optimisticApplied = true
-          setDocked(true, height)
-          // No confirming resize means no keyboard (hardware keys): revert.
-          optimisticTimer = window.setTimeout(() => {
-            optimisticTimer = null
-            sync()
-          }, 600)
-          return
-        }
-      }
-      setDocked(false, 0)
-    }
-    // Moving focus between inputs keeps the keyboard open: leave the baseline
-    // and docking alone instead of treating it as a dismiss.
-    function onFocusOut(e: FocusEvent) {
-      const to = e.relatedTarget
-      if (to instanceof HTMLTextAreaElement || to instanceof HTMLInputElement) return
-      sync()
+      const open = fullHeight - viewport.height > 150
+      root.classList.toggle('keyboard-open', open)
+      if (open) root.style.setProperty('--vv-h', `${viewport.height}px`)
+      else root.style.removeProperty('--vv-h')
     }
     viewport.addEventListener('resize', sync)
     viewport.addEventListener('scroll', sync)
     document.addEventListener('focusin', sync)
-    document.addEventListener('focusout', onFocusOut)
+    document.addEventListener('focusout', sync)
     sync()
     return () => {
       viewport.removeEventListener('resize', sync)
       viewport.removeEventListener('scroll', sync)
       document.removeEventListener('focusin', sync)
-      document.removeEventListener('focusout', onFocusOut)
-      if (optimisticTimer !== null) window.clearTimeout(optimisticTimer)
+      document.removeEventListener('focusout', sync)
       root.classList.remove('keyboard-open')
       root.style.removeProperty('--vv-h')
     }
