@@ -225,7 +225,7 @@ export function MessageItem({
                     }
                   }}
                   rows={2}
-                  className="min-w-0 flex-1 resize-none rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
+                  className="min-w-0 flex-1 resize-none rounded-lg border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-base text-on-surface outline-none focus:border-primary sm:text-sm"
                 />
                 <div className="flex shrink-0 gap-1">
                   <button

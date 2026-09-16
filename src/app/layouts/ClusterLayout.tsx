@@ -81,7 +81,7 @@ export function ClusterLayout() {
       className={cn(
         'mx-auto w-full max-w-6xl',
         isRoom
-          ? 'flex h-[calc(100dvh_-_5.5rem_-_var(--bottom-nav-offset))] flex-col gap-4 lg:h-[calc(100dvh_-_7.5rem)]'
+          ? 'flex h-[calc(100dvh_-_5.5rem_-_var(--bottom-nav-offset))] flex-col gap-4 max-lg:[html.keyboard-open_&]:h-[calc(var(--vv-h,100dvh)-5.5rem)] lg:h-[calc(100dvh_-_7.5rem)]'
           : 'space-y-4',
       )}
     >

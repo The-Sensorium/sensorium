@@ -14,6 +14,9 @@ vi.mock('../../../features/gifs', () => ({
   useTrendingGifs: () => ({ data: [], isPending: false, error: null }),
 }))
 
+// jsdom has no layout engine, so scrolling primitives are stubs.
+window.scrollTo = vi.fn()
+
 const members: MentionMember[] = [
   { id: 'r1', display_name: 'Rio Mendez', avatar_url: null },
   { id: 'r2', display_name: 'Alice Blue', avatar_url: null },
@@ -65,6 +68,18 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
 const input = () => screen.getByRole('combobox', { name: 'Message' })
 
 describe('Composer', () => {
+  it('renders the message box at 16px on mobile so iOS does not auto-zoom on focus', () => {
+    setup()
+    expect(input()).toHaveClass('text-base')
+  })
+
+  it('resets any stranded page offset when the message box loses focus', async () => {
+    setup()
+    await userEvent.click(input())
+    fireEvent.blur(input())
+    await waitFor(() => expect(window.scrollTo).toHaveBeenCalledWith(0, 0))
+  })
+
   it('disables the send button while empty', () => {
     setup()
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
