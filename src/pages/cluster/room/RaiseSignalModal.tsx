@@ -39,7 +39,7 @@ export function RaiseSignalModal({
           value={prompt}
           onChange={(e) => onPromptChange(e.target.value)}
           placeholder="What do you need help with?"
-          className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-sm leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+          className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
         />
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs text-on-surface-variant">

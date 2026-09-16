@@ -65,6 +65,11 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
 const input = () => screen.getByRole('combobox', { name: 'Message' })
 
 describe('Composer', () => {
+  it('renders the message box at 16px on mobile so iOS does not auto-zoom on focus', () => {
+    setup()
+    expect(input()).toHaveClass('text-base')
+  })
+
   it('disables the send button while empty', () => {
     setup()
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()

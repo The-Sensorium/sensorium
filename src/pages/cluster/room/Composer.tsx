@@ -356,6 +356,8 @@ export function Composer({
               ))}
             </div>
           )}
+          {/* 16px on phones stops iOS auto-zooming the page on focus - that zoom
+              sticks after the keyboard closes and strands a gap below the composer. */}
           <TextareaAutosize
             ref={inputRef}
             id="room-input"
@@ -377,7 +379,7 @@ export function Composer({
             }}
             placeholder="Write to your cluster…"
             maxLength={2000}
-            className="min-w-0 w-full flex-1 resize-none overflow-hidden rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm leading-5 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+            className="min-w-0 w-full flex-1 resize-none overflow-hidden rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm sm:leading-5"
           />
         </div>
         <button
