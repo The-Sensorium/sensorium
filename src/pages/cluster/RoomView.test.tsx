@@ -265,6 +265,48 @@ describe('RoomView timeline', () => {
     expect(document.documentElement.style.overflow).toBe(prev)
   })
 
+  it('docks optimistically on focus from the last known keyboard height', async () => {
+    const originalVv = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+    let vvHeight = 844
+    const vv = {
+      get height() {
+        return vvHeight
+      },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true })
+    const resizeSync = () =>
+      vv.addEventListener.mock.calls.find((call) => call[0] === 'resize')?.[1] as
+        | (() => void)
+        | undefined
+    try {
+      const { unmount } = renderRoom()
+      const box = screen.getByRole('combobox', { name: 'Message' })
+      // First session: the keyboard reports through resize, teaching the height.
+      vvHeight = 500
+      await userEvent.click(box)
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('500px')
+      // Keyboard closes; the viewport returns to full height.
+      await userEvent.click(document.body)
+      vvHeight = 844
+      resizeSync()?.()
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(false)
+      // Second session: focus lands while resizes still lag, so the room docks
+      // at once from the remembered height instead of waiting (and flashing).
+      await userEvent.click(box)
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(true)
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('500px')
+      await userEvent.click(document.body)
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(false)
+      unmount()
+    } finally {
+      document.documentElement.classList.remove('keyboard-open')
+      document.documentElement.style.removeProperty('--vv-h')
+      if (originalVv) Object.defineProperty(window, 'visualViewport', originalVv)
+      else delete (window as { visualViewport?: unknown }).visualViewport
+    }
+  })
   it('docks the room to the visible viewport while the keyboard is open', async () => {
     const originalVv = Object.getOwnPropertyDescriptor(window, 'visualViewport')
     const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
