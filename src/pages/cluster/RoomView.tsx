@@ -291,12 +291,22 @@ export function RoomView() {
     if (!vv) return
     const viewport: VisualViewport = vv
     const root = document.documentElement
+    // Baseline for "keyboard closed": the visual height seen while no input
+    // is focused. innerHeight can't be the baseline - Android's
+    // interactive-widget=resizes-content shrinks it together with the visual
+    // viewport, so the keyboard would go undetected there.
+    let fullHeight = viewport.height
     function sync() {
-      const loss = window.innerHeight - viewport.height
       const typing =
         document.activeElement instanceof HTMLTextAreaElement ||
         document.activeElement instanceof HTMLInputElement
-      const open = typing && loss > 150
+      if (!typing) {
+        fullHeight = viewport.height
+        root.classList.remove('keyboard-open')
+        root.style.removeProperty('--vv-h')
+        return
+      }
+      const open = fullHeight - viewport.height > 150
       root.classList.toggle('keyboard-open', open)
       if (open) root.style.setProperty('--vv-h', `${viewport.height}px`)
       else root.style.removeProperty('--vv-h')

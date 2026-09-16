@@ -268,18 +268,32 @@ describe('RoomView timeline', () => {
   it('docks the room to the visible viewport while the keyboard is open', async () => {
     const originalVv = Object.getOwnPropertyDescriptor(window, 'visualViewport')
     const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+    let vvHeight = 844
     const vv = {
-      height: 500,
+      get height() {
+        return vvHeight
+      },
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
     }
     Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true })
-    Object.defineProperty(window, 'innerHeight', { value: 844, configurable: true })
     try {
       const { unmount } = renderRoom()
+      // Android's interactive-widget=resizes-content shrinks the layout
+      // viewport together with the visual one, so detection must not lean on
+      // innerHeight: it stays small here while the keyboard still opens.
+      Object.defineProperty(window, 'innerHeight', { value: 500, configurable: true })
+      vvHeight = 500
       await userEvent.click(screen.getByRole('combobox', { name: 'Message' }))
       expect(document.documentElement.classList.contains('keyboard-open')).toBe(true)
       expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('500px')
+      // The resize path (how real devices report the keyboard) stays in sync too.
+      const resizeSync = vv.addEventListener.mock.calls.find((call) => call[0] === 'resize')?.[1] as
+        | (() => void)
+        | undefined
+      vvHeight = 450
+      resizeSync?.()
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('450px')
       await userEvent.click(document.body)
       expect(document.documentElement.classList.contains('keyboard-open')).toBe(false)
       expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('')
