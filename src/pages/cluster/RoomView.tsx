@@ -627,7 +627,7 @@ export function RoomView() {
        instead of scrolling away with the timeline. */}
       <section
         aria-label="Who is in the cluster"
-        className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft"
+        className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft max-lg:[html.keyboard-open_&]:hidden"
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex flex-wrap items-center gap-2">
