@@ -4,6 +4,7 @@ import { modeInfo } from '../../lib/modes'
 import { ageOnDate, type OnboardingDraft } from '../../lib/onboarding-draft'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
+import { PushPermissionPrompt } from '../PushPermissionPrompt'
 
 function Row({ label, value }: { label: string; value: string }) {
   const t = useTheme()
@@ -58,6 +59,9 @@ export function StepReview({ draft }: { draft: OnboardingDraft }) {
             }
           />
         ) : null}
+      </View>
+      <View style={{ marginTop: 16 }}>
+        <PushPermissionPrompt />
       </View>
     </View>
   )
