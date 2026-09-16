@@ -281,6 +281,41 @@ export function RoomView() {
     }
   }, [])
 
+  // iOS does not resize the layout viewport when the keyboard opens; it
+  // floats the fixed bottom nav above the keys, stranding the page padding
+  // below the composer as a visible gap. While an input is focused and the
+  // visual viewport shrinks by keyboard amounts, size the room to the visible
+  // area and slide the nav away so the composer docks above the keyboard.
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const viewport: VisualViewport = vv
+    const root = document.documentElement
+    function sync() {
+      const loss = window.innerHeight - viewport.height
+      const typing =
+        document.activeElement instanceof HTMLTextAreaElement ||
+        document.activeElement instanceof HTMLInputElement
+      const open = typing && loss > 150
+      root.classList.toggle('keyboard-open', open)
+      if (open) root.style.setProperty('--vv-h', `${viewport.height}px`)
+      else root.style.removeProperty('--vv-h')
+    }
+    viewport.addEventListener('resize', sync)
+    viewport.addEventListener('scroll', sync)
+    document.addEventListener('focusin', sync)
+    document.addEventListener('focusout', sync)
+    sync()
+    return () => {
+      viewport.removeEventListener('resize', sync)
+      viewport.removeEventListener('scroll', sync)
+      document.removeEventListener('focusin', sync)
+      document.removeEventListener('focusout', sync)
+      root.classList.remove('keyboard-open')
+      root.style.removeProperty('--vv-h')
+    }
+  }, [])
+
   // Auto-follow the newest message while the user is near the bottom. Once they
   // scroll up to read, stop following and count what arrives instead. The room
   // is a fixed-height band on every screen size, so the timeline always scrolls

@@ -265,6 +265,35 @@ describe('RoomView timeline', () => {
     expect(document.documentElement.style.overflow).toBe(prev)
   })
 
+  it('docks the room to the visible viewport while the keyboard is open', async () => {
+    const originalVv = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+    const originalInnerHeight = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+    const vv = {
+      height: 500,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true })
+    Object.defineProperty(window, 'innerHeight', { value: 844, configurable: true })
+    try {
+      const { unmount } = renderRoom()
+      await userEvent.click(screen.getByRole('combobox', { name: 'Message' }))
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(true)
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('500px')
+      await userEvent.click(document.body)
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(false)
+      expect(document.documentElement.style.getPropertyValue('--vv-h')).toBe('')
+      unmount()
+      expect(document.documentElement.classList.contains('keyboard-open')).toBe(false)
+    } finally {
+      document.documentElement.classList.remove('keyboard-open')
+      document.documentElement.style.removeProperty('--vv-h')
+      if (originalVv) Object.defineProperty(window, 'visualViewport', originalVv)
+      else delete (window as { visualViewport?: unknown }).visualViewport
+      if (originalInnerHeight) Object.defineProperty(window, 'innerHeight', originalInnerHeight)
+    }
+  })
+
   it('renders messages, signals and votes in created_at order', () => {
     hooks.messages.data = [msg({ content: 'a message in the middle' })]
     hooks.signals.data = [signal({ created_at: '2026-01-01T11:00:00Z' })]

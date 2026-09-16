@@ -229,6 +229,15 @@
     padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
   }
 
+  /* While the iOS keyboard is open, the room docks to the visual viewport
+     and the bottom nav (which iOS would otherwise float above the keys,
+     stranding a gap below the chat composer) slides out of the way. The
+     keyboard-open class and --vv-h are managed by RoomView. */
+  html.keyboard-open [data-bottom-nav] {
+    transform: translateY(110%);
+    visibility: hidden;
+  }
+
   /* Height of the fixed mobile bottom nav (+ safe area). The room composer and
      its new-messages pill anchor above it on small screens. */
   :root {

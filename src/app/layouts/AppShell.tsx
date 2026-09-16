@@ -71,7 +71,10 @@ export function AppShell() {
 
       {/* Bottom nav - mobile only. Its height must match --bottom-nav-offset
        (reserved in index.css) so sticky/fixed page furniture sits flush on it. */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 h-[var(--bottom-nav-offset)] border-t border-outline-variant/60 bg-surface/95 backdrop-blur lg:hidden">
+      <nav
+        data-bottom-nav
+        className="fixed inset-x-0 bottom-0 z-20 h-[var(--bottom-nav-offset)] border-t border-outline-variant/60 bg-surface/95 backdrop-blur transition-[transform,visibility] duration-200 motion-reduce:transition-none lg:hidden"
+      >
         <ul className="mx-auto flex h-full max-w-6xl items-center justify-around">
           {navItems.map((item) => (
             <li key={item.to} className="flex h-full flex-1 items-center justify-center">
