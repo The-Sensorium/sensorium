@@ -257,6 +257,14 @@ afterEach(() => {
 })
 
 describe('RoomView timeline', () => {
+  it('locks page scroll while the room is mounted and restores it on exit', () => {
+    const prev = document.documentElement.style.overflow
+    const { unmount } = renderRoom()
+    expect(document.documentElement.style.overflow).toBe('hidden')
+    unmount()
+    expect(document.documentElement.style.overflow).toBe(prev)
+  })
+
   it('renders messages, signals and votes in created_at order', () => {
     hooks.messages.data = [msg({ content: 'a message in the middle' })]
     hooks.signals.data = [signal({ created_at: '2026-01-01T11:00:00Z' })]

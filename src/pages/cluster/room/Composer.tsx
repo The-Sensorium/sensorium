@@ -376,6 +376,9 @@ export function Composer({
             onBlur={() => {
               onStopTyping()
               setMention(null)
+              // Drop any page offset iOS stranded while the keyboard was open
+              // so no gap lingers below the composer after it closes.
+              requestAnimationFrame(() => window.scrollTo(0, 0))
             }}
             placeholder="Write to your cluster…"
             maxLength={2000}

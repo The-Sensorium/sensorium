@@ -267,6 +267,20 @@ export function RoomView() {
     setInCall(false)
   }, [clusterId])
 
+  // The room is a fixed-height band with its own scroll container, so the
+  // page itself must never scroll. On iOS, Safari pans the document to reveal
+  // the focused composer and strands that offset when the keyboard closes,
+  // leaving a gap below the composer. Locking the root element (not body,
+  // which modals reset) keeps all panning inside the timeline container.
+  useEffect(() => {
+    const root = document.documentElement
+    const prev = root.style.overflow
+    root.style.overflow = 'hidden'
+    return () => {
+      root.style.overflow = prev
+    }
+  }, [])
+
   // Auto-follow the newest message while the user is near the bottom. Once they
   // scroll up to read, stop following and count what arrives instead. The room
   // is a fixed-height band on every screen size, so the timeline always scrolls
