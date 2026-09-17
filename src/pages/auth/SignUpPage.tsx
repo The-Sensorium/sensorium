@@ -5,6 +5,8 @@ import { requireSupabase } from '../../lib/supabase'
 import { toErrorMessage } from '../../lib/error'
 import { GoogleIcon } from '../../components/GoogleIcon'
 import { PasswordInput } from '../../components/PasswordInput'
+import { CaptchaSection } from '../../components/TurnstileWidget'
+import { turnstileSiteKey } from '../../lib/turnstile'
 
 export function SignUpPage() {
   useDocumentTitle('Sign Up')
@@ -14,6 +16,10 @@ export function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaFailed, setCaptchaFailed] = useState(false)
+  const [widgetKey, setWidgetKey] = useState(0)
+  const siteKey = turnstileSiteKey()
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -33,7 +39,10 @@ export function SignUpPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: redirect },
+        options: {
+          emailRedirectTo: redirect,
+          ...(captchaToken ? { captchaToken } : {}),
+        },
       })
       if (error) throw error
       sessionStorage.setItem('sensorium:signup-email', email)
@@ -41,6 +50,9 @@ export function SignUpPage() {
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
+      setCaptchaToken(null)
+      setCaptchaFailed(false)
+      setWidgetKey((k) => k + 1)
       setSubmitting(false)
     }
   }
@@ -102,9 +114,21 @@ export function SignUpPage() {
             {error}
           </p>
         )}
+        <CaptchaSection
+          siteKey={siteKey}
+          widgetKey={widgetKey}
+          tokenReady={captchaToken !== null}
+          failed={captchaFailed}
+          onToken={setCaptchaToken}
+          onFailed={() => setCaptchaFailed(true)}
+          onRetry={() => {
+            setCaptchaFailed(false)
+            setWidgetKey((k) => k + 1)
+          }}
+        />
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || Boolean(siteKey && !captchaToken)}
           className="w-full rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
         >
           {submitting ? 'Creating…' : 'Create Account'}

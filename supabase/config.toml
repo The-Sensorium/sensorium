@@ -245,16 +245,21 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Auth email templates live in supabase/templates/ (versioned with the repo).
+# Apply to hosted projects via Dashboard > Authentication > Emails
+# (paste the file contents), local CLI picks them up from content_path.
+[auth.email.template.confirmation]
+subject = "Confirm your Sensorium email"
+content_path = "./supabase/templates/confirmation.html"
 
-# Uncomment to customize notification email template
-# [auth.email.notification.password_changed]
-# enabled = true
-# subject = "Your password has been changed"
-# content_path = "./templates/password_changed_notification.html"
+[auth.email.template.recovery]
+subject = "Reset your Sensorium password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.notification.password_changed]
+enabled = true
+subject = "Your Sensorium password was changed"
+content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

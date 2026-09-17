@@ -11,6 +11,14 @@ import { ResetPasswordPage } from './auth/ResetPasswordPage'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
 
+vi.mock('@marsidev/react-turnstile', () => ({
+  Turnstile: ({ onSuccess }: { onSuccess: (token: string) => void }) => (
+    <button type="button" onClick={() => onSuccess('test-captcha-token')}>
+      Solve captcha
+    </button>
+  ),
+}))
+
 const requireSupabaseMock = vi.mocked(requireSupabase)
 
 interface AuthStub {
@@ -55,6 +63,8 @@ function renderSignUpFlow() {
 
 beforeEach(() => {
   requireSupabaseMock.mockReset()
+  vi.unstubAllEnvs()
+  vi.stubEnv('VITE_TURNSTILE_SITE_KEY', '')
 })
 
 describe('LoginPage', () => {
@@ -106,6 +116,31 @@ describe('LoginPage', () => {
       expect(auth.signInWithOAuth).toHaveBeenCalledWith({
         provider: 'google',
         options: { redirectTo: expect.stringContaining('/entry') },
+      }),
+    )
+  })
+
+  it('disables submit until captcha is solved and forwards the token', async () => {
+    vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'test-site-key')
+    const { client, auth } = stubClient()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<LoginPage />)
+    const loginButton = screen.getByRole('button', { name: 'Login' })
+    expect(loginButton).toBeDisabled()
+
+    await user.type(screen.getByLabelText('Email'), 'a@b.test')
+    await user.type(screen.getByLabelText('Password'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Solve captcha' }))
+    await waitFor(() => expect(loginButton).toBeEnabled())
+    await user.click(loginButton)
+
+    await waitFor(() =>
+      expect(auth.signInWithPassword).toHaveBeenCalledWith({
+        email: 'a@b.test',
+        password: 'password123',
+        options: { captchaToken: 'test-captcha-token' },
       }),
     )
   })
@@ -174,6 +209,35 @@ describe('SignUpPage', () => {
       }),
     )
   })
+
+  it('forwards the captcha token when a site key is configured', async () => {
+    vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'test-site-key')
+    const { client, auth } = stubClient()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderSignUpFlow()
+    const createButton = screen.getByRole('button', { name: 'Create Account' })
+    expect(createButton).toBeDisabled()
+
+    await user.type(screen.getByLabelText('Email'), 'new@b.test')
+    await user.type(screen.getByLabelText('Password'), 'password123')
+    await user.type(screen.getByLabelText('Confirm Password'), 'password123')
+    await user.click(screen.getByRole('button', { name: 'Solve captcha' }))
+    await waitFor(() => expect(createButton).toBeEnabled())
+    await user.click(createButton)
+
+    await waitFor(() =>
+      expect(auth.signUp).toHaveBeenCalledWith({
+        email: 'new@b.test',
+        password: 'password123',
+        options: {
+          emailRedirectTo: expect.stringContaining('/auth/verify-email'),
+          captchaToken: 'test-captcha-token',
+        },
+      }),
+    )
+  })
 })
 
 describe('ForgotPasswordPage', () => {
@@ -192,6 +256,29 @@ describe('ForgotPasswordPage', () => {
       }),
     )
     expect(screen.getByText('Check your inbox')).toBeInTheDocument()
+  })
+
+  it('forwards the captcha token when a site key is configured', async () => {
+    vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'test-site-key')
+    const { client, auth } = stubClient()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<ForgotPasswordPage />)
+    const sendButton = screen.getByRole('button', { name: 'Send reset link' })
+    expect(sendButton).toBeDisabled()
+
+    await user.type(screen.getByLabelText('Email'), 'a@b.test')
+    await user.click(screen.getByRole('button', { name: 'Solve captcha' }))
+    await waitFor(() => expect(sendButton).toBeEnabled())
+    await user.click(sendButton)
+
+    await waitFor(() =>
+      expect(auth.resetPasswordForEmail).toHaveBeenCalledWith('a@b.test', {
+        redirectTo: expect.stringContaining('/auth/reset-password'),
+        captchaToken: 'test-captcha-token',
+      }),
+    )
   })
 })
 
@@ -223,6 +310,48 @@ describe('VerifyEmailPage', () => {
 
     expect(screen.getByText('We could not find your email. Please sign up again.')).toBeInTheDocument()
     expect(requireSupabaseMock).not.toHaveBeenCalled()
+  })
+
+  it('disables resend until captcha is solved and forwards the token', async () => {
+    vi.stubEnv('VITE_TURNSTILE_SITE_KEY', 'test-site-key')
+    sessionStorage.setItem('sensorium:signup-email', 'new@b.test')
+    const { client, auth } = stubClient()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<VerifyEmailPage />)
+    const resendButton = screen.getByRole('button', { name: 'Resend email' })
+    expect(resendButton).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Solve captcha' }))
+    await waitFor(() => expect(resendButton).toBeEnabled())
+    await user.click(resendButton)
+
+    await waitFor(() =>
+      expect(auth.resend).toHaveBeenCalledWith({
+        type: 'signup',
+        email: 'new@b.test',
+        options: {
+          emailRedirectTo: expect.stringContaining('/auth/verify-email'),
+          captchaToken: 'test-captcha-token',
+        },
+      }),
+    )
+  })
+
+  it('surfaces resend failures instead of reporting success', async () => {
+    sessionStorage.setItem('sensorium:signup-email', 'new@b.test')
+    const { client, auth } = stubClient({
+      resend: vi.fn(async () => ({ data: null, error: new Error('captcha failed') })),
+    })
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<VerifyEmailPage />)
+    await user.click(screen.getByRole('button', { name: 'Resend email' }))
+
+    await waitFor(() => expect(auth.resend).toHaveBeenCalled())
+    expect(screen.getByText('Could not resend the email. Please try again.')).toBeInTheDocument()
   })
 })
 

@@ -3,6 +3,9 @@ import { View } from 'react-native'
 import { router } from 'expo-router'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
+import { useCaptchaChallenge } from '../../src/lib/use-captcha-challenge'
+import { captchaBypassAllowed } from '../../src/lib/captcha'
+import { CaptchaSheet } from '../../src/components/captcha-sheet'
 import { setSignupEmail } from '../../src/lib/auth-storage'
 import { authRedirect } from '../../src/lib/deep-links'
 import { signInWithGoogle } from '../../src/lib/google-auth'
@@ -15,24 +18,20 @@ export default function SignupScreen() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [googleBusy, setGoogleBusy] = useState(false)
+  const captcha = useCaptchaChallenge()
 
-  async function onSubmit() {
+  async function doSubmit(captchaToken: string | null) {
     setError(null)
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
-      return
-    }
-    if (password !== confirm) {
-      setError('Passwords do not match.')
-      return
-    }
     setSubmitting(true)
     try {
       const supabase = requireSupabase()
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { emailRedirectTo: authRedirect('verify-email') },
+        options: {
+          emailRedirectTo: authRedirect('verify-email'),
+          ...(captchaToken ? { captchaToken } : {}),
+        },
       })
       if (error) throw error
       await setSignupEmail(email.trim())
@@ -42,6 +41,37 @@ export default function SignupScreen() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function onSubmit() {
+    if (submitting) return
+    setError(null)
+    if (!email.trim()) {
+      setError('Please enter your email address.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+    if (!captcha.challengeUrl) {
+      if (!captchaBypassAllowed()) {
+        setError('Human verification is unavailable. Please update the app and try again.')
+        return
+      }
+      void doSubmit(null)
+      return
+    }
+    captcha.openChallenge()
+  }
+
+  function handleSheetToken(token: string) {
+    captcha.closeChallenge()
+    void doSubmit(token)
   }
 
   async function onGoogle() {
@@ -87,6 +117,14 @@ export default function SignupScreen() {
       />
       <ErrorText message={error} />
       <PrimaryButton title="Create Account" loadingTitle="Creating…" onPress={onSubmit} loading={submitting} disabled={busy} />
+      {captcha.challengeUrl && captcha.sheetOpen ? (
+        <CaptchaSheet
+          key={captcha.sheetKey}
+          challengeUrl={captcha.challengeUrl}
+          onToken={handleSheetToken}
+          onClose={captcha.closeChallenge}
+        />
+      ) : null}
       <OrDivider />
       <GoogleButton onPress={onGoogle} loading={googleBusy} disabled={busy} />
       <View style={{ marginTop: 24 }}>

@@ -5,6 +5,8 @@ import { requireSupabase } from '../../lib/supabase'
 import { toErrorMessage } from '../../lib/error'
 import { GoogleIcon } from '../../components/GoogleIcon'
 import { PasswordInput } from '../../components/PasswordInput'
+import { CaptchaSection } from '../../components/TurnstileWidget'
+import { turnstileSiteKey } from '../../lib/turnstile'
 
 export function LoginPage() {
   useDocumentTitle('Log In')
@@ -12,6 +14,10 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaFailed, setCaptchaFailed] = useState(false)
+  const [widgetKey, setWidgetKey] = useState(0)
+  const siteKey = turnstileSiteKey()
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -19,12 +25,17 @@ export function LoginPage() {
     setSubmitting(true)
     try {
       const supabase = requireSupabase()
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await supabase.auth.signInWithPassword(
+        captchaToken ? { email, password, options: { captchaToken } } : { email, password },
+      )
       if (error) throw error
       // RequireGuest redirects to /home once the session is set.
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
+      setCaptchaToken(null)
+      setCaptchaFailed(false)
+      setWidgetKey((k) => k + 1)
       setSubmitting(false)
     }
   }
@@ -68,9 +79,21 @@ export function LoginPage() {
           </Link>
         </div>
         {error && <p className="text-sm text-error">{error}</p>}
+        <CaptchaSection
+          siteKey={siteKey}
+          widgetKey={widgetKey}
+          tokenReady={captchaToken !== null}
+          failed={captchaFailed}
+          onToken={setCaptchaToken}
+          onFailed={() => setCaptchaFailed(true)}
+          onRetry={() => {
+            setCaptchaFailed(false)
+            setWidgetKey((k) => k + 1)
+          }}
+        />
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || Boolean(siteKey && !captchaToken)}
           className="w-full rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
         >
           Login
