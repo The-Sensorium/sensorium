@@ -3,6 +3,8 @@ import { Link } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
 import { toErrorMessage } from '../../lib/error'
+import { CaptchaSection } from '../../components/TurnstileWidget'
+import { turnstileSiteKey } from '../../lib/turnstile'
 
 export function ForgotPasswordPage() {
   useDocumentTitle('Forgot Password')
@@ -10,6 +12,10 @@ export function ForgotPasswordPage() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaFailed, setCaptchaFailed] = useState(false)
+  const [widgetKey, setWidgetKey] = useState(0)
+  const siteKey = turnstileSiteKey()
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -19,12 +25,16 @@ export function ForgotPasswordPage() {
       const supabase = requireSupabase()
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
+        ...(captchaToken ? { captchaToken } : {}),
       })
       if (error) throw error
       setSent(true)
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
+      setCaptchaToken(null)
+      setCaptchaFailed(false)
+      setWidgetKey((k) => k + 1)
       setSubmitting(false)
     }
   }
@@ -63,9 +73,21 @@ export function ForgotPasswordPage() {
             {error}
           </p>
         )}
+        <CaptchaSection
+          siteKey={siteKey}
+          widgetKey={widgetKey}
+          tokenReady={captchaToken !== null}
+          failed={captchaFailed}
+          onToken={setCaptchaToken}
+          onFailed={() => setCaptchaFailed(true)}
+          onRetry={() => {
+            setCaptchaFailed(false)
+            setWidgetKey((k) => k + 1)
+          }}
+        />
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || Boolean(siteKey && !captchaToken)}
           className="w-full rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
         >
           {submitting ? 'Sending…' : 'Send reset link'}

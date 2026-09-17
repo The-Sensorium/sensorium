@@ -2,11 +2,17 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
+import { CaptchaSection } from '../../components/TurnstileWidget'
+import { turnstileSiteKey } from '../../lib/turnstile'
 
 export function VerifyEmailPage() {
   useDocumentTitle('Verify Email')
   const [message, setMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaFailed, setCaptchaFailed] = useState(false)
+  const [widgetKey, setWidgetKey] = useState(0)
+  const siteKey = turnstileSiteKey()
 
   async function resend() {
     const email = sessionStorage.getItem('sensorium:signup-email')
@@ -21,12 +27,18 @@ export function VerifyEmailPage() {
       await supabase.auth.resend({
         type: 'signup',
         email,
-        options: { emailRedirectTo: `${window.location.origin}/auth/verify-email` },
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/verify-email`,
+          ...(captchaToken ? { captchaToken } : {}),
+        },
       })
       setMessage('We re-sent the confirmation email to your inbox.')
     } catch {
       setMessage('Could not resend the email. Please try again.')
     } finally {
+      setCaptchaToken(null)
+      setCaptchaFailed(false)
+      setWidgetKey((k) => k + 1)
       setSubmitting(false)
     }
   }
@@ -40,11 +52,25 @@ export function VerifyEmailPage() {
       <button
         type="button"
         onClick={resend}
-        disabled={submitting}
+        disabled={submitting || Boolean(siteKey && !captchaToken)}
         className="mt-6 rounded-pill border border-outline-variant/60 px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
       >
         {submitting ? 'Sending…' : 'Resend email'}
       </button>
+      <div className="mx-auto mt-4 max-w-xs text-left">
+        <CaptchaSection
+          siteKey={siteKey}
+          widgetKey={widgetKey}
+          tokenReady={captchaToken !== null}
+          failed={captchaFailed}
+          onToken={setCaptchaToken}
+          onFailed={() => setCaptchaFailed(true)}
+          onRetry={() => {
+            setCaptchaFailed(false)
+            setWidgetKey((k) => k + 1)
+          }}
+        />
+      </div>
       {message && (
         <p role="status" className="mt-4 text-sm text-on-surface-variant">
           {message}
