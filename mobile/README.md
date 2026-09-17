@@ -110,6 +110,7 @@ for building an installable APK without EAS.
 ## Auth and deep links
 
 - **Email/password** and **Google OAuth** through Supabase Auth.
+- Email/password and resend flows carry a Turnstile `captchaToken` when the project enforces bot protection: the app opens a `CaptchaSheet` WebView on the web `/auth/mobile-challenge` page (`EXPO_PUBLIC_WEB_URL`) and submits the posted token. Empty URL means verification is skipped (local dev only); release builds fail closed with an explicit error.
 - OAuth and password-recovery redirects come back to the app's `sensorium://`
   deep link and are completed in [`src/lib/deep-links.ts`](src/lib/deep-links.ts)
   (`handleAuthCallback`), landing on `app/auth/callback.tsx`.

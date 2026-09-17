@@ -1,6 +1,6 @@
 # Turnstile Bot Protection Plan (Supabase Auth CAPTCHA)
 
-> Status: web + mobile implemented on `feat/mobile-turnstile` and verified (web: unit/browser; mobile: Expo Go login against staging with enforcement ON). Still pending: prod dashboard steps (§3), `develop` → `main` release, production enablement (§7).
+> Status: web (#192) + mobile (#193) + email templates merged to `develop`; staging enforced and verified (web, mobile build, deep links). Still pending: `develop` → `main` release, production enablement (§7).
 > Scope: Cloudflare Turnstile for Supabase Auth on web SPA (primary), Expo mobile (secondary), staging + production (both free-tier Supabase projects).
 > Non-goals: custom backend, Edge Function captcha for forms, changing RLS/RPC, changing email templates.
 
