@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Linking from 'expo-linking'
 import {
   WebView,
@@ -55,6 +56,7 @@ export function CaptchaSheet({
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
       <View style={{ flex: 1, backgroundColor: t.background }}>
         <View
           style={{
@@ -140,6 +142,7 @@ export function CaptchaSheet({
           ) : null}
         </View>
       </View>
+      </SafeAreaView>
     </Modal>
   )
 }
