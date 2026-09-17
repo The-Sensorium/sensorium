@@ -24,6 +24,9 @@ test.describe('posts (seeded)', () => {
     const text = `E2E post ${Date.now()}`
 
     await page.goto('/posts')
+    // Diya can belong to several clusters (e.g. a locked introductions
+    // cluster sorts first by recency); post in Aurora, which is unlocked.
+    await page.getByRole('tab', { name: 'Aurora' }).click()
     const trigger = page.getByRole('button', { name: 'New post' })
     await expect(trigger).toBeVisible()
     await trigger.click()

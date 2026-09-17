@@ -53,7 +53,15 @@ test.describe('settings (seeded)', () => {
   test('toggles a notification preference and restores it', async ({ page }) => {
     await login(page)
     await page.goto('/settings')
-    const messages = page.getByRole('switch', { name: 'Messages' }).first()
+    // Diya can belong to several clusters, so cards start collapsed: expand
+    // Aurora's card and scope the switch to its region (collapsed cards stay
+    // mounted but inert and would otherwise intercept the click).
+    const auroraHeader = page.getByRole('button', { name: /Aurora/ })
+    if ((await auroraHeader.getAttribute('aria-expanded')) !== 'true') {
+      await auroraHeader.click()
+    }
+    const regionId = await auroraHeader.getAttribute('aria-controls')
+    const messages = page.locator(`#${regionId}`).getByRole('switch', { name: 'Messages' })
     const before = (await messages.getAttribute('aria-checked')) === 'true'
 
     await messages.click()
