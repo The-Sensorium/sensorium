@@ -231,6 +231,8 @@ The browser obtains a signed URL with a short TTL, uses it to render the image, 
 
 Authentication uses Supabase Auth with email/password and Google OAuth. Platform access (member vs moderator vs admin) is layered on top via `user_roles` and the `access.ts` capabilities, not via auth itself; staff workspaces are reachable only with the matching role and capability. Account deletion leaves the clusters clean: the deleting user departs each cluster before the profile is removed (migration 0028). Moderation records survive deletion but are anonymized, because `reports`, `moderation_actions`, `account_restrictions`, and `user_roles` reference profiles with `on delete set null` (0052-0053).
 
+Bot protection is Supabase Auth CAPTCHA with Cloudflare Turnstile, enforced server-side per project (dashboard Authentication > Bot and Abuse Protection; not in `config.toml`, where `[auth.captcha]` stays disabled for the local stack). Once enabled, every `signUp`/`signInWithPassword`/`resetPasswordForEmail`/`resend` must carry a `captchaToken`. Web sends it from an inline widget (`src/components/TurnstileWidget.tsx`, gated submit, fail-open only when `VITE_TURNSTILE_SITE_KEY` is unset). The native app has no Turnstile SDK, so it solves the challenge in a modal WebView pointed at the public `/auth/mobile-challenge` page (`mobile/src/components/captcha-sheet.tsx`, `EXPO_PUBLIC_WEB_URL` origin) and submits the posted token. Design record: [`archive/TURNSTILE_BOT_PROTECTION_PLAN.md`](archive/TURNSTILE_BOT_PROTECTION_PLAN.md).
+
 ## Security
 
 Security lives in the database, not in the client. The browser holds only the public anon key and is never trusted; Row Level Security and RPC functions are the enforcement point. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the mental model.
@@ -244,8 +246,9 @@ Security lives in the database, not in the client. The browser holds only the pu
 | `VITE_KLIPY_APP_KEY` | no | KLIPY app key that enables the chat/post GIF picker |
 | `VITE_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`); useful for pointing at a mirror in non-production |
 | `VITE_GEOCODING_ENDPOINT` | no | Geocoding endpoint override used by Local mode (falls back to keyless BigDataCloud, then raw coordinates) |
+| `VITE_TURNSTILE_SITE_KEY` | no | Cloudflare Turnstile site key for auth bot protection; empty means the widget is hidden (local dev only) |
 
-The mobile app uses the `EXPO_PUBLIC_` equivalents (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT`); see [`../mobile/README.md`](../mobile/README.md).
+The mobile app uses the `EXPO_PUBLIC_` equivalents (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT`) plus `EXPO_PUBLIC_WEB_URL` (web origin hosting `/auth/mobile-challenge`; required on device builds, empty only for local dev); see [`../mobile/README.md`](../mobile/README.md).
 
 Only the anon/publishable key is used in the clients. All privileged operations run through Postgres RPC functions guarded by Row Level Security. No secrets ship in the client.
 
