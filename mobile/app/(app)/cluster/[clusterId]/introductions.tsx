@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Text, View } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { Sparkles } from 'lucide-react-native'
 import {
   useCluster,
@@ -31,9 +31,14 @@ export default function IntroductionsScreen() {
   const submit = useSubmitIntroAnswers()
 
   const done = !!membership.data?.intro_completed_at
-  useEffect(() => {
-    if (done) router.replace({ pathname: '/cluster/[clusterId]/waiting', params: { clusterId } })
-  }, [done, clusterId])
+  useFocusEffect(
+    useCallback(() => {
+      if (membership.isLoading) return
+      if (done) {
+        router.replace({ pathname: '/cluster/[clusterId]/waiting', params: { clusterId } })
+      }
+    }, [done, membership.isLoading, clusterId]),
+  )
 
   if (cluster.isLoading || membership.isLoading || questions.isLoading) {
     return (

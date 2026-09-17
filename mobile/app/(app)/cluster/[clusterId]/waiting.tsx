@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Text, View } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { CheckCircle2, Clock } from 'lucide-react-native'
 import { CLUSTER_SIZE } from '../../../../src/lib/constants'
 import {
@@ -30,11 +30,22 @@ export default function WaitingScreen() {
     return () => clearInterval(id)
   }, [allDone, cluster.data?.introductions_completed_at, cluster])
 
-  useEffect(() => {
-    if (cluster.data && !membership.data?.intro_completed_at) {
-      router.replace({ pathname: '/cluster/[clusterId]/introductions', params: { clusterId } })
-    }
-  }, [cluster.data, membership.data, clusterId])
+  // Mirrors web WaitingForOthersPage priority: locked + intro pending goes to
+  // the form, unlocked goes to the room, locked + complete stays waiting.
+  const unlockedAt = cluster.data?.introductions_completed_at
+  const myIntroAt = membership.data?.intro_completed_at
+  const hasCluster = !!cluster.data
+  useFocusEffect(
+    useCallback(() => {
+      if (cluster.isLoading || membership.isLoading) return
+      if (!hasCluster) return
+      if (!unlockedAt && !myIntroAt) {
+        router.replace({ pathname: '/cluster/[clusterId]/introductions', params: { clusterId } })
+      } else if (unlockedAt) {
+        router.replace({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
+      }
+    }, [cluster.isLoading, membership.isLoading, hasCluster, unlockedAt, myIntroAt, clusterId]),
+  )
 
   if (cluster.isLoading || membership.isLoading) {
     return (
@@ -57,7 +68,6 @@ export default function WaitingScreen() {
   }
 
   if (cluster.data.introductions_completed_at) {
-    router.replace({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
     return (
       <Screen>
         <LoadingView />
