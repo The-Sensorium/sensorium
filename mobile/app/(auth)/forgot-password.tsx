@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { View } from 'react-native'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
+import { useCaptchaChallenge } from '../../src/lib/use-captcha-challenge'
+import { captchaBypassAllowed } from '../../src/lib/captcha'
+import { CaptchaSheet } from '../../src/components/captcha-sheet'
 import { authRedirect } from '../../src/lib/deep-links'
 import { AuthLink, AuthShell, ErrorText, Field, MutedCenter, PrimaryButton } from '../../src/components/ui'
 
@@ -10,14 +13,16 @@ export default function ForgotPasswordScreen() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const captcha = useCaptchaChallenge()
 
-  async function onSubmit() {
+  async function doSubmit(captchaToken: string | null) {
     setError(null)
     setSubmitting(true)
     try {
       const supabase = requireSupabase()
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: authRedirect('reset-password'),
+        ...(captchaToken ? { captchaToken } : {}),
       })
       if (error) throw error
       setSent(true)
@@ -26,6 +31,29 @@ export default function ForgotPasswordScreen() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function onSubmit() {
+    if (submitting) return
+    setError(null)
+    if (!email.trim()) {
+      setError('Please enter your email address.')
+      return
+    }
+    if (!captcha.challengeUrl) {
+      if (!captchaBypassAllowed()) {
+        setError('Human verification is unavailable. Please update the app and try again.')
+        return
+      }
+      void doSubmit(null)
+      return
+    }
+    captcha.openChallenge()
+  }
+
+  function handleSheetToken(token: string) {
+    captcha.closeChallenge()
+    void doSubmit(token)
   }
 
   if (sent) {
@@ -50,6 +78,14 @@ export default function ForgotPasswordScreen() {
       />
       <ErrorText message={error} />
       <PrimaryButton title="Send reset link" loadingTitle="Sending…" onPress={onSubmit} loading={submitting} />
+      {captcha.challengeUrl && captcha.sheetOpen ? (
+        <CaptchaSheet
+          key={captcha.sheetKey}
+          challengeUrl={captcha.challengeUrl}
+          onToken={handleSheetToken}
+          onClose={captcha.closeChallenge}
+        />
+      ) : null}
       <View style={{ marginTop: 24 }}>
         <MutedCenter>
           <AuthLink href="/(auth)/login">Back to sign in</AuthLink>

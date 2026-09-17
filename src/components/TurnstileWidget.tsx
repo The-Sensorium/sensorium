@@ -5,10 +5,12 @@ export function TurnstileWidget({
   siteKey,
   onToken,
   onError,
+  theme,
 }: {
   siteKey: string
   onToken: (token: string | null) => void
   onError?: () => void
+  theme?: 'auto' | 'light' | 'dark'
 }) {
   useEffect(() => {
     if (!siteKey) return
@@ -24,6 +26,7 @@ export function TurnstileWidget({
   return (
     <Turnstile
       siteKey={siteKey}
+      options={{ theme: theme ?? 'auto' }}
       onSuccess={(token) => onToken(token)}
       onExpire={() => onToken(null)}
       onError={() => {
@@ -42,6 +45,7 @@ export function CaptchaSection({
   onToken,
   onFailed,
   onRetry,
+  theme,
 }: {
   siteKey: string
   widgetKey: number
@@ -50,6 +54,7 @@ export function CaptchaSection({
   onToken: (token: string | null) => void
   onFailed: () => void
   onRetry: () => void
+  theme?: 'auto' | 'light' | 'dark'
 }) {
   const stateRef = useRef({ tokenReady, onFailed })
   stateRef.current = { tokenReady, onFailed }
@@ -64,7 +69,13 @@ export function CaptchaSection({
   if (!siteKey) return null
   return (
     <div>
-      <TurnstileWidget key={widgetKey} siteKey={siteKey} onToken={onToken} onError={onFailed} />
+      <TurnstileWidget
+        key={widgetKey}
+        siteKey={siteKey}
+        theme={theme}
+        onToken={onToken}
+        onError={onFailed}
+      />
       {failed && !tokenReady ? (
         <div className="mt-1">
           <p className="text-xs text-error">Human verification failed to load.</p>

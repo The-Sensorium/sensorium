@@ -48,6 +48,7 @@ jobs:
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars[format('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY_{0}', inputs.environment)] }}
       EXPO_PUBLIC_KLIPY_APP_KEY: ${{ vars[format('EXPO_PUBLIC_KLIPY_APP_KEY_{0}', inputs.environment)] }}
       EXPO_PUBLIC_KLIPY_ENDPOINT: ${{ vars[format('EXPO_PUBLIC_KLIPY_ENDPOINT_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_WEB_URL: ${{ vars[format('EXPO_PUBLIC_WEB_URL_{0}', inputs.environment)] }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

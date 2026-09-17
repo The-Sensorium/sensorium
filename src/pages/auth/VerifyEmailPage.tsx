@@ -24,7 +24,7 @@ export function VerifyEmailPage() {
     setSubmitting(true)
     try {
       const supabase = requireSupabase()
-      await supabase.auth.resend({
+      const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
         options: {
@@ -32,6 +32,7 @@ export function VerifyEmailPage() {
           ...(captchaToken ? { captchaToken } : {}),
         },
       })
+      if (error) throw error
       setMessage('We re-sent the confirmation email to your inbox.')
     } catch {
       setMessage('Could not resend the email. Please try again.')
