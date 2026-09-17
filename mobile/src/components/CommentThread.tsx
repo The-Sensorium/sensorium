@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { CornerUpLeft, ImagePlay, ImagePlus, Send, X } from 'lucide-react-native'
@@ -53,7 +53,15 @@ export function CommentThread({
   const [gifOpen, setGifOpen] = useState(false)
   const [replyTo, setReplyTo] = useState<{ id: string; authorName: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const inputRef = useRef<TextInput>(null)
   const create = useCreateComment(clusterId)
+
+  const replyId = replyTo?.id
+  useEffect(() => {
+    if (replyId) {
+      inputRef.current?.focus()
+    }
+  }, [replyId])
 
   async function handlePickImage() {
     setError(null)
@@ -77,14 +85,16 @@ export function CommentThread({
     const content = draft.trim()
     if ((!content && !image && !gif) || create.isPending) return
     setError(null)
+    const parentCommentId =
+      replyTo && comments.some((c) => c.id === replyTo.id) ? replyTo.id : undefined
     try {
       if (gif) {
-        await create.mutateAsync({ postId, content: content || null, gifUrl: gif.url, parentCommentId: replyTo?.id })
+        await create.mutateAsync({ postId, content: content || null, gifUrl: gif.url, parentCommentId })
       } else if (image) {
         const path = await uploadPostImage(clusterId, image.uri, image.mime, image.width, image.height)
-        await create.mutateAsync({ postId, content: content || null, imageUrl: path, parentCommentId: replyTo?.id })
+        await create.mutateAsync({ postId, content: content || null, imageUrl: path, parentCommentId })
       } else {
-        await create.mutateAsync({ postId, content: content || null, parentCommentId: replyTo?.id })
+        await create.mutateAsync({ postId, content: content || null, parentCommentId })
       }
       setDraft('')
       setImage(null)
@@ -151,13 +161,19 @@ export function CommentThread({
     likesByComment.set(l.comment_id, entry)
   }
 
-  return (
-    <View style={{ marginTop: 16 }}>
-      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-        Comments ({comments.length})
-      </Text>
+  const replyTargetExists = replyTo ? comments.some((c) => c.id === replyTo.id) : false
+  const showTopComposer = !replyTo || !replyTargetExists
 
-      <View style={{ marginTop: 12, flexDirection: 'row', gap: 12 }}>
+  useEffect(() => {
+    if (replyTo && !comments.some((c) => c.id === replyTo.id)) {
+      setReplyTo(null)
+      setError('The comment you were replying to is no longer available. Posting as a top-level comment instead.')
+    }
+  }, [comments, replyTo])
+
+  function renderComposer() {
+    return (
+      <View style={{ flexDirection: 'row', gap: 12 }}>
         <Avatar name={selfAvatar.display_name} src={selfAvatar.avatar_url} size={32} />
         <View style={{ flex: 1 }}>
           {replyTo ? (
@@ -176,6 +192,7 @@ export function CommentThread({
             </View>
           ) : null}
           <TextInput
+            ref={inputRef}
             value={draft}
             onChangeText={setDraft}
             maxLength={COMMENT_CONTENT_MAX}
@@ -274,6 +291,16 @@ export function CommentThread({
           </View>
         </View>
       </View>
+    )
+  }
+
+  return (
+    <View style={{ marginTop: 16 }}>
+      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
+        Comments ({comments.length})
+      </Text>
+
+      {showTopComposer ? <View style={{ marginTop: 12 }}>{renderComposer()}</View> : null}
 
       <View style={{ marginTop: 16, gap: 16 }}>
         {myMutes.isLoading ? (
@@ -313,18 +340,22 @@ export function CommentThread({
                       />
                     </View>
                   )}
+                  {replyTo?.id === tc.id ? <View style={{ marginLeft: 44 }}>{renderComposer()}</View> : null}
                   {thread.length > 0 ? (
                     <View style={{ marginLeft: 44, paddingLeft: 16, borderLeftWidth: 1, borderLeftColor: t.outlineVariant, gap: 12 }}>
                       {thread.map((r) => {
                         const rMuted = isMutedAuthor(mutedSet, r.author_id)
+                        const inline = replyTo?.id === r.id ? <View style={{ marginTop: 4 }}>{renderComposer()}</View> : null
                         if (rMuted && !revealed.has(r.id)) {
                           return (
-                            <MutedPlaceholder
-                              key={r.id}
-                              name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                              onToggle={() => toggleReveal(r.id)}
-                              kind="comment"
-                            />
+                            <Fragment key={r.id}>
+                              <MutedPlaceholder
+                                name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                                onToggle={() => toggleReveal(r.id)}
+                                kind="comment"
+                              />
+                              {inline}
+                            </Fragment>
                           )
                         }
                         return (
@@ -346,6 +377,7 @@ export function CommentThread({
                               likeCount={likesByComment.get(r.id)?.count ?? 0}
                               likedByMe={likesByComment.get(r.id)?.mine ?? false}
                             />
+                            {inline}
                           </View>
                         )
                       })}
@@ -356,14 +388,17 @@ export function CommentThread({
             })}
             {orphans.map((c) => {
               const cMuted = isMutedAuthor(mutedSet, c.author_id)
+              const inline = replyTo?.id === c.id ? <View style={{ marginTop: 8 }}>{renderComposer()}</View> : null
               if (cMuted && !revealed.has(c.id)) {
                 return (
-                  <MutedPlaceholder
-                    key={c.id}
-                    name={memberById.get(c.author_id)?.display_name ?? 'Member'}
-                    onToggle={() => toggleReveal(c.id)}
-                    kind="comment"
-                  />
+                  <View key={c.id} style={{ gap: 8 }}>
+                    <MutedPlaceholder
+                      name={memberById.get(c.author_id)?.display_name ?? 'Member'}
+                      onToggle={() => toggleReveal(c.id)}
+                      kind="comment"
+                    />
+                    {inline}
+                  </View>
                 )
               }
               return (
@@ -376,7 +411,6 @@ export function CommentThread({
                     />
                   ) : null}
                   <CommentItem
-                    key={c.id}
                     comment={c}
                     clusterId={clusterId}
                     author={memberById.get(c.author_id)}
@@ -386,6 +420,7 @@ export function CommentThread({
                     likeCount={likesByComment.get(c.id)?.count ?? 0}
                     likedByMe={likesByComment.get(c.id)?.mine ?? false}
                   />
+                  {inline}
                 </View>
               )
             })}

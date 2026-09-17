@@ -32,7 +32,7 @@ import {
   type Message,
   type Reaction,
 } from '../../../../src/features/cluster'
-import { useCluster } from '../../../../src/features/introductions'
+import { useCluster, useMyMembership } from '../../../../src/features/introductions'
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../../../src/features/signals'
 import { useClusterVotes, type Vote } from '../../../../src/features/votes'
 import {
@@ -76,6 +76,7 @@ export default function RoomScreen() {
 
   useClusterChannel(clusterId || null)
   const cluster = useCluster(clusterId || null)
+  const membership = useMyMembership(clusterId || null)
   const messages = useClusterMessages(clusterId || null)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
   const reactions = useClusterReactions(clusterId || null, loadedMessageIds)
@@ -459,6 +460,37 @@ export default function RoomScreen() {
     setNewCount(0)
   }
 
+  const unlockedAt = cluster.data?.introductions_completed_at
+  const myIntroAt = membership.data?.intro_completed_at
+  const hasMembership = !!membership.data
+  // Only a successful null means "not available" (RLS-filtered): a plain
+  // error keeps the spinner instead of discarding room state for home.
+  const clusterMissing = cluster.isSuccess && !cluster.data
+  const clusterLocked = !!cluster.data && !unlockedAt
+  useFocusEffect(
+    useCallback(() => {
+      if (clusterMissing) {
+        router.replace('/(app)/home')
+      }
+    }, [clusterMissing]),
+  )
+  useFocusEffect(
+    useCallback(() => {
+      if (clusterLocked) {
+        router.replace({ pathname: '/cluster/[clusterId]/waiting', params: { clusterId } })
+      }
+    }, [clusterLocked, clusterId]),
+  )
+  useFocusEffect(
+    useCallback(() => {
+      if (cluster.isLoading || membership.isLoading) return
+      // Unlocked but this member joined late without an intro: finish first.
+      if (unlockedAt && hasMembership && !myIntroAt) {
+        router.replace({ pathname: '/cluster/[clusterId]/introductions', params: { clusterId } })
+      }
+    }, [cluster.isLoading, membership.isLoading, unlockedAt, hasMembership, myIntroAt, clusterId]),
+  )
+
   if (!cluster.data && (cluster.isLoading || messages.isLoading)) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
@@ -468,13 +500,19 @@ export default function RoomScreen() {
   }
 
   if (!cluster.data) {
-    router.replace('/(app)/home')
-    return null
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={t.primary} />
+      </SafeAreaView>
+    )
   }
 
   if (!cluster.data.introductions_completed_at) {
-    router.replace({ pathname: '/cluster/[clusterId]/waiting', params: { clusterId } })
-    return null
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={t.primary} />
+      </SafeAreaView>
+    )
   }
 
   return (

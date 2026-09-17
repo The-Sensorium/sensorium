@@ -289,6 +289,16 @@ const CLUSTERS = [
     formedDaysAgo: 12,
     members: [1, 6, 11, 16, 21, 26, 31, 36],
   },
+  {
+    name: 'Drift',
+    mode: 'open_mix',
+    modeLabel: 'Open Mix',
+    queueKey: 'open',
+    status: 'introductions',
+    formedDaysAgo: 0,
+    members: [2, 7, 12, 'diya', 17, 22, 27, 32],
+    introductionsDone: 3,
+  },
 ]
 
 async function ensureUser(admin, email, { displayName, dob, countryCode, currentStatus }) {
@@ -411,10 +421,18 @@ async function ensureCluster(admin, spec) {
     await ensureMembership(admin, clusterId, userId)
     // Active clusters were unlocked by their roster, so every member has a
     // completed intro; in the introductions phase only the first N have.
+    // Reseeds also clear the rest, so re-running the seed restores the
+    // fixture even after someone (e.g. diya in Drift) completed manually.
     if (active || i < introductionsDone) {
       await admin
         .from('cluster_members')
         .update({ intro_completed_at: new Date().toISOString() })
+        .eq('cluster_id', clusterId)
+        .eq('user_id', userId)
+    } else if (!active) {
+      await admin
+        .from('cluster_members')
+        .update({ intro_completed_at: null })
         .eq('cluster_id', clusterId)
         .eq('user_id', userId)
     }
