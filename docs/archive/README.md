@@ -35,7 +35,7 @@ Status reflects the feature in the live app, not the doc's original framing.
 | [`OPEN_MIX_CLUSTER_PLAN.md`](OPEN_MIX_CLUSTER_PLAN.md) | Open Mix 6th matching mode (global FIFO queue, 7-day cooldown) | Shipped |
 | [`IMAGE_OPTIMIZATION_PLAN.md`](IMAGE_OPTIMIZATION_PLAN.md) | Avatar downscaling + lazy-loading coverage | Shipped |
 | [`POLISH_PLAN.md`](POLISH_PLAN.md) | Optimistic reactions, password visibility, pinned presence | Shipped |
-| [`TURNSTILE_BOT_PROTECTION_PLAN.md`](TURNSTILE_BOT_PROTECTION_PLAN.md) | Cloudflare Turnstile bot protection for Supabase Auth | In progress |
+| [`TURNSTILE_BOT_PROTECTION_PLAN.md`](TURNSTILE_BOT_PROTECTION_PLAN.md) | Cloudflare Turnstile bot protection for Supabase Auth | Shipped |
 
 Older plans may contain stale "Status" lines written before the work landed; the
 table above is the source of truth for what is live.
