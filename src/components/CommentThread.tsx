@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Send, X } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
@@ -43,6 +43,8 @@ export function CommentThread({
   const [replyTo, setReplyTo] = useState<{ id: string; authorName: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const composerRef = useRef<HTMLFormElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const create = useCreateComment(clusterId)
 
   useEffect(() => {
@@ -52,6 +54,14 @@ export function CommentThread({
     document.addEventListener('click', dismiss)
     return () => document.removeEventListener('click', dismiss)
   }, [])
+
+  const replyId = replyTo?.id
+  useEffect(() => {
+    if (replyId) {
+      composerRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+      textareaRef.current?.focus?.({ preventScroll: true })
+    }
+  }, [replyId])
 
   function handleFile(f?: File) {
     if (!f) return
@@ -72,14 +82,16 @@ export function CommentThread({
     const content = draft.trim()
     if ((!content && !file && !gif) || create.isPending) return
     setError(null)
+    const parentCommentId =
+      replyTo && comments.some((c) => c.id === replyTo.id) ? replyTo.id : undefined
     try {
       if (gif) {
-        await create.mutateAsync({ postId, content: content || null, gifUrl: gif.url, parentCommentId: replyTo?.id })
+        await create.mutateAsync({ postId, content: content || null, gifUrl: gif.url, parentCommentId })
       } else if (file) {
         const path = await uploadPostImage(clusterId, file)
-        await create.mutateAsync({ postId, content: content || null, imageUrl: path, parentCommentId: replyTo?.id })
+        await create.mutateAsync({ postId, content: content || null, imageUrl: path, parentCommentId })
       } else {
-        await create.mutateAsync({ postId, content: content || null, parentCommentId: replyTo?.id })
+        await create.mutateAsync({ postId, content: content || null, parentCommentId })
       }
       setDraft('')
       setFile(null)
@@ -146,14 +158,25 @@ export function CommentThread({
     likesByComment.set(l.comment_id, entry)
   }
 
-  return (
-    <section className="mt-4 space-y-4">
-      <h3 className="font-display text-sm font-semibold text-on-surface">
-        Comments ({comments.length})
-      </h3>
+  const replyTargetExists = replyTo ? comments.some((c) => c.id === replyTo.id) : false
+  const showTopComposer = !replyTo || !replyTargetExists
 
+  useEffect(() => {
+    if (replyTo && !comments.some((c) => c.id === replyTo.id)) {
+      setReplyTo(null)
+      setError('The comment you were replying to is no longer available. Posting as a top-level comment instead.')
+    }
+  }, [comments, replyTo])
+
+  function renderComposer(variant: 'top' | 'inline') {
+    return (
       <form
-        className="flex items-start gap-3 border-t border-outline-variant/60 pt-4"
+        ref={composerRef}
+        className={
+          variant === 'top'
+            ? 'flex items-start gap-3 border-t border-outline-variant/60 pt-4'
+            : 'flex items-start gap-3 pt-1'
+        }
         onSubmit={(e) => {
           e.preventDefault()
           void handleComment()
@@ -184,6 +207,7 @@ export function CommentThread({
           )}
           <div className="relative">
             <textarea
+              ref={textareaRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={2}
@@ -290,6 +314,16 @@ export function CommentThread({
           }}
         />
       </form>
+    )
+  }
+
+  return (
+    <section className="mt-4 space-y-4">
+      <h3 className="font-display text-sm font-semibold text-on-surface">
+        Comments ({comments.length})
+      </h3>
+
+      {showTopComposer && renderComposer('top')}
 
       {myMutes.isLoading ? (
         <p className="flex items-center gap-2 text-sm text-on-surface-variant">
@@ -330,44 +364,53 @@ export function CommentThread({
                     }
                   />
                 )}
+                {replyTo?.id === tc.id && (
+                  <div className="ml-11">{renderComposer('inline')}</div>
+                )}
                 {thread.length > 0 && (
                   <ul className="ml-11 space-y-3 border-l border-outline-variant/40 pl-4">
                     {thread.map((r) => {
                       const rMuted = isMutedAuthor(mutedSet, r.author_id)
+                      const inline = replyTo?.id === r.id ? <li>{renderComposer('inline')}</li> : null
                       if (rMuted && !revealed.has(r.id)) {
                         return (
-                          <li key={r.id}>
-                            <MutedPlaceholder
-                              name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                              onToggle={() => toggleReveal(r.id)}
-                              kind="comment"
-                            />
-                          </li>
-                        )
-                      }
-                      return (
-                        <CommentItem
-                          key={r.id}
-                          comment={r}
-                          clusterId={clusterId}
-                          author={memberById.get(r.author_id)}
-                          repliedToName={
-                            r.parent_comment_id === tc.id ? undefined : authorNameOf(r.parent_comment_id as string)
-                          }
-                          onReply={() => setReplyTo({ id: r.id, authorName: authorNameOf(r.id) })}
-                          onLike={(id) => void toggleCommentLike.mutateAsync(id)}
-                          likeCount={likesByComment.get(r.id)?.count ?? 0}
-                          likedByMe={likesByComment.get(r.id)?.mine ?? false}
-                          mutedBanner={
-                            rMuted ? (
-                              <MutedHideBar
+                          <Fragment key={r.id}>
+                            <li>
+                              <MutedPlaceholder
                                 name={memberById.get(r.author_id)?.display_name ?? 'Member'}
                                 onToggle={() => toggleReveal(r.id)}
                                 kind="comment"
                               />
-                            ) : undefined
-                          }
-                        />
+                            </li>
+                            {inline}
+                          </Fragment>
+                        )
+                      }
+                      return (
+                        <Fragment key={r.id}>
+                          <CommentItem
+                            comment={r}
+                            clusterId={clusterId}
+                            author={memberById.get(r.author_id)}
+                            repliedToName={
+                              r.parent_comment_id === tc.id ? undefined : authorNameOf(r.parent_comment_id as string)
+                            }
+                            onReply={() => setReplyTo({ id: r.id, authorName: authorNameOf(r.id) })}
+                            onLike={(id) => void toggleCommentLike.mutateAsync(id)}
+                            likeCount={likesByComment.get(r.id)?.count ?? 0}
+                            likedByMe={likesByComment.get(r.id)?.mine ?? false}
+                            mutedBanner={
+                              rMuted ? (
+                                <MutedHideBar
+                                  name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                                  onToggle={() => toggleReveal(r.id)}
+                                  kind="comment"
+                                />
+                              ) : undefined
+                            }
+                          />
+                          {inline}
+                        </Fragment>
                       )
                     })}
                   </ul>
@@ -377,6 +420,7 @@ export function CommentThread({
           })}
           {orphans.map((c) => {
             const cMuted = isMutedAuthor(mutedSet, c.author_id)
+            const inlineComposer = replyTo?.id === c.id ? renderComposer('inline') : null
             if (cMuted && !revealed.has(c.id)) {
               return (
                 <li key={c.id}>
@@ -385,30 +429,33 @@ export function CommentThread({
                     onToggle={() => toggleReveal(c.id)}
                     kind="comment"
                   />
+                  {inlineComposer && <div className="mt-3">{inlineComposer}</div>}
                 </li>
               )
             }
             return (
-            <CommentItem
-              key={c.id}
-              comment={c}
-              clusterId={clusterId}
-              author={memberById.get(c.author_id)}
-              repliedToName={c.parent_comment_id ? authorNameOf(c.parent_comment_id) : undefined}
-              onReply={() => setReplyTo({ id: c.id, authorName: authorNameOf(c.id) })}
-              onLike={(id) => void toggleCommentLike.mutateAsync(id)}
-              likeCount={likesByComment.get(c.id)?.count ?? 0}
-              likedByMe={likesByComment.get(c.id)?.mine ?? false}
-              mutedBanner={
-                cMuted ? (
-                  <MutedHideBar
-                    name={memberById.get(c.author_id)?.display_name ?? 'Member'}
-                    onToggle={() => toggleReveal(c.id)}
-                    kind="comment"
-                  />
-                ) : undefined
-              }
-            />
+              <Fragment key={c.id}>
+                <CommentItem
+                  comment={c}
+                  clusterId={clusterId}
+                  author={memberById.get(c.author_id)}
+                  repliedToName={c.parent_comment_id ? authorNameOf(c.parent_comment_id) : undefined}
+                  onReply={() => setReplyTo({ id: c.id, authorName: authorNameOf(c.id) })}
+                  onLike={(id) => void toggleCommentLike.mutateAsync(id)}
+                  likeCount={likesByComment.get(c.id)?.count ?? 0}
+                  likedByMe={likesByComment.get(c.id)?.mine ?? false}
+                  mutedBanner={
+                    cMuted ? (
+                      <MutedHideBar
+                        name={memberById.get(c.author_id)?.display_name ?? 'Member'}
+                        onToggle={() => toggleReveal(c.id)}
+                        kind="comment"
+                      />
+                    ) : undefined
+                  }
+                />
+                {inlineComposer && <li>{inlineComposer}</li>}
+              </Fragment>
             )
           })}
         </ul>
