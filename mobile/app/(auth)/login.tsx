@@ -3,6 +3,9 @@ import { View } from 'react-native'
 import { router } from 'expo-router'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
+import { useCaptchaChallenge } from '../../src/lib/use-captcha-challenge'
+import { captchaBypassAllowed } from '../../src/lib/captcha'
+import { CaptchaSheet } from '../../src/components/captcha-sheet'
 import { signInWithGoogle } from '../../src/lib/google-auth'
 import { AuthLink, AuthShell, ErrorText, Field, GoogleButton, MutedCenter, OrDivider, PasswordField, PrimaryButton } from '../../src/components/ui'
 
@@ -12,16 +15,18 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [googleBusy, setGoogleBusy] = useState(false)
+  const captcha = useCaptchaChallenge()
 
-  async function onSubmit() {
+  async function doSubmit(captchaToken: string | null) {
     setError(null)
     setSubmitting(true)
     try {
       const supabase = requireSupabase()
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      })
+      const { error } = await supabase.auth.signInWithPassword(
+        captchaToken
+          ? { email: email.trim(), password, options: { captchaToken } }
+          : { email: email.trim(), password },
+      )
       if (error) throw error
       router.replace('/(app)/home')
     } catch (err) {
@@ -29,6 +34,29 @@ export default function LoginScreen() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function onSubmit() {
+    if (submitting) return
+    setError(null)
+    if (!email.trim()) {
+      setError('Please enter your email address.')
+      return
+    }
+    if (!captcha.challengeUrl) {
+      if (!captchaBypassAllowed()) {
+        setError('Human verification is unavailable. Please update the app and try again.')
+        return
+      }
+      void doSubmit(null)
+      return
+    }
+    captcha.openChallenge()
+  }
+
+  function handleSheetToken(token: string) {
+    captcha.closeChallenge()
+    void doSubmit(token)
   }
 
   async function onGoogle() {
@@ -68,6 +96,14 @@ export default function LoginScreen() {
       </View>
       <ErrorText message={error} />
       <PrimaryButton title="Login" onPress={onSubmit} loading={submitting} disabled={busy} />
+      {captcha.challengeUrl && captcha.sheetOpen ? (
+        <CaptchaSheet
+          key={captcha.sheetKey}
+          challengeUrl={captcha.challengeUrl}
+          onToken={handleSheetToken}
+          onClose={captcha.closeChallenge}
+        />
+      ) : null}
       <OrDivider />
       <GoogleButton onPress={onGoogle} loading={googleBusy} disabled={busy} />
       <View style={{ marginTop: 24 }}>

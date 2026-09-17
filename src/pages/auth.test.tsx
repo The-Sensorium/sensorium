@@ -338,6 +338,21 @@ describe('VerifyEmailPage', () => {
       }),
     )
   })
+
+  it('surfaces resend failures instead of reporting success', async () => {
+    sessionStorage.setItem('sensorium:signup-email', 'new@b.test')
+    const { client, auth } = stubClient({
+      resend: vi.fn(async () => ({ data: null, error: new Error('captcha failed') })),
+    })
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<VerifyEmailPage />)
+    await user.click(screen.getByRole('button', { name: 'Resend email' }))
+
+    await waitFor(() => expect(auth.resend).toHaveBeenCalled())
+    expect(screen.getByText('Could not resend the email. Please try again.')).toBeInTheDocument()
+  })
 })
 
 describe('ResetPasswordPage', () => {

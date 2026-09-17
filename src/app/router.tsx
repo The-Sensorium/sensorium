@@ -55,6 +55,7 @@ import { LoginPage } from '../pages/auth/LoginPage'
 import { VerifyEmailPage } from '../pages/auth/VerifyEmailPage'
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
+import { MobileChallengePage } from '../pages/auth/MobileChallengePage'
 
 export function AppRouter() {
   return (
@@ -64,6 +65,8 @@ export function AppRouter() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsPage />} />
+        {/* Challenge solver for the native app WebView (no session, no layout chrome) */}
+        <Route path="/auth/mobile-challenge" element={<MobileChallengePage />} />
 
         {/* Auth */}
         <Route element={<PublicLayout />}>

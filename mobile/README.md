@@ -92,6 +92,7 @@ belong here - the anon/publishable key is the only credential the app holds.
 | `EXPO_PUBLIC_KLIPY_APP_KEY` | no | KLIPY app key; enables the GIF picker |
 | `EXPO_PUBLIC_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`) |
 | `EXPO_PUBLIC_GEOCODING_ENDPOINT` | no | Optional geocoding override used by local mode |
+| `EXPO_PUBLIC_WEB_URL` | yes for device builds | Web app origin hosting `/auth/mobile-challenge` (`https://preview.thesensorium.online` staging, `https://www.thesensorium.online` production). Powers the in-app human-verification sheet for auth; empty means verification is skipped (local dev only) |
 
 ## Scripts
 
