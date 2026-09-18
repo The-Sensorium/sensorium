@@ -13,6 +13,8 @@ import {
 } from 'react-native'
 import { Eye, EyeOff } from 'lucide-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KeyboardAwareScrollView, KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
+import type { SharedValue } from 'react-native-reanimated'
 import { Link, type Href } from 'expo-router'
 import { radii, shadowShape, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -299,46 +301,96 @@ export function ErrorText({ message }: { message: string | null }) {
 export function Screen({
   children,
   avoiding,
+  footer,
+  stickyFooterHeight,
+  onStickyFooterLayout,
   onRefresh,
   refreshing,
 }: {
   children: ReactNode
   avoiding?: boolean
+  footer?: ReactNode
+  stickyFooterHeight?: SharedValue<number>
+  onStickyFooterLayout?(height: number): void
   onRefresh?: () => void
   refreshing?: boolean
 }) {
   const t = useTheme()
+  const refresh = onRefresh ? (
+    <RefreshControl
+      refreshing={refreshing ?? false}
+      onRefresh={onRefresh}
+      tintColor={t.primary}
+      colors={[t.primary]}
+      progressBackgroundColor={t.surfaceContainer}
+    />
+  ) : undefined
+  // Instagram-style sticky footer: pinned above the keyboard with a native
+  // frame-synced translate (no layout resize), so the composer and its action
+  // row are never covered and never push the list around. The footer height is
+  // measured into stickyFooterHeight so the chat scroll view can extend its
+  // scroll range past the bar — list content never rests underneath it.
+  const stickyFooter = footer ? (
+    <KeyboardStickyView
+      onLayout={(e) => onStickyFooterLayout?.(e.nativeEvent.layout.height)}
+      style={{
+        backgroundColor: t.background,
+        borderTopWidth: 1,
+        borderTopColor: t.outlineVariant,
+        paddingHorizontal: spacing.containerMargin,
+        paddingVertical: 8,
+      }}
+    >
+      {footer}
+    </KeyboardStickyView>
+  ) : null
+  if (avoiding) {
+    // Screens with a sticky footer use the chat pattern: the scroll range
+    // extends via contentInset (no layout thrash) and content lifts only when
+    // the end is visible (ChatGPT behavior) — a mid-list reply target the user
+    // is looking at is never shoved away, and bottom content always lifts
+    // clear of the floating bar. Nothing is ever rendered beneath the bar.
+    // Other screens keep the aware scroll view.
+    const scrollBody = stickyFooterHeight ? (
+      <KeyboardChatScrollView
+        extraContentPadding={stickyFooterHeight}
+        keyboardLiftBehavior="whenAtEnd"
+        contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={refresh}
+      >
+        {children}
+      </KeyboardChatScrollView>
+    ) : (
+      <KeyboardAwareScrollView
+        bottomOffset={16}
+        contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={refresh}
+      >
+        {children}
+      </KeyboardAwareScrollView>
+    )
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+        {scrollBody}
+        {stickyFooter}
+      </SafeAreaView>
+    )
+  }
   const body = (
     <ScrollView
       contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
       keyboardShouldPersistTaps="handled"
-      refreshControl={
-        onRefresh ? (
-          <RefreshControl
-            refreshing={refreshing ?? false}
-            onRefresh={onRefresh}
-            tintColor={t.primary}
-            colors={[t.primary]}
-            progressBackgroundColor={t.surfaceContainer}
-          />
-        ) : undefined
-      }
+      refreshControl={refresh}
     >
       {children}
     </ScrollView>
   )
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
-      {avoiding ? (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-        >
-          {body}
-        </KeyboardAvoidingView>
-      ) : (
-        body
-      )}
+      {body}
+      {footer ? <View>{footer}</View> : null}
     </SafeAreaView>
   )
 }

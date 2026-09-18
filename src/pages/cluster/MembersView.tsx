@@ -99,25 +99,29 @@ export function MembersView() {
                       </div>
                     </div>
                   </Link>
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
                       {onlineNow ? (
-                        <AvailabilityBadge value={member.availability} />
+                        <span className="shrink-0">
+                          <AvailabilityBadge value={member.availability} />
+                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
                           <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
                           Offline
                         </span>
                       )}
                       {member.current_status ? (
-                        <span className="truncate text-xs text-on-surface-variant">
+                        <span className="min-w-0 flex-1 truncate text-xs text-on-surface-variant">
                           “{member.current_status}”
                         </span>
                       ) : null}
-                      </div>
-                      {member.id !== userId && (
+                    </div>
+                    {member.id !== userId && (
+                      <span className="shrink-0">
                         <MuteButton targetUserId={member.id} targetName={member.display_name} />
-                      )}
+                      </span>
+                    )}
                   </div>
                 </div>
               </li>

@@ -118,12 +118,14 @@ export default function MembersScreen() {
                     </View>
                   </View>
                 </View>
-                <View style={{ marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     {onlineNow ? (
-                      <AvailabilityBadge value={member.availability} />
+                      <View style={{ flexShrink: 0 }}>
+                        <AvailabilityBadge value={member.availability} />
+                      </View>
                     ) : (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <View style={{ flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.onSurfaceVariant }} />
                         <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
                           Offline
@@ -131,13 +133,15 @@ export default function MembersScreen() {
                       </View>
                     )}
                     {member.current_status ? (
-                      <Text style={{ fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
+                      <Text style={{ flex: 1, flexShrink: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1} ellipsizeMode="tail">
                         “{member.current_status}”
                       </Text>
                     ) : null}
                   </View>
                   {member.id !== userId ? (
-                    <MuteButton targetUserId={member.id} targetName={member.display_name} />
+                    <View style={{ flexShrink: 0 }}>
+                      <MuteButton targetUserId={member.id} targetName={member.display_name} />
+                    </View>
                   ) : null}
                 </View>
               </Pressable>
