@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { SpecialElite_400Regular, useFonts } from '@expo-google-fonts/special-elite'
 import {
   PlusJakartaSans_400Regular,
@@ -64,6 +65,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
+    <KeyboardProvider>
     <AppProviders>
       <ThemedStatusBar />
       <OfflineBanner />
@@ -81,6 +83,7 @@ export default function RootLayout() {
         </Stack>
       </ThemedNavigator>
     </AppProviders>
+    </KeyboardProvider>
     </SafeAreaProvider>
     </GestureHandlerRootView>
   )

@@ -109,7 +109,12 @@ export default function AppTabs() {
       <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="profile/[userId]" options={{ href: null }} />
-      <Tabs.Screen name="posts/[postId]" options={{ href: null }} />
+      {/* No tab bar on post detail (Instagram pattern): the sticky comment
+          composer must sit directly above the keyboard. With a tab bar between
+          the list and the screen bottom, the keyboard-glued footer would float
+          exactly tab-bar-height too high on edge-to-edge Android, leaving a
+          strip of thread content visible underneath it. */}
+      <Tabs.Screen name="posts/[postId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="settings/reports" options={{ href: null }} />
     </Tabs>
   )

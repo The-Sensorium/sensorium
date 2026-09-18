@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Modal as RNModal, Pressable, Text, View } from 'react-native'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { X } from 'lucide-react-native'
 import { radii } from '../lib/theme-tokens'
@@ -39,11 +39,10 @@ export function Modal({
             </Pressable>
           </View>
           <SafeAreaView>
-            {/* Keyboard-aware (not KeyboardAvoidingView, which needs a
-                resizing window that Expo's pan mode never provides, and not
-                manual padding, which squeezes the sheet). Scrolls the
-                focused field above the keyboard on both platforms. */}
-            <KeyboardAwareScrollView enableOnAndroid keyboardShouldPersistTaps="handled">
+            {/* Keyboard-aware scroll view from react-native-keyboard-controller:
+                scrolls the focused field above the keyboard on both platforms
+                via native contentInset (no layout thrash, no manual offsets). */}
+            <KeyboardAwareScrollView keyboardShouldPersistTaps="handled">
               {children}
             </KeyboardAwareScrollView>
           </SafeAreaView>
