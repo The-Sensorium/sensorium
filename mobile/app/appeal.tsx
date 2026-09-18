@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Pressable, SafeAreaView, Text, TextInput, View } from 'react-native'
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { Link } from 'expo-router'
-import { Clock3, MailWarning, Send } from 'lucide-react-native'
+import { Clock3, MailWarning } from 'lucide-react-native'
 import { useMyAccess } from '../src/features/access'
 import { useActiveAccountGate } from '../src/lib/use-active-account'
 import { APPEAL_STATUS_LABELS, useMyAppeal, useSubmitAppeal } from '../src/features/appeals'
@@ -60,7 +61,11 @@ export default function AppealScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
-      <ScrollView contentContainerStyle={{ padding: spacing.containerMargin }}>
+      <KeyboardAwareScrollView
+        bottomOffset={16}
+        contentContainerStyle={{ padding: spacing.containerMargin }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View
@@ -194,7 +199,7 @@ export default function AppealScreen() {
             You can also sign out from the account status page if you’re done.
           </Text>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   )
 }

@@ -85,7 +85,7 @@ export default function IntroductionsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen avoiding>
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
         Introductions · {cluster.data.name}
       </Text>
