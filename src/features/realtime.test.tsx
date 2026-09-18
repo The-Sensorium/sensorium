@@ -145,6 +145,34 @@ describe('useClusterChannel', () => {
     expect(queryClient.getQueryData(['post-likes', 'single', 'p1'])).toEqual([])
   })
 
+  it('routes post-like events to every coexisting id-set entry', async () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    mockResult.value = { data: { cluster_id: 'c1' }, error: null }
+    const other = { post_id: 'p1', user_id: 'u2' }
+    queryClient.setQueryData(['post-likes', 'c1', 'p1,p2'], [other])
+    queryClient.setQueryData(['post-likes', 'c1', 'p2'], [])
+    const client = requireSupabaseMock.mock.results[0].value
+    const insert = findBy(channelHandlers(client), 'post_likes', 'INSERT')
+    act(() => {
+      insert?.({ new: { post_id: 'p2', user_id: 'u1' } } as never)
+    })
+    await waitFor(() =>
+      expect(queryClient.getQueryData(['post-likes', 'c1', 'p1,p2'])).toEqual([
+        other,
+        { post_id: 'p2', user_id: 'u1' },
+      ]),
+    )
+    expect(queryClient.getQueryData(['post-likes', 'c1', 'p2'])).toEqual([
+      { post_id: 'p2', user_id: 'u1' },
+    ])
+    const del = findBy(channelHandlers(client), 'post_likes', 'DELETE')
+    act(() => {
+      del?.({ old: { post_id: 'p2', user_id: 'u1' } } as never)
+    })
+    await waitFor(() => expect(queryClient.getQueryData(['post-likes', 'c1', 'p2'])).toEqual([]))
+    expect(queryClient.getQueryData(['post-likes', 'c1', 'p1,p2'])).toEqual([other])
+  })
+
   it('invalidates replacement rounds when a round is inserted', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     renderHook(() => useClusterChannel('c1'), { wrapper })
