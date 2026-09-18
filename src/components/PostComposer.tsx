@@ -72,6 +72,9 @@ export function PostComposer({
       setTitle('')
       setFile(null)
       setGif(null)
+      setGifOpen(false)
+      setError(null)
+      setOpen(false)
       onPosted?.()
     } catch (e) {
       setError(toErrorMessage(e, 'Could not post. Try again.'))

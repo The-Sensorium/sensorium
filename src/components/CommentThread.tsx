@@ -114,6 +114,20 @@ export function CommentThread({
   const commentLikes = useClusterCommentLikes(clusterId, commentIds)
   const toggleCommentLike = useToggleCommentLike(clusterId)
 
+  // Comment likes are cached by cluster, not by comment set. When a new comment
+  // arrives the ids grow but the query key doesn't, so refetch to pick up the
+  // author's self-like instead of a stale 0 (mirrors PostsFeedPage).
+  const commentIdsKey = commentIds.join(',')
+  const prevCommentIdsKey = useRef(commentIdsKey)
+  const refetchLikes = useRef(commentLikes.refetch)
+  refetchLikes.current = commentLikes.refetch
+  useEffect(() => {
+    if (prevCommentIdsKey.current === commentIdsKey) return
+    prevCommentIdsKey.current = commentIdsKey
+    if (!commentIdsKey) return
+    void refetchLikes.current()
+  }, [commentIdsKey])
+
   const byId = new Map(comments.map((c) => [c.id, c]))
   const top: PostComment[] = []
   const topIds = new Set<string>()

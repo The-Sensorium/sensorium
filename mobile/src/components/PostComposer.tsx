@@ -73,6 +73,9 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
       setTitle('')
       setImage(null)
       setGif(null)
+      setGifOpen(false)
+      setError(null)
+      setOpen(false)
       onPosted?.()
     } catch (e) {
       setError(toErrorMessage(e, 'Could not post. Try again.'))
