@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   Text,
   View,
 } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -517,6 +517,9 @@ export default function RoomScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+      {/* Controller KeyboardAvoidingView (not RN's, whose JS-driven animation
+          snaps on Android where keyboardWillShow never fires). Same layout
+          semantics, frame-synced natively on both platforms. */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}

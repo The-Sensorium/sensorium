@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { useSharedValue } from 'react-native-reanimated'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useAuth } from '../../../src/auth-context'
@@ -12,7 +13,9 @@ import {
 } from '../../../src/features/posts'
 import { useClusterChannel } from '../../../src/features/realtime'
 import { PostCard } from '../../../src/components/PostCard'
+import { CommentComposer } from '../../../src/components/CommentComposer'
 import { CommentThread } from '../../../src/components/CommentThread'
+import type { ReplyTarget } from '../../../src/components/comment-helpers'
 import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../../src/features/moderation'
 import { useTheme } from '../../../src/lib/use-theme'
@@ -33,6 +36,8 @@ export default function PostDetailScreen() {
   const myMutes = useMyMutes(clusterId != null)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState(false)
+  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
+  const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
 
@@ -69,7 +74,30 @@ export default function PostDetailScreen() {
   }
 
   return (
-    <Screen avoiding>
+    <Screen
+      avoiding
+      stickyFooterHeight={composerHeight}
+      onStickyFooterLayout={(h) => {
+        //Like AnimatedSplash's shared-value writes, this trips
+        // react(immutability): writing .value is Reanimated's documented API
+        // for feeding measured layout into extraContentPadding.
+        composerHeight.value = h
+      }}
+      footer={
+        <CommentComposer
+          clusterId={clusterId!}
+          postId={p.id}
+          comments={comments.data ?? []}
+          replyTo={replyTo}
+          selfAvatar={{
+            display_name: memberById.get(userId!)?.display_name ?? 'Member',
+            avatar_url: memberById.get(userId!)?.avatar_url ?? null,
+          }}
+          onCancelReply={() => setReplyTo(null)}
+          onPosted={() => setReplyTo(null)}
+        />
+      }
+    >
       <Pressable
         onPress={() => router.back()}
         accessibilityRole="button"
@@ -111,13 +139,9 @@ export default function PostDetailScreen() {
 
       <CommentThread
         clusterId={clusterId!}
-        postId={p.id}
         comments={comments.data ?? []}
         memberById={memberById}
-        selfAvatar={{
-          display_name: memberById.get(userId!)?.display_name ?? 'Member',
-          avatar_url: memberById.get(userId!)?.avatar_url ?? null,
-        }}
+        onReply={setReplyTo}
       />
       <View style={{ height: 16 }} />
     </Screen>
