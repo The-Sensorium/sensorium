@@ -73,8 +73,22 @@ export function CommentComposer({
     }
   }, [replyId])
 
+  // The reply target comes from this same list, so a miss is usually a
+  // transient refetch gap rather than a deletion. Only cancel once the
+  // target was seen in a loaded list and is now gone from a non-empty one.
+  // Posting already falls back to top-level via resolveParentCommentId
+  // regardless, so a missed notice is harmless.
+  const seenReplyRef = useRef<string | null>(null)
   useEffect(() => {
-    if (replyTo && !comments.some((c) => c.id === replyTo.id)) {
+    if (!replyTo) {
+      seenReplyRef.current = null
+      return
+    }
+    if (comments.some((c) => c.id === replyTo.id)) {
+      seenReplyRef.current = replyTo.id
+      return
+    }
+    if (seenReplyRef.current === replyTo.id && comments.length > 0) {
       onCancelReply()
       setError('The comment you were replying to is no longer available. Posting as a top-level comment instead.')
     }
