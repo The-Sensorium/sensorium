@@ -9,6 +9,7 @@ import {
   COMMENT_CONTENT_MAX,
   POSTS_PAGE_SIZE,
   postImageStoragePath,
+  postLikesKey,
   sortPostsForFeed,
   useClusterPostComments,
   useClusterPostLikes,
@@ -307,19 +308,59 @@ describe('posts', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-likes', 'c1'] })
   })
 
+  it('postLikesKey distinguishes id sets regardless of order', () => {
+    expect(postLikesKey('c1', ['p2', 'p1'])).toEqual(['post-likes', 'c1', 'p1,p2'])
+    expect(postLikesKey('c1', ['p1'])).not.toEqual(postLikesKey('c1', ['p1', 'p2']))
+    expect(postLikesKey(null, [])).toEqual(['post-likes', 'none', ''])
+  })
+
   it('useTogglePostLike writes the caller’s like optimistically before the round-trip', async () => {
     // Hold the RPC pending so the optimistic write is observable pre-response.
     const pending = new Promise<never>(() => {})
     requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
+    queryClient.setQueryData(['post-likes', 'c1', 'p1'], [])
     const { result } = renderHook(() => useTogglePostLike('c1'), { wrapper })
     result.current.mutate('p1')
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0))
     })
-    const cached = queryClient.getQueryData<{ post_id: string; user_id: string }[]>(['post-likes', 'c1'])
+    const cached = queryClient.getQueryData<{ post_id: string; user_id: string }[]>(['post-likes', 'c1', 'p1'])
     expect(cached).toEqual(
       expect.arrayContaining([expect.objectContaining({ post_id: 'p1', user_id: 'u1' })]),
     )
+  })
+
+  it('useTogglePostLike patches every keyed id-set entry without clobbering others', async () => {
+    // Feed (p1+p2) and detail (p2) entries coexist for one cluster. Unliking
+    // p2 must leave p1's likes alone in both entries — previously a shared
+    // key let one screen's refetch zero out the other's counts.
+    const pending = new Promise<never>(() => {})
+    requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
+    const other = { post_id: 'p1', user_id: 'u2', liked_at: '2026-01-01T00:00:00Z' }
+    const mine = { post_id: 'p2', user_id: 'u1', liked_at: '2026-01-01T00:00:00Z' }
+    queryClient.setQueryData(['post-likes', 'c1', 'p1,p2'], [other, mine])
+    queryClient.setQueryData(['post-likes', 'c1', 'p2'], [mine])
+    const { result } = renderHook(() => useTogglePostLike('c1'), { wrapper })
+    result.current.mutate('p2')
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(queryClient.getQueryData(['post-likes', 'c1', 'p1,p2'])).toEqual([other])
+    expect(queryClient.getQueryData(['post-likes', 'c1', 'p2'])).toEqual([])
+    expect(queryClient.getQueryData(['post-likes', 'c1'])).toBeUndefined()
+  })
+
+  it('useTogglePostLike rolls back every patched cache on RPC failure', async () => {
+    mockResult.value = { data: null, error: asError('boom') }
+    const other = { post_id: 'p1', user_id: 'u2', liked_at: '2026-01-01T00:00:00Z' }
+    const mine = { post_id: 'p2', user_id: 'u1', liked_at: '2026-01-01T00:00:00Z' }
+    queryClient.setQueryData(['post-likes', 'c1', 'p1,p2'], [other, mine])
+    queryClient.setQueryData(['post-likes', 'single', 'p2'], [mine])
+    const { result } = renderHook(() => useTogglePostLike('c1'), { wrapper })
+    result.current.mutate('p2')
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(queryClient.getQueryData(['post-likes', 'c1', 'p1,p2'])).toEqual([other, mine])
+    expect(queryClient.getQueryData(['post-likes', 'single', 'p2'])).toEqual([mine])
   })
 
   it('useTogglePostLike writes the single-post likes cache optimistically', async () => {

@@ -179,10 +179,17 @@ export function useUserPosts(authorId: string | null, enabled = true) {
   })
 }
 
+/** Cache key for a set of posts' likes. The id set is part of the key: feed,
+ * detail, and profile pages read different id sets for one cluster, and a
+ * shared key lets one screen's refetch overwrite another screen's counts. */
+export function postLikesKey(clusterId: string | null, postIds: string[]) {
+  return ['post-likes', clusterId ?? 'none', [...postIds].sort().join(',')] as const
+}
+
 /** Likes on the posts currently loaded (post_likes carries no cluster column). */
 export function useClusterPostLikes(clusterId: string | null, postIds: string[]) {
   return useQuery({
-    queryKey: ['post-likes', clusterId ?? 'none'],
+    queryKey: postLikesKey(clusterId, postIds),
     enabled: clusterId !== null && postIds.length > 0,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
@@ -198,8 +205,8 @@ export function useClusterPostLikes(clusterId: string | null, postIds: string[])
 }
 
 /** Likes on a single post, keyed by post. The Home preview mounts one card
- * per post (possibly sharing a cluster), where the cluster-keyed
- * useClusterPostLikes would collide; the feed/detail pages keep using that. */
+ * per post (possibly sharing a cluster); the feed/detail/profile pages use
+ * the id-set-keyed useClusterPostLikes above. */
 export function usePostLikes(postId: string | null) {
   return useQuery({
     queryKey: ['post-likes', 'single', postId ?? 'none'],
@@ -417,24 +424,28 @@ export function useTogglePostLike(clusterId: string | null) {
     },
     onMutate: async (postId) => {
       if (!clusterId || !userId) return
-      await queryClient.cancelQueries({ queryKey: ['post-likes', clusterId] })
-      const prev = queryClient.getQueryData<PostLike[]>(['post-likes', clusterId])
+      const prefix = { queryKey: ['post-likes', clusterId] } as const
+      await queryClient.cancelQueries(prefix)
+      // Every keyed id-set entry (feed/detail/profile) gets the same toggle
+      // so no screen's counts go stale or get clobbered by another's refetch.
+      const prev = queryClient.getQueriesData<PostLike[]>(prefix)
       const toggleLike = (base: PostLike[]) => {
         const liked = base.some((l) => l.post_id === postId && l.user_id === userId)
         if (liked) return base.filter((l) => !(l.post_id === postId && l.user_id === userId))
         return [...base, { post_id: postId, user_id: userId, liked_at: new Date().toISOString() }]
       }
-      queryClient.setQueryData<PostLike[]>(['post-likes', clusterId], (cur) =>
-        toggleLike(cur ?? prev ?? []),
-      )
-      queryClient.setQueryData<PostLike[]>(['post-likes', 'single', postId], (cur) =>
-        toggleLike(cur ?? []),
-      )
-      return { prev }
+      queryClient.setQueriesData<PostLike[]>(prefix, (cur) => toggleLike(cur ?? []))
+      const singleKey = ['post-likes', 'single', postId] as const
+      const prevSingle = queryClient.getQueryData<PostLike[]>(singleKey)
+      queryClient.setQueryData<PostLike[]>(singleKey, (cur) => toggleLike(cur ?? []))
+      return { prev, prevSingle }
     },
-    onError: (_e, _postId, ctx) => {
-      if (clusterId && ctx?.prev) {
-        queryClient.setQueryData(['post-likes', clusterId], ctx.prev)
+    onError: (_e, postId, ctx) => {
+      if (ctx?.prev) {
+        for (const [key, data] of ctx.prev) queryClient.setQueryData(key, data)
+      }
+      if (ctx) {
+        queryClient.setQueryData(['post-likes', 'single', postId], ctx.prevSingle)
       }
     },
     onSettled: (_d, _e, postId) => {
