@@ -12,7 +12,7 @@ import {
   type TextInputProps,
 } from 'react-native'
 import { Eye, EyeOff } from 'lucide-react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView, KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
 import type { SharedValue } from 'react-native-reanimated'
 import { Link, type Href } from 'expo-router'
@@ -316,6 +316,12 @@ export function Screen({
   refreshing?: boolean
 }) {
   const t = useTheme()
+  // Edge-to-edge production builds report a non-zero bottom inset (gesture
+  // bar) while Expo Go's host activity reports zero, which is why a footer
+  // padded by the parent SafeAreaView floats exactly inset-height too high
+  // above the keyboard in prod only. Keep the bottom inset out of the parent
+  // and own it inside the sticky footer instead.
+  const { bottom } = useSafeAreaInsets()
   const refresh = onRefresh ? (
     <RefreshControl
       refreshing={refreshing ?? false}
@@ -333,12 +339,18 @@ export function Screen({
   const stickyFooter = footer ? (
     <KeyboardStickyView
       onLayout={(e) => onStickyFooterLayout?.(e.nativeEvent.layout.height)}
+      // Closed: bottom padding holds the bar above the gesture bar. Open:
+      // the +bottom translate drops the padded bar's bottom edge behind the
+      // keyboard so its content lands flush on the keyboard with no strip
+      // of thread visible underneath.
+      offset={{ closed: 0, opened: bottom }}
       style={{
         backgroundColor: t.background,
         borderTopWidth: 1,
         borderTopColor: t.outlineVariant,
         paddingHorizontal: spacing.containerMargin,
-        paddingVertical: 8,
+        paddingTop: 8,
+        paddingBottom: 8 + bottom,
       }}
     >
       {footer}
@@ -372,7 +384,7 @@ export function Screen({
       </KeyboardAwareScrollView>
     )
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+      <SafeAreaView edges={stickyFooter ? ['top', 'left', 'right'] : undefined} style={{ flex: 1, backgroundColor: t.background }}>
         {scrollBody}
         {stickyFooter}
       </SafeAreaView>

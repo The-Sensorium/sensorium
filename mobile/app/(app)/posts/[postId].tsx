@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -37,6 +37,9 @@ export default function PostDetailScreen() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState(false)
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
+  // Stable identity: the composer's missing-target effect depends on these,
+  // so inline arrows would re-run it on every render (each keystroke).
+  const clearReply = useCallback(() => setReplyTo(null), [])
   const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
@@ -93,8 +96,8 @@ export default function PostDetailScreen() {
             display_name: memberById.get(userId!)?.display_name ?? 'Member',
             avatar_url: memberById.get(userId!)?.avatar_url ?? null,
           }}
-          onCancelReply={() => setReplyTo(null)}
-          onPosted={() => setReplyTo(null)}
+          onCancelReply={clearReply}
+          onPosted={clearReply}
         />
       }
     >

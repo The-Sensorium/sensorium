@@ -105,7 +105,7 @@ async function patchPostLike(
     }
     return cur.filter((r) => !(r.post_id === like.post_id && r.user_id === like.user_id))
   }
-  queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', clusterId], apply)
+  queryClient.setQueriesData<PostLikeRealtime[]>({ queryKey: ['post-likes', clusterId] }, apply)
   queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', 'single', like.post_id], apply)
 }
 
