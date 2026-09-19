@@ -10,6 +10,8 @@ import {
   useClusterMembers,
   type ClusterFormedNotification,
 } from '../../src/features/matching'
+import { useCluster } from '../../src/features/introductions'
+import { CountdownTimer } from '../../src/components/CountdownTimer'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
@@ -38,6 +40,8 @@ export default function ClusterCreatedScreen() {
 
   const clusterId = notif?.cluster_id ?? null
   const members = useClusterMembers(clusterId, clusterId !== null)
+  const cluster = useCluster(clusterId, clusterId !== null)
+  const deadline = cluster.data?.introductions_deadline ?? null
 
   if (!notif && formed.isLoading) {
     return (
@@ -83,6 +87,11 @@ export default function ClusterCreatedScreen() {
         </Text>
         <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, textAlign: 'center', color: t.onSurfaceVariant }}>
           Eight strangers matched. Complete your introductions within 72 hours to unlock the chat.
+          {deadline ? (
+            <Text>
+              {' '}Deadline: <CountdownTimer deadline={deadline} />
+            </Text>
+          ) : null}
         </Text>
       </View>
 

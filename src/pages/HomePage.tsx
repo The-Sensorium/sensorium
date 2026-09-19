@@ -10,6 +10,7 @@ import {
   useLatestClusterFormed,
   type MyCluster,
 } from '../features/matching'
+import { useCluster } from '../features/introductions'
 import {
   useMyPendingInvitations,
   useAcceptInvitation,
@@ -22,7 +23,8 @@ import {
   useTogglePostLike,
   type Post,
 } from '../features/posts'
-import { ClusterCard } from '../components/ClusterCard'
+import { MemberClusterCard } from '../components/ClusterCard'
+import { CountdownTimer } from '../components/CountdownTimer'
 import { MutedHideBar, MutedPlaceholder } from '../components/MutedPlaceholder'
 import { PostCard } from '../components/PostCard'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../features/moderation'
@@ -75,6 +77,14 @@ export function HomePage() {
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
   )
+  const formedClusterId = formed.data?.cluster_id ?? null
+  const formedCluster = useCluster(formedClusterId, formedClusterId !== null)
+  const formedDeadline =
+    formedCluster.data?.introductions_deadline ??
+    (formedClusterId
+      ? (clusters.data ?? []).find((c) => c.cluster.id === formedClusterId)?.cluster
+          .introductions_deadline ?? null
+      : null)
 
   const loading = clusters.isLoading || invitations.isLoading
   const hasClusters = (clusters.data?.length ?? 0) > 0
@@ -156,6 +166,7 @@ export function HomePage() {
       {formed.data && (
         <button
           type="button"
+          data-e2e="home-cluster-ready-banner"
           onClick={() => navigate('/cluster-created')}
           className="flex w-full items-center gap-4 rounded-2xl border border-primary/30 bg-primary-container/15 p-5 text-left shadow-soft transition-colors hover:bg-primary-container/25"
         >
@@ -167,7 +178,13 @@ export function HomePage() {
               Your cluster is ready
             </span>
             <span className="block text-sm text-on-surface-variant">
-              Eight of you were matched. Start your introductions.
+              Eight of you were matched. Complete intros within 72 hours to unlock chat.
+              {formedDeadline ? (
+                <>
+                  {' '}
+                  Deadline: <CountdownTimer deadline={formedDeadline} className="font-semibold" />
+                </>
+              ) : null}
             </span>
           </span>
           <ArrowRight className="h-5 w-5 shrink-0 text-primary" aria-hidden />
@@ -235,7 +252,7 @@ function YourClusters({ clusters }: { clusters: MyCluster[] }) {
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {clusters.map((item) => (
-          <ClusterCard key={item.cluster.id} item={item} />
+          <MemberClusterCard key={item.cluster.id} item={item} />
         ))}
       </div>
     </section>

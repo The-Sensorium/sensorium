@@ -22,7 +22,7 @@ export function CountdownTimer({ deadline, className }: { deadline: string; clas
 
   return (
     <span
-      className={cn('tabular-nums', (expired || m === 0) ? 'text-error' : undefined, className)}
+      className={cn('tabular-nums', expired ? 'text-error' : undefined, className)}
     >
       {expired ? 'Expired' : label}
     </span>

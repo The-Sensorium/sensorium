@@ -10,7 +10,10 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, useMyClusters } from '../../features/matching'
+import { useCluster, useMyMembership } from '../../features/introductions'
+import { CountdownTimer } from '../../components/CountdownTimer'
+import { WhatsNextSteps } from '../../components/WhatsNextSteps'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 
 /** The per-mode queue/join panel shown on a discovery mode page. */
@@ -65,21 +68,60 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
 }
 
 function InClusterCard({ clusterId }: { clusterId: string }) {
+  const clusters = useMyClusters()
+  const clusterQuery = useCluster(clusterId)
+  const membership = useMyMembership(clusterId)
+  const cluster =
+    clusterQuery.data ??
+    (clusters.data ?? []).find((c) => c.cluster.id === clusterId)?.cluster ?? null
+  const membershipRow = membership.data
+  const needsIntros =
+    cluster?.status === 'introductions' && membershipRow != null && membershipRow.intro_completed_at == null
+  const waitingOnOthers =
+    cluster?.status === 'introductions' && membershipRow != null && !!membershipRow.intro_completed_at
+  const deadline = cluster?.introductions_deadline ?? null
+  const target = needsIntros
+    ? `/cluster/${clusterId}/introductions`
+    : waitingOnOthers
+      ? `/cluster/${clusterId}/waiting`
+      : `/cluster/${clusterId}`
+
   return (
     <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary">You’re already matched</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+        {needsIntros ? 'Action needed' : waitingOnOthers ? 'In progress' : 'You’re already matched'}
+      </p>
       <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">
-        You’re already in an active cluster
+        {needsIntros
+          ? 'Complete your introductions'
+          : waitingOnOthers
+            ? 'Waiting for the others'
+            : 'You’re already in an active cluster'}
       </h2>
       <p className="mt-3 text-sm leading-6 text-on-surface-variant">
-        This matching mode is full for you while your cluster is active. Head back to your room to
-        keep the conversation going.
+        {needsIntros ? (
+          <>
+            Your cluster formed and chat is locked until everyone answers.
+            {deadline ? (
+              <>
+                {' '}
+                Deadline: <CountdownTimer deadline={deadline} className="font-semibold" />
+              </>
+            ) : (
+              ' You have 72 hours from formation.'
+            )}
+          </>
+        ) : waitingOnOthers ? (
+          'You’ve answered. Chat unlocks once everyone answers.'
+        ) : (
+          'This matching mode is full for you while your cluster is active. Head back to your room to keep the conversation going.'
+        )}
       </p>
       <Link
-        to={`/cluster/${clusterId}`}
+        to={target}
         className="mt-5 inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
       >
-        Open your cluster <ArrowRight className="h-4 w-4" aria-hidden />
+        {needsIntros ? 'Start introductions' : waitingOnOthers ? 'Check progress' : 'Open your cluster'} <ArrowRight className="h-4 w-4" aria-hidden />
       </Link>
     </div>
   )
@@ -103,8 +145,8 @@ function JoinCard({
   const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
   const displayBlurb =
     mode === 'open_mix'
-      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are. Clusters are built to last.'
-      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match. Clusters are built to last.'
+      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
+      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match.'
 
   return (
     <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
@@ -120,6 +162,7 @@ function JoinCard({
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-on-surface-variant">{displayBlurb}</p>
+      <WhatsNextSteps className="mt-4" />
       <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
         <button
           type="button"
@@ -175,6 +218,7 @@ function JoinedCard({
           {count} of {CLUSTER_SIZE}
         </span>
       </div>
+      <WhatsNextSteps compact className="mt-4" />
       <div className="mt-5 flex flex-wrap gap-3">
         <Link
           to={`/queue/${mode}`}

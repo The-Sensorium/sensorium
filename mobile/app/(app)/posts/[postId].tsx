@@ -102,7 +102,10 @@ export default function PostDetailScreen() {
       }
     >
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => {
+          if (router.canGoBack()) router.back()
+          else router.replace('/(app)/posts')
+        }}
         accessibilityRole="button"
         accessibilityLabel="Back"
         hitSlop={12}
