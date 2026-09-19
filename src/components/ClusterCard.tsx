@@ -2,7 +2,9 @@ import { Link } from 'react-router'
 import { Users } from 'lucide-react'
 import type { Database } from '../lib/database.types'
 import type { MyCluster } from '../features/matching'
+import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
+import { CountdownTimer } from './CountdownTimer'
 
 type ClusterStatus = Database['public']['Enums']['cluster_status']
 
@@ -13,12 +15,22 @@ function statusLabel(status: ClusterStatus, introComplete: boolean): string {
   return 'Introductions in progress'
 }
 
-export function ClusterCard({ item }: { item: MyCluster }) {
+export function ClusterCard({
+  item,
+  myIntroCompletedAt,
+}: {
+  item: MyCluster
+  myIntroCompletedAt?: string | null
+}) {
   const { cluster } = item
   const introComplete = cluster.introductions_completed_at !== null
   const info = modeInfo(cluster.matching_mode)
-  const target =
-    cluster.status === 'introductions' && !introComplete
+  const pending = cluster.status === 'introductions' && !introComplete
+  const needsIntros = pending && myIntroCompletedAt === null
+  const waitingOnOthers = pending && typeof myIntroCompletedAt === 'string'
+  const target = waitingOnOthers
+    ? `/cluster/${cluster.id}/waiting`
+    : pending
       ? `/cluster/${cluster.id}/introductions`
       : `/cluster/${cluster.id}`
 
@@ -42,7 +54,42 @@ export function ClusterCard({ item }: { item: MyCluster }) {
           {item.memberCount} members
         </span>
       </div>
-      <p className="mt-3 text-sm text-on-surface-variant">{statusLabel(cluster.status, introComplete)}</p>
+      <p className="mt-3 text-sm text-on-surface-variant">
+        {needsIntros ? (
+          <>
+            Complete your introductions
+            {cluster.introductions_deadline ? (
+              <>
+                {' · '}Deadline:{' '}
+                <CountdownTimer deadline={cluster.introductions_deadline} className="font-semibold" />
+              </>
+            ) : null}
+          </>
+        ) : waitingOnOthers ? (
+          <>
+            Waiting for the others
+            {cluster.introductions_deadline ? (
+              <>
+                {' · '}Deadline:{' '}
+                <CountdownTimer deadline={cluster.introductions_deadline} className="font-semibold" />
+              </>
+            ) : null}
+          </>
+        ) : (
+          statusLabel(cluster.status, introComplete)
+        )}
+      </p>
     </Link>
+  )
+}
+
+/** ClusterCard with the caller's intro state: personalizes the pending copy. */
+export function MemberClusterCard({ item }: { item: MyCluster }) {
+  const membership = useMyMembership(item.cluster.id)
+  return (
+    <ClusterCard
+      item={item}
+      myIntroCompletedAt={membership.data ? membership.data.intro_completed_at : undefined}
+    />
   )
 }

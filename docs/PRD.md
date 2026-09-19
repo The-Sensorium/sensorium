@@ -1046,7 +1046,11 @@ Progress bar
 Note
 
 ```text
-Communication begins after the cluster is formed.
+What happens next
+- We'll notify you once 8 are in and your cluster forms.
+- Once your cluster forms, you have 72 hours to complete intros or you'll lose your spot.
+- Chat unlocks once everyone answers.
+
 You can browse or join other matching modes while you wait.
 ```
 

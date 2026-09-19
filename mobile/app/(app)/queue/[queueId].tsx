@@ -11,6 +11,7 @@ import { useTheme } from '../../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
 import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
 import { QueueProgress } from '../../../src/components/QueueCard'
+import { WhatsNextSteps } from '../../../src/components/WhatsNextSteps'
 
 export default function QueueScreen() {
   const t = useTheme()
@@ -72,6 +73,12 @@ export default function QueueScreen() {
   const leaving = leave.isPending
   const displayKey = current.mode === 'open_mix' ? 'Open pool' : current.queue_key
 
+  async function goBack() {
+    if (router.canGoBack()) router.back()
+    else if (mode) router.replace({ pathname: '/mode/[modeId]', params: { modeId: mode } })
+    else router.replace('/(app)/home')
+  }
+
   async function handleLeave() {
     setLeaveError(null)
     try {
@@ -86,15 +93,15 @@ export default function QueueScreen() {
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ErrorText message={pull.error} />
       <Pressable
-        onPress={() => router.replace('/(app)/home')}
+        onPress={() => void goBack()}
         accessibilityRole="button"
-        accessibilityLabel="Back to home"
+        accessibilityLabel="Back"
         hitSlop={12}
         style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 8, paddingRight: 16, marginBottom: 16 }}
       >
         <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
-          Back to home
+          Back
         </Text>
       </Pressable>
 
@@ -113,9 +120,10 @@ export default function QueueScreen() {
           <QueueProgress mode={entry.mode} queueKey={entry.queue_key} />
         </View>
 
+        <WhatsNextSteps />
+
         <Text style={{ marginTop: 24, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-          Communication begins after the cluster is formed. You can browse or join other matching
-          modes while you wait.
+          You can browse or join other matching modes while you wait.
         </Text>
 
         {confirming ? (

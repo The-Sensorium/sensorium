@@ -9,11 +9,14 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, useMyClusters } from '../../features/matching'
+import { useCluster, useMyMembership } from '../../features/introductions'
+import { CountdownTimer } from '../CountdownTimer'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { Card, LoadingView, PrimaryButton } from '../ui'
+import { WhatsNextSteps } from '../WhatsNextSteps'
 
 export function ModePanel({ mode }: { mode: MatchingMode }) {
   const status = useMyQueueStatus()
@@ -72,21 +75,56 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
 
 function InClusterCard({ clusterId }: { clusterId: string }) {
   const t = useTheme()
+  const clusters = useMyClusters()
+  const clusterQuery = useCluster(clusterId)
+  const membership = useMyMembership(clusterId)
+  const cluster =
+    clusterQuery.data ??
+    (clusters.data ?? []).find((c) => c.cluster.id === clusterId)?.cluster ?? null
+  const membershipRow = membership.data
+  const needsIntros =
+    cluster?.status === 'introductions' && membershipRow != null && membershipRow.intro_completed_at == null
+  const waitingOnOthers =
+    cluster?.status === 'introductions' && membershipRow != null && !!membershipRow.intro_completed_at
+  const deadline = cluster?.introductions_deadline ?? null
+  const href = needsIntros
+    ? { pathname: '/cluster/[clusterId]/introductions', params: { clusterId } } as const
+    : waitingOnOthers
+      ? { pathname: '/cluster/[clusterId]/waiting', params: { clusterId } } as const
+      : { pathname: '/cluster/[clusterId]/room', params: { clusterId } } as const
+
   return (
     <Card>
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
-        You’re already matched
+        {needsIntros ? 'Action needed' : waitingOnOthers ? 'In progress' : 'You’re already matched'}
       </Text>
       <Text style={{ marginTop: 4, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
-        You’re already in an active cluster
+        {needsIntros
+          ? 'Complete your introductions'
+          : waitingOnOthers
+            ? 'Waiting for the others'
+            : 'You’re already in an active cluster'}
       </Text>
       <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-        This matching mode is full for you while your cluster is active. Head back to your room to
-        keep the conversation going.
+        {needsIntros
+          ? 'Your cluster formed and chat is locked until everyone answers.'
+          : waitingOnOthers
+            ? 'You’ve answered. Chat unlocks once everyone answers.'
+            : 'This matching mode is full for you while your cluster is active. Head back to your room to keep the conversation going.'}
+        {needsIntros && deadline ? (
+          <Text>
+            {' '}Deadline: <CountdownTimer deadline={deadline} />
+          </Text>
+        ) : needsIntros ? (
+          ' You have 72 hours from formation.'
+        ) : null}
       </Text>
       <View style={{ marginTop: 20 }}>
-        <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId } }} asChild>
-          <PrimaryButton title="Open your cluster" onPress={() => {}} />
+        <Link href={href} asChild>
+          <PrimaryButton
+            title={needsIntros ? 'Start introductions' : waitingOnOthers ? 'Check progress' : 'Open your cluster'}
+            onPress={() => {}}
+          />
         </Link>
       </View>
     </Card>
@@ -112,8 +150,8 @@ function JoinCard({
   const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
   const displayBlurb =
     mode === 'open_mix'
-      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are. Clusters are built to last.'
-      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match. Clusters are built to last.'
+      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
+      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match.'
 
   return (
     <Card>
@@ -129,6 +167,7 @@ function JoinCard({
       <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
         {displayBlurb}
       </Text>
+      <WhatsNextSteps />
       <View style={{ marginTop: 20 }}>
         <PrimaryButton
           title="Join this queue"
@@ -182,6 +221,7 @@ function JoinedCard({
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
         {count} of {CLUSTER_SIZE}
       </Text>
+      <WhatsNextSteps compact />
       <View style={{ marginTop: 20 }}>
         <Link href={{ pathname: '/queue/[queueId]', params: { queueId: mode } }} asChild>
           <PrimaryButton title="View queue" onPress={() => {}} />

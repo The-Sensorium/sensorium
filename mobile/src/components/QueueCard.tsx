@@ -3,6 +3,7 @@ import { Link } from 'expo-router'
 import { CLUSTER_SIZE } from '../lib/constants'
 import { useQueueCount, type MyQueueEntry } from '../features/matching'
 import { modeInfo } from '../lib/modes'
+import { WhatsNextSteps } from './WhatsNextSteps'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
@@ -82,10 +83,7 @@ export function QueueCard({ entry }: { entry: MyQueueEntry }) {
         <View style={{ marginTop: 16 }}>
           <QueueProgress mode={entry.mode} queueKey={entry.queue_key} />
         </View>
-        <Text style={{ marginTop: 12, fontSize: 12, lineHeight: 20, color: t.onSurfaceVariant }}>
-          Communication begins after the cluster is formed. You can browse or join other matching
-          modes while you wait.
-        </Text>
+        <WhatsNextSteps compact />
       </Pressable>
     </Link>
   )

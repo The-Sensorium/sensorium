@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { useBackOr } from '../lib/use-back-or'
 import { useMyQueueKeys, useLeaveQueue } from '../features/matching'
 import { modeInfo, isMatchingMode } from '../lib/modes'
 import { toErrorMessage } from '../lib/error'
 import { QueueProgress } from '../components/QueueCard'
+import { WhatsNextSteps } from '../components/WhatsNextSteps'
 
 export function QueuePage() {
   useDocumentTitle('Queue')
@@ -17,6 +19,7 @@ export function QueuePage() {
   const [confirming, setConfirming] = useState(false)
 
   const mode = isMatchingMode(queueId) ? queueId : null
+  const goBack = useBackOr(mode ? `/discovery/${mode}` : '/clusters')
   const entry = queues.data?.find((q) => q.mode === mode)
 
   if (!mode) {
@@ -66,10 +69,10 @@ export function QueuePage() {
     <div className="mx-auto max-w-xl space-y-6 pt-2">
       <button
         type="button"
-        onClick={() => navigate('/home')}
+        onClick={goBack}
         className="-ml-3 inline-flex items-center gap-2 self-start rounded-lg px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-container/15 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back to home
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back
       </button>
 
       <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
@@ -84,9 +87,10 @@ export function QueuePage() {
 
         <QueueProgress mode={entry.mode} queueKey={entry.queue_key} className="mt-6" />
 
+        <WhatsNextSteps className="mt-6" />
+
         <p className="mt-6 text-sm leading-6 text-on-surface-variant">
-          Communication begins after the cluster is formed. You can browse or join other matching
-          modes while you wait.
+          You can browse or join other matching modes while you wait.
         </p>
 
         {confirming ? (

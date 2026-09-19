@@ -2,7 +2,9 @@ import { Pressable, Text, View } from 'react-native'
 import { Link, type Href } from 'expo-router'
 import { Users } from 'lucide-react-native'
 import type { MyCluster } from '../features/matching'
+import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
+import { CountdownTimer } from './CountdownTimer'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
@@ -13,14 +15,24 @@ function statusLabel(status: string, introComplete: boolean): string {
   return 'Introductions in progress'
 }
 
-export function ClusterCard({ item }: { item: MyCluster }) {
+export function ClusterCard({
+  item,
+  myIntroCompletedAt,
+}: {
+  item: MyCluster
+  myIntroCompletedAt?: string | null
+}) {
   const t = useTheme()
   const { cluster } = item
   const introComplete = cluster.introductions_completed_at !== null
   const info = modeInfo(cluster.matching_mode)
   const Icon = info.icon
-  const target: Href =
-    cluster.status === 'introductions' && !introComplete
+  const pending = cluster.status === 'introductions' && !introComplete
+  const needsIntros = pending && myIntroCompletedAt === null
+  const waitingOnOthers = pending && typeof myIntroCompletedAt === 'string'
+  const target: Href = waitingOnOthers
+    ? { pathname: '/cluster/[clusterId]/waiting', params: { clusterId: cluster.id } }
+    : pending
       ? { pathname: '/cluster/[clusterId]/introductions', params: { clusterId: cluster.id } }
       : { pathname: '/cluster/[clusterId]/room', params: { clusterId: cluster.id } }
 
@@ -80,9 +92,40 @@ export function ClusterCard({ item }: { item: MyCluster }) {
           </View>
         </View>
         <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-          {statusLabel(cluster.status, introComplete)}
+          {needsIntros ? (
+            <Text>
+              Complete your introductions
+              {cluster.introductions_deadline ? (
+                <Text>
+                  {' '}· Deadline: <CountdownTimer deadline={cluster.introductions_deadline} />
+                </Text>
+              ) : null}
+            </Text>
+          ) : waitingOnOthers ? (
+            <Text>
+              Waiting for the others
+              {cluster.introductions_deadline ? (
+                <Text>
+                  {' '}· Deadline: <CountdownTimer deadline={cluster.introductions_deadline} />
+                </Text>
+              ) : null}
+            </Text>
+          ) : (
+            statusLabel(cluster.status, introComplete)
+          )}
         </Text>
       </Pressable>
     </Link>
+  )
+}
+
+/** ClusterCard with the caller's intro state: personalizes the pending copy. */
+export function MemberClusterCard({ item }: { item: MyCluster }) {
+  const membership = useMyMembership(item.cluster.id)
+  return (
+    <ClusterCard
+      item={item}
+      myIntroCompletedAt={membership.data ? membership.data.intro_completed_at : undefined}
+    />
   )
 }
