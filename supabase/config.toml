@@ -248,6 +248,10 @@ otp_expiry = 3600
 # Auth email templates live in supabase/templates/ (versioned with the repo).
 # Apply to hosted projects via Dashboard > Authentication > Emails
 # (paste the file contents), local CLI picks them up from content_path.
+# NOTE (CLI 2.102.0 quirk): template.* paths resolve relative to the repo
+# root, but notification.* paths resolve relative to supabase/ — hence the
+# different prefixes below. Do not "normalize" them; `supabase status`
+# fails config validation if either form is changed.
 [auth.email.template.confirmation]
 subject = "Confirm your Sensorium email"
 content_path = "./supabase/templates/confirmation.html"
@@ -259,7 +263,7 @@ content_path = "./supabase/templates/recovery.html"
 [auth.email.notification.password_changed]
 enabled = true
 subject = "Your Sensorium password was changed"
-content_path = "./supabase/templates/password_changed_notification.html"
+content_path = "./templates/password_changed_notification.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

@@ -10,7 +10,7 @@ export type NotificationType = Database['public']['Enums']['notification_type']
 export type MyNotification = Database['public']['Functions']['get_my_notifications']['Returns'][number]
 export type NotificationPrefs = NotificationPrefsRow
 
-/** The caller's notifications, newest first, already filtered by their prefs. */
+/** The caller's notifications, newest first, already filtered by their prefs. Includes recent read history; only Mark all read clears the list. */
 export function useMyNotifications(enabled = true) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -98,7 +98,7 @@ function useNotificationsQueryKeys() {
   return userId ? (['notifications', userId] as const) : null
 }
 
-/** Mark a single notification read (RLS: own row). */
+/** Mark a single notification read (RLS: own row). The row stays visible as read history. */
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient()
   const key = useNotificationsQueryKeys()
@@ -121,7 +121,7 @@ export function useMarkNotificationRead() {
   })
 }
 
-/** Mark all of the caller's notifications read, plus chat in every cluster. */
+/** Clear all of the caller's notifications (deletes stored rows), plus chat in every cluster. */
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient()
 

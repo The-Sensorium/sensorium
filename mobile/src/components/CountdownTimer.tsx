@@ -10,7 +10,7 @@ function labelFor(deadline: string, now: number): { text: string; expired: boole
   const m = Math.ceil((diff % 3_600_000) / 60_000)
   if (d > 0) return { text: `${d}d ${h}h ${m}m`, expired: false }
   if (h > 0) return { text: `${h}h ${m}m`, expired: false }
-  return { text: `${m}m`, expired: m === 0 }
+  return { text: `${m}m`, expired: false }
 }
 
 export function CountdownTimer({ deadline }: { deadline: string }) {

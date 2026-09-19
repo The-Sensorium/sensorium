@@ -227,7 +227,7 @@ describe('notifications', () => {
     expect(list ?? []).toHaveLength(0)
   })
 
-  it('mark_all_read clears event notifications and chat unread', async () => {
+  it('mark_all_read deletes event notifications and clears chat unread', async () => {
     const a = await member('n-all-a')
     const b = await member('n-all-b')
     await admin.from('profiles').update({ display_name: 'Dana All' }).eq('id', b.id)
@@ -252,12 +252,18 @@ describe('notifications', () => {
     const { data: after } = await b.client.rpc('get_unread_notification_count')
     expect(after).toBe(0)
 
-    // The center is unread-only, so every row is gone too.
+    // Bulk clear deletes stored rows, so the center is empty too.
     const { data: listAfter } = await b.client.rpc('get_my_notifications')
     expect(listAfter ?? []).toHaveLength(0)
+
+    const { data: stored } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', b.id)
+    expect(stored ?? []).toHaveLength(0)
   })
 
-  it('marking one notification read removes it from the unread-only center', async () => {
+  it('marking one notification read keeps it as read history', async () => {
     const a = await member('n-single-a')
     const b = await member('n-single-b')
     await admin.from('profiles').update({ display_name: 'Sam Single' }).eq('id', b.id)
@@ -280,7 +286,47 @@ describe('notifications', () => {
     expect(error).toBeNull()
 
     const { data: after } = await b.client.rpc('get_my_notifications')
-    expect(((after ?? []) as MyNotificationRow[]).some((n) => n.id === mention!.id)).toBe(false)
+    const kept = ((after ?? []) as MyNotificationRow[]).find((n) => n.id === mention!.id)
+    expect(kept).toBeDefined()
+    expect(kept!.read_at).not.toBeNull()
+
+    const { data: count } = await b.client.rpc('get_unread_notification_count')
+    const stillUnread = ((after ?? []) as MyNotificationRow[]).filter((n) => n.read_at === null)
+    expect(count).toBe(stillUnread.length)
+  })
+
+  it('a single read stays while mark_all_read empties the center', async () => {
+    const a = await member('n-mixed-a')
+    const b = await member('n-mixed-b')
+    await admin.from('profiles').update({ display_name: 'Morgan Mixed' }).eq('id', b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'Hi @Morgan Mixed one' })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'Hi @Morgan Mixed two' })
+
+    const { data: before } = await b.client.rpc('get_my_notifications')
+    const mentions = ((before ?? []) as MyNotificationRow[]).filter((n) => n.type === 'mention')
+    expect(mentions).toHaveLength(2)
+
+    const { error } = await b.client
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', mentions[0]!.id)
+    expect(error).toBeNull()
+
+    const { data: mixed } = await b.client.rpc('get_my_notifications')
+    const rows = ((mixed ?? []) as MyNotificationRow[]).filter((n) => n.type === 'mention')
+    expect(rows).toHaveLength(2)
+    expect(rows.filter((n) => n.read_at === null)).toHaveLength(1)
+
+    const { error: allErr } = await b.client.rpc('mark_all_read')
+    expect(allErr).toBeNull()
+    const { data: emptied } = await b.client.rpc('get_my_notifications')
+    expect((emptied ?? []) as MyNotificationRow[]).toHaveLength(0)
   })
 
   it('a reaction to a message notifies its author', async () => {

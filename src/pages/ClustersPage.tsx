@@ -6,7 +6,7 @@ import { CLUSTER_SIZE } from '../lib/constants'
 import { MATCHING_MODES } from '../lib/modes'
 import { usePublicClusterCounts } from '../features/discovery'
 import { useMyQueueStatus, useMyClusters } from '../features/matching'
-import { ClusterCard } from '../components/ClusterCard'
+import { MemberClusterCard } from '../components/ClusterCard'
 
 export function ClustersPage() {
   useDocumentTitle('Clusters')
@@ -41,7 +41,7 @@ export function ClustersPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {(clusters.data ?? []).map((item) => (
-              <ClusterCard key={item.cluster.id} item={item} />
+              <MemberClusterCard key={item.cluster.id} item={item} />
             ))}
           </div>
         )}

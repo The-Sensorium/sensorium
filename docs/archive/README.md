@@ -36,6 +36,7 @@ Status reflects the feature in the live app, not the doc's original framing.
 | [`IMAGE_OPTIMIZATION_PLAN.md`](IMAGE_OPTIMIZATION_PLAN.md) | Avatar downscaling + lazy-loading coverage | Shipped |
 | [`POLISH_PLAN.md`](POLISH_PLAN.md) | Optimistic reactions, password visibility, pinned presence | Shipped |
 | [`TURNSTILE_BOT_PROTECTION_PLAN.md`](TURNSTILE_BOT_PROTECTION_PLAN.md) | Cloudflare Turnstile bot protection for Supabase Auth | Shipped |
+| [`WHATS_NEXT_FLOW_PLAN.md`](WHATS_NEXT_FLOW_PLAN.md) | Queue → intros expectation flow ("What happens next" steps + 72h deadline urgency) | Shipped |
 
 Older plans may contain stale "Status" lines written before the work landed; the
 table above is the source of truth for what is live.

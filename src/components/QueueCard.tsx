@@ -4,6 +4,7 @@ import { cn } from '../lib/utils'
 import { CLUSTER_SIZE } from '../lib/constants'
 import { useQueueCount, type MyQueueEntry } from '../features/matching'
 import { modeInfo } from '../lib/modes'
+import { WhatsNextSteps } from './WhatsNextSteps'
 
 /** n/8 progress bar with live count. */
 export function QueueProgress({
@@ -87,10 +88,7 @@ export function QueueCard({
         )}
       </div>
       <QueueProgress mode={entry.mode} queueKey={entry.queue_key} className="mt-4" />
-      <p className="mt-3 text-xs leading-5 text-on-surface-variant">
-        Communication begins after the cluster is formed. You can browse or join other matching
-        modes while you wait.
-      </p>
+      <WhatsNextSteps compact section={false} className="mt-3" />
     </Link>
   )
 }

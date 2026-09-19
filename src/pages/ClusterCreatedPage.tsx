@@ -10,6 +10,8 @@ import {
   useClusterMembers,
   type ClusterFormedNotification,
 } from '../features/matching'
+import { useCluster } from '../features/introductions'
+import { CountdownTimer } from '../components/CountdownTimer'
 
 export function ClusterCreatedPage() {
   useDocumentTitle('Cluster Created')
@@ -36,6 +38,8 @@ export function ClusterCreatedPage() {
 
   const clusterId = notif?.cluster_id ?? null
   const members = useClusterMembers(clusterId, clusterId !== null)
+  const cluster = useCluster(clusterId, clusterId !== null)
+  const deadline = cluster.data?.introductions_deadline ?? null
 
   if (!notif && formed.isLoading) {
     return (
@@ -74,6 +78,12 @@ export function ClusterCreatedPage() {
         </h1>
         <p className="mt-2 text-sm leading-6 text-on-surface-variant">
           Eight strangers matched. Complete your introductions within 72 hours to unlock the chat.
+          {deadline ? (
+            <>
+              {' '}
+              Deadline: <CountdownTimer deadline={deadline} className="font-semibold" />
+            </>
+          ) : null}
         </p>
       </div>
 

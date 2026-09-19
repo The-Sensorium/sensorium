@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
+import { useBackOr } from '../../lib/use-back-or'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
 import {
@@ -19,7 +20,7 @@ import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
 export function PostDetailPage() {
   useDocumentTitle('Post')
   const { postId = '' } = useParams()
-  const navigate = useNavigate()
+  const goBack = useBackOr('/posts')
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
@@ -69,7 +70,7 @@ export function PostDetailPage() {
     <div className="mx-auto w-full max-w-2xl space-y-4">
       <button
         type="button"
-        onClick={() => navigate(-1)}
+        onClick={goBack}
         className="inline-flex items-center gap-2 rounded-pill px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-container/15 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back
@@ -98,7 +99,7 @@ export function PostDetailPage() {
             likedByMe={likeInfo.mine}
             commentCount={comments.data?.length ?? 0}
             onLike={(id) => void toggle.mutateAsync(id)}
-            onDeleted={() => navigate(-1)}
+            onDeleted={goBack}
           />
         </>
       )}

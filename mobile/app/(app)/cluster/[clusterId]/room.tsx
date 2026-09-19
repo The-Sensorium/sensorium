@@ -528,7 +528,10 @@ export default function RoomScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
             accessibilityLabel="Back"
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) router.back()
+              else router.replace('/(app)/clusters')
+            }}
             style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
           >
             <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />

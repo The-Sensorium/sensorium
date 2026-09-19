@@ -10,7 +10,7 @@ import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, Screen } from '../../src/components/ui'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
-import { ClusterCard } from '../../src/components/ClusterCard'
+import { MemberClusterCard } from '../../src/components/ClusterCard'
 
 export default function ClustersScreen() {
   const t = useTheme()
@@ -48,7 +48,7 @@ export default function ClustersScreen() {
           </View>
         </Card>
       ) : (
-        (clusters.data ?? []).map((item) => <ClusterCard key={item.cluster.id} item={item} />)
+        (clusters.data ?? []).map((item) => <MemberClusterCard key={item.cluster.id} item={item} />)
       )}
 
       <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginTop: 24, marginBottom: 12 }}>

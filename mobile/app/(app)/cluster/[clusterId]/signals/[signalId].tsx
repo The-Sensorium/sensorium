@@ -110,7 +110,10 @@ export default function SignalDetailScreen() {
     <Screen avoiding>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) router.back()
+            else router.replace({ pathname: '/cluster/[clusterId]/signals', params: { clusterId } })
+          }}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
         >
           <ArrowLeft size={16} color={t.primary} strokeWidth={1.5} />
