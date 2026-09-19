@@ -92,8 +92,8 @@ export default function NotificationsScreen() {
               </View>
               <Pressable
                 onPress={() => void markAll.mutateAsync()}
-                disabled={unread === 0 || markAll.isPending}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, opacity: unread === 0 || markAll.isPending ? 0.5 : 1 }}
+                disabled={items.length === 0 || markAll.isPending}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, opacity: items.length === 0 || markAll.isPending ? 0.5 : 1 }}
               >
                 {markAll.isPending ? <ActivityIndicator size="small" color={t.onSurface} /> : null}
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Mark all read</Text>
