@@ -79,7 +79,7 @@ export function NotificationsPage() {
         <button
           type="button"
           onClick={() => void markAll.mutateAsync()}
-          disabled={unread === 0 || markAll.isPending}
+          disabled={items.length === 0 || markAll.isPending}
           className="inline-flex items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
         >
           {markAll.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

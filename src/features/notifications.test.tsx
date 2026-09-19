@@ -142,7 +142,7 @@ describe('hooks', () => {
     expect(requireSupabaseMock).not.toHaveBeenCalled()
   })
 
-  it('useMarkNotificationRead updates its own row and re-reads', async () => {
+  it('useMarkNotificationRead marks its own row read and re-reads (row stays as history)', async () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     const { result } = renderHook(() => useMarkNotificationRead(), { wrapper })
     result.current.mutate('n1')
@@ -153,7 +153,7 @@ describe('hooks', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
   })
 
-  it('useMarkAllNotificationsRead clears events and chat via mark_all_read', async () => {
+  it('useMarkAllNotificationsRead clears the center and chat via mark_all_read', async () => {
     const { result } = renderHook(() => useMarkAllNotificationsRead(), { wrapper })
     result.current.mutate()
     await waitFor(() => expect(result.current.isSuccess).toBe(true))

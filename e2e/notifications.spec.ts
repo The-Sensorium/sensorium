@@ -77,7 +77,7 @@ test.describe('notifications (seeded)', () => {
     await expect(page.getByRole('button', { name: 'Mark all read' })).toBeDisabled()
   })
 
-  test('renders a seeded unread notification and marks it read on click', async ({ page }) => {
+  test('renders a seeded unread notification and keeps it as read on click', async ({ page }) => {
     const title = `e2e unread ${Date.now()}`
     await seedNotification({ title, body: 'Round trip through RLS + RPC' })
 
@@ -88,10 +88,25 @@ test.describe('notifications (seeded)', () => {
     await expect(page.getByText('1 unread', { exact: true })).toBeVisible()
     await expect(page.getByLabel('Unread', { exact: true })).toBeVisible()
 
-    // Clicking the card marks it read without navigating (no cluster_id target).
+    // Clicking the card marks it read without navigating (no cluster_id target),
+    // and the card stays visible as read history.
     await card.click()
     await expect(page.getByLabel('Unread', { exact: true })).toHaveCount(0)
     await expect(page.getByText(/all caught up/i)).toBeVisible()
+    await expect(card).toBeVisible()
+  })
+
+  test('renders mixed read and unread history', async ({ page }) => {
+    const stamp = Date.now()
+    await seedNotification({ title: `e2e mixed read ${stamp}`, readAt: new Date().toISOString() })
+    await seedNotification({ title: `e2e mixed unread ${stamp}` })
+
+    await login(page)
+    await page.goto('/notifications')
+    await expect(page.getByText('1 unread', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('Unread', { exact: true })).toHaveCount(1)
+    await expect(page.getByRole('button', { name: new RegExp(`e2e mixed read ${stamp}`) })).toBeVisible()
+    await expect(page.getByRole('button', { name: new RegExp(`e2e mixed unread ${stamp}`) })).toBeVisible()
   })
 
   test('marks all seeded notifications read via the bulk action', async ({ page }) => {
@@ -106,5 +121,6 @@ test.describe('notifications (seeded)', () => {
     await page.getByRole('button', { name: 'Mark all read' }).click()
     await expect(page.getByLabel('Unread', { exact: true })).toHaveCount(0)
     await expect(page.getByText(/all caught up/i)).toBeVisible()
+    await expect(page.getByRole('button', { name: /e2e bulk/ })).toHaveCount(0)
   })
 })
