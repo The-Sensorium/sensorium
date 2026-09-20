@@ -18,7 +18,11 @@ export function useMyNotifications(enabled = true) {
   return useQuery({
     queryKey: ['notifications', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
-    refetchInterval: 30_000,
+    // No poll: realtime INSERT invalidation (useNotificationsChannel) plus
+    // per-cluster message invalidation (useClusterChannel) keeps the list live,
+    // and focus/reconnect refetches cover the "came back to the tab" case.
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_my_notifications')
@@ -36,7 +40,9 @@ export function useUnreadCount(enabled = true) {
   return useQuery({
     queryKey: ['notifications', 'unread', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
-    refetchInterval: 30_000,
+    // No poll: same realtime + focus/reconnect strategy as useMyNotifications.
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_unread_notification_count')
@@ -265,13 +271,13 @@ export function useUpsertNotificationPrefs() {
 /**
  * Subscribes to the signed-in user's realtime channel (docs 04 §1): notification
  * INSERT bumps the badge + list; invitation INSERT refreshes the Home banner.
- * Plain chat writes no notification row (synthesized at read time), so message
- * changes must also bump the badge + list or they only appear on poll/mention.
- * Those bumps are throttled: each one runs two security-definer RPCs, so a chat
- * burst would otherwise fan out a refetch per message per member. The first
- * event bumps immediately and a trailing bump runs if more arrived during the
- * 300ms window, so the newest message is never left to the 30s poll. Mount once
- * in the app shell.
+ * Plain chat writes no notification row (synthesized at read time); when the user
+ * is viewing a cluster, its per-cluster channel (useClusterChannel) bumps the
+ * badge + list in a scoped way (RLS + cluster_id filter, so only viewers of that
+ * cluster refetch). There is deliberately no global messages subscription here:
+ * waking every client on every message DB-wide does not scale. Outside a cluster
+ * view, focus/reconnect refetches cover the "came back to the tab" case. Mount
+ * once in the app shell.
  */
 export function useNotificationsChannel(userId: string | null) {
   const queryClient = useQueryClient()
@@ -279,24 +285,6 @@ export function useNotificationsChannel(userId: string | null) {
   useEffect(() => {
     if (!userId) return
     const supabase = requireSupabase()
-
-    let chatCooldown: ReturnType<typeof setTimeout> | null = null
-    let chatPending = false
-    const bumpChat = () => {
-      if (chatCooldown !== null) {
-        chatPending = true
-        return
-      }
-      void queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
-      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
-      chatCooldown = setTimeout(() => {
-        chatCooldown = null
-        if (chatPending) {
-          chatPending = false
-          bumpChat()
-        }
-      }, 300)
-    }
 
     const channel = supabase
       .channel(`user:${userId}`)
@@ -309,7 +297,6 @@ export function useNotificationsChannel(userId: string | null) {
           void queryClient.invalidateQueries({ queryKey: ['staff', 'unread'] })
         },
       )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, bumpChat)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'invitations', filter: `user_id=eq.${userId}` },
@@ -320,7 +307,6 @@ export function useNotificationsChannel(userId: string | null) {
       .subscribe()
 
     return () => {
-      if (chatCooldown !== null) clearTimeout(chatCooldown)
       supabase.removeChannel(channel)
     }
   }, [userId, queryClient])

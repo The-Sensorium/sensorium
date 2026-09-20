@@ -9,7 +9,7 @@ import {
   type MentionMember,
 } from '../../../features/mentions'
 import { type Gif } from '../../../features/gifs'
-import { toErrorMessage } from '../../../lib/error'
+import { rateLimitMessage } from '../../../lib/error'
 import { GifPicker } from './GifPicker'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -152,7 +152,7 @@ export function Composer({
       await onSend(content)
       setDraft('')
     } catch (e) {
-      onError(toErrorMessage(e, 'Could not send your message. Try again.'))
+      onError(rateLimitMessage(e, 'Could not send your message. Try again.'))
     }
   }
 
@@ -163,7 +163,7 @@ export function Composer({
     try {
       await onSendGif(gif)
     } catch (e) {
-      onError(toErrorMessage(e, 'Could not send that GIF. Try again.'))
+      onError(rateLimitMessage(e, 'Could not send that GIF. Try again.'))
     }
   }
 
@@ -183,7 +183,7 @@ export function Composer({
     try {
       await onSendImage(file)
     } catch (e) {
-      onError(toErrorMessage(e, 'Could not send that image. Try again.'))
+      onError(rateLimitMessage(e, 'Could not send that image. Try again.'))
     } finally {
       setUploading(false)
     }

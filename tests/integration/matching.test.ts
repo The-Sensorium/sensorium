@@ -268,6 +268,16 @@ describe('matching', () => {
     expect(delta).toBeLessThan(8 * 24 * 3600 * 1000)
   })
 
+  it('join_queue rate-limits churn after 20 joins per hour', async () => {
+    const u = await onboarded('m-ratelimit')
+    for (let i = 0; i < 20; i++) {
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'birth_year' })
+      expect(error).toBeNull()
+    }
+    const { error } = await u.client.rpc('join_queue', { p_mode: 'birth_year' })
+    expect(error?.message).toContain('rate_limited')
+  })
+
   it('get_my_clusters returns memberships with their active-member count', async () => {
     const a = await onboarded('mc-a')
     const b = await onboarded('mc-b')

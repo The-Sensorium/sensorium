@@ -21,7 +21,7 @@ import {
 import { Modal } from '../../components/Modal'
 import { Avatar } from '../../components/Avatar'
 import { CountdownTimer } from '../../components/CountdownTimer'
-import { toErrorMessage } from '../../lib/error'
+import { rateLimitMessage } from '../../lib/error'
 
 type MemberCard = { id: string; display_name: string; avatar_url: string | null }
 
@@ -85,7 +85,7 @@ export function VotesView() {
     try {
       await voteOn.mutateAsync({ voteId, choice })
     } catch (err) {
-      setVoteError(toErrorMessage(err, 'Could not cast your vote'))
+      setVoteError(rateLimitMessage(err, 'Could not cast your vote'))
     } finally {
       setPendingVoteId(null)
     }
@@ -99,7 +99,7 @@ export function VotesView() {
       setModal(null)
       setTargetId(null)
     } catch (err) {
-      setVoteError(toErrorMessage(err, 'Could not start the vote'))
+      setVoteError(rateLimitMessage(err, 'Could not start the vote'))
     }
   }
 
@@ -112,7 +112,7 @@ export function VotesView() {
       setModal(null)
       setNameSuggestion('')
     } catch (err) {
-      setVoteError(toErrorMessage(err, 'Could not start the vote'))
+      setVoteError(rateLimitMessage(err, 'Could not start the vote'))
     }
   }
 

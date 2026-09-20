@@ -1,4 +1,6 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router'
+import { Loader2 } from 'lucide-react'
 import { AppShell } from './layouts/AppShell'
 import { PublicLayout } from './layouts/PublicLayout'
 import { ClusterLayout } from './layouts/ClusterLayout'
@@ -18,44 +20,58 @@ import { LandingPage } from '../pages/LandingPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage'
 import { TermsPage } from '../pages/TermsPage'
-import { HomePage } from '../pages/HomePage'
-import { ClustersPage } from '../pages/ClustersPage'
-import { PostsFeedPage } from '../pages/posts/PostsFeedPage'
-import { PostDetailPage } from '../pages/posts/PostDetailPage'
-import { DiscoveryModePage } from '../pages/DiscoveryModePage'
-import { QueuePage } from '../pages/QueuePage'
-import { ClusterCreatedPage } from '../pages/ClusterCreatedPage'
-import { IntroductionsPage } from '../pages/IntroductionsPage'
-import { WaitingForOthersPage } from '../pages/WaitingForOthersPage'
-import { ProfilePage } from '../pages/ProfilePage'
-import { NotificationsPage } from '../pages/NotificationsPage'
-import { SettingsPage } from '../pages/SettingsPage'
-import { MyReportsPage } from '../pages/settings/MyReportsPage'
-import { RoomView } from '../pages/cluster/RoomView'
-import { MembersView } from '../pages/cluster/MembersView'
-import { SignalsView } from '../pages/cluster/SignalsView'
-import { SignalDetailPage } from '../pages/cluster/SignalDetailPage'
-import { VotesView } from '../pages/cluster/VotesView'
-import { SettingsView } from '../pages/cluster/SettingsView'
-import { OnboardingPage } from '../pages/onboarding/OnboardingPage'
-import { SessionRolePage } from '../pages/SessionRolePage'
-import { RestrictedAccountPage } from '../pages/RestrictedAccountPage'
-import { AppealPage } from '../pages/AppealPage'
-import { AdminAppealsPage } from '../pages/staff/AdminAppealsPage'
-import { AdminAppealCasePage } from '../pages/staff/AdminAppealCasePage'
-import { StaffDashboardPage } from '../pages/staff/StaffDashboardPage'
-import { StaffAccountsPage } from '../pages/staff/StaffAccountsPage'
-import { AccountDetailPage } from '../pages/staff/AccountDetailPage'
-import { ModerationQueuePage } from '../pages/staff/ModerationQueuePage'
-import { ModerationCasePage } from '../pages/staff/ModerationCasePage'
-import { ModerationRolesPage } from '../pages/staff/ModerationRolesPage'
-import { ModerationAuditPage } from '../pages/staff/ModerationAuditPage'
-import { SignUpPage } from '../pages/auth/SignUpPage'
-import { LoginPage } from '../pages/auth/LoginPage'
-import { VerifyEmailPage } from '../pages/auth/VerifyEmailPage'
-import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
-import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage'
-import { MobileChallengePage } from '../pages/auth/MobileChallengePage'
+
+// Route code-splitting: every page behind auth (and the auth pages themselves)
+// loads on demand, so the first paint only ships the landing shell. The public
+// trio above stays eager. Each lazy page suspends inside an ancestor Suspense
+// (PublicLayout group, RequireAuth group, or its own wrapper), never at the
+// leaf, so adding a route only means adding one lazy() line + one Route.
+const HomePage = lazy(() => import('../pages/HomePage').then((m) => ({ default: m.HomePage })))
+const ClustersPage = lazy(() => import('../pages/ClustersPage').then((m) => ({ default: m.ClustersPage })))
+const PostsFeedPage = lazy(() => import('../pages/posts/PostsFeedPage').then((m) => ({ default: m.PostsFeedPage })))
+const PostDetailPage = lazy(() => import('../pages/posts/PostDetailPage').then((m) => ({ default: m.PostDetailPage })))
+const DiscoveryModePage = lazy(() => import('../pages/DiscoveryModePage').then((m) => ({ default: m.DiscoveryModePage })))
+const QueuePage = lazy(() => import('../pages/QueuePage').then((m) => ({ default: m.QueuePage })))
+const ClusterCreatedPage = lazy(() => import('../pages/ClusterCreatedPage').then((m) => ({ default: m.ClusterCreatedPage })))
+const IntroductionsPage = lazy(() => import('../pages/IntroductionsPage').then((m) => ({ default: m.IntroductionsPage })))
+const WaitingForOthersPage = lazy(() => import('../pages/WaitingForOthersPage').then((m) => ({ default: m.WaitingForOthersPage })))
+const ProfilePage = lazy(() => import('../pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const NotificationsPage = lazy(() => import('../pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
+const SettingsPage = lazy(() => import('../pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const MyReportsPage = lazy(() => import('../pages/settings/MyReportsPage').then((m) => ({ default: m.MyReportsPage })))
+const RoomView = lazy(() => import('../pages/cluster/RoomView').then((m) => ({ default: m.RoomView })))
+const MembersView = lazy(() => import('../pages/cluster/MembersView').then((m) => ({ default: m.MembersView })))
+const SignalsView = lazy(() => import('../pages/cluster/SignalsView').then((m) => ({ default: m.SignalsView })))
+const SignalDetailPage = lazy(() => import('../pages/cluster/SignalDetailPage').then((m) => ({ default: m.SignalDetailPage })))
+const VotesView = lazy(() => import('../pages/cluster/VotesView').then((m) => ({ default: m.VotesView })))
+const SettingsView = lazy(() => import('../pages/cluster/SettingsView').then((m) => ({ default: m.SettingsView })))
+const OnboardingPage = lazy(() => import('../pages/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage })))
+const SessionRolePage = lazy(() => import('../pages/SessionRolePage').then((m) => ({ default: m.SessionRolePage })))
+const RestrictedAccountPage = lazy(() => import('../pages/RestrictedAccountPage').then((m) => ({ default: m.RestrictedAccountPage })))
+const AppealPage = lazy(() => import('../pages/AppealPage').then((m) => ({ default: m.AppealPage })))
+const AdminAppealsPage = lazy(() => import('../pages/staff/AdminAppealsPage').then((m) => ({ default: m.AdminAppealsPage })))
+const AdminAppealCasePage = lazy(() => import('../pages/staff/AdminAppealCasePage').then((m) => ({ default: m.AdminAppealCasePage })))
+const StaffDashboardPage = lazy(() => import('../pages/staff/StaffDashboardPage').then((m) => ({ default: m.StaffDashboardPage })))
+const StaffAccountsPage = lazy(() => import('../pages/staff/StaffAccountsPage').then((m) => ({ default: m.StaffAccountsPage })))
+const AccountDetailPage = lazy(() => import('../pages/staff/AccountDetailPage').then((m) => ({ default: m.AccountDetailPage })))
+const ModerationQueuePage = lazy(() => import('../pages/staff/ModerationQueuePage').then((m) => ({ default: m.ModerationQueuePage })))
+const ModerationCasePage = lazy(() => import('../pages/staff/ModerationCasePage').then((m) => ({ default: m.ModerationCasePage })))
+const ModerationRolesPage = lazy(() => import('../pages/staff/ModerationRolesPage').then((m) => ({ default: m.ModerationRolesPage })))
+const ModerationAuditPage = lazy(() => import('../pages/staff/ModerationAuditPage').then((m) => ({ default: m.ModerationAuditPage })))
+const SignUpPage = lazy(() => import('../pages/auth/SignUpPage').then((m) => ({ default: m.SignUpPage })))
+const LoginPage = lazy(() => import('../pages/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
+const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage').then((m) => ({ default: m.VerifyEmailPage })))
+const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage = lazy(() => import('../pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
+const MobileChallengePage = lazy(() => import('../pages/auth/MobileChallengePage').then((m) => ({ default: m.MobileChallengePage })))
+
+function PageFallback() {
+  return (
+    <div className="grid min-h-[50dvh] place-items-center" role="status" aria-label="Loading page">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
+    </div>
+  )
+}
 
 export function AppRouter() {
   return (
@@ -66,10 +82,23 @@ export function AppRouter() {
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         {/* Challenge solver for the native app WebView (no session, no layout chrome) */}
-        <Route path="/auth/mobile-challenge" element={<MobileChallengePage />} />
+        <Route
+          path="/auth/mobile-challenge"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <MobileChallengePage />
+            </Suspense>
+          }
+        />
 
         {/* Auth */}
-        <Route element={<PublicLayout />}>
+        <Route
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <PublicLayout />
+            </Suspense>
+          }
+        >
           <Route
             path="/auth/signup"
             element={
@@ -99,7 +128,15 @@ export function AppRouter() {
         </Route>
 
         {/* Authenticated */}
-        <Route element={<RequireAuth><Outlet /></RequireAuth>}>
+        <Route
+          element={
+            <RequireAuth>
+              <Suspense fallback={<PageFallback />}>
+                <Outlet />
+              </Suspense>
+            </RequireAuth>
+          }
+        >
           <Route path="/entry" element={<SessionRoleEntry />} />
           <Route
             path="/select-role"

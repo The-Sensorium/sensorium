@@ -78,6 +78,20 @@ describe('useClusterChannel', () => {
     ])
   })
 
+  it('bumps notifications on new cluster message (scoped badge refresh)', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    const client = requireSupabaseMock.mock.results[0].value
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    queryClient.setQueryData(['cluster-messages', 'c1'], [
+      { id: 'm1', created_at: '2026-01-01T00:00:00Z' },
+    ])
+    const handler = findBy(channelHandlers(client), 'messages', 'INSERT')
+    act(() => {
+      handler?.({ new: { id: 'm2', created_at: '2026-01-02T00:00:00Z' } } as never)
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] })
+  })
+
   it('replaces a message on UPDATE', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
     queryClient.setQueryData(['cluster-messages', 'c1'], [{ id: 'm1', content: 'old' }])

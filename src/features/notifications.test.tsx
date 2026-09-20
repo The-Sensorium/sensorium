@@ -230,14 +230,21 @@ describe('useNotificationsChannel', () => {
     expect(channelMock.subscribe).toHaveBeenCalledTimes(1)
     expect(channelMock.on).toHaveBeenCalledWith(
       'postgres_changes',
-      expect.objectContaining({ table: 'messages' }),
+      expect.objectContaining({ table: 'notifications' }),
       expect.any(Function),
     )
+    expect(channelMock.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      expect.objectContaining({ table: 'invitations' }),
+      expect.any(Function),
+    )
+    const tables = channelMock.on.mock.calls.map((c) => (c[1] as { table?: string }).table)
+    expect(tables).not.toContain('messages')
     unmount()
     expect(removeChannel).toHaveBeenCalledTimes(1)
   })
 
-  it('bumps notifications on message changes', async () => {
+  it('bumps notifications on notification INSERT', async () => {
     const channelMock = {
       on: vi.fn(() => channelMock),
       subscribe: vi.fn(() => ({})),
@@ -250,47 +257,38 @@ describe('useNotificationsChannel', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
 
     renderHook(() => useNotificationsChannel('u1'), { wrapper })
-    const messageCall = channelMock.on.mock.calls.find(
-      (c) => (c[1] as { table?: string }).table === 'messages',
+    const notificationCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'notifications',
     )
-    expect(messageCall).toBeDefined()
-    ;(messageCall![2] as () => void)()
+    expect(notificationCall).toBeDefined()
+    ;(notificationCall![2] as () => void)()
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
     })
   })
 
-  it('trailing bump refetches when messages arrive during the throttle window', () => {
-    vi.useFakeTimers()
-    try {
-      const channelMock = {
-        on: vi.fn(() => channelMock),
-        subscribe: vi.fn(() => ({})),
-      }
-      const client = {
-        channel: vi.fn(() => channelMock),
-        removeChannel: vi.fn(),
-      } as unknown as SupabaseClient
-      requireSupabaseMock.mockReturnValue(client)
-      const spy = vi.spyOn(queryClient, 'invalidateQueries')
-
-      renderHook(() => useNotificationsChannel('u1'), { wrapper })
-      const messageCall = channelMock.on.mock.calls.find(
-        (c) => (c[1] as { table?: string }).table === 'messages',
-      )
-      const bump = messageCall![2] as () => void
-      spy.mockClear()
-
-      bump()
-      expect(spy).toHaveBeenCalledTimes(2)
-      bump()
-      expect(spy).toHaveBeenCalledTimes(2)
-      vi.advanceTimersByTime(300)
-      expect(spy).toHaveBeenCalledTimes(4)
-    } finally {
-      vi.useRealTimers()
+  it('bumps invitations on invitation INSERT', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
     }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const invitationCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'invitations',
+    )
+    expect(invitationCall).toBeDefined()
+    ;(invitationCall![2] as () => void)()
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['my-invitations'] })
+    })
   })
 
   it('does not subscribe when there is no user', () => {
