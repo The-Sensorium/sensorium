@@ -533,4 +533,205 @@ describe('governance and replacement', () => {
     expect(hErr).toBeNull()
     expect(hidden).toHaveLength(0)
   })
+
+  it('S-06: sources only the eligible candidate, excluding each ineligibility class', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const leaver = members[0]
+
+    const eligible = await member('g-s06-ok')
+    await admin.from('queue_entries').insert({
+      user_id: eligible.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    // Never onboarded: profile exists but onboarding_completed_at is null.
+    const noob = await createUser(admin, 'g-s06-noob')
+    userIds.push(noob.id)
+    await admin.from('queue_entries').insert({
+      user_id: noob.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    // Active cooldown in this mode.
+    const cooled = await member('g-s06-cool')
+    const { error: coolErr } = await admin.from('mode_cooldowns').insert({
+      user_id: cooled.id,
+      mode: 'exact_birthdate',
+      available_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    })
+    expect(coolErr).toBeNull()
+    await admin.from('queue_entries').insert({
+      user_id: cooled.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    // Already an active member of another cluster of the same mode.
+    const busy = await member('g-s06-busy')
+    const otherId = await createCluster(admin, {
+      memberIds: [busy.id],
+      name: 'Other Cluster',
+      mode: 'exact_birthdate',
+      modeLabel: 'Gov',
+      queueKey: '1990-01-01',
+      status: 'active',
+    })
+    clusterIds.push(otherId)
+    await admin.from('queue_entries').insert({
+      user_id: busy.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    const { error } = await leaver.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, invited_user_id, candidate_pool')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.status).toBe('inviting')
+    expect(round?.invited_user_id).toBe(eligible.id)
+    expect(round?.candidate_pool).toEqual([eligible.id])
+
+    // The untouched fn_candidate_eligible() agrees with the inlined predicates.
+    const cases: Array<[TestUser, boolean]> = [
+      [eligible, true],
+      [noob, false],
+      [cooled, false],
+      [busy, false],
+    ]
+    for (const [u, expected] of cases) {
+      const { data, error: fnErr } = await admin.rpc('fn_candidate_eligible', {
+        p_user_id: u.id,
+        p_cluster_id: clusterId,
+        p_mode: 'exact_birthdate',
+        p_exclude: [],
+      })
+      expect(fnErr).toBeNull()
+      expect(data).toBe(expected)
+    }
+  })
+
+  it('S-06: tops up the pool from other queue keys in the same mode', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const leaver = members[0]
+
+    const sameKey = await member('g-s06-top1')
+    await admin.from('queue_entries').insert({
+      user_id: sameKey.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    const o1 = await createUser(admin, 'g-s06-top2')
+    userIds.push(o1.id)
+    await onboardUser(admin, o1.id, { dob: '1988-05-20' })
+    await admin.from('queue_entries').insert({
+      user_id: o1.id,
+      mode: 'exact_birthdate',
+      queue_key: '1988-05-20',
+    })
+
+    const o2 = await createUser(admin, 'g-s06-top3')
+    userIds.push(o2.id)
+    await onboardUser(admin, o2.id, { dob: '1990-07-11' })
+    await admin.from('queue_entries').insert({
+      user_id: o2.id,
+      mode: 'exact_birthdate',
+      queue_key: '1990-07-11',
+    })
+
+    const { error } = await leaver.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, candidate_pool, select_candidate_vote_id')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    // Same-key candidate first, then top-up in join order; a multi-candidate
+    // pool goes to a hidden candidate vote.
+    expect(round?.status).toBe('voting')
+    expect(round?.candidate_pool).toHaveLength(3)
+    expect(round?.candidate_pool?.[0]).toBe(sameKey.id)
+    expect(round?.candidate_pool).toEqual(
+      expect.arrayContaining([sameKey.id, o1.id, o2.id]),
+    )
+    expect(round?.select_candidate_vote_id).not.toBeNull()
+  })
+
+  it('S-06: closes the round as pool_exhausted after 5 empty sourcing attempts', async () => {
+    const { clusterId, members } = await clusterOf(4)
+
+    const { error } = await members[0].client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    // leave_cluster is attempt 1; the cron path re-sources the empty pool.
+    for (let i = 0; i < 4; i++) {
+      const { error: progErr } = await admin.rpc('progress_replacements')
+      expect(progErr).toBeNull()
+    }
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, closed_reason, attempts, candidate_pool')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.attempts).toBe(5)
+    expect(round?.status).toBe('closed')
+    expect(round?.closed_reason).toBe('pool_exhausted')
+    expect(round?.candidate_pool).toEqual([])
+  })
+
+  it('S-06: sources candidates from the open_mix global queue', async () => {
+    const m1 = await member('g-s06-om1')
+    const m2 = await member('g-s06-om2')
+    const clusterId = await createCluster(admin, {
+      memberIds: [m1.id, m2.id],
+      name: 'OM Cluster',
+      mode: 'open_mix',
+      modeLabel: 'Open Mix',
+      queueKey: 'open',
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const candidate = await member('g-s06-omc')
+    await admin.from('queue_entries').insert({
+      user_id: candidate.id,
+      mode: 'open_mix',
+      queue_key: 'open',
+    })
+
+    const { error } = await m1.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, invited_user_id')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.status).toBe('inviting')
+    expect(round?.invited_user_id).toBe(candidate.id)
+  })
 })
