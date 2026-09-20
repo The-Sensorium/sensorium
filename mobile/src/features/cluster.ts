@@ -191,13 +191,16 @@ export function useReplyTargets(clusterId: string | null, parentIds: string[]) {
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .in('id', parentIds)
-      if (error) throw error
+      const ids = [...new Set(parentIds)]
       const map = new Map<string, Message>()
-      for (const m of data ?? []) map.set(m.id, m as Message)
+      for (let i = 0; i < ids.length; i += 50) {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .in('id', ids.slice(i, i + 50))
+        if (error) throw error
+        for (const m of data ?? []) map.set(m.id, m as Message)
+      }
       return map
     },
   })

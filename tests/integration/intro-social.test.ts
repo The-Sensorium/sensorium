@@ -301,6 +301,41 @@ describe('introductions and social', () => {
     expect(signal?.resolved_by).toBe(a.id)
   })
 
+  it('get_signal_reply_counts returns per-signal reply counts to members only', async () => {
+    const [a, b] = [await member('i-src-a'), await member('i-src-b')]
+    const outsider = await createUser(admin, 'i-src-out')
+    userIds.push(outsider.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help packing',
+    })
+    const { error: replyErr } = await b.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: 'I can help',
+    })
+    expect(replyErr).toBeNull()
+
+    const { data: counts, error } = await a.client.rpc('get_signal_reply_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+    expect(counts).toHaveLength(1)
+    expect(counts[0].signal_id).toBe(signalId)
+    expect(counts[0].reply_count).toBe(1)
+
+    const { data: hidden, error: hErr } = await outsider.client.rpc('get_signal_reply_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(hErr).toBeNull()
+    expect(hidden).toHaveLength(0)
+  })
+
   it('send_message rejects before the cluster unlocks', async () => {
     const a = await member('i-chat-lock')
     const clusterId = await createCluster(admin, {

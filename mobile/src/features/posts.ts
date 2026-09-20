@@ -179,9 +179,6 @@ export function useUserPosts(authorId: string | null, enabled = true) {
   })
 }
 
-/** Cache key for a set of posts' likes. The id set is part of the key: feed,
- * detail, and profile pages read different id sets for one cluster, and a
- * shared key lets one screen's refetch overwrite another screen's counts. */
 /** Likes in a cluster (RLS: active members). One filtered query; the live
  * channel patches new likes into this cache. */
 export function useClusterPostLikes(clusterId: string | null) {
@@ -315,6 +312,27 @@ export function usePostComments(clusterId: string | null, postId: string | null)
   })
 }
 
+export type PostCount = { post_id: string; likes_count: number; comments_count: number }
+
+/** Per-post engagement counts (bounded GROUP BY; RLS: active members of an
+ * unlocked cluster). Feed/profile rank from this instead of downloading every
+ * like and comment row; detail pages keep row queries for threads and flags. */
+export function usePostCounts(clusterId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['post-counts', clusterId ?? 'none'],
+    enabled: enabled && clusterId !== null,
+    queryFn: async () => {
+      if (!clusterId) throw new Error('No cluster')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_post_counts', {
+        p_cluster_id: clusterId,
+      })
+      if (error) throw error
+      return (data ?? []) as PostCount[]
+    },
+  })
+}
+
 export function useCreatePost(clusterId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -344,6 +362,7 @@ export function useCreatePost(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
       }
     },
@@ -400,6 +419,7 @@ export function useDeletePost(clusterId: string | null) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', 'single', postId] })
         void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId, 'all'] })
       }
     },
@@ -423,8 +443,8 @@ export function useTogglePostLike(clusterId: string | null) {
       if (!clusterId || !userId) return
       const prefix = { queryKey: ['post-likes', clusterId] } as const
       await queryClient.cancelQueries(prefix)
-      // Every keyed id-set entry (feed/detail/profile) gets the same toggle
-      // so no screen's counts go stale or get clobbered by another's refetch.
+      // Every likes cache for this cluster (feed/detail/profile share one key)
+      // gets the same toggle so no screen's counts go stale on refetch.
       const prev = queryClient.getQueriesData<PostLike[]>(prefix)
       const toggleLike = (base: PostLike[]) => {
         const liked = base.some((l) => l.post_id === postId && l.user_id === userId)
@@ -448,6 +468,7 @@ export function useTogglePostLike(clusterId: string | null) {
     onSettled: (_d, _e, postId) => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
       }
       void queryClient.invalidateQueries({ queryKey: ['post-likes', 'single', postId] })
     },
@@ -484,6 +505,7 @@ export function useCreateComment(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
     },
@@ -521,6 +543,7 @@ export function useDeleteComment(clusterId: string | null) {
           },
         )
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
     },

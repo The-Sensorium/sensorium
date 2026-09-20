@@ -7,7 +7,7 @@ const hooks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useClusterMembers: vi.fn(),
   useClusterVotes: vi.fn(),
-  useClusterVoteResponses: vi.fn(),
+  useVoteCounts: vi.fn(),
   useReplacementRound: vi.fn(),
   useReplacementCandidates: vi.fn(),
   useStartReplaceVote: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock('../../features/votes', async (importOriginal) => {
   return {
     ...actual,
     useClusterVotes: hooks.useClusterVotes,
-    useClusterVoteResponses: hooks.useClusterVoteResponses,
+    useVoteCounts: hooks.useVoteCounts,
     useReplacementRound: hooks.useReplacementRound,
     useReplacementCandidates: hooks.useReplacementCandidates,
     useStartReplaceVote: hooks.useStartReplaceVote,
@@ -80,7 +80,7 @@ describe('VotesView', () => {
     hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1' })
     hooks.useClusterMembers.mockReturnValue(queryStub(members))
     hooks.useClusterVotes.mockReturnValue(queryStub([]))
-    hooks.useClusterVoteResponses.mockReturnValue(queryStub([]))
+    hooks.useVoteCounts.mockReturnValue(queryStub([]))
     hooks.useReplacementRound.mockReturnValue(queryStub(null))
     hooks.useReplacementCandidates.mockReturnValue(queryStub([]))
     hooks.useStartReplaceVote.mockReturnValue(startReplace)
@@ -113,8 +113,8 @@ describe('VotesView', () => {
     hooks.useClusterVotes.mockReturnValue(
       queryStub([{ ...baseVote, id: 'v1', type: 'replace_member', target_member_id: 'm1' }]),
     )
-    hooks.useClusterVoteResponses.mockReturnValue(
-      queryStub([{ vote_id: 'v1', user_id: 'u1', choice: 'yes', created_at: '' }]),
+    hooks.useVoteCounts.mockReturnValue(
+      queryStub([{ vote_id: 'v1', cast_count: 1, my_choice: 'yes' }]),
     )
     renderPage()
     expect(screen.getByText('You voted:')).toBeInTheDocument()
@@ -180,8 +180,8 @@ describe('VotesView', () => {
     hooks.useReplacementCandidates.mockReturnValue(
       queryStub([{ user_id: 'c1', display_name: 'Cara', avatar_url: null }]),
     )
-    hooks.useClusterVoteResponses.mockReturnValue(
-      queryStub([{ vote_id: 'v2', user_id: 'u1', choice: 'c1', created_at: '' }]),
+    hooks.useVoteCounts.mockReturnValue(
+      queryStub([{ vote_id: 'v2', cast_count: 1, my_choice: 'c1' }]),
     )
     renderPage()
     expect(screen.getByText('1 of 2 votes needed.')).toBeInTheDocument()
@@ -202,11 +202,8 @@ describe('VotesView', () => {
     hooks.useReplacementCandidates.mockReturnValue(
       queryStub([{ user_id: 'c1', display_name: 'Cara', avatar_url: null }]),
     )
-    hooks.useClusterVoteResponses.mockReturnValue(
-      queryStub([
-        { vote_id: 'v2', user_id: 'u1', choice: 'c1', created_at: '' },
-        { vote_id: 'v2', user_id: 'm1', choice: 'c1', created_at: '' },
-      ]),
+    hooks.useVoteCounts.mockReturnValue(
+      queryStub([{ vote_id: 'v2', cast_count: 2, my_choice: 'c1' }]),
     )
     renderPage()
     expect(screen.getByText('Quorum reached (2 of 2 votes).')).toBeInTheDocument()
@@ -244,12 +241,8 @@ describe('VotesView', () => {
         },
       ]),
     )
-    hooks.useClusterVoteResponses.mockReturnValue(
-      queryStub([
-        { vote_id: 'v9', user_id: 'u1', choice: 'yes', created_at: '' },
-        { vote_id: 'v9', user_id: 'u2', choice: 'yes', created_at: '' },
-        { vote_id: 'v9', user_id: 'u3', choice: 'no', created_at: '' },
-      ]),
+    hooks.useVoteCounts.mockReturnValue(
+      queryStub([{ vote_id: 'v9', cast_count: 3, my_choice: 'yes' }]),
     )
     renderPage()
     expect(screen.getByText('Past votes')).toBeInTheDocument()

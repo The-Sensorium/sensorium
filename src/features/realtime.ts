@@ -65,6 +65,7 @@ function patchSignalReply(queryClient: ReturnType<typeof useQueryClient>, reply:
       return [...cur, reply].sort((a, b) => a.created_at.localeCompare(b.created_at))
     })
   }
+  void queryClient.invalidateQueries({ queryKey: ['signal-reply-counts', clusterId] })
 }
 
 /**
@@ -90,6 +91,7 @@ function patchPostLike(
   }
   queryClient.setQueriesData<PostLikeRealtime[]>({ queryKey: ['post-likes', clusterId] }, apply)
   queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', 'single', like.post_id], apply)
+  void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
 }
 
 /** Route a post-comment INSERT to its cluster caches (comments carry cluster_id). */
@@ -107,6 +109,7 @@ function patchPostComment(
   }
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], insert)
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, comment.post_id], insert)
+  void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
 }
 
 /** Route a comment-like INSERT/DELETE to its cluster cache (likes carry cluster_id). */
@@ -288,6 +291,7 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
             if (!cur || cur.some((v) => v.id === row.id)) return cur
             return [row, ...cur]
           })
+          void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
         },
       )
       .on(
@@ -303,6 +307,7 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           queryClient.setQueryData<Vote[]>(votesKey, (cur) =>
             cur ? cur.map((v) => (v.id === row.id ? row : v)) : cur,
           )
+          void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
         },
       )
       .on(

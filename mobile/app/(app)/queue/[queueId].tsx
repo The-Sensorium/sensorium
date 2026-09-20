@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { Link, router, useLocalSearchParams } from 'expo-router'
+import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react-native'
 import { useMyQueueKeys, useLeaveQueue } from '../../../src/features/matching'
@@ -29,6 +29,16 @@ export default function QueueScreen() {
 
   const mode = isMatchingMode(queueId) ? queueId : null
   const entry = queues.data?.find((q) => q.mode === mode)
+
+  // expo-router can keep this route mounted across replace/back navigation,
+  // so a confirm left over from a leave → rejoin cycle would otherwise greet
+  // the user instead of the Leave queue button. Reset whenever focused.
+  useFocusEffect(
+    useCallback(() => {
+      setConfirming(false)
+      setLeaveError(null)
+    }, []),
+  )
 
   if (!mode) {
     return (

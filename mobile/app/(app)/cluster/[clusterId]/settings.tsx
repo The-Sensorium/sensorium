@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { CalendarDays, Compass, LogOut, Tag, Users } from 'lucide-react-native'
 import { useCluster } from '../../../../src/features/introductions'
 import { useClusterMembers } from '../../../../src/features/matching'
@@ -21,6 +21,16 @@ export default function ClusterSettingsScreen() {
   const leave = useLeaveCluster()
   const [confirming, setConfirming] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
+
+  // Same staleness as the queue screen: this route stays mounted across
+  // replace/back navigation (and across clusterId param changes), so reset
+  // the leave confirm whenever the screen is focused.
+  useFocusEffect(
+    useCallback(() => {
+      setConfirming(false)
+      setLeaveError(null)
+    }, []),
+  )
   const MatchedByIcon = cluster.data ? modeInfo(cluster.data.matching_mode).icon : Compass
 
   async function handleLeave() {
