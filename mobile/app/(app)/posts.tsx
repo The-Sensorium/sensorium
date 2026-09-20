@@ -46,8 +46,8 @@ export default function PostsFeedScreen() {
   const clusterId = selectedId
   const posts = useClusterPosts(clusterId)
   const members = useClusterMembers(clusterId)
-  const likes = useClusterPostLikes(clusterId, (posts.data ?? []).map((p) => p.id))
-  const comments = useClusterPostComments(clusterId, (posts.data ?? []).map((p) => p.id))
+  const likes = useClusterPostLikes(clusterId)
+  const comments = useClusterPostComments(clusterId)
   const toggle = useTogglePostLike(clusterId)
   const loadEarlier = useLoadEarlierPosts(clusterId)
   const myMutes = useMyMutes(clusterId != null)

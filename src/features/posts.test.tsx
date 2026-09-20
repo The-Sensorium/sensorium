@@ -9,7 +9,6 @@ import {
   COMMENT_CONTENT_MAX,
   POSTS_PAGE_SIZE,
   postImageStoragePath,
-  postLikesKey,
   sortPostsForFeed,
   useClusterPostComments,
   useClusterPostLikes,
@@ -168,12 +167,12 @@ describe('posts', () => {
     expect(c.from('posts').eq).toHaveBeenCalledWith('id', 'p1')
   })
 
-  it('useClusterPostLikes queries only the loaded post ids', async () => {
+  it('useClusterPostLikes queries the whole cluster in one filtered read', async () => {
     mockResult.value = { data: [{ post_id: 'p1', user_id: 'u1' }], error: null }
-    const { result } = renderHook(() => useClusterPostLikes('c1', ['p1', 'p2']), { wrapper })
+    const { result } = renderHook(() => useClusterPostLikes('c1'), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual([{ post_id: 'p1', user_id: 'u1' }]))
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('post_likes').in).toHaveBeenCalledWith('post_id', ['p1', 'p2'])
+    expect(c.from('post_likes').eq).toHaveBeenCalledWith('cluster_id', 'c1')
   })
 
   it('usePostLikes queries a single post’s likes', async () => {
@@ -189,12 +188,12 @@ describe('posts', () => {
     expect(result.current.fetchStatus).toBe('idle')
   })
 
-  it('useClusterCommentLikes queries only the loaded comment ids', async () => {
+  it('useClusterCommentLikes queries the whole cluster in one filtered read', async () => {
     mockResult.value = { data: [{ comment_id: 'x1', user_id: 'u1' }], error: null }
-    const { result } = renderHook(() => useClusterCommentLikes('c1', ['x1', 'x2']), { wrapper })
+    const { result } = renderHook(() => useClusterCommentLikes('c1'), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual([{ comment_id: 'x1', user_id: 'u1' }]))
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('comment_likes').in).toHaveBeenCalledWith('comment_id', ['x1', 'x2'])
+    expect(c.from('comment_likes').eq).toHaveBeenCalledWith('cluster_id', 'c1')
   })
 
   it('useToggleCommentLike calls toggle_comment_like and invalidates', async () => {
@@ -229,10 +228,10 @@ describe('posts', () => {
       ],
       error: null,
     }
-    const { result } = renderHook(() => useClusterPostComments('c1', ['p1']), { wrapper })
+    const { result } = renderHook(() => useClusterPostComments('c1'), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('post_comments').in).toHaveBeenCalledWith('post_id', ['p1'])
+    expect(c.from('post_comments').eq).toHaveBeenCalledWith('cluster_id', 'c1')
     expect(result.current.data?.map((x) => x.id)).toEqual(['x1', 'x2'])
   })
 
@@ -308,23 +307,17 @@ describe('posts', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-likes', 'c1'] })
   })
 
-  it('postLikesKey distinguishes id sets regardless of order', () => {
-    expect(postLikesKey('c1', ['p2', 'p1'])).toEqual(['post-likes', 'c1', 'p1,p2'])
-    expect(postLikesKey('c1', ['p1'])).not.toEqual(postLikesKey('c1', ['p1', 'p2']))
-    expect(postLikesKey(null, [])).toEqual(['post-likes', 'none', ''])
-  })
-
   it('useTogglePostLike writes the caller’s like optimistically before the round-trip', async () => {
     // Hold the RPC pending so the optimistic write is observable pre-response.
     const pending = new Promise<never>(() => {})
     requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
-    queryClient.setQueryData(['post-likes', 'c1', 'p1'], [])
+    queryClient.setQueryData(['post-likes', 'c1'], [])
     const { result } = renderHook(() => useTogglePostLike('c1'), { wrapper })
     result.current.mutate('p1')
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0))
     })
-    const cached = queryClient.getQueryData<{ post_id: string; user_id: string }[]>(['post-likes', 'c1', 'p1'])
+    const cached = queryClient.getQueryData<{ post_id: string; user_id: string }[]>(['post-likes', 'c1'])
     expect(cached).toEqual(
       expect.arrayContaining([expect.objectContaining({ post_id: 'p1', user_id: 'u1' })]),
     )

@@ -79,7 +79,7 @@ export default function RoomScreen() {
   const membership = useMyMembership(clusterId || null)
   const messages = useClusterMessages(clusterId || null)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
-  const reactions = useClusterReactions(clusterId || null, loadedMessageIds)
+  const reactions = useClusterReactions(clusterId || null)
   const loadEarlier = useLoadEarlierMessages(clusterId || null)
   const queryClient = useQueryClient()
   const signals = useClusterSignals(clusterId || null)

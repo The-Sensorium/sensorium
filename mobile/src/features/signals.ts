@@ -27,7 +27,7 @@ export function useClusterSignals(clusterId: string | null, enabled = true) {
 
 /**
  * Replies for a signal (detail) or for the whole cluster (list reply counts).
- * `signalId` null → every reply in the cluster (lookup via signal ids).
+ * `signalId` null → every reply in the cluster via its cluster_id column.
  */
 export function useSignalReplies(
   clusterId: string | null,
@@ -49,17 +49,10 @@ export function useSignalReplies(
         if (error) throw error
         return (data ?? []) as SignalReply[]
       }
-      const { data: signals, error: sErr } = await supabase
-        .from('signals')
-        .select('id')
-        .eq('cluster_id', clusterId)
-      if (sErr) throw sErr
-      const ids = (signals ?? []).map((s) => s.id)
-      if (ids.length === 0) return [] as SignalReply[]
       const { data, error } = await supabase
         .from('signal_replies')
         .select('*')
-        .in('signal_id', ids)
+        .eq('cluster_id', clusterId)
         .order('created_at', { ascending: true })
       if (error) throw error
       return (data ?? []) as SignalReply[]

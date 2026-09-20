@@ -27,7 +27,7 @@ export function PostDetailPage() {
   const post = usePost(postId)
   const clusterId = post.data?.cluster_id ?? null
   const members = useClusterMembers(clusterId)
-  const likes = useClusterPostLikes(clusterId, post.data ? [post.data.id] : [])
+  const likes = useClusterPostLikes(clusterId)
   const comments = usePostComments(clusterId, postId)
   const toggle = useTogglePostLike(clusterId)
   const myMutes = useMyMutes(clusterId != null)

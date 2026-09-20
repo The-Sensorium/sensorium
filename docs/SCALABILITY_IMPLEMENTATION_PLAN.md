@@ -238,33 +238,42 @@ CREATE INDEX IF NOT EXISTS reports_reporter_created_idx ON reports (reporter_id,
 **Current problem:** `message_reactions`, `signal_replies`, `post_likes`, `post_comments`, `comment_likes`, `call_participants` have no `cluster_id`, so Realtime cannot filter by cluster. Every event wakes every client in every cluster, then each client does an extra `select cluster_id` to route it (`patch*` helpers). Chat burst = N x N lookups.
 
 **Exact files:**
-- `src/features/realtime.ts:22-179` (`patchReaction`, `patchSignalReply`, `patchPostLike`, `patchPostComment`, `patchCommentLike`, `patchCallParticipants`), `:187-502` (`useClusterChannel`, ~25 handlers)
-- `src/features/cluster.ts:141-162` (notes missing `cluster_id`), `src/features/posts.ts:189`
-- RLS: `0004_chat.sql:56-60`, `0005_signals.sql:37-46`, `0007_votes_replacement.sql:61-66`, `0072_posts_schema.sql:117-151`
+- `src/features/realtime.ts:22-179` (`patchReaction`, `patchSignalReply`, `patchPostLike`, `patchPostComment`, `patchCommentLike`, `patchCallParticipants`), `:187-508` (`useClusterChannel`, ~30 handlers)
+- `src/features/cluster.ts:145-162` (notes missing `cluster_id`), `src/features/posts.ts:189`
+- RLS: `0004_chat.sql:54-60`, `0005_signals.sql:37-46`, `0007_votes_replacement.sql:61-66`, `0072_posts_schema.sql:114-153`, `0082_comment_likes.sql:40-48`, `0107_cluster_calls.sql:39-52`
 - `0021_realtime_chat.sql`, `0023_governance_realtime.sql`, `0074_posts_realtime.sql`
+- Write RPCs (live bodies — re-verify before rewriting, S-08 lesson): `reply_signal` (`0022`), `toggle_message_reaction` (`0106`), `toggle_post_like` (`0080`), `toggle_comment_like` (`0082`), `create_post` (`0098`, incl. self-like insert), `create_post_comment` (`0099`, incl. self-like insert), `join_call` (`0111`), `start_call` (`0110`)
+
+**Revised scope (reviewed; supersedes the original bullets below):**
+- Denormalize `cluster_id` onto the 6 realtime-routed tables: reactions, signal_replies, post_likes, post_comments, comment_likes, **call_participants** (2-hop lookup today; same pattern, `v_cluster` already in scope in `0110`/`0111`).
+- **`vote_responses` explicitly excluded**: no subscription, not published — its index suffices; its `.in()` query stays S-10's problem.
+- **Trigger must FORCE, not fill**: `BEFORE INSERT` overwrites `NEW.cluster_id` from the parent unconditionally. A fill-only trigger would let a client insert a forged `cluster_id` for a cluster they belong to while attached to another cluster's parent — and direct-`cluster_id` RLS would pass. With forcing, RLS on `cluster_id` is sound by construction.
+- **Rewrite READ policies only** (the hot path: every list fetch + every realtime event evaluates them). Single-row insert/delete policies keep their parent subselects — negligible cost, less churn.
+- Mount duplication is moot: only `ClusterLayout:31`, `PostsFeedPage:57`, `PostDetailPage` mount `useClusterChannel`, on disjoint routes. No ref-count work.
+- No publication change, no realtime restart (column adds replicate automatically; tables already published).
+- Mobile needs **zero** changes (old unfiltered subs + lookups keep working — backward compatible; pinned file stays untouched). Only its `database.types.ts` copy refreshes via sync.
+- `database.types.ts` regen is **mandatory** (`payload.* as Reaction` casts need the new field in `Row` types).
 
 **Proposed fix (new migration + frontend):**
-1. Migration: `ALTER TABLE <child> ADD COLUMN cluster_id uuid REFERENCES clusters(id)`, backfill from parent (`messages`/`signals`/`posts`/`comments`), `NOT NULL` + FK index, keep in sync via trigger on insert.
-2. Update RLS to `USING (is_active_member(cluster_id))` (sargable, no per-row parent subselect).
-3. Frontend: add `filter: cluster_id=eq.X` to those handlers, delete `patch*` lookups.
-4. Mount `useClusterChannel` once in `ClusterLayout` (ref-count like `presenceStore`), split high-frequency (messages/typing) vs low-frequency (votes/rounds).
+1. Migration: `ALTER TABLE <child> ADD COLUMN cluster_id uuid REFERENCES clusters(id) ON DELETE CASCADE` (nullable) → single-statement backfill from parent (FK-guaranteed total; comment_likes joins comments→posts) → force-triggers → replace READ policies → re-create the 8 write RPCs on **latest** bodies with `cluster_id` inserts → `SET NOT NULL` → indexes.
+2. Frontend: delete `patch*` lookups (route via `payload.cluster_id`), add `filter: cluster_id=eq.X` to the 9 unfiltered handlers, collapse `.in()` fan-outs to single filtered queries (column exists now; S-10's counts-RPC stays later).
+3. Tests: `realtime.test.tsx` patch tests **will break** (mocked lookups vanish) — update plus add `filter` assertions for the 6 tables (a filter typo fails silent).
 
 **Indexes/migrations required:**
 ```sql
-CREATE INDEX IF NOT EXISTS message_reactions_cluster_idx ON message_reactions (cluster_id);
-CREATE INDEX IF NOT EXISTS message_reactions_message_idx ON message_reactions (message_id);
-CREATE INDEX IF NOT EXISTS signal_replies_signal_idx ON signal_replies (signal_id, created_at);
-CREATE INDEX IF NOT EXISTS signal_replies_cluster_idx ON signal_replies (cluster_id);
-CREATE INDEX IF NOT EXISTS vote_responses_vote_idx ON vote_responses (vote_id);
-CREATE INDEX IF NOT EXISTS post_likes_post_idx ON post_likes (post_id);
-CREATE INDEX IF NOT EXISTS comment_likes_comment_idx ON comment_likes (comment_id);
-CREATE INDEX IF NOT EXISTS cluster_members_cluster_idx ON cluster_members (cluster_id) WHERE left_at IS NULL;
-CREATE INDEX IF NOT EXISTS message_reads_user_idx ON message_reads (user_id);
+CREATE INDEX message_reactions_cluster_idx ON message_reactions (cluster_id);
+CREATE INDEX signal_replies_cluster_idx ON signal_replies (cluster_id);
+CREATE INDEX signal_replies_signal_idx ON signal_replies (signal_id, created_at);
+CREATE INDEX post_likes_cluster_idx ON post_likes (cluster_id);
+CREATE INDEX post_comments_cluster_idx ON post_comments (cluster_id);
+CREATE INDEX comment_likes_cluster_idx ON comment_likes (cluster_id);
+CREATE INDEX call_participants_cluster_idx ON call_participants (cluster_id);
 ```
+(PK prefixes already cover `message_id`/`post_id`/`comment_id` lookups; `post_comments(post_id)` exists. Plain `CREATE INDEX` — no `CONCURRENTLY` inside migration txns; fine pre-launch.)
 
-**Functional impact:** schema + RLS + realtime topology change. Affects chat/reactions/replies/likes everywhere + `mobile/src/features/realtime.ts` (pinned copy — reconcile by hand per `AGENTS.md`). Backfill must be batched on large tables.
+**Functional impact:** chat/reactions/replies/likes/calls routing everywhere. Write RPCs gain one column on insert (same values parents already imply). Old clients (mobile) unaffected.
 
-**Risk:** **High** (migration + RLS + realtime + mobile sync; needs `supabase db reset + test:integration + test:e2e`).
+**Risk:** **Medium** (was High: forcing trigger + backward compatibility remove the sharp edges; needs `supabase db reset + test:integration + cluster-room e2e`). Load-bearing risk is a missed write site — the forcing trigger self-heals any site that forgets the column.
 
 ---
 

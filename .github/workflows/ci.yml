@@ -55,6 +55,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install mobile dependencies
+        run: npm ci --prefix mobile
+
+      - name: Typecheck mobile
+        run: npx tsc --noEmit -p mobile/tsconfig.json
+
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:

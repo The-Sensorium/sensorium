@@ -111,7 +111,7 @@ export function CommentThread({
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
   const commentIds = comments.map((c) => c.id)
-  const commentLikes = useClusterCommentLikes(clusterId, commentIds)
+  const commentLikes = useClusterCommentLikes(clusterId)
   const toggleCommentLike = useToggleCommentLike(clusterId)
 
   // Comment likes are cached by cluster, not by comment set. When a new comment

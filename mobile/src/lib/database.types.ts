@@ -176,18 +176,21 @@ export type Database = {
       call_participants: {
         Row: {
           call_id: string
+          cluster_id: string
           joined_at: string
           left_at: string | null
           user_id: string
         }
         Insert: {
           call_id: string
+          cluster_id: string
           joined_at?: string
           left_at?: string | null
           user_id: string
         }
         Update: {
           call_id?: string
+          cluster_id?: string
           joined_at?: string
           left_at?: string | null
           user_id?: string
@@ -198,6 +201,13 @@ export type Database = {
             columns: ["call_id"]
             isOneToOne: false
             referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_participants_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
             referencedColumns: ["id"]
           },
           {
@@ -337,21 +347,31 @@ export type Database = {
       }
       comment_likes: {
         Row: {
+          cluster_id: string
           comment_id: string
           liked_at: string
           user_id: string
         }
         Insert: {
+          cluster_id: string
           comment_id: string
           liked_at?: string
           user_id: string
         }
         Update: {
+          cluster_id?: string
           comment_id?: string
           liked_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "comment_likes_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comment_likes_comment_id_fkey"
             columns: ["comment_id"]
@@ -506,24 +526,34 @@ export type Database = {
       }
       message_reactions: {
         Row: {
+          cluster_id: string
           created_at: string
           emoji: string
           message_id: string
           user_id: string
         }
         Insert: {
+          cluster_id: string
           created_at?: string
           emoji: string
           message_id: string
           user_id: string
         }
         Update: {
+          cluster_id?: string
           created_at?: string
           emoji?: string
           message_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "message_reactions_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "message_reactions_message_id_fkey"
             columns: ["message_id"]
@@ -1029,6 +1059,7 @@ export type Database = {
       post_comments: {
         Row: {
           author_id: string
+          cluster_id: string
           content: string | null
           created_at: string
           deleted_at: string | null
@@ -1041,6 +1072,7 @@ export type Database = {
         }
         Insert: {
           author_id: string
+          cluster_id: string
           content?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -1053,6 +1085,7 @@ export type Database = {
         }
         Update: {
           author_id?: string
+          cluster_id?: string
           content?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -1069,6 +1102,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
             referencedColumns: ["id"]
           },
           {
@@ -1089,21 +1129,31 @@ export type Database = {
       }
       post_likes: {
         Row: {
+          cluster_id: string
           liked_at: string
           post_id: string
           user_id: string
         }
         Insert: {
+          cluster_id: string
           liked_at?: string
           post_id: string
           user_id: string
         }
         Update: {
+          cluster_id?: string
           liked_at?: string
           post_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_likes_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_likes_post_id_fkey"
             columns: ["post_id"]
@@ -1594,6 +1644,7 @@ export type Database = {
       signal_replies: {
         Row: {
           author_id: string
+          cluster_id: string
           content: string
           created_at: string
           id: string
@@ -1601,6 +1652,7 @@ export type Database = {
         }
         Insert: {
           author_id: string
+          cluster_id: string
           content: string
           created_at?: string
           id?: string
@@ -1608,6 +1660,7 @@ export type Database = {
         }
         Update: {
           author_id?: string
+          cluster_id?: string
           content?: string
           created_at?: string
           id?: string
@@ -1619,6 +1672,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_replies_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
             referencedColumns: ["id"]
           },
           {
