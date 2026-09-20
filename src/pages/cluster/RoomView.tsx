@@ -36,7 +36,7 @@ import {
 import { useMarkClusterRead } from '../../features/notifications'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
-import { toErrorMessage } from '../../lib/error'
+import { rateLimitMessage, toErrorMessage } from '../../lib/error'
 import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
@@ -465,7 +465,7 @@ export function RoomView() {
     try {
       await toggleReaction.mutateAsync({ messageId, emoji })
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not react to that message.'))
+      setError(rateLimitMessage(e, 'Could not react to that message.'))
     }
   }
 

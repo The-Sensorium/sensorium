@@ -121,13 +121,13 @@ describe('matching', () => {
     expect(result.current.data?.map((m) => m.id)).toEqual(['u4', 'u1', 'u2', 'u3'])
   })
 
-  it('useQueueCount polls the RPC and subscribes to the channel', async () => {
+  it('useQueueCount polls the RPC without a broadcast channel', async () => {
     mockResult.value = { data: 5, error: null }
     const { result } = renderHook(() => useQueueCount('local', 'k1'), { wrapper })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     const client = requireSupabaseMock.mock.results[0].value
     expect(client.rpc).toHaveBeenCalledWith('get_queue_count', { p_mode: 'local', p_queue_key: 'k1' })
-    expect(client.channel).toHaveBeenCalledWith('queue:local:k1')
+    expect(client.channel).not.toHaveBeenCalled()
     await waitFor(() => expect(result.current.count).toBe(5))
   })
 

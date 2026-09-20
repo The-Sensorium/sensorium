@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isNetworkError, joinQueueErrorMessage, toErrorMessage } from './error'
+import { isNetworkError, isRateLimited, joinQueueErrorMessage, rateLimitMessage, toErrorMessage } from './error'
 
 describe('toErrorMessage', () => {
   it('returns the message from an Error instance', () => {
@@ -58,7 +58,26 @@ describe('isNetworkError', () => {
   })
 })
 
+describe('rate limits', () => {
+  it('detects rate_limited errors across shapes', () => {
+    expect(isRateLimited(new Error('rate_limited'))).toBe(true)
+    expect(isRateLimited({ message: 'new row violates check: rate_limited' })).toBe(true)
+    expect(isRateLimited(new Error('cooldown_active'))).toBe(false)
+    expect(isRateLimited(null)).toBe(false)
+  })
+
+  it('maps rate_limited to friendly copy, otherwise passes through', () => {
+    expect(rateLimitMessage(new Error('rate_limited'), 'fallback')).toContain('too quickly')
+    expect(rateLimitMessage(new Error('boom'), 'fallback')).toBe('boom')
+    expect(rateLimitMessage(null, 'fallback')).toBe('fallback')
+  })
+})
+
 describe('joinQueueErrorMessage', () => {
+  it('maps rate_limited before other branches', () => {
+    expect(joinQueueErrorMessage(new Error('rate_limited'))).toContain('too quickly')
+  })
+
   it('maps cooldown errors', () => {
     expect(joinQueueErrorMessage({ message: 'JOIN_COOLDOWN_ACTIVE' })).toContain('30-day')
     expect(joinQueueErrorMessage(new Error('cooldown'))).toContain('30-day')

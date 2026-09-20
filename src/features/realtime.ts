@@ -211,6 +211,11 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
             if (!cur || cur.some((m) => m.id === row.id)) return cur
             return [...cur, row].sort(byCreatedAsc)
           })
+          // Plain chat writes no notification row (synthesized at read time),
+          // so a new message must also bump the badge + list. Scoped here on
+          // purpose: only viewers of this cluster (RLS + cluster_id filter)
+          // refetch, instead of every client DB-wide.
+          void queryClient.invalidateQueries({ queryKey: ['notifications'] })
         },
       )
       .on(
