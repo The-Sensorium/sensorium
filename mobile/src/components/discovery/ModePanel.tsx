@@ -221,7 +221,7 @@ function JoinedCard({
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
         {count} of {CLUSTER_SIZE}
       </Text>
-      <WhatsNextSteps compact />
+      <WhatsNextSteps />
       <View style={{ marginTop: 20 }}>
         <Link href={{ pathname: '/queue/[queueId]', params: { queueId: mode } }} asChild>
           <PrimaryButton title="View queue" onPress={() => {}} />
