@@ -18,20 +18,15 @@ type CommentLikeRealtime = CommentLike
 
 const byCreatedAsc = (a: Message, b: Message) => a.created_at.localeCompare(b.created_at)
 
-/** Route a reaction event to the query cache of the cluster its message belongs to. */
-async function patchReaction(
+/** Route a reaction event to its cluster cache (reactions carry cluster_id). */
+function patchReaction(
   queryClient: ReturnType<typeof useQueryClient>,
   reaction: Reaction,
   kind: 'insert' | 'delete',
 ) {
-  const supabase = requireSupabase()
-  const { data, error } = await supabase
-    .from('messages')
-    .select('cluster_id')
-    .eq('id', reaction.message_id)
-    .maybeSingle()
-  if (error || !data) return
-  queryClient.setQueryData<Reaction[]>(['cluster-reactions', data.cluster_id], (cur) => {
+  const clusterId = reaction.cluster_id
+  if (!clusterId) return
+  queryClient.setQueryData<Reaction[]>(['cluster-reactions', clusterId], (cur) => {
     if (!cur) return cur
     if (kind === 'insert') {
       const dup = cur.some(
@@ -54,18 +49,12 @@ async function patchReaction(
 }
 
 /**
- * Route a signal-reply INSERT to the caches of the cluster its signal belongs to
- * (replies carry no cluster id). Patches only caches that already exist.
+ * Route a signal-reply INSERT to its cluster caches (replies carry cluster_id).
+ * Patches only caches that already exist.
  */
-async function patchSignalReply(queryClient: ReturnType<typeof useQueryClient>, reply: SignalReply) {
-  const supabase = requireSupabase()
-  const { data, error } = await supabase
-    .from('signals')
-    .select('cluster_id')
-    .eq('id', reply.signal_id)
-    .maybeSingle()
-  if (error || !data) return
-  const clusterId = data.cluster_id
+function patchSignalReply(queryClient: ReturnType<typeof useQueryClient>, reply: SignalReply) {
+  const clusterId = reply.cluster_id
+  if (!clusterId) return
   const keys: Array<[string, string, string]> = [
     ['signal-replies', clusterId, reply.signal_id],
     ['signal-replies', clusterId, 'all'],
@@ -79,24 +68,18 @@ async function patchSignalReply(queryClient: ReturnType<typeof useQueryClient>, 
 }
 
 /**
- * Route a post-like INSERT/DELETE to the cache of the cluster its post belongs to
- * (likes carry no cluster id). Patches only caches that already exist. The Home
+ * Route a post-like INSERT/DELETE to its cluster caches (likes carry
+ * cluster_id). Patches only caches that already exist. The Home
  * preview reads per-post ['post-likes', 'single', postId] caches, so patch those
  * too (mirrors how patchPostComment patches both comment cache keys).
  */
-async function patchPostLike(
+function patchPostLike(
   queryClient: ReturnType<typeof useQueryClient>,
   like: PostLikeRealtime,
   kind: 'insert' | 'delete',
 ) {
-  const supabase = requireSupabase()
-  const { data, error } = await supabase
-    .from('posts')
-    .select('cluster_id')
-    .eq('id', like.post_id)
-    .maybeSingle()
-  if (error || !data) return
-  const clusterId = data.cluster_id
+  const clusterId = like.cluster_id
+  if (!clusterId) return
   const apply = (cur?: PostLikeRealtime[]) => {
     if (!cur) return cur
     if (kind === 'insert') {
@@ -109,19 +92,13 @@ async function patchPostLike(
   queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', 'single', like.post_id], apply)
 }
 
-/** Route a post-comment INSERT to the cache of the cluster its post belongs to. */
-async function patchPostComment(
+/** Route a post-comment INSERT to its cluster caches (comments carry cluster_id). */
+function patchPostComment(
   queryClient: ReturnType<typeof useQueryClient>,
   comment: PostCommentRealtime,
 ) {
-  const supabase = requireSupabase()
-  const { data, error } = await supabase
-    .from('posts')
-    .select('cluster_id')
-    .eq('id', comment.post_id)
-    .maybeSingle()
-  if (error || !data) return
-  const clusterId = data.cluster_id
+  const clusterId = comment.cluster_id
+  if (!clusterId) return
   // Feed reads ['post-comments', clusterId, 'all']; the detail page reads
   // ['post-comments', clusterId, postId], so patch both to keep them in sync.
   const insert = (cur?: PostCommentRealtime[]) => {
@@ -132,20 +109,13 @@ async function patchPostComment(
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, comment.post_id], insert)
 }
 
-/** Route a comment-like INSERT/DELETE to the cache of the cluster its comment belongs to. */
-async function patchCommentLike(
+/** Route a comment-like INSERT/DELETE to its cluster cache (likes carry cluster_id). */
+function patchCommentLike(
   queryClient: ReturnType<typeof useQueryClient>,
   like: CommentLikeRealtime,
   kind: 'insert' | 'delete',
 ) {
-  const supabase = requireSupabase()
-  const { data, error } = await supabase
-    .from('post_comments')
-    .select('post_id, posts(cluster_id)')
-    .eq('id', like.comment_id)
-    .maybeSingle()
-  if (error || !data) return
-  const clusterId = (data.posts as { cluster_id: string } | null)?.cluster_id
+  const clusterId = like.cluster_id
   if (!clusterId) return
   queryClient.setQueryData<CommentLikeRealtime[]>(['comment-likes', clusterId], (cur) => {
     if (!cur) return cur
@@ -158,22 +128,15 @@ async function patchCommentLike(
 }
 
 /**
- * Route a call-participant INSERT/UPDATE/DELETE to the caches of the cluster
- * its call belongs to (participants carry no cluster id). Patches only caches
- * that already exist.
+ * Route a call-participant INSERT/UPDATE/DELETE to its cluster caches
+ * (participants carry cluster_id). Patches only caches that already exist.
  */
-async function patchCallParticipants(
+function patchCallParticipants(
   queryClient: ReturnType<typeof useQueryClient>,
-  participant: { call_id: string },
+  participant: { call_id: string; cluster_id: string | null },
 ) {
-  const supabase = requireSupabase()
-  const { data, error } = await supabase
-    .from('calls')
-    .select('cluster_id')
-    .eq('id', participant.call_id)
-    .maybeSingle()
-  if (error || !data) return
-  const clusterId = (data as { cluster_id: string }).cluster_id
+  const clusterId = participant.cluster_id
+  if (!clusterId) return
   void queryClient.invalidateQueries({ queryKey: ['active-call', clusterId] })
   void queryClient.invalidateQueries({ queryKey: ['call-participants', participant.call_id] })
 }
@@ -181,8 +144,8 @@ async function patchCallParticipants(
 /**
  * Subscribes to Postgres Changes for one cluster and patches the TanStack caches in
  * place (docs 04 §1 / §3). Safe to mount once per cluster shell - RLS keeps locked
- * clusters from delivering anything. Message-reaction and signal-reply events carry no
- * cluster id, so they are routed via a lookup to whatever cluster cache they belong to.
+ * clusters from delivering anything. Child rows (reactions, replies, likes,
+ * comments, participants) carry cluster_id, so every handler filters on it.
  */
 export function useClusterChannel(clusterId: string | null) {  const queryClient = useQueryClient()
 
@@ -246,16 +209,26 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       })
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'message_reactions' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reactions',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchReaction(queryClient, payload.new as Reaction, 'insert')
+          patchReaction(queryClient, payload.new as Reaction, 'insert')
         },
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'message_reactions' },
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'message_reactions',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchReaction(queryClient, payload.old as Reaction, 'delete')
+          patchReaction(queryClient, payload.old as Reaction, 'delete')
         },
       )
       .on(
@@ -291,9 +264,14 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'signal_replies' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'signal_replies',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchSignalReply(queryClient, payload.new as SignalReply)
+          patchSignalReply(queryClient, payload.new as SignalReply)
         },
       )
       .on(
@@ -412,12 +390,30 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           )
         },
       )
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_likes' }, (payload) => {
-        void patchPostLike(queryClient, payload.new as PostLikeRealtime, 'insert')
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_likes' }, (payload) => {
-        void patchPostLike(queryClient, payload.old as PostLikeRealtime, 'delete')
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'post_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          patchPostLike(queryClient, payload.new as PostLikeRealtime, 'insert')
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'post_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          patchPostLike(queryClient, payload.old as PostLikeRealtime, 'delete')
+        },
+      )
       .on(
         'postgres_changes',
         {
@@ -435,23 +431,38 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'post_comments' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'post_comments',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchPostComment(queryClient, payload.new as PostCommentRealtime)
+          patchPostComment(queryClient, payload.new as PostCommentRealtime)
         },
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'comment_likes' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comment_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchCommentLike(queryClient, payload.new as CommentLikeRealtime, 'insert')
+          patchCommentLike(queryClient, payload.new as CommentLikeRealtime, 'insert')
         },
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'comment_likes' },
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchCommentLike(queryClient, payload.old as CommentLikeRealtime, 'delete')
+          patchCommentLike(queryClient, payload.old as CommentLikeRealtime, 'delete')
         },
       )
       .on(
@@ -480,23 +491,38 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'call_participants' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'call_participants',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchCallParticipants(queryClient, payload.new as { call_id: string })
+          patchCallParticipants(queryClient, payload.new as { call_id: string; cluster_id: string })
         },
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'call_participants' },
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'call_participants',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchCallParticipants(queryClient, payload.new as { call_id: string })
+          patchCallParticipants(queryClient, payload.new as { call_id: string; cluster_id: string })
         },
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'call_participants' },
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'call_participants',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
-          void patchCallParticipants(queryClient, payload.old as { call_id: string })
+          patchCallParticipants(queryClient, payload.old as { call_id: string; cluster_id: string })
         },
       )
       .subscribe()

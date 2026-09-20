@@ -90,8 +90,8 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const [reportOpen, setReportOpen] = useState(false)
   const userPosts = useUserPosts(userId)
   const postIds = (userPosts.data ?? []).map((p) => p.id)
-  const likes = useClusterPostLikes(clusterId, postIds)
-  const comments = useClusterPostComments(clusterId, postIds)
+  const likes = useClusterPostLikes(clusterId)
+  const comments = useClusterPostComments(clusterId)
 
   const likesByPost = useMemo(() => {
     const counts = new Map<string, number>()

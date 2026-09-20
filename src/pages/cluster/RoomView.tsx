@@ -68,7 +68,7 @@ export function RoomView() {
 
   const messages = useClusterMessages(clusterId)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
-  const reactions = useClusterReactions(clusterId, loadedMessageIds)
+  const reactions = useClusterReactions(clusterId)
   const loadEarlier = useLoadEarlierMessages(clusterId)
   const queryClient = useQueryClient()
   const signals = useClusterSignals(clusterId)
@@ -376,7 +376,7 @@ export function RoomView() {
     if ((messages.data?.length ?? 0) >= CHAT_PAGE_SIZE) setHasMore(true)
   }, [messages.data])
 
-  // Reactions are fetched for the loaded messages only. Refetch when the oldest
+  // Reactions are fetched cluster-wide. Refetch when the oldest
   // loaded message changes (initial load or an earlier page prepended), but not
   // when a new message is appended by the live channel: a fresh message can't
   // have reactions yet, so refetching for every incoming message is wasted work.

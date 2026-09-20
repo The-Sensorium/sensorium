@@ -157,17 +157,14 @@ describe('cluster', () => {
     })
   })
 
-  it('useClusterReactions returns empty when no messages are loaded', async () => {
-    const { result } = renderHook(() => useClusterReactions('c1', []), { wrapper })
-    await waitFor(() => expect(result.current.data).toEqual([]))
-  })
-
-  it('useClusterReactions queries only the loaded message ids', async () => {
-    mockResult.value = { data: [{ id: 'r1', message_id: 'm1' }], error: null }
-    const { result } = renderHook(() => useClusterReactions('c1', ['m1', 'm2']), { wrapper })
-    await waitFor(() => expect(result.current.data).toEqual([{ id: 'r1', message_id: 'm1' }]))
+  it('useClusterReactions queries the whole cluster in one filtered read', async () => {
+    mockResult.value = { data: [{ message_id: 'm1', user_id: 'u1', emoji: '❤️' }], error: null }
+    const { result } = renderHook(() => useClusterReactions('c1'), { wrapper })
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ message_id: 'm1', user_id: 'u1', emoji: '❤️' }]),
+    )
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.from('message_reactions').in).toHaveBeenCalledWith('message_id', ['m1', 'm2'])
+    expect(c.from('message_reactions').eq).toHaveBeenCalledWith('cluster_id', 'c1')
   })
 
   it('useToggleReaction calls toggle_message_reaction and invalidates', async () => {
