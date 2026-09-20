@@ -21,6 +21,7 @@ vi.mock('../../features/votes', () => ({ useReplacementRound: hooks.useReplaceme
 vi.mock('../../features/realtime', () => ({ usePresence: hooks.usePresence }))
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
 vi.mock('../../components/MuteButton', () => ({ MuteButton: () => null }))
+vi.mock('../../components/IntroChecklistBanner', () => ({ IntroChecklistBanner: () => null }))
 
 const member = {
   id: 'm1',

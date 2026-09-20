@@ -45,8 +45,7 @@ export function WhatsNextSteps({
             aria-hidden
           />
           <span>
-            Once your cluster forms, you have 72 hours to complete intros or you&rsquo;ll lose
-            your spot.
+            Jump straight into the conversation once your cluster forms.
           </span>
         </li>
         <li className="flex items-start gap-2">
@@ -55,7 +54,7 @@ export function WhatsNextSteps({
             strokeWidth={1.5}
             aria-hidden
           />
-          <span>Chat unlocks once everyone answers.</span>
+          <span>Answer the 5 intro questions when you’re ready.</span>
         </li>
       </ol>
   )

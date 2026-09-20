@@ -79,6 +79,10 @@ describe('notificationTarget', () => {
     expect(notificationTarget(n('queue_update', 'c1'))).toEqual({ to: '/clusters' })
   })
 
+  it('links cluster_formed directly to the open room', () => {
+    expect(notificationTarget(n('cluster_formed', 'c1'))).toEqual({ to: '/cluster/c1' })
+  })
+
   it('falls back to the cluster, or null when unmappable and clusterless', () => {
     expect(notificationTarget(n('reaction', null))).toBeNull()
     expect(notificationTarget(n('some_unknown_type' as MyNotification['type'], 'c1'))).toEqual({

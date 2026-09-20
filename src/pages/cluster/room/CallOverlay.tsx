@@ -96,7 +96,7 @@ export function CallOverlay({ callId, videoOnJoin, startedAt, expiresAt, onHangU
         ) : tokenQuery.isError || !tokenQuery.data ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="text-sm text-on-surface-variant">
-              Could not join the call. It may have ended — try starting a new one.
+              Could not join the call. It may have ended. Try starting a new one.
             </p>
             <button
               type="button"

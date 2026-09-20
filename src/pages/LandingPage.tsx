@@ -9,7 +9,7 @@ const howItWorks = [
   { step: '01', title: 'Choose How You Want to Match', body: 'Pick from birth date, location-based, or open matching modes.', icon: SlidersHorizontal },
   { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose.', icon: UserPlus },
   { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.', icon: Users },
-  { step: '04', title: 'Complete Introductions', body: 'Answer five questions within 72 hours so everyone can connect.', icon: MessageSquareText },
+  { step: '04', title: 'Complete Introductions', body: 'Introduce yourself with five questions, whenever you are ready.', icon: MessageSquareText },
   { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and grow together.', icon: HeartHandshake },
 ]
 

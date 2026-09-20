@@ -157,7 +157,7 @@ export default function CallScreen() {
         <TitleBar />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
           <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}>
-            Calls need the Sensorium development build — Expo Go can’t load the native WebRTC module.
+            Calls need the Sensorium development build. Expo Go can’t load the native WebRTC module.
           </Text>
           <Pressable
             accessibilityLabel="Close"
@@ -192,7 +192,7 @@ export default function CallScreen() {
           <TitleBar />
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
             <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}>
-              Could not join the call. It may have ended — try starting a new one.
+              Could not join the call. It may have ended. Try starting a new one.
             </Text>
             <Pressable
               accessibilityLabel="Close"

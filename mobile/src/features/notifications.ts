@@ -339,7 +339,7 @@ export function notificationTarget(
     case 'invitation_received':
       return { to: '/home' }
     case 'cluster_formed':
-      return clusterId ? { to: `/cluster/${clusterId}/introductions` } : { to: '/home' }
+      return clusterId ? { to: `/cluster/${clusterId}` } : { to: '/home' }
     case 'queue_update':
       return { to: '/clusters' }
     default:

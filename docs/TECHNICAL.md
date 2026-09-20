@@ -85,12 +85,12 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | Module | Responsibility |
 |---|---|
 | `matching.ts` | queue entry, matching status |
-| `introductions.ts` | the five-question shared intro and 72-hour phase |
+| `introductions.ts` | the five-question shared intro checklist (optional, never gates access) |
 | `cluster.ts` | cluster data, realtime chat, chat-image signed URLs, message send/edit/delete/reactions |
 | `cluster-calls.ts` | cluster call state (active call, participants), start/join/leave mutations, LiveKit token fetch |
 | `realtime.ts` | shared realtime subscription plumbing |
 | `signals.ts` | request-for-help threads |
-| `votes.ts` | governance votes and cooldowns |
+| `votes.ts` | governance votes (replace member, rename) and replacement invitations |
 | `notifications.ts` | user notifications |
 | `discovery.ts` | matching-mode directory and public cluster counts |
 | `access.ts` | the caller's platform role and capabilities (staff guards) |
@@ -208,6 +208,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Chat volume in the center (0115)**: the consolidated chat entry titles itself "N new messages" when a cluster has more than one unread message (single messages keep "X sent a message").
 - **Seen-vs-clear center (0116, 0133)**: `get_my_notifications` returns recent read and unread stored rows, so a single read greys the card instead of dropping it; only "Mark all read" empties the page (`mark_all_read` deletes the caller's stored rows and advances chat watermarks). Opening a room advances the cluster watermark that clears that cluster's synthesized chat entry. The derived badge (`0114`, counting `read_at is null`) matches.
 - **Open Mix (0131–0132)**: the `open_mix` matching-mode enum value, `fn_queue_key` global `'open'` queue, `fn_mode_label` "Open Mix", `fn_cooldown_interval` (7 days for `open_mix`, 30 days otherwise) used by `leave_cluster` and vote-removal, and the `get_my_matching_status` branch.
+- **Cluster lifecycle simplification (0142–0143)**: clusters form `active` with `introductions_completed_at` stamped at formation (open at 8; intros are checklist-only, `check_intro_deadlines` is a no-op and the `intro-deadline` cron is unscheduled); replacement invites the longest-waiting eligible candidate deterministically (`candidate_pool=[selected]`, no candidate votes — `vote_on`/`close_expired_votes` are governance-only, stray candidate votes close as `superseded`); `leave_cluster` no longer supersedes an in-flight round and `accept_invitation` chains the next cycle while below 8 with a `cluster_full` guard, plus a `progress_replacements()` safety net so active clusters continuously return to 8.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 

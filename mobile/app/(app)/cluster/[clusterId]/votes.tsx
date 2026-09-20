@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
-import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Hourglass, ThumbsDown, ThumbsUp } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
@@ -9,12 +8,10 @@ import {
   useClusterVotes,
   useClusterVoteResponses,
   useReplacementRound,
-  useReplacementCandidates,
   useStartReplaceVote,
   useStartNameVote,
   useVoteOn,
   parseVoteResult,
-  type CandidateProfile,
   type ReplacementRound,
   type Vote as VoteRow,
 } from '../../../../src/features/votes'
@@ -29,11 +26,11 @@ import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../..
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 type MemberCard = { id: string; display_name: string; avatar_url: string | null }
+type GovernableVoteType = Exclude<VoteRow['type'], 'select_candidate'>
 
-const VOTE_TYPE_LABEL: Record<VoteRow['type'], string> = {
+const VOTE_TYPE_LABEL: Record<GovernableVoteType, string> = {
   replace_member: 'Replace member',
   change_name: 'Rename cluster',
-  select_candidate: 'Choose a new member',
 }
 
 export default function VotesScreen() {
@@ -45,7 +42,6 @@ export default function VotesScreen() {
   const votes = useClusterVotes(clusterId || null)
   const responses = useClusterVoteResponses(clusterId || null)
   const round = useReplacementRound(clusterId || null)
-  const candidates = useReplacementCandidates(round.data?.id ?? null, round.data != null)
   const members = useClusterMembers(clusterId || null)
 
   const startReplace = useStartReplaceVote(clusterId || null)
@@ -57,18 +53,10 @@ export default function VotesScreen() {
   const [nameSuggestion, setNameSuggestion] = useState('')
   const [pendingVoteId, setPendingVoteId] = useState<string | null>(null)
   const [voteError, setVoteError] = useState<string | null>(null)
-  const queryClient = useQueryClient()
   const pull = usePullToRefresh([
     () => votes.refetch(),
     () => responses.refetch(),
-    async () => {
-      const result = await round.refetch()
-      if (result.data?.id === round.data?.id) {
-        await candidates.refetch()
-      } else {
-        await queryClient.refetchQueries({ queryKey: ['replacement-candidates'] })
-      }
-    },
+    () => round.refetch(),
     () => members.refetch(),
   ])
 
@@ -144,9 +132,8 @@ export default function VotesScreen() {
     )
   }
 
-  const openVotes = (votes.data ?? []).filter((v) => v.status === 'open')
-  const closedVotes = (votes.data ?? []).filter((v) => v.status === 'closed')
-  const roundVoting = round.data && round.data.status === 'voting'
+  const openVotes = (votes.data ?? []).filter((v) => v.status === 'open' && v.type !== 'select_candidate')
+  const closedVotes = (votes.data ?? []).filter((v) => v.status === 'closed' && v.type !== 'select_candidate')
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
@@ -192,7 +179,6 @@ export default function VotesScreen() {
       {round.data ? (
         <ReplacementBanner
           round={round.data}
-          candidates={candidates.data ?? []}
           memberById={memberById}
         />
       ) : null}
@@ -212,8 +198,6 @@ export default function VotesScreen() {
             key={vote.id}
             vote={vote}
             myChoice={myChoiceByVote.get(vote.id) ?? null}
-            candidates={vote.type === 'select_candidate' ? (candidates.data ?? []) : []}
-            showCandidates={Boolean(roundVoting && round.data?.select_candidate_vote_id === vote.id)}
             memberById={memberById}
             pending={pendingVoteId === vote.id}
             onVote={castVote}
@@ -321,18 +305,14 @@ export default function VotesScreen() {
 
 function ReplacementBanner({
   round,
-  candidates,
   memberById,
 }: {
   round: ReplacementRound
-  candidates: CandidateProfile[]
   memberById: Map<string, MemberCard>
 }) {
   const t = useTheme()
   const invited =
-    round.invited_user_id &&
-    (candidates.find((c) => c.user_id === round.invited_user_id)?.display_name ||
-      memberById.get(round.invited_user_id)?.display_name)
+    round.invited_user_id && memberById.get(round.invited_user_id)?.display_name
 
   return (
     <Card>
@@ -351,11 +331,11 @@ function ReplacementBanner({
             {round.status === 'selecting_candidates' ? (
               <>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
-                  Finding replacement candidates
+                  Finding a new member
                 </Text>
                 <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
-                  A member recently left. No one is waiting in line yet — we check hourly
-                  and will invite or start a vote as soon as someone queues.
+                  A member recently left. No one is waiting in line yet. We check hourly
+                  and will invite the next eligible person as soon as someone queues.
                 </Text>
               </>
             ) : round.status === 'inviting' ? (
@@ -372,9 +352,9 @@ function ReplacementBanner({
             ) : (
               <>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
-                  Candidate selection in progress
+                  Replacement in progress
                 </Text>
-                <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>Cast your vote below.</Text>
+                <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>Finding the next member.</Text>
               </>
             )}
           </View>
@@ -387,8 +367,6 @@ function ReplacementBanner({
 function ActiveVoteCard({
   vote,
   myChoice,
-  candidates,
-  showCandidates,
   memberById,
   pending,
   onVote,
@@ -397,8 +375,6 @@ function ActiveVoteCard({
 }: {
   vote: VoteRow
   myChoice: string | null
-  candidates: CandidateProfile[]
-  showCandidates: boolean
   memberById: Map<string, MemberCard>
   pending: boolean
   onVote: (voteId: string, choice: string) => void
@@ -412,15 +388,13 @@ function ActiveVoteCard({
     <Card>
       <View style={{ marginBottom: 12 }}>
         <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
-          {VOTE_TYPE_LABEL[vote.type]}
+          {VOTE_TYPE_LABEL[vote.type as GovernableVoteType]}
         </Text>
         <Text style={{ marginTop: 2, fontSize: 16, fontWeight: '600', color: t.onSurface }}>
           {vote.type === 'replace_member' ? (
             <>Replace {target ? target.display_name : 'a member'}</>
-          ) : vote.type === 'change_name' ? (
-            <>Rename cluster to “{vote.name_suggestion}”</>
           ) : (
-            'Pick the next cluster member'
+            <>Rename cluster to “{vote.name_suggestion}”</>
           )}
         </Text>
         <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 6, alignSelf: 'flex-start' }}>
@@ -431,59 +405,12 @@ function ActiveVoteCard({
         </View>
       </View>
 
-      {vote.type === 'select_candidate' ? (
-        showCandidates && candidates.length > 0 ? (
-          <>
-            <Text style={{ marginTop: 8, fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
-              {castCount >= quorum
-                ? `Quorum reached (${castCount} of ${quorum} votes).`
-                : `${castCount} of ${quorum} votes needed.`}
-            </Text>
-            {candidates.map((c) => {
-            const selected = myChoice === c.user_id
-            return (
-              <Pressable
-                key={c.user_id}
-                disabled={pending || myChoice !== null}
-                onPress={() => onVote(vote.id, c.user_id)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  borderWidth: 1,
-                  borderColor: selected ? t.primary : t.outlineVariant,
-                  backgroundColor: selected ? t.surfaceContainer : 'transparent',
-                  borderRadius: radii.md,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  marginBottom: 8,
-                  opacity: pending || (myChoice !== null && !selected) ? 0.7 : 1,
-                }}
-              >
-                <Avatar name={c.display_name} src={c.avatar_url} size={40} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
-                    {c.display_name}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                    {selected
-                      ? 'You voted for this candidate'
-                      : myChoice
-                        ? 'Another candidate was chosen'
-                        : 'Tap to vote'}
-                  </Text>
-                </View>
-                {pending ? <ActivityIndicator size="small" color={t.primary} /> : null}
-              </Pressable>
-            )
-          })}
-          </>
-        ) : (
-          <Text style={{ marginTop: 16, fontSize: 14, color: t.onSurfaceVariant }}>
-            Candidates are being prepared. Vote will open shortly.
-          </Text>
-        )
-      ) : myChoice ? (
+      <Text style={{ marginTop: 8, fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
+        {castCount >= quorum
+          ? `Quorum reached (${castCount} of ${quorum} votes).`
+          : `${castCount} of ${quorum} votes needed.`}
+      </Text>
+      {myChoice ? (
         <Text style={{ marginTop: 16, fontSize: 14, fontWeight: '600', color: t.onSurface }}>
           You voted: <Text style={{ color: t.primary }}>{myChoice}</Text>
         </Text>
@@ -520,9 +447,8 @@ function PastVoteCard({
 }) {
   const t = useTheme()
   const result = parseVoteResult(vote.result)
-  const passed = result?.outcome === 'passed' || /^[0-9a-f]{8}-/i.test(result?.outcome ?? '')
+  const passed = result?.outcome === 'passed'
   const target = vote.target_member_id ? memberById.get(vote.target_member_id) : null
-  const winner = passed && result?.outcome ? memberById.get(result.outcome) : undefined
 
   return (
     <Card>
@@ -530,15 +456,13 @@ function PastVoteCard({
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.onSurfaceVariant }}>
-              {VOTE_TYPE_LABEL[vote.type]}
+              {VOTE_TYPE_LABEL[vote.type as GovernableVoteType]}
             </Text>
             <Text style={{ marginTop: 2, fontSize: 16, fontWeight: '600', color: t.onSurface }}>
               {vote.type === 'replace_member' ? (
                 <>Replace {target ? target.display_name : 'a member'}</>
-              ) : vote.type === 'change_name' ? (
-                <>Rename cluster to “{vote.name_suggestion}”</>
               ) : (
-                'Choose a new member'
+                <>Rename cluster to “{vote.name_suggestion}”</>
               )}
             </Text>
           </View>
@@ -546,13 +470,7 @@ function PastVoteCard({
             style={{ backgroundColor: passed ? t.surfaceContainer : t.errorContainer, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4 }}
           >
             <Text style={{ fontSize: 12, fontWeight: '600', color: passed ? t.primary : t.error }}>
-              {vote.type === 'select_candidate'
-                ? winner || passed
-                  ? 'Selected'
-                  : 'Failed'
-                : result?.outcome === 'passed'
-                  ? 'Passed'
-                  : 'Failed'}
+              {passed ? 'Passed' : 'Failed'}
             </Text>
           </View>
         </View>
@@ -563,33 +481,18 @@ function PastVoteCard({
           {vote.type === 'change_name' && passed &&
             `Cluster renamed to “${result?.name ?? vote.name_suggestion}”.`}
           {vote.type === 'change_name' && !passed && 'The cluster keeps its name.'}
-          {vote.type === 'select_candidate' &&
-            (winner
-              ? `${winner.display_name} was selected.`
-              : passed
-                ? 'A new member was selected.'
-                : 'No candidate was selected.')}
         </Text>
 
         <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {vote.type === 'select_candidate' ? (
-            <>
-              <StatPill text={`${castCount} ${castCount === 1 ? 'vote' : 'votes'} cast`} />
-              <StatPill text={`quorum ${result?.quorum ?? '-'}`} />
-            </>
-          ) : (
-            <>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <ThumbsUp size={14} color={t.primary} strokeWidth={2} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>{result?.yes ?? 0}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <ThumbsDown size={14} color={t.error} strokeWidth={2} />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>{result?.no ?? 0}</Text>
-              </View>
-              <StatPill text={`${result?.cast ?? castCount}/${result?.quorum ?? '-'} cast`} />
-            </>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <ThumbsUp size={14} color={t.primary} strokeWidth={2} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>{result?.yes ?? 0}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <ThumbsDown size={14} color={t.error} strokeWidth={2} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>{result?.no ?? 0}</Text>
+          </View>
+          <StatPill text={`${result?.cast ?? castCount}/${result?.quorum ?? '-'} cast`} />
         </View>
       </View>
     </Card>

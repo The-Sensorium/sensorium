@@ -15,7 +15,7 @@ const ACTION_OPTIONS = Constants.public.Enums.moderation_action_type as readonly
 const EXPORT_CAP = 1000
 
 function formatMetadataValue(value: unknown): string {
-  if (value === null || value === undefined) return '—'
+  if (value === null || value === undefined) return '-'
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
@@ -86,7 +86,7 @@ function AuditDetailDrawer({ row, onClose, staffBase }: { row: ModerationAuditV2
                   {row.target_display_name ?? row.target_user_id}
                 </Link>
               ) : (
-                '—'
+                '-'
               )}
             </dd>
           </div>

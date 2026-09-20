@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
 import { ChevronUp, Loader2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useDocumentTitle } from '../../lib/use-document-title'
@@ -105,7 +104,6 @@ export function PostsFeedPage() {
   // Likes/comments are whole-cluster caches (S-09 cluster_id), so earlier pages
   // are already covered; the live channel patches arrivals.
   const selected = (clusters.data ?? []).find((c) => c.cluster.id === selectedId)
-  const isLocked = !selected?.cluster.introductions_completed_at
   const hasMore =
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
 
@@ -170,22 +168,11 @@ export function PostsFeedPage() {
             ))}
           </div>
 
-          {clusterId && !isLocked && <PostComposer clusterId={clusterId} />}
+          {clusterId && <PostComposer clusterId={clusterId} />}
 
           {posts.isLoading || myMutes.isLoading || !selected ? (
             <div className="flex items-center gap-2 text-sm text-on-surface-variant">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading posts…
-            </div>
-          ) : isLocked ? (
-            <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">
-              Posts unlock after introductions.{' '}
-              <Link
-                to={`/cluster/${selected.cluster.id}/waiting`}
-                className="font-semibold text-primary hover:underline"
-              >
-                Complete your introductions
-              </Link>{' '}
-              to start sharing.
             </div>
           ) : (posts.data ?? []).length === 0 ? (
             <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">

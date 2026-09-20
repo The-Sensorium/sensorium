@@ -9,7 +9,6 @@ const hooks = vi.hoisted(() => ({
   useClusterVotes: vi.fn(),
   useVoteCounts: vi.fn(),
   useReplacementRound: vi.fn(),
-  useReplacementCandidates: vi.fn(),
   useStartReplaceVote: vi.fn(),
   useStartNameVote: vi.fn(),
   useVoteOn: vi.fn(),
@@ -30,7 +29,6 @@ vi.mock('../../features/votes', async (importOriginal) => {
     useClusterVotes: hooks.useClusterVotes,
     useVoteCounts: hooks.useVoteCounts,
     useReplacementRound: hooks.useReplacementRound,
-    useReplacementCandidates: hooks.useReplacementCandidates,
     useStartReplaceVote: hooks.useStartReplaceVote,
     useStartNameVote: hooks.useStartNameVote,
     useVoteOn: hooks.useVoteOn,
@@ -82,7 +80,6 @@ describe('VotesView', () => {
     hooks.useClusterVotes.mockReturnValue(queryStub([]))
     hooks.useVoteCounts.mockReturnValue(queryStub([]))
     hooks.useReplacementRound.mockReturnValue(queryStub(null))
-    hooks.useReplacementCandidates.mockReturnValue(queryStub([]))
     hooks.useStartReplaceVote.mockReturnValue(startReplace)
     hooks.useStartNameVote.mockReturnValue(startName)
     hooks.useVoteOn.mockReturnValue(voteOn)
@@ -135,25 +132,14 @@ describe('VotesView', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('nope'))
   })
 
-  it('lists select-candidate options only for the matching round vote', () => {
-    const round = {
-      id: 'r1',
-      cluster_id: 'c1',
-      status: 'voting',
-      select_candidate_vote_id: 'v2',
-      invited_user_id: null,
-    }
+  it('hides legacy select-candidate votes instead of rendering a ballot', () => {
     hooks.useClusterVotes.mockReturnValue(
       queryStub([{ ...baseVote, id: 'v2', type: 'select_candidate' }]),
     )
-    hooks.useReplacementRound.mockReturnValue(queryStub(round))
-    hooks.useReplacementCandidates.mockReturnValue(
-      queryStub([{ user_id: 'c1', display_name: 'Cara', avatar_url: null }]),
-    )
     renderPage()
-    expect(screen.getByText('Pick the next cluster member')).toBeInTheDocument()
-    expect(screen.getByText('Cara')).toBeInTheDocument()
-    expect(screen.getByText('0 of 2 votes needed.')).toBeInTheDocument()
+    expect(screen.getByText('No open votes right now.')).toBeInTheDocument()
+    expect(screen.queryByText('Pick the next cluster member')).not.toBeInTheDocument()
+    expect(screen.queryByText('Candidate selection in progress')).not.toBeInTheDocument()
   })
 
   it('explains the wait when no candidates are queued yet', () => {
@@ -161,52 +147,40 @@ describe('VotesView', () => {
       queryStub({ id: 'r1', cluster_id: 'c1', status: 'selecting_candidates' }),
     )
     renderPage()
-    expect(screen.getByText('Finding replacement candidates')).toBeInTheDocument()
+    expect(screen.getByText('Finding a new member')).toBeInTheDocument()
     expect(screen.getByText(/No one is waiting in line yet/)).toBeInTheDocument()
   })
 
-  it('shows quorum progress on a select-candidate vote', () => {
-    const round = {
-      id: 'r1',
-      cluster_id: 'c1',
-      status: 'voting',
-      select_candidate_vote_id: 'v2',
-      invited_user_id: null,
-    }
+  it('shows quorum progress on a governance vote', () => {
     hooks.useClusterVotes.mockReturnValue(
-      queryStub([{ ...baseVote, id: 'v2', type: 'select_candidate' }]),
-    )
-    hooks.useReplacementRound.mockReturnValue(queryStub(round))
-    hooks.useReplacementCandidates.mockReturnValue(
-      queryStub([{ user_id: 'c1', display_name: 'Cara', avatar_url: null }]),
+      queryStub([{ ...baseVote, id: 'v1', type: 'replace_member', target_member_id: 'm1' }]),
     )
     hooks.useVoteCounts.mockReturnValue(
-      queryStub([{ vote_id: 'v2', cast_count: 1, my_choice: 'c1' }]),
+      queryStub([{ vote_id: 'v1', cast_count: 1, my_choice: null }]),
     )
     renderPage()
     expect(screen.getByText('1 of 2 votes needed.')).toBeInTheDocument()
   })
 
   it('confirms quorum without implying an early close', () => {
-    const round = {
-      id: 'r1',
-      cluster_id: 'c1',
-      status: 'voting',
-      select_candidate_vote_id: 'v2',
-      invited_user_id: null,
-    }
     hooks.useClusterVotes.mockReturnValue(
-      queryStub([{ ...baseVote, id: 'v2', type: 'select_candidate' }]),
-    )
-    hooks.useReplacementRound.mockReturnValue(queryStub(round))
-    hooks.useReplacementCandidates.mockReturnValue(
-      queryStub([{ user_id: 'c1', display_name: 'Cara', avatar_url: null }]),
+      queryStub([{ ...baseVote, id: 'v1', type: 'change_name', name_suggestion: 'Aurora' }]),
     )
     hooks.useVoteCounts.mockReturnValue(
-      queryStub([{ vote_id: 'v2', cast_count: 2, my_choice: 'c1' }]),
+      queryStub([{ vote_id: 'v1', cast_count: 2, my_choice: 'yes' }]),
     )
     renderPage()
     expect(screen.getByText('Quorum reached (2 of 2 votes).')).toBeInTheDocument()
+  })
+
+  it('shows the invitation banner with generic copy for a non-member invitee', () => {
+    // The invitee is never a cluster member yet, so no display name resolves.
+    hooks.useReplacementRound.mockReturnValue(
+      queryStub({ id: 'r1', cluster_id: 'c1', status: 'inviting', invited_user_id: 'x1' }),
+    )
+    renderPage()
+    expect(screen.getByText('Invitation sent')).toBeInTheDocument()
+    expect(screen.getByText('Waiting for the selected candidate to respond.')).toBeInTheDocument()
   })
 
   it('starts a replacement vote from the modal', async () => {

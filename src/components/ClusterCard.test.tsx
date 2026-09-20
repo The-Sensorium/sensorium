@@ -45,7 +45,7 @@ describe('ClusterCard', () => {
     )
   })
 
-  it('links to introductions when introductions are pending', () => {
+  it('links into the cluster detail route even when introductions are pending', () => {
     const item = makeCluster({
       status: 'introductions',
       introductions_completed_at: null,
@@ -57,15 +57,15 @@ describe('ClusterCard', () => {
     )
     expect(screen.getByRole('link', { name: /My Cluster/ })).toHaveAttribute(
       'href',
-      '/cluster/c1/introductions',
+      '/cluster/c1',
     )
-    expect(screen.getByText('Introductions in progress')).toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
   })
 
   it('prompts personal action when the caller has not answered', () => {
     const item = makeCluster({
-      status: 'introductions',
-      introductions_completed_at: null,
+      status: 'active',
+      introductions_completed_at: '2026-01-02T00:00:00Z',
     })
     render(
       <MemoryRouter>
@@ -75,50 +75,22 @@ describe('ClusterCard', () => {
     expect(screen.getByText(/Complete your introductions/)).toBeInTheDocument()
   })
 
-  it('shows waiting state when the caller has answered', () => {
+  it('shows no waiting state once the caller has answered', () => {
     const item = makeCluster({
-      status: 'introductions',
-      introductions_completed_at: null,
+      status: 'active',
+      introductions_completed_at: '2026-01-02T00:00:00Z',
     })
     render(
       <MemoryRouter>
         <ClusterCard item={item} myIntroCompletedAt="2026-01-02T00:00:00Z" />
       </MemoryRouter>,
     )
-    expect(screen.getByText(/Waiting for the others/)).toBeInTheDocument()
+    expect(screen.queryByText(/Waiting for the others/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Complete your introductions/)).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /My Cluster/ })).toHaveAttribute(
       'href',
-      '/cluster/c1/waiting',
+      '/cluster/c1',
     )
-  })
-
-  it('shows the deadline countdown when introductions are pending', () => {
-    const item = makeCluster({
-      status: 'introductions',
-      introductions_completed_at: null,
-      introductions_deadline: new Date(Date.now() + 2 * 86_400_000 + 3_600_000).toISOString(),
-    })
-    render(
-      <MemoryRouter>
-        <ClusterCard item={item} myIntroCompletedAt={null} />
-      </MemoryRouter>,
-    )
-    expect(screen.getByText(/Complete your introductions/)).toBeInTheDocument()
-    expect(screen.getByText(/2d \d+h \d+m/)).toBeInTheDocument()
-  })
-
-  it('labels completed introductions', () => {
-    const item = makeCluster({
-      status: 'introductions',
-      introductions_completed_at: '2026-01-02T00:00:00Z',
-    })
-    render(
-      <MemoryRouter>
-        <ClusterCard item={item} />
-      </MemoryRouter>,
-    )
-    expect(screen.getByText('Introductions complete')).toBeInTheDocument()
   })
 
   it('labels archived clusters', () => {

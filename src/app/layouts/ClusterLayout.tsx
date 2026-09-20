@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
+import { NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Loader2, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { modeInfo } from '../../lib/modes'
@@ -62,17 +62,8 @@ export function ClusterLayout() {
     )
   }
 
-  // Intro phase still running → waiting screen (the room is locked); it bounces
-  // this member to the form if their own intro is still pending.
-  if (!cluster.data.introductions_completed_at) {
-    return <Navigate to={`/cluster/${clusterId}/waiting`} replace />
-  }
-
-  // Cluster already unlocked but this member joined later (via replacement)
-  // without completing their intro: make them finish before entering the room.
-  if (!membership.data.intro_completed_at) {
-    return <Navigate to={`/cluster/${clusterId}/introductions`} replace />
-  }
+  // Clusters open at formation: every active member enters the room directly.
+  // Introductions are an optional in-cluster checklist and never gate access.
 
   const ModeIcon = modeInfo(cluster.data.matching_mode).icon
 

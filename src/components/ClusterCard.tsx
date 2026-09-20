@@ -4,15 +4,12 @@ import type { Database } from '../lib/database.types'
 import type { MyCluster } from '../features/matching'
 import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
-import { CountdownTimer } from './CountdownTimer'
 
 type ClusterStatus = Database['public']['Enums']['cluster_status']
 
-function statusLabel(status: ClusterStatus, introComplete: boolean): string {
+function statusLabel(status: ClusterStatus): string {
   if (status === 'archived') return 'Archived'
-  if (status === 'active') return 'Active'
-  if (introComplete) return 'Introductions complete'
-  return 'Introductions in progress'
+  return 'Active'
 }
 
 export function ClusterCard({
@@ -23,16 +20,9 @@ export function ClusterCard({
   myIntroCompletedAt?: string | null
 }) {
   const { cluster } = item
-  const introComplete = cluster.introductions_completed_at !== null
   const info = modeInfo(cluster.matching_mode)
-  const pending = cluster.status === 'introductions' && !introComplete
-  const needsIntros = pending && myIntroCompletedAt === null
-  const waitingOnOthers = pending && typeof myIntroCompletedAt === 'string'
-  const target = waitingOnOthers
-    ? `/cluster/${cluster.id}/waiting`
-    : pending
-      ? `/cluster/${cluster.id}/introductions`
-      : `/cluster/${cluster.id}`
+  const target = `/cluster/${cluster.id}`
+  const needsIntros = myIntroCompletedAt === null
 
   return (
     <Link
@@ -56,27 +46,9 @@ export function ClusterCard({
       </div>
       <p className="mt-3 text-sm text-on-surface-variant">
         {needsIntros ? (
-          <>
-            Complete your introductions
-            {cluster.introductions_deadline ? (
-              <>
-                {' · '}Deadline:{' '}
-                <CountdownTimer deadline={cluster.introductions_deadline} className="font-semibold" />
-              </>
-            ) : null}
-          </>
-        ) : waitingOnOthers ? (
-          <>
-            Waiting for the others
-            {cluster.introductions_deadline ? (
-              <>
-                {' · '}Deadline:{' '}
-                <CountdownTimer deadline={cluster.introductions_deadline} className="font-semibold" />
-              </>
-            ) : null}
-          </>
+          <>Complete your introductions</>
         ) : (
-          statusLabel(cluster.status, introComplete)
+          statusLabel(cluster.status)
         )}
       </p>
     </Link>

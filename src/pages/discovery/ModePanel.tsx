@@ -10,9 +10,7 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount, useMyClusters } from '../../features/matching'
-import { useCluster, useMyMembership } from '../../features/introductions'
-import { CountdownTimer } from '../../components/CountdownTimer'
+import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
 import { WhatsNextSteps } from '../../components/WhatsNextSteps'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 
@@ -68,60 +66,22 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
 }
 
 function InClusterCard({ clusterId }: { clusterId: string }) {
-  const clusters = useMyClusters()
-  const clusterQuery = useCluster(clusterId)
-  const membership = useMyMembership(clusterId)
-  const cluster =
-    clusterQuery.data ??
-    (clusters.data ?? []).find((c) => c.cluster.id === clusterId)?.cluster ?? null
-  const membershipRow = membership.data
-  const needsIntros =
-    cluster?.status === 'introductions' && membershipRow != null && membershipRow.intro_completed_at == null
-  const waitingOnOthers =
-    cluster?.status === 'introductions' && membershipRow != null && !!membershipRow.intro_completed_at
-  const deadline = cluster?.introductions_deadline ?? null
-  const target = needsIntros
-    ? `/cluster/${clusterId}/introductions`
-    : waitingOnOthers
-      ? `/cluster/${clusterId}/waiting`
-      : `/cluster/${clusterId}`
-
   return (
     <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
       <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-        {needsIntros ? 'Action needed' : waitingOnOthers ? 'In progress' : 'You’re already matched'}
+        You’re already matched
       </p>
       <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">
-        {needsIntros
-          ? 'Complete your introductions'
-          : waitingOnOthers
-            ? 'Waiting for the others'
-            : 'You’re already in an active cluster'}
+        You’re already in an active cluster
       </h2>
       <p className="mt-3 text-sm leading-6 text-on-surface-variant">
-        {needsIntros ? (
-          <>
-            Your cluster formed and chat is locked until everyone answers.
-            {deadline ? (
-              <>
-                {' '}
-                Deadline: <CountdownTimer deadline={deadline} className="font-semibold" />
-              </>
-            ) : (
-              ' You have 72 hours from formation.'
-            )}
-          </>
-        ) : waitingOnOthers ? (
-          'You’ve answered. Chat unlocks once everyone answers.'
-        ) : (
-          'This matching mode is full for you while your cluster is active. Head back to your room to keep the conversation going.'
-        )}
+        This matching mode is full for you while your cluster is active. Head back to your room to keep the conversation going.
       </p>
       <Link
-        to={target}
+        to={`/cluster/${clusterId}`}
         className="mt-5 inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
       >
-        {needsIntros ? 'Start introductions' : waitingOnOthers ? 'Check progress' : 'Open your cluster'} <ArrowRight className="h-4 w-4" aria-hidden />
+        Open your cluster <ArrowRight className="h-4 w-4" aria-hidden />
       </Link>
     </div>
   )

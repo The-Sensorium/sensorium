@@ -187,18 +187,12 @@ Step 5
 Cluster is created per mode, independently. A user may have one cluster created while still waiting in another mode's queue.
 
 Step 6
-Introduction phase begins for that cluster.
+Cluster opens immediately with full access: profiles, chat, calls, Signals, posts, votes, and notifications.
 
 Step 7
-Each member answers 5 introduction questions.
+Each member may answer 5 introduction questions at any time (optional checklist; never blocks access and never removes members).
 
-Step 8
-Profiles unlock.
-
-Step 9
-Chat unlocks.
-
-Steps 6 through 9 repeat independently per cluster, since a user may be in multiple clusters at different stages at once.
+Steps 6 through 7 repeat independently per cluster, since a user may be in multiple clusters at once.
 
 ---
 ## Introduction Questions
@@ -207,36 +201,23 @@ Rules:
 - Platform defined
 - Same questions for all users
 - Free text answers only
-- All questions mandatory
-- 72 hour completion deadline
-
-Failure to complete within 72 hours results in removal and replacement.
+- All questions mandatory to complete the checklist
+- No deadline; incomplete introductions never block access and never remove members
 
 Introduction answers remain permanently visible on user profiles, per cluster.
 
 ---
 ## Identity Model
 
-Before introductions complete:
+Members see each other fully from formation:
 
 Visible:
 - Display Name
 - Country
 - Birth Year (or relevant matching detail depending on mode; for example, Local cluster members might see general location instead)
-
-Hidden:
 - Profile Photo
 - Bio
-
-After introductions complete:
-
-Visible:
-- Display Name
-- Country
-- Birth Year
-- Profile Photo
-- Bio
-- Introduction Answers
+- Introduction Answers (as each member completes them)
 
 Real names are not required.
 
@@ -336,12 +317,12 @@ Resolved: per-user **mute** shipped as the personal safeguard alongside the vote
 ---
 ## Replacement Process
 
-If replacement vote succeeds:
-1. Platform selects candidate pool.
-2. Cluster reviews candidates.
-3. Cluster votes.
-4. Winning candidate receives invitation.
-5. Candidate accepts or declines.
+If a vacancy opens (a member leaves or a replacement vote succeeds):
+1. Platform selects the longest-waiting eligible candidate deterministically (same-queue match first, then top-up from the mode).
+2. The selected candidate receives an invitation (no cluster voting on candidates).
+3. Candidate accepts or declines (72 hours to respond).
+4. On decline or expiry, the next eligible candidate is invited automatically.
+5. Cycles repeat sequentially until the cluster is back to 8 members.
 
 If accepted:
 - Joins cluster
@@ -1048,8 +1029,8 @@ Note
 ```text
 What happens next
 - We'll notify you once 8 are in and your cluster forms.
-- Once your cluster forms, you have 72 hours to complete intros or you'll lose your spot.
-- Chat unlocks once everyone answers.
+- Jump straight into the conversation once your cluster forms.
+- Answer the 5 intro questions when you're ready.
 
 You can browse or join other matching modes while you wait.
 ```

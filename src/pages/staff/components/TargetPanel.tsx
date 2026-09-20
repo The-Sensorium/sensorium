@@ -15,7 +15,7 @@ export function TargetPanel({ target, accountHref }: { target: TargetSummary; ac
       {restricted && (
         <p role="alert" className="mt-3 rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">
           Currently {target.account_status}
-          {target.restriction_reason ? ` — ${target.restriction_reason}` : ''}
+          {target.restriction_reason ? ` - ${target.restriction_reason}` : ''}
           {target.restriction_expires_at ? ` (expires ${timeUntil(target.restriction_expires_at)})` : ''}.
         </p>
       )}

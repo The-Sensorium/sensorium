@@ -183,7 +183,7 @@ async function patchCallParticipants(
  * clusters from delivering anything. Message-reaction and signal-reply events carry no
  * cluster id, so they are routed via a lookup to whatever cluster cache they belong to.
  *
- * MOBILE DIVERGENCE (pinned — do not overwrite with the web copy via sync):
+  * MOBILE DIVERGENCE (pinned — do not overwrite with the web copy via sync):
  * bottom tabs keep every screen mounted, so Room and Posts can subscribe to the
  * same cluster at once. supabase-js reuses channel instances by topic and throws
  * if `.on()` is called after `subscribe()`, so subscriptions are ref-counted
@@ -357,7 +357,6 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
         },
         () => {
           void queryClient.invalidateQueries({ queryKey: ['replacement-round', clusterId] })
-          void queryClient.invalidateQueries({ queryKey: ['replacement-candidates'] })
         },
       )
       .on(
@@ -398,7 +397,6 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
         },
         () => {
           void queryClient.invalidateQueries({ queryKey: ['replacement-round', clusterId] })
-          void queryClient.invalidateQueries({ queryKey: ['replacement-candidates'] })
         },
       )
       .on(

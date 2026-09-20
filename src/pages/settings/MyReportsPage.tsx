@@ -15,8 +15,8 @@ const KIND_LABELS: Record<string, string> = {
 }
 
 function outcomeFor(status: string): string | null {
-  if (status === 'actioned') return 'Reviewed — action taken.'
-  if (status === 'dismissed') return 'Reviewed — no action taken.'
+  if (status === 'actioned') return 'Reviewed. Action taken.'
+  if (status === 'dismissed') return 'Reviewed. No action taken.'
   return null
 }
 
