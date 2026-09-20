@@ -32,7 +32,7 @@ import {
   type Message,
   type Reaction,
 } from '../../../../src/features/cluster'
-import { useCluster, useMyMembership } from '../../../../src/features/introductions'
+import { useCluster } from '../../../../src/features/introductions'
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../../../src/features/signals'
 import { useClusterVotes, type Vote } from '../../../../src/features/votes'
 import {
@@ -47,6 +47,7 @@ import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/Muted
 import { toErrorMessage } from '../../../../src/lib/error'
 import { useClusterChannel, usePresence } from '../../../../src/features/realtime'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
+import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { type Gif } from '../../../../src/features/gifs'
 import { MessageItem } from '../../../../src/components/room/MessageItem'
 import { MessageInfoModal } from '../../../../src/components/room/MessageInfoModal'
@@ -76,7 +77,6 @@ export default function RoomScreen() {
 
   useClusterChannel(clusterId || null)
   const cluster = useCluster(clusterId || null)
-  const membership = useMyMembership(clusterId || null)
   const messages = useClusterMessages(clusterId || null)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
   const reactions = useClusterReactions(clusterId || null)
@@ -264,7 +264,7 @@ export default function RoomScreen() {
         .filter((s) => s.status !== 'resolved')
         .map((s) => ({ kind: 'signal' as const, data: s })),
       ...(votes.data ?? [])
-        .filter((v) => v.status === 'open')
+        .filter((v) => v.status === 'open' && v.type !== 'select_candidate')
         .map((v) => ({ kind: 'vote' as const, data: v })),
     ]
     return items.sort((a, b) => a.data.created_at.localeCompare(b.data.created_at))
@@ -460,35 +460,17 @@ export default function RoomScreen() {
     setNewCount(0)
   }
 
-  const unlockedAt = cluster.data?.introductions_completed_at
-  const myIntroAt = membership.data?.intro_completed_at
-  const hasMembership = !!membership.data
+  // Clusters open at formation: every active member enters the room directly.
+  // Introductions are an optional in-cluster checklist and never gate access.
   // Only a successful null means "not available" (RLS-filtered): a plain
   // error keeps the spinner instead of discarding room state for home.
   const clusterMissing = cluster.isSuccess && !cluster.data
-  const clusterLocked = !!cluster.data && !unlockedAt
   useFocusEffect(
     useCallback(() => {
       if (clusterMissing) {
         router.replace('/(app)/home')
       }
     }, [clusterMissing]),
-  )
-  useFocusEffect(
-    useCallback(() => {
-      if (clusterLocked) {
-        router.replace({ pathname: '/cluster/[clusterId]/waiting', params: { clusterId } })
-      }
-    }, [clusterLocked, clusterId]),
-  )
-  useFocusEffect(
-    useCallback(() => {
-      if (cluster.isLoading || membership.isLoading) return
-      // Unlocked but this member joined late without an intro: finish first.
-      if (unlockedAt && hasMembership && !myIntroAt) {
-        router.replace({ pathname: '/cluster/[clusterId]/introductions', params: { clusterId } })
-      }
-    }, [cluster.isLoading, membership.isLoading, unlockedAt, hasMembership, myIntroAt, clusterId]),
   )
 
   if (!cluster.data && (cluster.isLoading || messages.isLoading)) {
@@ -500,14 +482,6 @@ export default function RoomScreen() {
   }
 
   if (!cluster.data) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={t.primary} />
-      </SafeAreaView>
-    )
-  }
-
-  if (!cluster.data.introductions_completed_at) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={t.primary} />
@@ -545,6 +519,10 @@ export default function RoomScreen() {
             </Text>
           </View>
           <ClusterMenu clusterId={clusterId} active="room" />
+        </View>
+
+        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+          <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
         </View>
 
         {activeCall.data && !declinedCalls.has(activeCall.data.id) && (

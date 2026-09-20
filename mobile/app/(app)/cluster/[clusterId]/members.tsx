@@ -15,6 +15,7 @@ import { countryName } from '../../../../src/lib/countries'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
+import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 export default function MembersScreen() {
@@ -43,6 +44,7 @@ export default function MembersScreen() {
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ClusterSectionHeader title="Members" clusterId={clusterId} section="members" />
       <ErrorText message={pull.error} />
+      <IntroChecklistBanner key={clusterId} clusterId={clusterId} dismissible={false} />
       {replacement.data ? (
         <View
           style={{

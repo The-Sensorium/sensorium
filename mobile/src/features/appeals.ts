@@ -293,7 +293,7 @@ export function formatAppealError(error: unknown): string {
   if (message.includes('note_required')) return 'Write the note before saving it.'
   if (message.includes('note_too_long')) return 'Notes are limited to 2,000 characters.'
   if (message.includes('second_review_required'))
-    return 'Rejecting a ban appeal needs a second admin review first — request one below.'
+    return 'Rejecting a ban appeal needs a second admin review first. Request one below.'
   if (message.includes('second_review_confirm_required'))
     return 'Confirm that a different admin already reviewed this rejection.'
   if (message.includes('invalid_policy_code')) return 'Choose a valid policy category for this decision.'

@@ -47,6 +47,7 @@ import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { TypingBubble } from './room/TypingBubble'
 import { CallBanner } from './room/CallBanner'
 import { CallOverlay } from './room/CallOverlay'
+import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
 import { SignalRow } from './room/SignalRow'
 import { VoteRow } from './room/VoteRow'
 import { ReportModal } from '../../components/ReportModal'
@@ -428,7 +429,7 @@ export function RoomView() {
         .filter((s) => s.status !== 'resolved')
         .map((s) => ({ kind: 'signal' as const, data: s })),
       ...(votes.data ?? [])
-        .filter((v) => v.status === 'open')
+        .filter((v) => v.status === 'open' && v.type !== 'select_candidate')
         .map((v) => ({ kind: 'vote' as const, data: v })),
     ]
     return items.sort((a, b) => a.data.created_at.localeCompare(b.data.created_at))
@@ -688,8 +689,9 @@ export function RoomView() {
           onOpen={() => setInCall(true)}
         />
       )}
+      <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
       {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
-       the timeline scrolls inside the container and the page never moves. */}
+      the timeline scrolls inside the container and the page never moves. */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {messages.isLoading || myMutes.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">

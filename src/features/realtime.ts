@@ -320,7 +320,6 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
         },
         () => {
           void queryClient.invalidateQueries({ queryKey: ['replacement-round', clusterId] })
-          void queryClient.invalidateQueries({ queryKey: ['replacement-candidates'] })
         },
       )
       .on(
@@ -361,7 +360,6 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
         },
         () => {
           void queryClient.invalidateQueries({ queryKey: ['replacement-round', clusterId] })
-          void queryClient.invalidateQueries({ queryKey: ['replacement-candidates'] })
         },
       )
       .on(

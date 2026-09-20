@@ -10,7 +10,6 @@ import {
   useLatestClusterFormed,
   type MyCluster,
 } from '../features/matching'
-import { useCluster } from '../features/introductions'
 import {
   useMyPendingInvitations,
   useAcceptInvitation,
@@ -24,7 +23,6 @@ import {
   type Post,
 } from '../features/posts'
 import { MemberClusterCard } from '../components/ClusterCard'
-import { CountdownTimer } from '../components/CountdownTimer'
 import { MutedHideBar, MutedPlaceholder } from '../components/MutedPlaceholder'
 import { PostCard } from '../components/PostCard'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../features/moderation'
@@ -77,15 +75,6 @@ export function HomePage() {
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
   )
-  const formedClusterId = formed.data?.cluster_id ?? null
-  const formedCluster = useCluster(formedClusterId, formedClusterId !== null)
-  const formedDeadline =
-    formedCluster.data?.introductions_deadline ??
-    (formedClusterId
-      ? (clusters.data ?? []).find((c) => c.cluster.id === formedClusterId)?.cluster
-          .introductions_deadline ?? null
-      : null)
-
   const loading = clusters.isLoading || invitations.isLoading
   const hasClusters = (clusters.data?.length ?? 0) > 0
   const hasInvites = (invitations.data?.length ?? 0) > 0
@@ -178,13 +167,7 @@ export function HomePage() {
               Your cluster is ready
             </span>
             <span className="block text-sm text-on-surface-variant">
-              Eight of you were matched. Complete intros within 72 hours to unlock chat.
-              {formedDeadline ? (
-                <>
-                  {' '}
-                  Deadline: <CountdownTimer deadline={formedDeadline} className="font-semibold" />
-                </>
-              ) : null}
+              Eight of you were matched. Jump in and say hello.
             </span>
           </span>
           <ArrowRight className="h-5 w-5 shrink-0 text-primary" aria-hidden />

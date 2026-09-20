@@ -155,8 +155,8 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
               {!toggle.granted ? (
                 <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
                   {toggle.key === 'camera'
-                    ? 'Camera unavailable — you will join audio-only.'
-                    : 'Microphone unavailable — you will join muted.'}
+                    ? 'Camera unavailable. You will join audio-only.'
+                    : 'Microphone unavailable. You will join muted.'}
                 </Text>
               ) : null}
             </View>

@@ -7,6 +7,7 @@ import { useClusterMembers } from '../../features/matching'
 import { useReplacementRound } from '../../features/votes'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
+import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
 import { AvailabilityBadge } from '../../components/AvailabilityBadge'
 import { MuteButton } from '../../components/MuteButton'
 import { PronounBadge } from '../../components/PronounBadge'
@@ -34,6 +35,7 @@ export function MembersView() {
 
   return (
     <section aria-label="Members" className="space-y-4">
+      <IntroChecklistBanner key={clusterId} clusterId={clusterId} dismissible={false} />
       {replacement.data && (
         <div
           role="status"

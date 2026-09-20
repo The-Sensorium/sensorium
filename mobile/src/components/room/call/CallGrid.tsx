@@ -21,7 +21,7 @@ export function CallGrid() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}>
-          Connected — waiting for others to join.
+          Connected. Waiting for others to join.
         </Text>
       </View>
     )

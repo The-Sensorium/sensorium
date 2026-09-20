@@ -163,9 +163,14 @@ describe('matching', () => {
 
     const { data: clusters } = await admin
       .from('clusters')
-      .select('id, name, queue_key, status')
+      .select('id, name, queue_key, status, introductions_completed_at, introductions_deadline')
       .eq('queue_key', DOB)
     expect(clusters).toHaveLength(1)
+
+    // The cluster opens immediately at 8 members: active, unlocked, no deadline.
+    expect(clusters![0].status).toBe('active')
+    expect(clusters![0].introductions_completed_at).not.toBeNull()
+    expect(clusters![0].introductions_deadline).toBeNull()
 
     const clusterId = clusters![0].id
     clusterIds.push(clusterId)

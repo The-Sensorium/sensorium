@@ -67,18 +67,18 @@ flowchart TD
     B --> C[Onboarding]
     C --> D[Matching Queue]
     D --> E[Cluster Formation]
-    E --> F[Introduction Phase]
-    F --> G[Cluster Unlock]
-    G --> H[Chat, Calls, Signals, Posts, Notifications, Governance, Settings]
+    E --> F[Open Cluster]
+    F --> G[Chat, Calls, Signals, Posts, Notifications, Governance, Settings]
+    F --> H[Introductions Checklist]
 ```
 
 - **Landing Page**: public marketing page with no auth required.
 - **Authentication**: signup, login, email verification, and password reset.
 - **Onboarding**: profile setup before the user can enter queues.
 - **Matching Queue**: the user opts into up to six matching modes; each queues them separately.
-- **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed.
-- **Introduction Phase**: a shared five-question intro must be completed within 72 hours before the room opens.
-- **Cluster Unlock**: once unlocked, members get chat, audio/video calls, availability, Signals, posts, votes, and notifications.
+- **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed — and opens immediately.
+- **Open Cluster**: members get chat, audio/video calls, availability, Signals, posts, votes, and notifications from formation. No locks, no deadlines, no removal for unfinished intros.
+- **Introductions Checklist**: a shared five-question intro stays answerable at any time as an optional in-cluster checklist (progress nudge, never a gate).
 - **Restriction & Appeal**: a moderated suspension/ban shows on the restricted-account screen, where the member may open one in-app appeal (`/appeal`). Admins review the queue (`/admin/appeals`) and decide; the outcome emails the appellant and lifts the restriction when accepted.
 
 The routing guards in `src/app/` enforce this order: guests can't reach onboarding, un-onboarded users can't reach the app, and cluster features require membership. Restricted accounts reach only the appeal page until restored.

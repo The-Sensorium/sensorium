@@ -4,7 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
-import { makeSupabaseClient, initialMockResult, asError, type MockSupabaseResult } from '../test/supabase-client'
+import { makeSupabaseClient, initialMockResult, type MockSupabaseResult } from '../test/supabase-client'
 import {
   parseVoteResult,
   useAcceptInvitation,
@@ -12,7 +12,6 @@ import {
   useClusterVotes,
   useDeclineInvitation,
   useMyPendingInvitations,
-  useReplacementCandidates,
   useReplacementRound,
   useStartNameVote,
   useStartReplaceVote,
@@ -116,13 +115,6 @@ describe('votes', () => {
     expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_replacement_round', {
       p_cluster_id: 'c1',
     })
-  })
-
-  it('useReplacementCandidates throws when there is no round', async () => {
-    mockResult.value = asError('nope')
-    const { result } = renderHook(() => useReplacementCandidates('round-1'), { wrapper })
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    expect((result.current.error as Error).message).toBe('nope')
   })
 
   it('useMyPendingInvitations is disabled while signed out', () => {

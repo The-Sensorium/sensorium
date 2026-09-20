@@ -9,12 +9,10 @@ import {
   useClusterVotes,
   useVoteCounts,
   useReplacementRound,
-  useReplacementCandidates,
   useStartReplaceVote,
   useStartNameVote,
   useVoteOn,
   parseVoteResult,
-  type CandidateProfile,
   type ReplacementRound,
   type Vote as VoteRow,
 } from '../../features/votes'
@@ -24,11 +22,11 @@ import { CountdownTimer } from '../../components/CountdownTimer'
 import { rateLimitMessage } from '../../lib/error'
 
 type MemberCard = { id: string; display_name: string; avatar_url: string | null }
+type GovernableVoteType = Exclude<VoteRow['type'], 'select_candidate'>
 
-const VOTE_TYPE_LABEL: Record<VoteRow['type'], string> = {
+const VOTE_TYPE_LABEL: Record<GovernableVoteType, string> = {
   replace_member: 'Replace member',
   change_name: 'Rename cluster',
-  select_candidate: 'Choose a new member',
 }
 
 export function VotesView() {
@@ -40,7 +38,6 @@ export function VotesView() {
   const votes = useClusterVotes(clusterId)
   const counts = useVoteCounts(clusterId)
   const round = useReplacementRound(clusterId)
-  const candidates = useReplacementCandidates(round.data?.id ?? null, round.data != null)
   const members = useClusterMembers(clusterId)
 
   const startReplace = useStartReplaceVote(clusterId)
@@ -124,9 +121,8 @@ export function VotesView() {
     )
   }
 
-  const openVotes = (votes.data ?? []).filter((v) => v.status === 'open')
-  const closedVotes = (votes.data ?? []).filter((v) => v.status === 'closed')
-  const roundVoting = round.data && round.data.status === 'voting'
+  const openVotes = (votes.data ?? []).filter((v) => v.status === 'open' && v.type !== 'select_candidate')
+  const closedVotes = (votes.data ?? []).filter((v) => v.status === 'closed' && v.type !== 'select_candidate')
 
   return (
     <section aria-label="Votes" className="space-y-5">
@@ -164,7 +160,6 @@ export function VotesView() {
       {round.data && (
         <ReplacementBanner
           round={round.data}
-          candidates={candidates.data ?? []}
           memberById={memberById}
         />
       )}
@@ -182,10 +177,6 @@ export function VotesView() {
               key={vote.id}
               vote={vote}
               myChoice={myChoiceByVote.get(vote.id) ?? null}
-              candidates={vote.type === 'select_candidate' ? (candidates.data ?? []) : []}
-              showCandidates={Boolean(
-                roundVoting && round.data?.select_candidate_vote_id === vote.id,
-              )}
               memberById={memberById}
               pending={pendingVoteId === vote.id}
               onVote={castVote}
@@ -287,17 +278,13 @@ export function VotesView() {
 
 function ReplacementBanner({
   round,
-  candidates,
   memberById,
 }: {
   round: ReplacementRound
-  candidates: CandidateProfile[]
   memberById: Map<string, MemberCard>
 }) {
   const invited =
-    round.invited_user_id &&
-    (candidates.find((c) => c.user_id === round.invited_user_id)?.display_name ||
-      memberById.get(round.invited_user_id)?.display_name)
+    round.invited_user_id && memberById.get(round.invited_user_id)?.display_name
 
   return (
     <div className="rounded-2xl border border-primary/30 bg-primary-container/15 p-5 shadow-soft">
@@ -313,11 +300,11 @@ function ReplacementBanner({
           {round.status === 'selecting_candidates' ? (
             <>
               <p className="font-display text-base font-semibold text-on-surface">
-                Finding replacement candidates
+                Finding a new member
               </p>
               <p className="text-sm text-on-surface-variant">
-                A member recently left. No one is waiting in line yet — we check hourly
-                and will invite or start a vote as soon as someone queues.
+                A member recently left. No one is waiting in line yet. We check hourly
+                and will invite the next eligible person as soon as someone queues.
               </p>
             </>
           ) : round.status === 'inviting' ? (
@@ -334,9 +321,9 @@ function ReplacementBanner({
           ) : (
             <>
               <p className="font-display text-base font-semibold text-on-surface">
-                Candidate selection in progress
+                Replacement in progress
               </p>
-              <p className="text-sm text-on-surface-variant">Cast your vote below.</p>
+              <p className="text-sm text-on-surface-variant">Finding the next member.</p>
             </>
           )}
         </div>
@@ -348,8 +335,6 @@ function ReplacementBanner({
 function ActiveVoteCard({
   vote,
   myChoice,
-  candidates,
-  showCandidates,
   memberById,
   pending,
   onVote,
@@ -358,8 +343,6 @@ function ActiveVoteCard({
 }: {
   vote: VoteRow
   myChoice: string | null
-  candidates: CandidateProfile[]
-  showCandidates: boolean
   memberById: Map<string, MemberCard>
   pending: boolean
   onVote: (voteId: string, choice: string) => void
@@ -373,15 +356,13 @@ function ActiveVoteCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            {VOTE_TYPE_LABEL[vote.type]}
+            {VOTE_TYPE_LABEL[vote.type as GovernableVoteType]}
           </p>
           <h3 className="mt-0.5 font-display text-base font-semibold text-on-surface">
             {vote.type === 'replace_member' ? (
               <>Replace {target ? target.display_name : 'a member'}</>
-            ) : vote.type === 'change_name' ? (
-              <>Rename cluster to “{vote.name_suggestion}”</>
             ) : (
-              'Pick the next cluster member'
+              <>Rename cluster to “{vote.name_suggestion}”</>
             )}
           </h3>
         </div>
@@ -391,83 +372,37 @@ function ActiveVoteCard({
         </span>
       </div>
 
-      {vote.type === 'select_candidate' ? (
-        showCandidates && candidates.length > 0 ? (
-          <>
-            <p className="mt-3 text-xs font-medium text-on-surface-variant">
-              {castCount >= quorum
-                ? `Quorum reached (${castCount} of ${quorum} votes).`
-                : `${castCount} of ${quorum} votes needed.`}
-            </p>
-            <ul className="mt-3 space-y-2">
-            {candidates.map((c) => {
-              const selected = myChoice === c.user_id
-              return (
-                <li key={c.user_id}>
-                  <button
-                    type="button"
-                    disabled={pending || myChoice !== null}
-                    onClick={() => onVote(vote.id, c.user_id)}
-                    className={cn(
-                      'flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors',
-                      selected
-                        ? 'border-primary bg-primary-container/20'
-                        : 'border-outline-variant/60 hover:bg-surface-container disabled:opacity-60',
-                    )}
-                  >
-                    <Avatar name={c.display_name} src={c.avatar_url} className="h-10 w-10" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-on-surface">
-                        {c.display_name}
-                      </span>
-                      <span className="block text-xs text-on-surface-variant">
-                        {selected
-                          ? 'You voted for this candidate'
-                          : myChoice
-                            ? 'Another candidate was chosen'
-                            : 'Tap to vote'}
-                      </span>
-                    </span>
-                    {pending && <Loader2 className="h-4 w-4 animate-spin text-primary" aria-hidden />}
-                  </button>
-                </li>
-              )
-            })}
-            </ul>
-          </>
-        ) : (
-          <p className="mt-4 text-sm text-on-surface-variant">
-            Candidates are being prepared. Vote will open shortly.
+      <div className="mt-4">
+        <p className="text-xs font-medium text-on-surface-variant">
+          {castCount >= quorum
+            ? `Quorum reached (${castCount} of ${quorum} votes).`
+            : `${castCount} of ${quorum} votes needed.`}
+        </p>
+        {myChoice ? (
+          <p className="mt-3 text-sm font-semibold text-on-surface">
+            You voted: <span className="capitalize text-primary">{myChoice}</span>
           </p>
-        )
-      ) : (
-        <div className="mt-4">
-          {myChoice ? (
-            <p className="text-sm font-semibold text-on-surface">
-              You voted: <span className="capitalize text-primary">{myChoice}</span>
-            </p>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => onVote(vote.id, 'yes')}
-                className="flex-1 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => onVote(vote.id, 'no')}
-                className="flex-1 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
-              >
-                No
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+        ) : (
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => onVote(vote.id, 'yes')}
+              className="flex-1 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => onVote(vote.id, 'no')}
+              className="flex-1 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+            >
+              No
+            </button>
+          </div>
+        )}
+      </div>
     </article>
   )
 }
@@ -482,24 +417,21 @@ function PastVoteCard({
   castCount: number
 }) {
   const result = parseVoteResult(vote.result)
-  const passed = result?.outcome === 'passed' || /^[0-9a-f]{8}-/i.test(result?.outcome ?? '')
+  const passed = result?.outcome === 'passed'
   const target = vote.target_member_id ? memberById.get(vote.target_member_id) : null
-  const winner = passed && result?.outcome && memberById.get(result.outcome)
 
   return (
     <li className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-            {VOTE_TYPE_LABEL[vote.type]}
+            {VOTE_TYPE_LABEL[vote.type as GovernableVoteType]}
           </p>
           <h3 className="mt-0.5 font-display text-base font-semibold text-on-surface">
             {vote.type === 'replace_member' ? (
               <>Replace {target ? target.display_name : 'a member'}</>
-            ) : vote.type === 'change_name' ? (
-              <>Rename cluster to “{vote.name_suggestion}”</>
             ) : (
-              'Choose a new member'
+              <>Rename cluster to “{vote.name_suggestion}”</>
             )}
           </h3>
         </div>
@@ -509,15 +441,7 @@ function PastVoteCard({
             passed ? 'bg-emerald-500/15 text-emerald-700' : 'bg-error/10 text-error',
           )}
         >
-          {vote.type === 'select_candidate'
-            ? winner
-              ? 'Selected'
-              : passed
-                ? 'Selected'
-                : 'Failed'
-            : result?.outcome === 'passed'
-              ? 'Passed'
-              : 'Failed'}
+          {passed ? 'Passed' : 'Failed'}
         </span>
       </div>
 
@@ -527,39 +451,20 @@ function PastVoteCard({
         {vote.type === 'change_name' && passed &&
           `Cluster renamed to “${result?.name ?? vote.name_suggestion}”.`}
         {vote.type === 'change_name' && !passed && 'The cluster keeps its name.'}
-        {vote.type === 'select_candidate' &&
-          (winner
-            ? `${winner.display_name} was selected.`
-            : passed
-              ? 'A new member was selected.'
-              : 'No candidate was selected.')}
       </p>
 
       <p className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-on-surface-variant">
-        {vote.type === 'select_candidate' ? (
-          <>
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1">
-              {castCount} {castCount === 1 ? 'vote' : 'votes'} cast
-            </span>
-            <span className="inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1">
-              quorum {result?.quorum ?? '-'}
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-2.5 py-1 text-emerald-700">
-              <ThumbsUp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-              {result?.yes ?? 0}
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-pill bg-error/10 px-2.5 py-1 text-error">
-              <ThumbsDown className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-              {result?.no ?? 0}
-            </span>
-            <span className="inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1">
-              {result?.cast ?? castCount}/{result?.quorum ?? '-'} cast
-            </span>
-          </>
-        )}
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-2.5 py-1 text-emerald-700">
+          <ThumbsUp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+          {result?.yes ?? 0}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-error/10 px-2.5 py-1 text-error">
+          <ThumbsDown className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+          {result?.no ?? 0}
+        </span>
+        <span className="inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1">
+          {result?.cast ?? castCount}/{result?.quorum ?? '-'} cast
+        </span>
       </p>
     </li>
   )

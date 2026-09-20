@@ -17,7 +17,6 @@ import {
   PrimaryButton,
   Screen,
 } from '../../../../src/components/ui'
-import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 
 export default function IntroductionsScreen() {
   const t = useTheme()
@@ -35,7 +34,7 @@ export default function IntroductionsScreen() {
     useCallback(() => {
       if (membership.isLoading) return
       if (done) {
-        router.replace({ pathname: '/cluster/[clusterId]/waiting', params: { clusterId } })
+        router.replace({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
       }
     }, [done, membership.isLoading, clusterId]),
   )
@@ -68,7 +67,6 @@ export default function IntroductionsScreen() {
     )
   }
 
-  const deadline = cluster.data.introductions_deadline
   const allAnswered =
     (questions.data?.length ?? 0) > 0 &&
     (questions.data ?? []).every((q) => (answers[q.id] ?? '').trim().length > 0)
@@ -78,7 +76,7 @@ export default function IntroductionsScreen() {
     setError(null)
     try {
       await submit.mutateAsync({ clusterId, answers })
-      router.replace({ pathname: '/cluster/[clusterId]/waiting', params: { clusterId } })
+      router.replace({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
     } catch {
       setError('Something went wrong saving your answers. Please try again.')
     }
@@ -95,14 +93,7 @@ export default function IntroductionsScreen() {
       <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <Sparkles size={16} color={t.primary} strokeWidth={1.5} />
         <Text style={{ flex: 1, fontSize: 14, color: t.onSurfaceVariant }}>
-          {cluster.data.introductions_completed_at ? (
-            'This room is already open. Answer below to join the conversation.'
-          ) : (
-            <>
-              Chat unlocks once everyone answers. Deadline:{' '}
-              {deadline ? <CountdownTimer deadline={deadline} /> : null}
-            </>
-          )}
+          Answer below to share who you are.
         </Text>
       </View>
 
@@ -144,7 +135,7 @@ export default function IntroductionsScreen() {
       ) : null}
 
       <PrimaryButton
-        title={cluster.data.introductions_completed_at ? 'Finish introductions' : 'Submit introductions'}
+        title="Save introductions"
         loadingTitle="Saving…"
         loading={submit.isPending}
         onPress={() => void handleSubmit()}

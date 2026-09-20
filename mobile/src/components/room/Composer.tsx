@@ -209,7 +209,7 @@ export function Composer({
         >
           <Image source={{ uri: stagedImage.uri }} style={{ width: 48, height: 48, borderRadius: radii.md }} />
           <Text style={{ flex: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
-            Image attached — add a caption or press send
+            Image attached. Add a caption or press send
           </Text>
           <Pressable
             accessibilityLabel="Remove image"
