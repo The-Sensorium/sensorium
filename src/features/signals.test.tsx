@@ -10,6 +10,7 @@ import {
   useReplySignal,
   useSetSignalStatus,
   useSignalReplies,
+  useSignalReplyCounts,
   SIGNAL_STATUS_ORDER,
 } from './signals'
 
@@ -94,6 +95,21 @@ describe('signals', () => {
 
   it('useSignalReplies with no signal id is disabled until a cluster exists', async () => {
     const { result } = renderHook(() => useSignalReplies(null, null), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+  })
+
+  it('useSignalReplyCounts calls get_signal_reply_counts for the cluster', async () => {
+    mockResult = { data: [{ signal_id: 's1', reply_count: 2 }], error: null }
+    const { result } = renderHook(() => useSignalReplyCounts('c1'), { wrapper })
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ signal_id: 's1', reply_count: 2 }]),
+    )
+    const client = requireSupabaseMock.mock.results[0].value
+    expect(client.rpc).toHaveBeenCalledWith('get_signal_reply_counts', { p_cluster_id: 'c1' })
+  })
+
+  it('useSignalReplyCounts is disabled without a cluster', async () => {
+    const { result } = renderHook(() => useSignalReplyCounts(null), { wrapper })
     expect(result.current.fetchStatus).toBe('idle')
   })
 

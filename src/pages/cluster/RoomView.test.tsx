@@ -32,8 +32,8 @@ const hooks = vi.hoisted(() => ({
   uploadChatImage: vi.fn(),
   deleteChatImage: vi.fn(),
   signals: { data: [] as Signal[], isLoading: false },
-  signalReplies: {
-    data: [] as Array<{ id: string; signal_id: string; author_id: string; content: string; created_at: string }>,
+  signalReplyCounts: {
+    data: [] as Array<{ signal_id: string; reply_count: number }>,
   },
   raise: { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false },
   votes: { data: [] as Vote[], isLoading: false },
@@ -92,7 +92,7 @@ vi.mock('../../features/cluster', () => ({
 }))
 vi.mock('../../features/signals', () => ({
   useClusterSignals: () => hooks.signals,
-  useSignalReplies: () => hooks.signalReplies,
+  useSignalReplyCounts: () => hooks.signalReplyCounts,
   useRaiseSignal: () => hooks.raise,
 }))
 vi.mock('../../features/votes', () => ({ useClusterVotes: () => hooks.votes }))
@@ -201,7 +201,7 @@ function resetHooks() {
   hooks.editMessage = { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false }
   hooks.deleteMessage = { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false }
   hooks.signals = { data: [], isLoading: false }
-  hooks.signalReplies = { data: [] }
+  hooks.signalReplyCounts = { data: [] }
   hooks.raise = { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false }
   hooks.votes = { data: [], isLoading: false }
   hooks.markRead = { mutate: vi.fn() }

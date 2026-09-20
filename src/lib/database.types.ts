@@ -2566,6 +2566,14 @@ export type Database = {
           mode_label: string
         }[]
       }
+      get_post_counts: {
+        Args: { p_cluster_id: string }
+        Returns: {
+          comments_count: number
+          likes_count: number
+          post_id: string
+        }[]
+      }
       get_public_cluster_counts: {
         Args: never
         Returns: {
@@ -2597,6 +2605,13 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_signal_reply_counts: {
+        Args: { p_cluster_id: string }
+        Returns: {
+          reply_count: number
+          signal_id: string
+        }[]
+      }
       get_staff_unread_counts: {
         Args: never
         Returns: {
@@ -2606,6 +2621,14 @@ export type Database = {
       }
       get_unread_notification_count: { Args: never; Returns: number }
       get_user_id_by_email: { Args: { p_email: string }; Returns: string }
+      get_vote_counts: {
+        Args: { p_cluster_id: string }
+        Returns: {
+          cast_count: number
+          my_choice: string
+          vote_id: string
+        }[]
+      }
       grant_platform_role: {
         Args: {
           p_reason: string

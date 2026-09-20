@@ -24,7 +24,7 @@ import {
   type Message,
   type Reaction,
 } from '../../features/cluster'
-import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../features/signals'
+import { useClusterSignals, useSignalReplyCounts, useRaiseSignal, type Signal } from '../../features/signals'
 import { useClusterVotes, type Vote } from '../../features/votes'
 import {
   useActiveCall,
@@ -72,7 +72,7 @@ export function RoomView() {
   const loadEarlier = useLoadEarlierMessages(clusterId)
   const queryClient = useQueryClient()
   const signals = useClusterSignals(clusterId)
-  const signalReplies = useSignalReplies(clusterId, null)
+  const signalReplyCounts = useSignalReplyCounts(clusterId)
   const votes = useClusterVotes(clusterId)
   const members = useClusterMembers(clusterId)
   const send = useSendMessage()
@@ -222,11 +222,11 @@ export function RoomView() {
 
   const replyCount = useMemo(() => {
     const map = new Map<string, number>()
-    for (const r of signalReplies.data ?? []) {
-      map.set(r.signal_id, (map.get(r.signal_id) ?? 0) + 1)
+    for (const r of signalReplyCounts.data ?? []) {
+      map.set(r.signal_id, r.reply_count)
     }
     return map
-  }, [signalReplies.data])
+  }, [signalReplyCounts.data])
 
   // Read receipts for the message whose Info action was tapped. read_at comes
   // from message_reads (0049), a per-message timestamp frozen on first read, so

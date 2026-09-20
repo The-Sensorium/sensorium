@@ -489,4 +489,48 @@ describe('governance and replacement', () => {
     })
     expect(hidden).toHaveLength(0)
   })
+
+  it('get_vote_counts returns cast counts plus the caller’s own choice', async () => {
+    const { clusterId, members } = await clusterOf(3)
+    const [initiator, target, voter] = [members[0], members[1], members[2]]
+
+    const { data: voteId, error } = await initiator.client.rpc('start_replace_vote', {
+      p_cluster_id: clusterId,
+      p_target_member_id: target.id,
+    })
+    expect(error).toBeNull()
+
+    for (const m of [initiator, voter]) {
+      const { error: ve } = await m.client.rpc('vote_on', {
+        p_vote_id: voteId,
+        p_choice: 'yes',
+      })
+      expect(ve).toBeNull()
+    }
+
+    const { data: counts, error: cErr } = await initiator.client.rpc('get_vote_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(cErr).toBeNull()
+    expect(counts).toHaveLength(1)
+    expect(counts[0].vote_id).toBe(voteId)
+    expect(counts[0].cast_count).toBe(2)
+    expect(counts[0].my_choice).toBe('yes')
+
+    // A member who has not voted sees the count but no choice.
+    const { data: targetCounts } = await target.client.rpc('get_vote_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(targetCounts).toHaveLength(1)
+    expect(targetCounts[0].cast_count).toBe(2)
+    expect(targetCounts[0].my_choice).toBeNull()
+
+    const outsider = await createUser(admin, 'g-vc-out')
+    userIds.push(outsider.id)
+    const { data: hidden, error: hErr } = await outsider.client.rpc('get_vote_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(hErr).toBeNull()
+    expect(hidden).toHaveLength(0)
+  })
 })

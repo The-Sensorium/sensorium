@@ -16,6 +16,7 @@ import {
   useReplacementRound,
   useStartNameVote,
   useStartReplaceVote,
+  useVoteCounts,
   useVoteOn,
 } from './votes'
 
@@ -90,6 +91,22 @@ describe('votes', () => {
   it('useClusterVoteResponses returns empty when the cluster has no votes', async () => {
     const { result } = renderHook(() => useClusterVoteResponses('c1'), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual([]))
+  })
+
+  it('useVoteCounts calls get_vote_counts for the cluster', async () => {
+    mockResult.value = { data: [{ vote_id: 'v1', cast_count: 2, my_choice: 'yes' }], error: null }
+    const { result } = renderHook(() => useVoteCounts('c1'), { wrapper })
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ vote_id: 'v1', cast_count: 2, my_choice: 'yes' }]),
+    )
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_vote_counts', {
+      p_cluster_id: 'c1',
+    })
+  })
+
+  it('useVoteCounts is disabled without a cluster', async () => {
+    const { result } = renderHook(() => useVoteCounts(null), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
   })
 
   it('useReplacementRound reads the first row of get_replacement_round', async () => {

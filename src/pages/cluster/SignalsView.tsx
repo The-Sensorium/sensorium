@@ -4,7 +4,7 @@ import { useDocumentTitle } from '../../lib/use-document-title'
 import { ChevronDown, Loader2, MessageSquare, Plus } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useClusterMembers } from '../../features/matching'
-import { useClusterSignals, useSignalReplies, useRaiseSignal } from '../../features/signals'
+import { useClusterSignals, useSignalReplyCounts, useRaiseSignal } from '../../features/signals'
 import type { Signal, SignalStatus } from '../../features/signals'
 import { useAuth } from '../../app/auth-context'
 import { Avatar } from '../../components/Avatar'
@@ -34,7 +34,7 @@ export function SignalsView() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
   const signals = useClusterSignals(clusterId)
-  const replies = useSignalReplies(clusterId, null)
+  const replyCounts = useSignalReplyCounts(clusterId)
   const members = useClusterMembers(clusterId)
   const raise = useRaiseSignal(clusterId)
 
@@ -50,8 +50,8 @@ export function SignalsView() {
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
   const replyCount = new Map<string, number>()
-  for (const r of replies.data ?? []) {
-    replyCount.set(r.signal_id, (replyCount.get(r.signal_id) ?? 0) + 1)
+  for (const r of replyCounts.data ?? []) {
+    replyCount.set(r.signal_id, r.reply_count)
   }
 
   const active = (signals.data ?? []).filter((s) => s.status !== 'resolved')

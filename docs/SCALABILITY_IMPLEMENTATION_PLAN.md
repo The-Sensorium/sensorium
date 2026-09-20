@@ -277,24 +277,32 @@ CREATE INDEX call_participants_cluster_idx ON call_participants (cluster_id);
 
 ---
 
-## S-10 — Growing `.in()` fan-out; feed loads all likes/comments to rank slice
+## S-10 — Growing `.in()` fan-out; feed loads all likes/comments to rank slice (revised post-S-09)
 
-**Current problem:** reactions/likes/comments fetched as `select * ... .in(ids)` where `ids` = all loaded pages. PostgREST URL cap + per-row RLS = slow then 414. `sortPostsForFeed('top')` ranks only the fetched slice, so "top" is wrong once paginated. `['post-comments',clusterId,'all']` key ignores `postIds`, widening silently.
+**Current problem (revised 2026-09-20, after S-09 `0139_child_cluster_id.sql`):** S-09 eliminated the main fan-out. Reactions, post likes, comment likes, post comments, and signal replies are now single `eq('cluster_id', …)` queries with narrow selects — no `.in(ids)` id lists, no per-event parent lookups, realtime filtered by `cluster_id`. What remains:
+- `useClusterVoteResponses` (`src/features/votes.ts:32-54`) is the last true `.in(ids)` fan-out: fetch vote ids, then `.in('vote_id', ids)` + per-row RLS subselect on `vote_responses` (which has no `cluster_id` by design).
+- Likes/comments/replies are now whole-cluster fetches with no pagination (`useClusterPostLikes`, `useClusterCommentLikes`, `useClusterPostComments`, `useSignalReplies(clusterId, null)`). Bounded pre-launch, unbounded as data grows. `PostDetailPage` fetches whole-cluster likes then filters to one post; `ProfilePage` fetches whole-cluster engagement for one user's posts.
+- `sortPostsForFeed('top')` (`src/features/posts.ts:26-40`) still ranks only the loaded slice, so "top" is wrong once paginated. Callers: `PostsFeedPage.tsx:79-87`, `ProfilePage.tsx:96-109`.
+- `VotesView.tsx:209` `PastVoteCard` still does per-card `.filter()` (O(V*R)); active cards already use the `castCountByVote` map.
+- Minor `.in()`s: `useReplyTargets` (`.in('id', parentIds)`, `src/features/cluster.ts:187-204`), `useRecentClusterPosts` (`.in('cluster_id', clusterIds)`, `src/features/posts.ts:141-159`).
+- Stale artifacts: `posts.ts:182-184` comment still claims "id set is part of the key" (implementation is `['post-likes', clusterId]`); `posts.test.tsx:326-357` still tests old id-set keys; `PostsFeedPage`/`ProfilePage` refetch whole-cluster engagement on every `postIdsKey` change.
 
-**Exact files:**
-- `src/features/cluster.ts:145-162` (`useClusterReactions`), `RoomView.tsx:70,383-389`
-- `src/features/posts.ts:57-150,171-311` (`useClusterPosts`, `useClusterPostLikes`, `useClusterCommentLikes`, `useClusterPostComments`, `usePostImageUrl`), `sortPostsForFeed`
-- `src/pages/posts/PostsFeedPage.tsx:46-47`, `src/pages/cluster/RoomView.tsx:74-76`, `SignalsView.tsx:36-37`, `VotesView.tsx:40-41`
-- `src/features/signals.ts:10-68`, `src/features/votes.ts:13-54,32-54`
+**Exact files (post-S-09):**
+- `src/features/votes.ts:32-54` (`useClusterVoteResponses`), `src/pages/cluster/VotesView.tsx:76-80,192,209`
+- `src/features/posts.ts:26-40` (`sortPostsForFeed`), `:187-202,225-240,280-296` (cluster likes/comments), `:141-159` (recent posts)
+- `src/features/cluster.ts:187-204` (`useReplyTargets`)
+- `src/features/signals.ts:52-58` (`useSignalReplies` all-cluster)
+- `src/pages/posts/PostsFeedPage.tsx:79-101`, `src/pages/posts/PostDetailPage.tsx:30,63`, `src/pages/ProfilePage.tsx:93-123`
 
-**Proposed fix:**
-1. Short-term (no migration): chunk `ids` ≤50, `select` narrow columns (`message_id,user_id,emoji`, not `*`), include cursor in query key, scope votes/replies to open ids only.
-2. Proper fix (new migration + RPC): `get_post_feed(p_cluster_id, p_limit, p_cursor)` returning posts + `likes_count, comments_count` via `GROUP BY`; per-post comments `LIMIT 20` + cursor. Same for `get_vote_counts(cluster_id)`, `get_signal_reply_counts(cluster_id)`.
-3. Frontend: `VotesView.tsx:209` use existing `castCountByVote` map instead of per-card `.filter()` (O(V*R) render loop).
+**Revised scope — `get_post_feed()` explicitly deferred:** the full feed redesign (posts + counts + paged comments in one RPC) is out of scope unless implementation proves it strictly required. Instead ship bounded counts RPCs and keep existing post pagination (`useClusterPosts` / `useLoadEarlierPosts` unchanged):
+1. Client-only (no migration): `PastVoteCard` uses `castCountByVote` map; remove stale id-set comment; stop refetching whole-cluster engagement on every page growth (rely on realtime patches + refetch on mount/cluster change); chunk `useReplyTargets` ids ≤50.
+2. New migration (e.g. `0140_feed_counts.sql`): `security definer` `get_post_counts(p_cluster_id)` → `(post_id, likes_count, comments_count)` via `GROUP BY`; `get_vote_counts(p_cluster_id)` → `(vote_id, cast_count)`; `get_signal_reply_counts(p_cluster_id)` → `(signal_id, reply_count)`. Guards: `is_active_member` + `cluster_unlocked`; `GRANT EXECUTE … TO authenticated`; `REVOKE` from `public/anon`.
+3. Frontend: new hooks (e.g. `usePostCounts`, `useVoteCounts`, `useSignalReplyCounts`) with keys `['post-counts', clusterId]`, `['vote-counts', clusterId]`, `['signal-reply-counts', clusterId]`; feed/detail/profile rank and badge from counts; keep raw like-row queries only where needed for `mine` flags + optimistic toggles; invalidate counts keys on `post_likes`/`post_comments`/`comment_likes`/`signal_replies` realtime events.
+4. Votes last: replace the two-step `.in()` with `get_vote_counts`, keeping a minimal `vote_responses` query scoped to the caller (`where user_id = auth.uid()`) for "my choice".
 
-**Indexes/migrations required:** covered by S-09 indexes; feed RPC needs existing `posts(cluster_id,created_at)` (verify in `0072`) + new function (no new index beyond S-09).
+**Indexes/migrations required:** covered by S-09 indexes (`post_likes_cluster_idx`, `post_comments_cluster_idx`, `comment_likes_cluster_idx`, `signal_replies_cluster_idx`) + existing `posts_cluster_idx` (`0072`) and `post_comments_post_idx`. No new index beyond the counts functions; verify with `EXPLAIN` before adding any.
 
-**Functional impact:** feed/signal/vote ranking and counts. "Top" sort will change (fix — currently slice-local). Pagination keys change, invalidating old caches (acceptable).
+**Functional impact:** "Top" sort changes from slice-local to cluster-global counts (fix, needs UX sign-off). New cache keys invalidate old caches (acceptable). `mine` flags still come from row queries; counts RPCs are read-only.
 
 **Risk:** **Medium** (RPC contract + cache-key change; needs feed integration tests `tests/integration/posts.test.ts`).
 

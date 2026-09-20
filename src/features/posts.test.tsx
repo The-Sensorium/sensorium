@@ -22,6 +22,7 @@ import {
   useLoadEarlierPosts,
   usePost,
   usePostComments,
+  usePostCounts,
   usePostLikes,
   useRecentClusterPosts,
   usePostImageUrl,
@@ -185,6 +186,21 @@ describe('posts', () => {
 
   it('usePostLikes is disabled without a post', async () => {
     const { result } = renderHook(() => usePostLikes(null), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+  })
+
+  it('usePostCounts calls get_post_counts for the cluster', async () => {
+    mockResult.value = { data: [{ post_id: 'p1', likes_count: 2, comments_count: 1 }], error: null }
+    const { result } = renderHook(() => usePostCounts('c1'), { wrapper })
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ post_id: 'p1', likes_count: 2, comments_count: 1 }]),
+    )
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.rpc).toHaveBeenCalledWith('get_post_counts', { p_cluster_id: 'c1' })
+  })
+
+  it('usePostCounts is disabled without a cluster', async () => {
+    const { result } = renderHook(() => usePostCounts(null), { wrapper })
     expect(result.current.fetchStatus).toBe('idle')
   })
 

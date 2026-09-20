@@ -60,6 +60,26 @@ export function useSignalReplies(
   })
 }
 
+export type SignalReplyCount = { signal_id: string; reply_count: number }
+
+/** Per-signal reply counts (bounded GROUP BY; RLS: active members). List views
+ * rank/badge from this instead of downloading every reply row. */
+export function useSignalReplyCounts(clusterId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['signal-reply-counts', clusterId ?? 'none'],
+    enabled: enabled && clusterId !== null,
+    queryFn: async () => {
+      if (!clusterId) throw new Error('No cluster')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_signal_reply_counts', {
+        p_cluster_id: clusterId,
+      })
+      if (error) throw error
+      return (data ?? []) as SignalReplyCount[]
+    },
+  })
+}
+
 export function useRaiseSignal(clusterId: string | null) {
   const queryClient = useQueryClient()
 
@@ -101,6 +121,7 @@ export function useReplySignal(clusterId: string | null, signalId: string | null
           queryKey: ['signal-replies', clusterId, signalId ?? 'all'],
         })
         void queryClient.invalidateQueries({ queryKey: ['signal-replies', clusterId, 'all'] })
+        void queryClient.invalidateQueries({ queryKey: ['signal-reply-counts', clusterId] })
       }
     },
   })

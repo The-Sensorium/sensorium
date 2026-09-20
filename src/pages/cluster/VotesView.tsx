@@ -7,7 +7,7 @@ import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
 import {
   useClusterVotes,
-  useClusterVoteResponses,
+  useVoteCounts,
   useReplacementRound,
   useReplacementCandidates,
   useStartReplaceVote,
@@ -38,7 +38,7 @@ export function VotesView() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
   const votes = useClusterVotes(clusterId)
-  const responses = useClusterVoteResponses(clusterId)
+  const counts = useVoteCounts(clusterId)
   const round = useReplacementRound(clusterId)
   const candidates = useReplacementCandidates(round.data?.id ?? null, round.data != null)
   const members = useClusterMembers(clusterId)
@@ -66,18 +66,18 @@ export function VotesView() {
 
   const myChoiceByVote = useMemo(() => {
     const map = new Map<string, string>()
-    for (const r of responses.data ?? []) {
-      if (r.user_id === userId) map.set(r.vote_id, r.choice)
+    for (const r of counts.data ?? []) {
+      if (r.my_choice) map.set(r.vote_id, r.my_choice)
     }
     return map
-  }, [responses.data, userId])
+  }, [counts.data])
 
   const quorum = Math.floor((members.data ?? []).length / 2) + 1
   const castCountByVote = useMemo(() => {
     const map = new Map<string, number>()
-    for (const r of responses.data ?? []) map.set(r.vote_id, (map.get(r.vote_id) ?? 0) + 1)
+    for (const r of counts.data ?? []) map.set(r.vote_id, r.cast_count)
     return map
-  }, [responses.data])
+  }, [counts.data])
 
   async function castVote(voteId: string, choice: string) {
     setVoteError(null)
@@ -116,7 +116,7 @@ export function VotesView() {
     }
   }
 
-  if (votes.isLoading || responses.isLoading || members.isLoading) {
+  if (votes.isLoading || counts.isLoading || members.isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-on-surface-variant">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading votes…
@@ -206,7 +206,7 @@ export function VotesView() {
                 key={vote.id}
                 vote={vote}
                 memberById={memberById}
-                castCount={(responses.data ?? []).filter((r) => r.vote_id === vote.id).length}
+                castCount={castCountByVote.get(vote.id) ?? 0}
               />
             ))}
           </ul>

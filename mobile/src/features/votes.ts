@@ -53,6 +53,27 @@ export function useClusterVoteResponses(clusterId: string | null, enabled = true
   })
 }
 
+export type VoteCount = { vote_id: string; cast_count: number; my_choice: string | null }
+
+/** Per-vote cast counts plus the caller's own choice (bounded GROUP BY; RLS:
+ * active members). Replaces the two-step vote_ids-then-.in() responses fetch
+ * for counting; the live vote path invalidates this key on settle. */
+export function useVoteCounts(clusterId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['vote-counts', clusterId ?? 'none'],
+    enabled: enabled && clusterId !== null,
+    queryFn: async () => {
+      if (!clusterId) throw new Error('No cluster')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_vote_counts', {
+        p_cluster_id: clusterId,
+      })
+      if (error) throw error
+      return (data ?? []) as VoteCount[]
+    },
+  })
+}
+
 /** The cluster's active replacement round, if any (RLS: active members). */
 export function useReplacementRound(clusterId: string | null, enabled = true) {
   return useQuery({
@@ -105,6 +126,7 @@ export function useStartReplaceVote(clusterId: string | null) {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['vote-responses', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
       }
     },
   })
@@ -128,6 +150,7 @@ export function useStartNameVote(clusterId: string | null) {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['vote-responses', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
       }
     },
   })
@@ -149,6 +172,7 @@ export function useVoteOn(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['vote-responses', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
       }
     },
   })

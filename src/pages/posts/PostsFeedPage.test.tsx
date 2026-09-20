@@ -8,7 +8,7 @@ const hooks = vi.hoisted(() => ({
   useMyClusters: vi.fn(),
   useClusterMembers: vi.fn(),
   useClusterPosts: vi.fn(),
-  useClusterPostComments: vi.fn(),
+  usePostCounts: vi.fn(),
   useClusterPostLikes: vi.fn(),
   useTogglePostLike: vi.fn(),
   useLoadEarlierPosts: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock('../../features/matching', () => ({
 }))
 vi.mock('../../features/posts', () => ({
   useClusterPosts: hooks.useClusterPosts,
-  useClusterPostComments: hooks.useClusterPostComments,
+  usePostCounts: hooks.usePostCounts,
   useClusterPostLikes: hooks.useClusterPostLikes,
   useTogglePostLike: hooks.useTogglePostLike,
   useLoadEarlierPosts: hooks.useLoadEarlierPosts,
@@ -71,7 +71,7 @@ describe('PostsFeedPage introductions lock', () => {
     hooks.useMyClusters.mockReturnValue(queryStub([locked, unlocked]))
     hooks.useClusterMembers.mockReturnValue(queryStub([]))
     hooks.useClusterPosts.mockReturnValue(queryStub([]))
-    hooks.useClusterPostComments.mockReturnValue(queryStub([]))
+    hooks.usePostCounts.mockReturnValue(queryStub([]))
     hooks.useClusterPostLikes.mockReturnValue(queryStub([]))
     hooks.useTogglePostLike.mockReturnValue({ mutateAsync: vi.fn() })
     hooks.useLoadEarlierPosts.mockReturnValue({ mutate: vi.fn(), isPending: false, data: undefined })
