@@ -40,9 +40,8 @@ export default function ProfileScreen() {
   const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
   const userPosts = useUserPosts(userId || null)
-  const userPostIds = (userPosts.data ?? []).map((p) => p.id)
-  const postLikes = useClusterPostLikes(clusterId || null, userPostIds)
-  const postComments = useClusterPostComments(clusterId || null, userPostIds)
+  const postLikes = useClusterPostLikes(clusterId || null)
+  const postComments = useClusterPostComments(clusterId || null)
   const toggleLike = useTogglePostLike(clusterId || null)
   const likesByPost = new Map<string, { count: number; mine: boolean }>()
   for (const l of postLikes.data ?? []) {
