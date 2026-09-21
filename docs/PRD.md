@@ -71,7 +71,7 @@ Cluster formation is modular across multiple matching modes, each forming its ow
 |---|---|
 | Exact Birthdate | Matched with people born on the same day, month, and year |
 | Birth Year + Month | Matched with people born in the same month and year |
-| Birth Month | Matched with people born in the same month, any year |
+| Generation | Matched with people born within the same 5 years |
 | Birth Year | Matched with people born in the same year, any month |
 | Local | Matched with people within a user selected radius of their location |
 | Open Mix | First 8 people in line, no birth-date or location filter (onboarding bridge) |
@@ -146,7 +146,7 @@ Open question: should full date of birth be visible to other users, or only birt
 Users may join any combination of available matching modes, each forming a separate cluster:
 - Exact Birthdate
 - Birth Year + Month
-- Birth Month
+- Generation
 - Birth Year
 - Local
 - Open Mix (pre-selected in onboarding; single global queue `open`)
@@ -504,7 +504,7 @@ mode. Selecting a mode opens its page (`/discovery/{mode}`) with the queue/join
 flow for that mode and a directory of the mode's active clusters.
 
 Discovery tiles show:
-- Matching Mode (Exact Birthdate, Birth Year + Month, Birth Month, Birth Year, Local, Open Mix)
+- Matching Mode (Exact Birthdate, Birth Year + Month, Generation, Birth Year, Local, Open Mix)
 - Number of active clusters currently in that mode
 
 A mode page shows:
@@ -648,7 +648,7 @@ Birth Year + Month
 ```
 
 ```text
-Birth Month
+Generation
 ```
 
 ```text
@@ -803,7 +803,7 @@ Toggles (multi-select)
 ```text
 Exact Birthdate
 Birth Year + Month
-Birth Month
+Generation
 Birth Year
 Local
 Open Mix (pre-selected)
@@ -929,7 +929,7 @@ Tabs
 ```text
 Exact Birthdate
 Birth Year + Month
-Birth Month
+Generation
 Birth Year
 Local
 Open Mix

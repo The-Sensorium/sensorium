@@ -87,9 +87,10 @@ export function StepModes({
         )
       })}
       <Text style={{ fontSize: 12, lineHeight: 20, color: t.onSurfaceVariant }}>
-        Birth modes match around when and where you started out. Open Mix skips the filter and
-        groups the next 8 people in line - the fastest way to start while you wait on a tighter
-        match.
+        Birth modes match around when and where you started out. Generation groups you with
+        people born within the same 5 years — same life stage, still strangers. Open Mix skips
+        the filter and groups the next 8 people in line - the fastest way to start while you wait
+        on a tighter match.
       </Text>
     </View>
   )

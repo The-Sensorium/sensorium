@@ -35,6 +35,16 @@ test.describe('golden path (seeded)', () => {
     await expect(page).toHaveURL(/\/discovery\/exact_birthdate/)
   })
 
+  test('generation tile links to its mode page', async ({ page }) => {
+    await page.goto('/clusters')
+
+    const modes = page.getByRole('region', { name: 'Matching modes' })
+    const generation = modes.getByRole('link', { name: /Generation/i })
+    await expect(generation).toBeVisible()
+    await generation.click()
+    await expect(page).toHaveURL(/\/discovery\/generation/)
+  })
+
   test('open mix tile links to its mode page', async ({ page }) => {
     await page.goto('/clusters')
 

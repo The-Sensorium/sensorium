@@ -96,8 +96,8 @@ describe('discovery public cluster directory', () => {
     const a = await onboarded('disc-list-a')
     const activeId = await createCluster(admin, {
       memberIds: [a.id],
-      mode: 'birth_month',
-      modeLabel: 'Birth Month',
+      mode: 'generation',
+      modeLabel: 'Born 1990-1994',
       name: 'Night Owls',
     })
     clusterIds.push(activeId)
@@ -106,8 +106,8 @@ describe('discovery public cluster directory', () => {
       .from('clusters')
       .insert({
         name: 'Archived Cluster',
-        matching_mode: 'birth_month',
-        mode_label: 'Birth Month',
+        matching_mode: 'generation',
+        mode_label: 'Born 1990-1994',
         queue_key: 'archived-k',
         status: 'archived',
       })
@@ -117,7 +117,7 @@ describe('discovery public cluster directory', () => {
     clusterIds.push(archived!.id)
 
     const { data, error } = await u.client.rpc('get_clusters_by_mode', {
-      p_mode: 'birth_month',
+      p_mode: 'generation',
     })
     expect(error).toBeNull()
     const rows = (data ?? []) as ClusterRow[]
@@ -126,7 +126,7 @@ describe('discovery public cluster directory', () => {
     expect(ids).not.toContain(archived!.id)
     const row = rows.find((c) => c.id === activeId)
     expect(row?.name).toBe('Night Owls')
-    expect(row?.mode_label).toBe('Birth Month')
+    expect(row?.mode_label).toBe('Born 1990-1994')
     expect(row?.status).toBe('active')
     expect(row?.created_at).toEqual(expect.any(String))
     expect(row).not.toHaveProperty('queue_key')
