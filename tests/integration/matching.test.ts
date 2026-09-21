@@ -283,6 +283,158 @@ describe('matching', () => {
     expect(error?.message).toContain('rate_limited')
   })
 
+  it('derives 0-anchored 5-year generation queue keys', async () => {
+    const cases: Array<[string, string]> = [
+      ['1996-07-12', '1995-1999'],
+      ['2000-01-01', '2000-2004'],
+      ['1999-12-31', '1995-1999'],
+      ['2004-12-31', '2000-2004'],
+    ]
+    for (const [dob, expected] of cases) {
+      const u = await createUser(admin, 'm-genkey')
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob })
+      const { data, error } = await u.client.rpc('join_queue', { p_mode: 'generation' })
+      expect(error).toBeNull()
+      expect(data?.[0]?.queue_key).toBe(expected)
+      await u.client.rpc('leave_queue', { p_mode: 'generation' })
+    }
+  })
+
+  it('forms a generation cluster once eight same-band users share a key', async () => {
+    const users: TestUser[] = []
+    for (let i = 0; i < 8; i++) {
+      const u = await createUser(admin, `m-genform-${i}`)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob: `1996-0${(i % 9) + 1}-1${i % 9}` })
+      users.push(u)
+    }
+    for (const u of users) {
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'generation' })
+      expect(error).toBeNull()
+    }
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id, matching_mode, queue_key, mode_label, status')
+      .eq('queue_key', '1995-1999')
+      .eq('matching_mode', 'generation')
+    expect(clusters).toHaveLength(1)
+    expect(clusters![0].mode_label).toBe('Born 1995-1999')
+    expect(clusters![0].status).toBe('active')
+    clusterIds.push(clusters![0].id)
+    const { data: members } = await admin
+      .from('cluster_members')
+      .select('user_id')
+      .eq('cluster_id', clusters![0].id)
+      .is('left_at', null)
+    expect(members).toHaveLength(8)
+    const { data: remaining } = await admin
+      .from('queue_entries')
+      .select('id')
+      .eq('mode', 'generation')
+      .eq('queue_key', '1995-1999')
+    expect(remaining).toHaveLength(0)
+    const { data: notifs } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('cluster_id', clusters![0].id)
+      .eq('type', 'cluster_formed')
+    expect(notifs).toHaveLength(8)
+  })
+
+  it('does not merge cross-band generation users into one cluster', async () => {
+    const bandA: TestUser[] = []
+    for (let i = 0; i < 7; i++) {
+      const u = await createUser(admin, `m-genband-a-${i}`)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob: `1996-03-1${i % 9}` })
+      bandA.push(u)
+    }
+    const outsider = await createUser(admin, 'm-genband-b')
+    userIds.push(outsider.id)
+    await onboardUser(admin, outsider.id, { dob: '2001-06-15' })
+
+    for (const u of bandA) {
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'generation' })
+      expect(error).toBeNull()
+    }
+    const { data, error } = await outsider.client.rpc('join_queue', { p_mode: 'generation' })
+    expect(error).toBeNull()
+    expect(data?.[0]?.queue_key).toBe('2000-2004')
+
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id')
+      .eq('matching_mode', 'generation')
+      .in('queue_key', ['1995-1999', '2000-2004'])
+    expect(clusters).toHaveLength(0)
+
+    const { data: status } = await bandA[0].client.rpc('get_my_matching_status')
+    const row = status.find((r: { mode: string }) => r.mode === 'generation')
+    expect(row.joined).toBe(true)
+    expect(row.waiting).toBe(7)
+  })
+
+  it('rejects join_queue for the retired birth_month mode', async () => {
+    const u = await onboarded('m-retired')
+    const { error } = await u.client.rpc('join_queue', { p_mode: 'birth_month' })
+    expect(error?.message).toContain('mode_retired')
+  })
+
+  it('reports generation joined state via get_my_matching_status', async () => {
+    const u = await createUser(admin, 'm-genstatus')
+    userIds.push(u.id)
+    await onboardUser(admin, u.id, { dob: '1996-07-12' })
+    await u.client.rpc('join_queue', { p_mode: 'generation' })
+
+    const { data, error } = await u.client.rpc('get_my_matching_status')
+    expect(error).toBeNull()
+    const row = data.find((r: { mode: string }) => r.mode === 'generation')
+    expect(row).toBeDefined()
+    expect(row.queue_key).toBe('1995-1999')
+    expect(row.label).toBe('Born 1995-1999')
+    expect(row.joined).toBe(true)
+    expect(row.waiting).toBeGreaterThanOrEqual(1)
+  })
+
+  it('blocks a second generation queue join while in an active generation cluster', async () => {
+    const u = await createUser(admin, 'm-genincluster')
+    userIds.push(u.id)
+    await onboardUser(admin, u.id, { dob: '1996-07-12' })
+    const { data: cluster } = await admin
+      .from('clusters')
+      .insert({
+        name: 'Generation Cluster',
+        matching_mode: 'generation',
+        mode_label: 'Born 1995-1999',
+        queue_key: '1995-1999',
+        status: 'active',
+        introductions_completed_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single()
+    clusterIds.push(cluster!.id)
+    const { error: mErr } = await admin.from('cluster_members').insert({
+      cluster_id: cluster!.id,
+      user_id: u.id,
+    })
+    expect(mErr).toBeNull()
+
+    const { error } = await u.client.rpc('join_queue', { p_mode: 'generation' })
+    expect(error?.message).toContain('already_in_cluster_of_mode')
+  })
+
+  it('has no remaining birth_month queues, clusters, or cooldowns', async () => {
+    const [{ count: queues }, { count: clusters }, { count: cooldowns }] = await Promise.all([
+      admin.from('queue_entries').select('id', { count: 'exact', head: true }).eq('mode', 'birth_month'),
+      admin.from('clusters').select('id', { count: 'exact', head: true }).eq('matching_mode', 'birth_month'),
+      admin.from('mode_cooldowns').select('user_id', { count: 'exact', head: true }).eq('mode', 'birth_month'),
+    ])
+    expect(queues).toBe(0)
+    expect(clusters).toBe(0)
+    expect(cooldowns).toBe(0)
+  })
+
   it('get_my_clusters returns memberships with their active-member count', async () => {
     const a = await onboarded('mc-a')
     const b = await onboarded('mc-b')

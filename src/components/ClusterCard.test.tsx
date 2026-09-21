@@ -9,7 +9,7 @@ function makeCluster(overrides: Partial<MyCluster['cluster']> = {}): MyCluster {
     cluster: {
       id: 'c1',
       name: 'My Cluster',
-      matching_mode: 'birth_month',
+      matching_mode: 'generation',
       status: 'active',
       introductions_completed_at: '2026-01-01T00:00:00Z',
       created_at: '2026-01-01T00:00:00Z',
@@ -28,7 +28,7 @@ describe('ClusterCard', () => {
       </MemoryRouter>,
     )
     expect(screen.getByText('My Cluster')).toBeInTheDocument()
-    expect(screen.getByText('Birth Month')).toBeInTheDocument()
+    expect(screen.getByText('Generation')).toBeInTheDocument()
     expect(screen.getByText('8 members')).toBeInTheDocument()
     expect(screen.getByText('Active')).toBeInTheDocument()
   })
