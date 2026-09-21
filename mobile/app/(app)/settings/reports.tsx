@@ -33,7 +33,7 @@ export default function MyReportsScreen() {
         accessibilityRole="button"
         accessibilityLabel="Back to settings"
         hitSlop={12}
-        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 8, paddingRight: 16, marginBottom: 12 }}
+        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 12, minHeight: 48, paddingRight: 16, marginBottom: 12 }}
       >
         <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
@@ -41,8 +41,8 @@ export default function MyReportsScreen() {
         </Text>
       </Pressable>
 
-      <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>My reports</Text>
-      <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant, marginBottom: 16 }}>
+      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">My reports</Text>
+      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 16 }}>
         Reports you submitted.
       </Text>
 
@@ -99,8 +99,8 @@ export default function MyReportsScreen() {
       )}
       <View style={{ height: 8 }} />
       <Link href="/(app)/settings" asChild>
-        <Pressable style={{ alignItems: 'center', padding: 12 }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Back to settings</Text>
+        <Pressable hitSlop={8} style={{ alignItems: 'center', padding: 12, minHeight: 48, justifyContent: 'center' }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back to settings</Text>
         </Pressable>
       </Link>
     </Screen>

@@ -96,7 +96,7 @@ function ModeTile({
   return (
     <Link href={{ pathname: '/mode/[modeId]', params: { modeId: value } }} asChild>
       <Pressable
-        style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 20, marginBottom: 16 }}
+        style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 16, marginBottom: 16 }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>

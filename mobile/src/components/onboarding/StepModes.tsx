@@ -38,6 +38,9 @@ export function StepModes({
           <Pressable
             key={mode.value}
             onPress={() => toggle(mode.value)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: active }}
+            accessibilityLabel={mode.label}
             style={{
               flexDirection: 'row',
               alignItems: 'center',

@@ -78,7 +78,7 @@ export default function ClusterCreatedScreen() {
         >
           <PartyPopper size={32} color={t.onPrimary} strokeWidth={1.5} />
         </View>
-        <Text style={{ marginTop: 20, fontSize: 28, fontWeight: '600', color: t.onSurface }}>
+        <Text style={{ marginTop: 20, fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
           Your cluster is ready
         </Text>
         <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, textAlign: 'center', color: t.onSurfaceVariant }}>
@@ -148,8 +148,8 @@ export default function ClusterCreatedScreen() {
         href={{ pathname: '/cluster/[clusterId]/introductions', params: { clusterId } }}
         asChild
       >
-        <Pressable style={{ marginTop: 12, alignItems: 'center' }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+        <Pressable hitSlop={8} style={{ marginTop: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
             Or answer the intro questions first
           </Text>
         </Pressable>

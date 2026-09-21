@@ -116,12 +116,15 @@ export function StepCustomization({
         <Pressable
           onPress={pick}
           disabled={uploading}
+          accessibilityRole="button"
           style={{
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.pill,
             paddingHorizontal: 16,
-            paddingVertical: 8,
+            paddingVertical: 12,
+            minHeight: 48,
+            justifyContent: 'center',
             opacity: uploading ? 0.6 : 1,
           }}
         >
@@ -130,14 +133,15 @@ export function StepCustomization({
           </Text>
         </Pressable>
         {draft.avatarUrl ? (
-          <Pressable
-            accessibilityLabel="Remove photo"
-            onPress={() => {
-              void deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
-              patch({ photoUri: null, avatarUrl: null })
-            }}
-            style={{ padding: 8 }}
-          >
+            <Pressable
+              accessibilityLabel="Remove photo"
+              onPress={() => {
+                void deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
+                patch({ photoUri: null, avatarUrl: null })
+              }}
+              hitSlop={12}
+              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+            >
             <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </Pressable>
         ) : null}

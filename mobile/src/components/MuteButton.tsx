@@ -31,6 +31,8 @@ export function MuteButton({ targetUserId, targetName, fill }: { targetUserId: s
             : action.mutate({ targetUserId, displayName: targetName })
         }
         accessibilityLabel={`${label} ${targetName}`}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: pending }}
         style={{
           flex: fill ? 1 : 0,
           flexDirection: 'row',
@@ -41,12 +43,13 @@ export function MuteButton({ targetUserId, targetName, fill }: { targetUserId: s
           borderColor: t.outlineVariant,
           borderRadius: radii.pill,
           paddingHorizontal: 16,
-          paddingVertical: 8,
+          paddingVertical: 12,
+          minHeight: 48,
           opacity: pending ? 0.6 : 1,
         }}
       >
         <Icon size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{label}</Text>
+        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>{label}</Text>
       </Pressable>
       {error ? (
         <Text style={{ fontSize: 12, color: t.error }}>Couldn’t update. Try again.</Text>
