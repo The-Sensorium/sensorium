@@ -190,12 +190,12 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
           />
         </View>
       ) : null}
-      <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', rowGap: 4, columnGap: 4 }}>
         <Pressable
           accessibilityLabel="Attach image"
           onPress={() => void handlePickImage()}
           hitSlop={4}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, flexShrink: 0 }}
         >
           <ImagePlus size={16} color={image ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: image ? t.primary : t.onSurfaceVariant }}>
@@ -206,14 +206,14 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
           accessibilityLabel="Add a GIF"
           onPress={() => setGifOpen((o) => !o)}
           hitSlop={4}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, flexShrink: 0 }}
         >
           <ImagePlay size={16} color={gif ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: gif ? t.primary : t.onSurfaceVariant }}>
             GIF
           </Text>
         </Pressable>
-        <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 }}>
           <Pressable
             disabled={create.isPending}
             onPress={() => {
@@ -222,7 +222,7 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
               setError(null)
             }}
             hitSlop={4}
-            style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: create.isPending ? 0.5 : 1 }}
+            style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: create.isPending ? 0.5 : 1, flexShrink: 0 }}
           >
             <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
           </Pressable>
@@ -231,14 +231,14 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
             accessibilityRole="button"
             accessibilityState={{ disabled: !hasContent || create.isPending }}
             onPress={() => void handlePost()}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, opacity: !hasContent || create.isPending ? 0.6 : 1 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, maxWidth: '100%', flexShrink: 1, opacity: !hasContent || create.isPending ? 0.6 : 1 }}
           >
             {create.isPending ? (
               <ActivityIndicator size="small" color={t.onPrimary} />
             ) : (
               <Send size={16} color={t.onPrimary} strokeWidth={1.5} />
             )}
-            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+            <Text numberOfLines={1} style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary, flexShrink: 1 }}>
               {create.isPending ? 'Posting...' : 'Post'}
             </Text>
           </Pressable>
