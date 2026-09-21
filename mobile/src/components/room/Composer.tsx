@@ -10,6 +10,7 @@ import {
 } from '../../features/mentions'
 import { type Gif } from '../../features/gifs'
 import { toErrorMessage } from '../../lib/error'
+import { errorHaptic, lightHaptic } from '../../lib/haptics'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { GifPicker } from './GifPicker'
@@ -116,7 +117,9 @@ export function Composer({
       }
       setDraft('')
       setMention(null)
+      lightHaptic()
     } catch (e) {
+      errorHaptic()
       onError(toErrorMessage(e, 'Could not send your message. Try again.'))
     } finally {
       setUploading(false)
@@ -129,7 +132,9 @@ export function Composer({
     setGifOpen(false)
     try {
       await onSendGif(gif)
+      lightHaptic()
     } catch (e) {
+      errorHaptic()
       onError(toErrorMessage(e, 'Could not send that GIF. Try again.'))
     }
   }
@@ -285,7 +290,8 @@ export function Composer({
             <Pressable
               key={candidate.id}
               onPress={() => insertMention(candidate)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 }}
+              hitSlop={4}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
             >
               <Avatar name={candidate.display_name} src={candidate.avatar_url} size={24} />
               <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
@@ -303,10 +309,11 @@ export function Composer({
             setGifOpen(false)
             setMenuOpen((o) => !o)
           }}
+          hitSlop={4}
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
             alignItems: 'center',
             justifyContent: 'center',
             opacity: raisePending ? 0.6 : 1,
@@ -339,8 +346,8 @@ export function Composer({
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 10,
-            fontSize: 14,
-            lineHeight: 20,
+            fontSize: 16,
+            lineHeight: 24,
             maxHeight: 120,
             color: t.onSurface,
           }}
@@ -348,11 +355,13 @@ export function Composer({
         <Pressable
           accessibilityLabel="Send message"
           disabled={!canSend}
+          accessibilityState={{ disabled: !canSend }}
           onPress={() => void handleSend()}
+          hitSlop={4}
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
             backgroundColor: t.surfaceContainer,
             alignItems: 'center',
             justifyContent: 'center',
@@ -391,7 +400,8 @@ function MenuRow({
         alignItems: 'center',
         gap: 8,
         paddingHorizontal: 12,
-        paddingVertical: 10,
+        paddingVertical: 14,
+        minHeight: 48,
         borderRadius: radii.md,
         backgroundColor: pressed ? t.surfaceContainer : 'transparent',
         opacity: disabled ? 0.6 : 1,

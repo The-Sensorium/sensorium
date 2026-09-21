@@ -1,8 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -34,21 +32,18 @@ export function AuthShell({
   const t = useTheme()
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        bottomOffset={16}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'center',
+          padding: spacing.containerMargin,
+        }}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: 'center',
-            padding: spacing.containerMargin,
-          }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={{ alignItems: 'center', marginBottom: -13 }}>
-            <BrandMark size={101} />
-          </View>
+        <View style={{ alignItems: 'center' }}>
+          <BrandMark size={96} />
+        </View>
           <BrandWordmark size={18} />
           <View
             style={{
@@ -58,7 +53,7 @@ export function AuthShell({
               padding: spacing.containerMargin,
             }}
           >
-            <Text style={{ fontSize: 22, fontWeight: '600', color: t.onSurface }}>{title}</Text>
+            <Text style={{ fontSize: 22, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>{title}</Text>
             {subtitle ? (
               <Text
                 style={{
@@ -73,8 +68,7 @@ export function AuthShell({
             ) : null}
             <View style={{ marginTop: spacing.gutter }}>{children}</View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
     </SafeAreaView>
   )
 }
@@ -84,7 +78,7 @@ export function Field({ label, style, ...props }: { label: string } & TextInputP
   return (
     <View style={{ marginBottom: spacing.gutter }}>
       <Text
-        style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
+        style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
       >
         {label}
       </Text>
@@ -99,7 +93,8 @@ export function Field({ label, style, ...props }: { label: string } & TextInputP
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 12,
-            fontSize: 14,
+            fontSize: 16,
+            lineHeight: 24,
             color: t.onSurface,
           },
           style,
@@ -120,7 +115,7 @@ export function PasswordField({
   return (
     <View style={{ marginBottom: spacing.gutter }}>
       <Text
-        style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
+        style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
       >
         {label}
       </Text>
@@ -142,7 +137,8 @@ export function PasswordField({
             flex: 1,
             paddingHorizontal: 16,
             paddingVertical: 12,
-            fontSize: 14,
+            fontSize: 16,
+            lineHeight: 24,
             color: t.onSurface,
           }}
           {...props}
@@ -151,9 +147,10 @@ export function PasswordField({
           accessibilityLabel={visible ? 'Hide password' : 'Show password'}
           accessibilityRole="button"
           onPress={() => setVisible((v) => !v)}
+          hitSlop={4}
           style={{
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -184,18 +181,21 @@ export function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={inactive}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: inactive }}
       style={{
         backgroundColor: t.primary,
         borderRadius: radii.pill,
         paddingHorizontal: 24,
-        paddingVertical: 14,
+        paddingVertical: 16,
+        minHeight: 48,
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
         opacity: inactive ? 0.6 : 1,
       }}
     >
-      <Text style={{ color: t.onPrimary, fontSize: 14, fontWeight: '600' }}>
+      <Text style={{ color: t.onPrimary, fontSize: 16, lineHeight: 24, fontWeight: '600' }}>
         {loading ? (loadingTitle ?? 'Please wait…') : title}
       </Text>
     </Pressable>
@@ -216,18 +216,21 @@ export function SecondaryButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled ?? false }}
       style={{
         flex: 1,
         borderWidth: 1,
         borderColor: t.onSurfaceVariant,
         borderRadius: radii.pill,
         paddingHorizontal: 24,
-        paddingVertical: 14,
+        paddingVertical: 16,
+        minHeight: 48,
         alignItems: 'center',
         opacity: disabled ? 0.4 : 1,
       }}
     >
-      <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>{title}</Text>
+      <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>{title}</Text>
     </Pressable>
   )
 }
@@ -249,6 +252,8 @@ export function GoogleButton({
     <Pressable
       onPress={onPress}
       disabled={inactive}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: inactive ?? false }}
       style={{
         flexDirection: 'row',
         gap: 8,
@@ -256,7 +261,8 @@ export function GoogleButton({
         borderColor: t.outlineVariant,
         borderRadius: radii.pill,
         paddingHorizontal: 24,
-        paddingVertical: 14,
+        paddingVertical: 16,
+        minHeight: 48,
         alignItems: 'center',
         justifyContent: 'center',
         opacity: inactive ? 0.6 : 1,
@@ -267,7 +273,7 @@ export function GoogleButton({
       ) : (
         <GoogleMark size={20} />
       )}
-      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>{title}</Text>
+      <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>{title}</Text>
     </Pressable>
   )
 }
@@ -286,7 +292,10 @@ export function OrDivider() {
 export function AuthLink({ href, children }: { href: Href; children: ReactNode }) {
   const t = useTheme()
   return (
-    <Link href={href} style={{ color: t.primary, fontWeight: '600', fontSize: 14 }}>
+    <Link
+      href={href}
+      style={{ color: t.primary, fontWeight: '600', fontSize: 14, lineHeight: 20, paddingVertical: 12, minHeight: 44 }}
+    >
       {children}
     </Link>
   )
@@ -295,7 +304,14 @@ export function AuthLink({ href, children }: { href: Href; children: ReactNode }
 export function ErrorText({ message }: { message: string | null }) {
   const t = useTheme()
   if (!message) return null
-  return <Text style={{ fontSize: 14, color: t.error, marginBottom: spacing.gutter }}>{message}</Text>
+  return (
+    <Text
+      accessibilityRole="alert"
+      style={{ fontSize: 14, lineHeight: 20, color: t.error, marginBottom: spacing.gutter }}
+    >
+      {message}
+    </Text>
+  )
 }
 
 export function Screen({
@@ -335,7 +351,7 @@ export function Screen({
   // frame-synced translate (no layout resize), so the composer and its action
   // row are never covered and never push the list around. The footer height is
   // measured into stickyFooterHeight so the chat scroll view can extend its
-  // scroll range past the bar — list content never rests underneath it.
+  // scroll range past the bar - list content never rests underneath it.
   const stickyFooter = footer ? (
     <KeyboardStickyView
       onLayout={(e) => onStickyFooterLayout?.(e.nativeEvent.layout.height)}
@@ -359,7 +375,7 @@ export function Screen({
   if (avoiding) {
     // Screens with a sticky footer use the chat pattern: the scroll range
     // extends via contentInset (no layout thrash) and content lifts only when
-    // the end is visible (ChatGPT behavior) — a mid-list reply target the user
+    // the end is visible (ChatGPT behavior); a mid-list reply target the user
     // is looking at is never shoved away, and bottom content always lifts
     // clear of the floating bar. Nothing is ever rendered beneath the bar.
     // Other screens keep the aware scroll view.
@@ -367,7 +383,7 @@ export function Screen({
       <KeyboardChatScrollView
         extraContentPadding={stickyFooterHeight}
         keyboardLiftBehavior="whenAtEnd"
-        contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
+        contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={refresh}
       >
@@ -376,7 +392,7 @@ export function Screen({
     ) : (
       <KeyboardAwareScrollView
         bottomOffset={16}
-        contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
+        contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={refresh}
       >
@@ -392,7 +408,7 @@ export function Screen({
   }
   const body = (
     <ScrollView
-      contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 48 }}
+      contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
       keyboardShouldPersistTaps="handled"
       refreshControl={refresh}
     >
@@ -400,7 +416,7 @@ export function Screen({
     </ScrollView>
   )
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       {body}
       {footer ? <View>{footer}</View> : null}
     </SafeAreaView>
@@ -419,7 +435,7 @@ export function Card({ children, plain }: { children: ReactNode; plain?: boolean
               borderStyle: 'dashed',
               borderColor: t.outlineVariant,
               borderRadius: radii.xl,
-              padding: 20,
+              padding: 16,
               marginBottom: 16,
             }
           : {
@@ -427,7 +443,7 @@ export function Card({ children, plain }: { children: ReactNode; plain?: boolean
               borderWidth: 1,
               borderColor: t.outlineVariant,
               borderRadius: radii.xl,
-              padding: 20,
+              padding: 16,
               marginBottom: 16,
               ...shadowShape,
               shadowColor: t.shadowColor,
@@ -441,10 +457,46 @@ export function Card({ children, plain }: { children: ReactNode; plain?: boolean
 
 export function LoadingView({ label }: { label?: string }) {
   const t = useTheme()
+  const text = label ?? 'Loading…'
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <View
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={text}
+      accessibilityLiveRegion="polite"
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+    >
       <ActivityIndicator size="small" color={t.primary} />
-      <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{label ?? 'Loading…'}</Text>
+      <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>{text}</Text>
+    </View>
+  )
+}
+
+export function FeedSkeleton({ rows = 3 }: { rows?: number }) {
+  const t = useTheme()
+  return (
+    <View
+      accessible
+      accessibilityLabel="Loading content"
+      accessibilityLiveRegion="polite"
+      style={{ gap: 16 }}
+    >
+      {Array.from({ length: rows }, (_, i) => (
+        <View
+          key={i}
+          style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 16, gap: 8 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.surfaceHighest }} />
+            <View style={{ flex: 1, gap: 6 }}>
+              <View style={{ height: 14, borderRadius: 7, backgroundColor: t.surfaceHighest, width: '60%' }} />
+              <View style={{ height: 12, borderRadius: 6, backgroundColor: t.surfaceHighest, width: '40%' }} />
+            </View>
+          </View>
+          <View style={{ height: 14, borderRadius: 7, backgroundColor: t.surfaceHighest, width: '90%' }} />
+          <View style={{ height: 14, borderRadius: 7, backgroundColor: t.surfaceHighest, width: '75%' }} />
+        </View>
+      ))}
     </View>
   )
 }

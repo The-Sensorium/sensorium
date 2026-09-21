@@ -6,6 +6,7 @@ import { GifPicker } from './room/GifPicker'
 import { useCreatePost, uploadPostImage, POST_CONTENT_MAX, POST_TITLE_MAX } from '../features/posts'
 import type { Gif } from '../features/gifs'
 import { toErrorMessage } from '../lib/error'
+import { errorHaptic, successHaptic } from '../lib/haptics'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
@@ -77,7 +78,9 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
       setError(null)
       setOpen(false)
       onPosted?.()
+      successHaptic()
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not post. Try again.'))
     }
   }
@@ -89,10 +92,10 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
       <Pressable
         accessibilityLabel="New post"
         onPress={() => setOpen(true)}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, alignSelf: 'flex-start', marginBottom: 16 }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 14, minHeight: 48, alignSelf: 'flex-start', marginBottom: 16 }}
       >
         <Plus size={16} color={t.onPrimary} strokeWidth={2} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>New post</Text>
+        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>New post</Text>
       </Pressable>
     )
   }
@@ -113,7 +116,8 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
           borderRadius: radii.md,
           paddingHorizontal: 16,
           paddingVertical: 10,
-          fontSize: 14,
+          fontSize: 16,
+          lineHeight: 24,
           fontWeight: '600',
           color: t.onSurface,
         }}
@@ -135,8 +139,8 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
           borderRadius: radii.md,
           paddingHorizontal: 16,
           paddingVertical: 12,
-          fontSize: 14,
-          lineHeight: 22,
+          fontSize: 16,
+          lineHeight: 24,
           minHeight: 88,
           textAlignVertical: 'top',
           color: t.onSurface,
@@ -163,7 +167,8 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
               setImage(null)
               setGif(null)
             }}
-            style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+            hitSlop={14}
+            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
           >
             <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </Pressable>
@@ -189,7 +194,8 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
         <Pressable
           accessibilityLabel="Attach image"
           onPress={() => void handlePickImage()}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8 }}
+          hitSlop={4}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
         >
           <ImagePlus size={16} color={image ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: image ? t.primary : t.onSurfaceVariant }}>
@@ -199,7 +205,8 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
         <Pressable
           accessibilityLabel="Add a GIF"
           onPress={() => setGifOpen((o) => !o)}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8 }}
+          hitSlop={4}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
         >
           <ImagePlay size={16} color={gif ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: gif ? t.primary : t.onSurfaceVariant }}>
@@ -214,21 +221,24 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
               setGifOpen(false)
               setError(null)
             }}
-            style={{ paddingHorizontal: 12, paddingVertical: 8, opacity: create.isPending ? 0.5 : 1 }}
+            hitSlop={4}
+            style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: create.isPending ? 0.5 : 1 }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
           </Pressable>
           <Pressable
             disabled={!hasContent || create.isPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !hasContent || create.isPending }}
             onPress={() => void handlePost()}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, opacity: !hasContent || create.isPending ? 0.6 : 1 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, opacity: !hasContent || create.isPending ? 0.6 : 1 }}
           >
             {create.isPending ? (
               <ActivityIndicator size="small" color={t.onPrimary} />
             ) : (
               <Send size={16} color={t.onPrimary} strokeWidth={1.5} />
             )}
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
+            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
               {create.isPending ? 'Posting...' : 'Post'}
             </Text>
           </Pressable>

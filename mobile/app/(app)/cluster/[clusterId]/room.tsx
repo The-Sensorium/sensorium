@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, Phone, Users } from 'lucide-react-native'
@@ -45,6 +45,7 @@ import { useMarkClusterRead } from '../../../../src/features/notifications'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { toErrorMessage } from '../../../../src/lib/error'
+import { errorHaptic, lightHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { useClusterChannel, usePresence } from '../../../../src/features/realtime'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
@@ -71,6 +72,7 @@ function dayKey(iso: string) {
 
 export default function RoomScreen() {
   const t = useTheme()
+  const { bottom } = useSafeAreaInsets()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -358,7 +360,9 @@ export default function RoomScreen() {
     setError(null)
     try {
       await toggleReaction.mutateAsync({ messageId, emoji })
+      lightHaptic()
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not react to that message.'))
     }
   }
@@ -423,7 +427,9 @@ export default function RoomScreen() {
       await raise.mutateAsync(prompt)
       setSignalOpen(false)
       setSignalPrompt('')
+      successHaptic()
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not raise your signal. Try again.'))
     }
   }
@@ -437,8 +443,10 @@ export default function RoomScreen() {
     setError(null)
     try {
       const callId = await startCall.mutateAsync()
+      successHaptic()
       openCall(callId)
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not start the call. Try again.'))
     }
   }
@@ -447,8 +455,10 @@ export default function RoomScreen() {
     setError(null)
     try {
       await joinCall.mutateAsync(callId)
+      successHaptic()
       openCall(callId)
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not join the call. Try again.'))
     }
   }
@@ -506,15 +516,15 @@ export default function RoomScreen() {
               if (router.canGoBack()) router.back()
               else router.replace('/(app)/clusters')
             }}
-            style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
           >
             <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
               {cluster.data.name}
             </Text>
-            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
               {onlineCount} of {memberCount} here
             </Text>
           </View>
@@ -576,8 +586,10 @@ export default function RoomScreen() {
                 style={{
                   backgroundColor: t.primary,
                   borderRadius: radii.pill,
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  minHeight: 48,
+                  justifyContent: 'center',
                   opacity: callPending ? 0.6 : 1,
                 }}
               >
@@ -591,7 +603,7 @@ export default function RoomScreen() {
                   onPress={() =>
                     setDeclinedCalls((prev) => new Set(prev).add(activeCall.data!.id))
                   }
-                  style={{ paddingHorizontal: 8, paddingVertical: 8 }}
+                  style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
                     Decline
@@ -710,8 +722,10 @@ export default function RoomScreen() {
                       borderColor: t.outlineVariant,
                       backgroundColor: t.surfaceLowest,
                       borderRadius: radii.pill,
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
+                      paddingHorizontal: 20,
+                      paddingVertical: 12,
+                      minHeight: 48,
+                      justifyContent: 'center',
                       marginVertical: 8,
                       opacity: loadEarlier.isPending ? 0.6 : 1,
                     }}
@@ -832,17 +846,19 @@ export default function RoomScreen() {
             <Pressable
               accessibilityLabel={`Jump to ${newCount} new messages`}
               onPress={scrollToLatest}
+              hitSlop={4}
               style={{
                 position: 'absolute',
-                bottom: 8,
+                bottom: 16,
                 alignSelf: 'center',
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 6,
                 backgroundColor: t.primary,
                 borderRadius: radii.pill,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
+                paddingHorizontal: 20,
+                paddingVertical: 12,
+                minHeight: 48,
               }}
             >
               <ArrowDown size={16} color={t.onPrimary} strokeWidth={2} />
@@ -853,7 +869,7 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+        <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + bottom }}>
           <Composer
             members={parseMembers}
             selfId={userId}

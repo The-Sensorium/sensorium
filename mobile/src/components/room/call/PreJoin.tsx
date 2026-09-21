@@ -95,9 +95,10 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
         <Pressable
           accessibilityLabel="Cancel"
           onPress={onCancel}
-          style={{ alignItems: 'center', paddingVertical: 8 }}
+          hitSlop={8}
+          style={{ alignItems: 'center', paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
         >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
         </Pressable>
       </View>
     )
@@ -111,7 +112,7 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
       granted: micGranted,
       onPress: () => setMic((v) => !v),
       onIcon: <Mic size={20} color="#fff" strokeWidth={2} />,
-      offIcon: <MicOff size={20} color={t.onSurfaceVariant} strokeWidth={2} />,
+      offIcon: <MicOff size={20} color={t.onSurface} strokeWidth={2} />,
     },
     {
       key: 'camera',
@@ -120,7 +121,7 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
       granted: camGranted,
       onPress: () => setCamera((v) => !v),
       onIcon: <Video size={20} color="#fff" strokeWidth={2} />,
-      offIcon: <VideoOff size={20} color={t.onSurfaceVariant} strokeWidth={2} />,
+      offIcon: <VideoOff size={20} color={t.onSurface} strokeWidth={2} />,
     },
   ]
 
@@ -167,9 +168,10 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
         <Pressable
           accessibilityLabel="Open settings"
           onPress={openSettings}
-          style={{ alignItems: 'center', paddingVertical: 4 }}
+          hitSlop={8}
+          style={{ alignItems: 'center', paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
         >
-          <Text style={{ fontSize: 13, fontWeight: '600', color: t.primary }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
             Open settings to enable access
           </Text>
         </Pressable>
@@ -190,7 +192,8 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
       <Pressable
         accessibilityLabel="Cancel"
         onPress={onCancel}
-        style={{ alignItems: 'center', paddingVertical: 8 }}
+        hitSlop={8}
+        style={{ alignItems: 'center', paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
       </Pressable>

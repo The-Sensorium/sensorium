@@ -32,7 +32,7 @@ export function ClusterCard({
         style={{
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.xl,
-          padding: 20,
+          padding: 16,
           marginBottom: 16,
           ...shadowShape,
           shadowColor: t.shadowColor,
@@ -45,6 +45,7 @@ export function ClusterCard({
               <Text
                 style={{
                   fontSize: 12,
+                  lineHeight: 16,
                   fontWeight: '600',
                   textTransform: 'uppercase',
                   letterSpacing: 1,
@@ -52,13 +53,15 @@ export function ClusterCard({
                   flexShrink: 1,
                 }}
                 numberOfLines={1}
+                maxFontSizeMultiplier={1.4}
               >
                 {info.label}
               </Text>
             </View>
             <Text
-              style={{ marginTop: 4, fontSize: 18, fontWeight: '600', color: t.onSurface }}
+              style={{ marginTop: 4, fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}
               numberOfLines={1}
+              maxFontSizeMultiplier={1.4}
             >
               {cluster.name}
             </Text>

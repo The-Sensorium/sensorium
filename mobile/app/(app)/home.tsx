@@ -113,10 +113,10 @@ export default function HomeScreen() {
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
-      <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
         {firstName ? `Welcome, ${firstName}` : 'Home'}
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 17, color: t.onSurfaceVariant, marginBottom: 24 }}>
+      <Text style={{ marginTop: 4, fontSize: 17, lineHeight: 22, color: t.onSurfaceVariant, marginBottom: 24 }}>
         {daypartGreeting()}
       </Text>
       <ErrorText message={pull.error} />
@@ -287,7 +287,7 @@ export default function HomeScreen() {
                 Your clusters
               </Text>
               <Link href="/(app)/clusters" asChild>
-                <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 12, minHeight: 44 }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
                     View all clusters
                   </Text>
@@ -331,7 +331,7 @@ function RecentFromClusters({
           Recent posts
         </Text>
         <Link href="/(app)/posts" asChild>
-          <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 12, minHeight: 44 }}>
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
               View all posts
             </Text>

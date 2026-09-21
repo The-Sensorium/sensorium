@@ -43,7 +43,7 @@ export function MutedPlaceholder({
         accessibilityRole="button"
         accessibilityLabel="Show muted content"
         hitSlop={8}
-        style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+        style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 14, fontWeight: '700', color: t.primary }}>Show</Text>
       </Pressable>
@@ -83,7 +83,7 @@ export function MutedHideBar({
         accessibilityRole="button"
         accessibilityLabel={`Hide muted ${kind}`}
         hitSlop={8}
-        style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+        style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}
       >
         <Text style={{ fontSize: 14, fontWeight: '700', color: t.primary }}>Hide</Text>
       </Pressable>

@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { useChat } from '@livekit/react-native'
 import { Send } from 'lucide-react-native'
+import { errorHaptic, lightHaptic } from '../../../lib/haptics'
 import { radii } from '../../../lib/theme-tokens'
 import { useTheme } from '../../../lib/use-theme'
 
@@ -84,7 +85,13 @@ export function InCallChat({
     const text = draft.trim()
     if (!text || isSending) return
     setDraft('')
-    await send(text).catch(() => setDraft(text))
+    try {
+      await send(text)
+      lightHaptic()
+    } catch {
+      errorHaptic()
+      setDraft(text)
+    }
   }
 
   return (
@@ -102,7 +109,7 @@ export function InCallChat({
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         ListEmptyComponent={
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Text style={{ fontSize: 13, color: t.onSurfaceVariant, textAlign: 'center' }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
               No messages yet. Messages show only during the call.
             </Text>
           </View>
@@ -125,8 +132,8 @@ export function InCallChat({
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 10,
-            fontSize: 14,
-            lineHeight: 20,
+            fontSize: 16,
+            lineHeight: 24,
             maxHeight: 120,
             color: t.onSurface,
           }}
@@ -134,11 +141,13 @@ export function InCallChat({
         <Pressable
           accessibilityLabel="Send chat message"
           disabled={!draft.trim() || isSending}
+          accessibilityState={{ disabled: !draft.trim() || isSending }}
           onPress={() => void handleSend()}
+          hitSlop={4}
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: 22,
+            width: 48,
+            height: 48,
+            borderRadius: 24,
             backgroundColor: t.surfaceContainer,
             alignItems: 'center',
             justifyContent: 'center',
