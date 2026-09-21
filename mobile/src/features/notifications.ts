@@ -334,8 +334,17 @@ export function notificationTarget(
       return clusterId && signalId ? { to: `/cluster/${clusterId}/signals/${signalId}` } : clusterId ? { to: `/cluster/${clusterId}/signals` } : null
     case 'vote_started':
     case 'vote_result':
-    case 'replacement':
       return clusterId ? { to: `/cluster/${clusterId}/votes` } : null
+    case 'replacement': {
+      const newMemberId = typeof payload.new_member_id === 'string' ? payload.new_member_id : null
+      if (newMemberId) {
+        return clusterId ? { to: `/profile/${newMemberId}?cluster=${clusterId}` } : null
+      }
+      if (n.title === 'A new member has joined') {
+        return clusterId ? { to: `/cluster/${clusterId}/members` } : null
+      }
+      return clusterId ? { to: `/cluster/${clusterId}/votes` } : null
+    }
     case 'invitation_received':
       return { to: '/home' }
     case 'cluster_formed':

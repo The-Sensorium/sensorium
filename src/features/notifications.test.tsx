@@ -74,6 +74,33 @@ describe('notificationTarget', () => {
     expect(notificationTarget(n('vote_started', 'c1'))?.to).toContain('/votes')
   })
 
+  it('links new-member-joined replacement notices to the joiner profile', () => {
+    const joined = {
+      ...n('replacement', 'c1'),
+      title: 'A new member has joined',
+      payload: { new_member_id: 'u9' },
+    } as MyNotification
+    expect(notificationTarget(joined)).toEqual({ to: '/profile/u9?cluster=c1' })
+  })
+
+  it('links legacy join notices without payload to members by title', () => {
+    const legacy = {
+      ...n('replacement', 'c1'),
+      title: 'A new member has joined',
+      payload: null,
+    } as unknown as MyNotification
+    expect(notificationTarget(legacy)).toEqual({ to: '/cluster/c1/members' })
+  })
+
+  it('keeps other replacement notices on the votes view', () => {
+    const other = {
+      ...n('replacement', 'c1'),
+      title: 'A spot just opened',
+      payload: {},
+    } as unknown as MyNotification
+    expect(notificationTarget(other)).toEqual({ to: '/cluster/c1/votes' })
+  })
+
   it('links invitations and queue updates', () => {
     expect(notificationTarget(n('invitation_received', 'c1'))).toEqual({ to: '/home' })
     expect(notificationTarget(n('queue_update', 'c1'))).toEqual({ to: '/clusters' })

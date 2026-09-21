@@ -51,7 +51,9 @@ export default function MembersScreen() {
             flexDirection: 'row',
             alignItems: 'center',
             gap: 12,
-            backgroundColor: t.tertiaryContainer,
+            backgroundColor: t.surfaceContainer,
+            borderWidth: 1,
+            borderColor: t.outlineVariant,
             borderRadius: radii.md,
             paddingHorizontal: 12,
             paddingVertical: 10,
@@ -59,7 +61,7 @@ export default function MembersScreen() {
           }}
         >
           <View
-            style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surfaceHighest, alignItems: 'center', justifyContent: 'center' }}
           >
             <UserPlus size={14} color={t.tertiary} strokeWidth={2} />
           </View>

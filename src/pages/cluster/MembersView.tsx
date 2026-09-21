@@ -39,14 +39,14 @@ export function MembersView() {
       {replacement.data && (
         <div
           role="status"
-          className="flex items-center gap-3 rounded-xl border border-tertiary/20 bg-tertiary-container/10 px-3 py-2.5 text-xs text-tertiary"
+          className="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container px-3 py-2.5 text-xs"
         >
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tertiary-container/25">
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-surface-highest text-tertiary">
             <UserPlus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
           </span>
           <span className="min-w-0">
-            <span className="block font-semibold">A spot just opened</span>
-            <span className="block text-tertiary/70">
+            <span className="block font-semibold text-on-surface">A spot just opened</span>
+            <span className="block text-on-surface-variant">
               We're {list.length} of {CLUSTER_SIZE}, finding a new member.
             </span>
           </span>
