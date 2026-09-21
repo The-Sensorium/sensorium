@@ -168,12 +168,14 @@ export function PrimaryButton({
   onPress,
   loading,
   disabled,
+  icon,
 }: {
   title: string
   loadingTitle?: string
   onPress: () => void
   loading?: boolean
   disabled?: boolean
+  icon?: ReactNode
 }) {
   const t = useTheme()
   const inactive = disabled || loading
@@ -195,9 +197,12 @@ export function PrimaryButton({
         opacity: inactive ? 0.6 : 1,
       }}
     >
-      <Text style={{ color: t.onPrimary, fontSize: 16, lineHeight: 24, fontWeight: '600' }}>
-        {loading ? (loadingTitle ?? 'Please wait…') : title}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        {!loading ? icon : null}
+        <Text style={{ color: t.onPrimary, fontSize: 16, lineHeight: 24, fontWeight: '600' }}>
+          {loading ? (loadingTitle ?? 'Please wait…') : title}
+        </Text>
+      </View>
     </Pressable>
   )
 }

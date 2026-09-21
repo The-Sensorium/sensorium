@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, Loader2, LogOut, ShieldCheck, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, Loader2, LogOut, Save, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -167,7 +167,11 @@ export function SettingsPage() {
             disabled={updateProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? '') && pronouns.trim() === (profile.data?.pronouns ?? ''))}
             className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
-            {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {updateProfile.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Save className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            )}
             Save changes
           </button>
         </form>
@@ -182,7 +186,7 @@ export function SettingsPage() {
           Shown on your member card in every cluster.
         </p>
         <form
-          className="mt-4 flex flex-wrap items-center gap-2"
+          className="mt-4 space-y-4"
           onSubmit={(e) => {
             e.preventDefault()
             void updateProfile.mutateAsync({ current_status: status.trim() || null })
@@ -194,15 +198,19 @@ export function SettingsPage() {
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             placeholder="e.g. Deep in a good book"
-              className="min-w-0 flex-1 rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-base leading-6 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none sm:text-sm"
+            className="w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-base leading-6 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none sm:text-sm"
           />
           <button
             type="submit"
             disabled={updateProfile.isPending || status.trim() === (profile.data?.current_status ?? '')}
             className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
-            {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            Save
+            {updateProfile.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Save className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            )}
+            Save changes
           </button>
         </form>
       </section>

@@ -411,6 +411,14 @@ describe('RoomView timeline', () => {
     expect(screen.getByTitle('Bo')).toHaveAttribute('href', '/profile/u2?cluster=c1')
   })
 
+  it('links the presence strip heading to the members page', () => {
+    renderRoom()
+    expect(screen.getByRole('link', { name: /View all members/i })).toHaveAttribute(
+      'href',
+      '/cluster/c1/members',
+    )
+  })
+
   it('suppresses the reply quote when the parent is deleted', () => {
     hooks.messages.data = [
       msg({ id: 'parent', content: 'the original', deleted_at: '2026-01-01T09:00:00Z' }),
