@@ -8,6 +8,7 @@ import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, LogOut, Mo
 import { useProfile } from '../../src/lib/use-profile'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
+import { lightHaptic } from '../../src/lib/haptics'
 import { useMyClusters } from '../../src/features/matching'
 import { useUpdateProfile } from '../../src/features/cluster'
 import { deleteAvatarObject } from '../../src/features/avatars'
@@ -102,7 +103,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen avoiding>
-      <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface, marginBottom: 16 }}>
+      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface, marginBottom: 16 }} accessibilityRole="header">
         Settings
       </Text>
 
@@ -124,7 +125,9 @@ export default function SettingsScreen() {
             <Pressable
               onPress={() => void handleAvatar()}
               disabled={avatarUploading}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, opacity: avatarUploading ? 0.6 : 1 }}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: avatarUploading }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, opacity: avatarUploading ? 0.6 : 1 }}
             >
               {avatarUploading ? (
                 <ActivityIndicator size="small" color={t.onSurface} />
@@ -140,7 +143,7 @@ export default function SettingsScreen() {
                 accessibilityLabel="Remove photo"
                 onPress={() => setRemoveAvatarOpen(true)}
                 disabled={updateProfile.isPending}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, opacity: updateProfile.isPending ? 0.6 : 1 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, opacity: updateProfile.isPending ? 0.6 : 1 }}
               >
                 <ImageMinus size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
@@ -224,7 +227,9 @@ export default function SettingsScreen() {
                 borderRadius: radii.pill,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
-                fontSize: 14,
+                fontSize: 16,
+                lineHeight: 24,
+                minHeight: 48,
                 color: t.onSurface,
               }}
             />
@@ -248,7 +253,8 @@ export default function SettingsScreen() {
           <View style={{ marginTop: 16, gap: 8 }}>
             <Pressable
               onPress={() => setDeleteOpen(true)}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12 }}
+              accessibilityRole="button"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
               <Trash2 size={16} color={t.error} strokeWidth={1.5} />
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>
@@ -257,7 +263,8 @@ export default function SettingsScreen() {
             </Pressable>
             <Pressable
               onPress={() => setSignOutOpen(true)}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12 }}
+              accessibilityRole="button"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
               <LogOut size={16} color={t.onSurface} strokeWidth={1.5} />
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
@@ -270,14 +277,14 @@ export default function SettingsScreen() {
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 8 }}>
         <Link href="/privacy-policy" asChild>
-          <Pressable style={{ padding: 8 }}>
-            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>Privacy Policy</Text>
+          <Pressable hitSlop={8} style={{ padding: 12, minHeight: 44, justifyContent: 'center' }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>Privacy Policy</Text>
           </Pressable>
         </Link>
         <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>·</Text>
         <Link href="/terms" asChild>
-          <Pressable style={{ padding: 8 }}>
-            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>Terms of Service</Text>
+          <Pressable hitSlop={8} style={{ padding: 12, minHeight: 44, justifyContent: 'center' }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>Terms of Service</Text>
           </Pressable>
         </Link>
       </View>
@@ -473,6 +480,9 @@ function AppearanceSection() {
               <Pressable
                 key={option.value}
                 onPress={() => setChoice(option.value)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`${option.label} theme`}
                 style={{
                   flex: 1,
                   flexDirection: 'row',
@@ -483,7 +493,8 @@ function AppearanceSection() {
                   borderColor: active ? t.primary : t.outlineVariant,
                   backgroundColor: active ? t.surfaceContainer : 'transparent',
                   borderRadius: radii.pill,
-                  paddingVertical: 10,
+                  paddingVertical: 14,
+                  minHeight: 48,
                 }}
               >
                 <Icon size={16} color={active ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
@@ -521,7 +532,8 @@ function SafetySection() {
           asChild
         >
           <Pressable
-            style={{ marginTop: 12, borderWidth: 1, borderColor: t.primary, borderRadius: radii.pill, paddingVertical: 10, alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 20 }}
+            hitSlop={4}
+            style={{ marginTop: 12, borderWidth: 1, borderColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 20 }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>My reports</Text>
           </Pressable>
@@ -745,13 +757,19 @@ function Toggle({ checked, label, onChange }: { checked: boolean; label: string;
     <Pressable
       accessibilityLabel={label}
       accessibilityRole="switch"
-      onPress={() => onChange(!checked)}
+      accessibilityState={{ checked }}
+      onPress={() => {
+        lightHaptic()
+        onChange(!checked)
+      }}
+      hitSlop={12}
+      style={{ minHeight: 48, minWidth: 48, alignItems: 'center', justifyContent: 'center' }}
     >
       <Animated.View
         style={{
-          width: 44,
-          height: 24,
-          borderRadius: 12,
+          width: 52,
+          height: 32,
+          borderRadius: 16,
           backgroundColor,
           justifyContent: 'center',
           paddingHorizontal: 2,
@@ -759,9 +777,9 @@ function Toggle({ checked, label, onChange }: { checked: boolean; label: string;
       >
         <Animated.View
           style={{
-            width: 20,
-            height: 20,
-            borderRadius: 10,
+            width: 28,
+            height: 28,
+            borderRadius: 14,
             backgroundColor: t.surfaceLowest,
             transform: [{ translateX }],
           }}

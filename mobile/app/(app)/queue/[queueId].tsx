@@ -144,9 +144,10 @@ export default function QueueScreen() {
             <Pressable
               onPress={() => setConfirming(false)}
               disabled={leaving}
-              style={{ paddingHorizontal: 20, paddingVertical: 14, opacity: leaving ? 0.6 : 1 }}
+              hitSlop={4}
+              style={{ paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leaving ? 0.6 : 1 }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
                 Cancel
               </Text>
             </Pressable>
@@ -154,16 +155,19 @@ export default function QueueScreen() {
         ) : (
           <Pressable
             onPress={() => setConfirming(true)}
+            accessibilityRole="button"
             style={{
               marginTop: 24,
               borderWidth: 1,
               borderColor: t.primary,
               borderRadius: radii.pill,
               paddingVertical: 12,
+              minHeight: 48,
+              justifyContent: 'center',
               alignItems: 'center',
             }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Leave queue</Text>
+            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary }}>Leave queue</Text>
           </Pressable>
         )}
         {leaveError ? (
@@ -171,7 +175,7 @@ export default function QueueScreen() {
         ) : null}
       </Card>
 
-      <Text style={{ marginTop: 16, fontSize: 12, color: t.onSurfaceVariant }}>
+      <Text style={{ marginTop: 16, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, paddingVertical: 12, minHeight: 44 }}>
         Want to match differently? <Link href="/(app)/clusters" style={{ fontWeight: '600', color: t.primary }}>Explore other modes</Link>.
       </Text>
     </Screen>

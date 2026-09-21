@@ -91,9 +91,9 @@ export default function ProfileScreen() {
         href={{ pathname: '/cluster/[clusterId]/members', params: { clusterId } }}
         asChild
       >
-        <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, minHeight: 44, marginBottom: 12 }}>
           <ArrowLeft size={16} color={t.primary} strokeWidth={1.5} />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
             Back to members
           </Text>
         </Pressable>
@@ -104,7 +104,7 @@ export default function ProfileScreen() {
           <Avatar name={member.display_name} src={member.avatar_url} size={80} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+              <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
                 {member.display_name}
               </Text>
               {member.pronouns ? <PronounBadge pronouns={member.pronouns} /> : null}
@@ -170,9 +170,10 @@ export default function ProfileScreen() {
           <View style={{ marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: t.surfaceContainer, gap: 8 }}>
             <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId } }} asChild>
               <Pressable
-                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 10, alignItems: 'center' }}
+                accessibilityRole="button"
+                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
                   Message {member.display_name}
                 </Text>
               </Pressable>
@@ -183,10 +184,12 @@ export default function ProfileScreen() {
               </View>
               <Pressable
                 onPress={() => setReportOpen(true)}
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Report member"
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48 }}
               >
                 <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
                   Report
                 </Text>
               </Pressable>
@@ -202,7 +205,7 @@ export default function ProfileScreen() {
         target={{ id: member.id, name: member.display_name }}
       />
 
-      <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
+      <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
         Introductions
       </Text>
       <Card>
@@ -237,7 +240,7 @@ export default function ProfileScreen() {
 
       {!userPosts.isLoading && (userPosts.data ?? []).length > 0 ? (
         <>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
+          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
             Posts
           </Text>
           {(userPosts.data ?? []).map((post) => {

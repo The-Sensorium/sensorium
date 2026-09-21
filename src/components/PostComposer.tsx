@@ -148,7 +148,7 @@ export function PostComposer({
         </div>
       )}
       {error && <p className="mt-2 text-xs text-error">{error}</p>}
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <div className="relative flex items-center gap-1.5">
           <button
             type="button"
@@ -193,7 +193,7 @@ export function PostComposer({
             />
           )}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
             type="button"
             disabled={create.isPending}
@@ -209,7 +209,7 @@ export function PostComposer({
           <button
             type="submit"
             disabled={!hasContent || create.isPending}
-            className="inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
           >
             {create.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

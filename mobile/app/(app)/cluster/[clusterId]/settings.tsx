@@ -106,19 +106,22 @@ export default function ClusterSettingsScreen() {
               <Pressable
                 onPress={() => void handleLeave()}
                 disabled={leave.isPending}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.error, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, opacity: leave.isPending ? 0.6 : 1 }}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: leave.isPending }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: t.error, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, opacity: leave.isPending ? 0.6 : 1 }}
               >
                 {leave.isPending ? <ActivityIndicator size="small" color={t.onError} /> : null}
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onError }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onError }}>
                   Confirm leave
                 </Text>
               </Pressable>
               <Pressable
                 onPress={() => setConfirming(false)}
                 disabled={leave.isPending}
-                style={{ paddingHorizontal: 20, paddingVertical: 12, opacity: leave.isPending ? 0.6 : 1 }}
+                hitSlop={4}
+                style={{ paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leave.isPending ? 0.6 : 1 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
                   Cancel
                 </Text>
               </Pressable>
@@ -126,10 +129,11 @@ export default function ClusterSettingsScreen() {
           ) : (
             <Pressable
               onPress={() => setConfirming(true)}
-              style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12 }}
+              accessibilityRole="button"
+              style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
               <LogOut size={16} color={t.error} strokeWidth={1.5} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.error }}>
                 Leave cluster
               </Text>
             </Pressable>

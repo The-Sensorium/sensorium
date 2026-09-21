@@ -79,7 +79,7 @@ function InClusterCard({ clusterId }: { clusterId: string }) {
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
         You’re already matched
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
         You’re already in an active cluster
       </Text>
       <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
@@ -124,7 +124,7 @@ function JoinCard({
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
         Waiting in queue
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
         {displayKey}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
@@ -147,8 +147,8 @@ function JoinCard({
         />
       </View>
       {onEditLocation ? (
-        <Pressable onPress={onEditLocation} style={{ marginTop: 12, alignItems: 'center' }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+        <Pressable onPress={onEditLocation} hitSlop={8} style={{ marginTop: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
             Update my location
           </Text>
         </Pressable>
@@ -181,7 +181,7 @@ function JoinedCard({
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
         You’re queued
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
         {displayKey}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
@@ -194,8 +194,8 @@ function JoinedCard({
         </Link>
       </View>
       {onEditLocation ? (
-        <Pressable onPress={onEditLocation} style={{ marginTop: 12, alignItems: 'center' }}>
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+        <Pressable onPress={onEditLocation} hitSlop={8} style={{ marginTop: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
             Update my location
           </Text>
         </Pressable>
@@ -302,7 +302,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
         Local matching
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
         {hasArea ? 'Update your local area' : 'Set your local area'}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
@@ -321,17 +321,22 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
             <Pressable
               key={r}
               onPress={() => void changeRadius(r as LocalRadius)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${r} kilometer radius`}
               style={{
                 flex: 1,
                 borderWidth: 1,
                 borderColor: active ? t.primary : t.outlineVariant,
                 backgroundColor: active ? t.primary : 'transparent',
                 borderRadius: radii.pill,
-                paddingVertical: 10,
+                paddingVertical: 12,
+                minHeight: 48,
+                justifyContent: 'center',
                 alignItems: 'center',
               }}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}>
                 {r} km
               </Text>
             </Pressable>

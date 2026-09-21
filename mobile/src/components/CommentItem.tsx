@@ -8,6 +8,7 @@ import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { useDeleteComment, type PostComment } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
+import { lightHaptic } from '../lib/haptics'
 import { dateTimeFormatter } from './room/format'
 import { useTheme } from '../lib/use-theme'
 import { PrimaryButton } from './ui'
@@ -78,8 +79,14 @@ export function CommentItem({
           {onLike ? (
             <Pressable
               accessibilityLabel="Like comment"
-              onPress={() => onLike(comment.id)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: likedByMe }}
+              onPress={() => {
+                lightHaptic()
+                onLike(comment.id)
+              }}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
               <Heart
                 size={16}
@@ -101,7 +108,8 @@ export function CommentItem({
           {onReply ? (
             <Pressable
               onPress={() => onReply(comment)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
               <CornerUpLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Reply</Text>
@@ -114,7 +122,8 @@ export function CommentItem({
                 setDeleteError(null)
                 setConfirmOpen(true)
               }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
               <Trash2 size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Delete</Text>
@@ -123,7 +132,8 @@ export function CommentItem({
             <Pressable
               accessibilityLabel="Report comment"
               onPress={() => setReportOpen(true)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
               <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Report</Text>

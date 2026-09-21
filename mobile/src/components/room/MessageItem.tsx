@@ -179,8 +179,8 @@ export function MessageItem({
                   accessibilityLabel="Save edit"
                   disabled={!editDraft.trim() || editPending}
                   onPress={onSaveEdit}
-                  hitSlop={4}
-                  style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', opacity: !editDraft.trim() || editPending ? 0.4 : 1 }}
+                  hitSlop={8}
+                  style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', opacity: !editDraft.trim() || editPending ? 0.4 : 1 }}
                 >
                   {editPending ? (
                     <ActivityIndicator size="small" color={t.primary} />
@@ -191,8 +191,8 @@ export function MessageItem({
                 <Pressable
                   accessibilityLabel="Cancel edit"
                   onPress={onCancelEdit}
-                  hitSlop={4}
-                  style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}
+                  hitSlop={8}
+                  style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
                 >
                   <X size={16} color={t.onSurface} strokeWidth={1.5} />
                 </Pressable>
@@ -237,7 +237,7 @@ export function MessageItem({
                   <Pressable
                     key={emoji}
                     accessibilityLabel={`React ${emoji}`}
-                    hitSlop={6}
+                    hitSlop={8}
                     onPress={() => onToggleReaction(message.id, emoji)}
                     style={{
                       flexDirection: 'row',
@@ -247,8 +247,9 @@ export function MessageItem({
                       borderColor: active ? t.primary : t.outlineVariant,
                       backgroundColor: active ? t.surfaceContainer : t.surfaceLowest,
                       borderRadius: radii.pill,
-                      paddingHorizontal: 10,
-                      paddingVertical: 4,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      minHeight: 32,
                     }}
                   >
                     <Text style={{ fontSize: 12 }}>{emoji}</Text>

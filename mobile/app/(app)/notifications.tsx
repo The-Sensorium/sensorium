@@ -76,7 +76,7 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       <FlatList
         data={items}
         keyExtractor={(n) => n.id}
@@ -85,15 +85,17 @@ export default function NotificationsScreen() {
           <>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 16 }}>
               <View>
-                <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>Notifications</Text>
-                <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Notifications</Text>
+                <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   {unread > 0 ? `${unread} unread` : 'You’re all caught up'}
                 </Text>
               </View>
               <Pressable
                 onPress={() => void markAll.mutateAsync()}
                 disabled={items.length === 0 || markAll.isPending}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, opacity: items.length === 0 || markAll.isPending ? 0.5 : 1 }}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: items.length === 0 || markAll.isPending }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, opacity: items.length === 0 || markAll.isPending ? 0.5 : 1 }}
               >
                 {markAll.isPending ? <ActivityIndicator size="small" color={t.onSurface} /> : null}
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Mark all read</Text>
@@ -109,10 +111,10 @@ export default function NotificationsScreen() {
             <Card>
               <View style={{ alignItems: 'center', padding: 16 }}>
                 <Bell size={28} color={t.error} strokeWidth={1.5} />
-                <Text style={{ marginTop: 12, fontSize: 14, fontWeight: '600', color: t.error }}>
+                <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.error }}>
                   Couldn’t load your notifications
                 </Text>
-                <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
+                <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   Something went wrong while fetching them. Please try again.
                 </Text>
               </View>
@@ -129,7 +131,7 @@ export default function NotificationsScreen() {
           )
         }
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, padding: spacing.containerMargin, paddingBottom: 48 }}
+        contentContainerStyle={{ flexGrow: 1, padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
@@ -152,6 +154,7 @@ function NotificationRow({ item, onPress }: { item: MyNotification; onPress: () 
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={{
         flexDirection: 'row',
         gap: 16,
@@ -159,6 +162,7 @@ function NotificationRow({ item, onPress }: { item: MyNotification; onPress: () 
         borderRadius: radii.xl,
         padding: 16,
         marginBottom: 8,
+        minHeight: 44,
       }}
     >
       <View
@@ -168,13 +172,13 @@ function NotificationRow({ item, onPress }: { item: MyNotification; onPress: () 
       </View>
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-          <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+          <Text style={{ flex: 1, fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }} numberOfLines={2} maxFontSizeMultiplier={1.4}>
             {item.title}
           </Text>
-          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>{timeAgo(item.created_at)}</Text>
+          <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>{timeAgo(item.created_at)}</Text>
         </View>
         {item.body ? (
-          <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant }} numberOfLines={2}>
+          <Text style={{ marginTop: 2, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }} numberOfLines={2}>
             {item.body}
           </Text>
         ) : null}

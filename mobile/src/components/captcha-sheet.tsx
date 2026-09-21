@@ -74,9 +74,10 @@ export function CaptchaSheet({
             accessibilityRole="button"
             accessibilityLabel="Cancel verification"
             onPress={onClose}
-            style={{ padding: 8 }}
+            hitSlop={8}
+            style={{ padding: 12, minHeight: 44, justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Cancel</Text>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Cancel</Text>
           </Pressable>
         </View>
         <View style={{ flex: 1 }}>

@@ -27,7 +27,7 @@ export function ClusterSectionHeader({
   const t = useTheme()
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-      <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>{title}</Text>
+      <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>{title}</Text>
       <ClusterMenu clusterId={clusterId} active={section} />
     </View>
   )
@@ -41,8 +41,10 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
     <>
       <Pressable
         accessibilityLabel="Cluster sections"
+        accessibilityRole="button"
         onPress={() => setOpen(true)}
-        style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}
+        hitSlop={8}
+        style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
       >
         <Menu size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
       </Pressable>
@@ -73,7 +75,8 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
                       gap: 10,
                       borderRadius: radii.md,
                       paddingHorizontal: 12,
-                      paddingVertical: 10,
+                      paddingVertical: 12,
+                      minHeight: 48,
                       backgroundColor: isActive ? t.surfaceContainer : 'transparent',
                     }}
                   >

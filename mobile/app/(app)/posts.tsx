@@ -22,7 +22,7 @@ import { PostComposer } from '../../src/components/PostComposer'
 import { PostCard } from '../../src/components/PostCard'
 import { radii, spacing } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, LoadingView } from '../../src/components/ui'
+import { Card, ErrorText, FeedSkeleton } from '../../src/components/ui'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 
 export default function PostsFeedScreen() {
@@ -114,7 +114,7 @@ export default function PostsFeedScreen() {
   const feedLoading = clusters.isLoading || posts.isLoading || myMutes.isLoading || !selected
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       <FlatList
         data={inCluster && !posts.isLoading && !myMutes.isLoading ? sorted : []}
         keyExtractor={(post) => post.id}
@@ -156,8 +156,8 @@ export default function PostsFeedScreen() {
           <>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <View>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Posts</Text>
-                <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Posts</Text>
+                <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
                   Share something with your cluster.
                 </Text>
               </View>
@@ -168,9 +168,12 @@ export default function PostsFeedScreen() {
                     <Pressable
                       key={option}
                       onPress={() => setSort(option)}
-                      style={{ borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: active ? t.surfaceContainer : 'transparent' }}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: active }}
+                      hitSlop={4}
+                      style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
-                      <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'capitalize', color: active ? t.primary : t.onSurfaceVariant }}>
+                      <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', textTransform: 'capitalize', color: active ? t.primary : t.onSurfaceVariant }}>
                         {option}
                       </Text>
                     </Pressable>
@@ -187,9 +190,10 @@ export default function PostsFeedScreen() {
                     <Pressable
                       key={c.cluster.id}
                       onPress={() => setSelectedId(c.cluster.id)}
-                      style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: active ? t.surfaceContainer : 'transparent' }}
+                      hitSlop={4}
+                      style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>
+                      <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>
                         {c.cluster.name}
                       </Text>
                     </Pressable>
@@ -202,22 +206,22 @@ export default function PostsFeedScreen() {
         }
         ListEmptyComponent={
           feedLoading ? (
-            <LoadingView label="Loading posts…" />
+            <FeedSkeleton />
           ) : posts.isError || myMutes.isError ? (
             <Card>
-              <Text style={{ fontSize: 14, textAlign: 'center', color: t.error }}>
+              <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
                 Couldn’t load posts. Please try again.
               </Text>
             </Card>
           ) : !inCluster ? (
             <Card>
-              <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurface }}>
                 You aren’t in a cluster yet. Join a matching mode to start sharing posts.
               </Text>
             </Card>
           ) : (
             <Card plain>
-              <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurface }}>
                 No posts in {selected?.cluster.name ?? 'this cluster'} yet. Share the first one.
               </Text>
             </Card>
@@ -228,7 +232,7 @@ export default function PostsFeedScreen() {
             <Pressable
               onPress={() => void loadEarlier.mutate()}
               disabled={loadEarlier.isPending}
-              style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: loadEarlier.isPending ? 0.6 : 1 }}
+              style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, paddingHorizontal: 24, minHeight: 48, justifyContent: 'center', alignItems: 'center', opacity: loadEarlier.isPending ? 0.6 : 1 }}
             >
               {loadEarlier.isPending ? (
                 <ActivityIndicator size="small" color={t.onSurfaceVariant} />
@@ -241,7 +245,7 @@ export default function PostsFeedScreen() {
           ) : null
         }
         style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1, padding: spacing.containerMargin, paddingBottom: 48 }}
+        contentContainerStyle={{ flexGrow: 1, padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
