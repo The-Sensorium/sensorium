@@ -68,7 +68,7 @@ export function StepModes({ draft, patch }: Props) {
 
       <p className="text-xs leading-5 text-on-surface-variant">
         Birth modes match around when and where you started out. Generation groups you with
-        people born within the same 5 years — same life stage, still strangers. Open Mix skips
+        people born within the same 5 years, same life stage, still strangers. Open Mix skips
         the filter and groups the next 8 people in line - the fastest way to start while you wait
         on a tighter match.
       </p>

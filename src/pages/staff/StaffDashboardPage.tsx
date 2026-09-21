@@ -1,9 +1,10 @@
 import { Link } from 'react-router'
-import { ArrowRight, BellRing, Clock, Eye, Flag, Inbox, Loader2, MailWarning, Send, Timer, UserRound, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowRight, BellRing, ChartColumn, Clock, Eye, Flag, Inbox, Loader2, Mail, MailX, Send, Timer, TriangleAlert, UserRound, type LucideIcon } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { timeAgo } from '../../features/notifications'
 import { useMyAccess } from '../../features/access'
 import { useAdminOpsHealth, useModerationQueueV2, useStaffModerationSummary } from '../../features/admin-moderation'
+import { useMetricsOverview, useRetention } from '../../features/metrics'
 
 function heartbeatLabel(iso: string | null): string {
   if (!iso) return 'Never ran successfully'
@@ -15,6 +16,40 @@ function jobFresh(iso: string | null, staleAfterMs: number): boolean {
   return Date.now() - new Date(iso).getTime() <= staleAfterMs
 }
 
+const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
+
+function SectionCard({
+  icon: Icon,
+  title,
+  caption,
+  action,
+  children,
+}: {
+  icon: LucideIcon
+  title: string
+  caption: string
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <section className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container text-primary">
+            <Icon className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-display text-lg font-semibold text-on-surface">{title}</h2>
+            <p className="mt-0.5 text-xs text-on-surface-variant">{caption}</p>
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
+  )
+}
+
 export function StaffDashboardPage() {
   useDocumentTitle('Staff dashboard')
   const summary = useStaffModerationSummary()
@@ -23,6 +58,10 @@ export function StaffDashboardPage() {
   const access = useMyAccess()
   const isAdmin = access.data?.capabilities.includes('can_manage_roles') ?? false
   const ops = useAdminOpsHealth(isAdmin)
+  const metrics = useMetricsOverview(isAdmin)
+  const retention = useRetention(isAdmin)
+  const retention30 = retention.data?.find((row) => row.cohort_days === 30)
+  const metricsReady = metrics.data && !metrics.isError && !retention.isError
   const health = ops.data
   const data = summary.data
 
@@ -51,13 +90,13 @@ export function StaffDashboardPage() {
 
   const openCount = data.pending_count + data.reviewing_count
 
-  const cards: { label: string; value: number; to: string; e2e: string; icon: LucideIcon }[] = [
-    { label: 'Pending', value: data.pending_count, to: './reports?sla=open&status=pending', e2e: 'staff-stat-pending', icon: Inbox },
-    { label: 'Reviewing', value: data.reviewing_count, to: './reports?sla=open&status=reviewing', e2e: 'staff-stat-reviewing', icon: Eye },
-    { label: 'Assigned to me', value: data.assigned_to_me_count, to: './reports?assignee=mine', e2e: 'staff-stat-mine', icon: UserRound },
-    { label: 'Unassigned', value: data.unassigned_open_count, to: './reports?assignee=unassigned', e2e: 'staff-stat-unassigned', icon: Clock },
-    { label: 'Overdue', value: data.breached_open_count, to: './reports?sla=breached', e2e: 'staff-stat-breached', icon: Timer },
-    { label: 'Urgent open', value: data.urgent_open_count, to: './reports?severity=urgent', e2e: 'staff-stat-urgent', icon: Flag },
+  const cards: { label: string; caption: string; value: number; to: string; e2e: string; icon: LucideIcon }[] = [
+    { label: 'Pending', caption: 'Unclaimed reports', value: data.pending_count, to: './reports?sla=open&status=pending', e2e: 'staff-stat-pending', icon: Inbox },
+    { label: 'Reviewing', caption: 'Claimed, in progress', value: data.reviewing_count, to: './reports?sla=open&status=reviewing', e2e: 'staff-stat-reviewing', icon: Eye },
+    { label: 'Assigned to me', caption: 'Claimed by you', value: data.assigned_to_me_count, to: './reports?assignee=mine', e2e: 'staff-stat-mine', icon: UserRound },
+    { label: 'Unassigned', caption: 'Waiting for a claim', value: data.unassigned_open_count, to: './reports?assignee=unassigned', e2e: 'staff-stat-unassigned', icon: Clock },
+    { label: 'Overdue', caption: 'Past SLA deadline', value: data.breached_open_count, to: './reports?sla=breached', e2e: 'staff-stat-breached', icon: Timer },
+    { label: 'Urgent open', caption: 'Highest severity', value: data.urgent_open_count, to: './reports?severity=urgent', e2e: 'staff-stat-urgent', icon: Flag },
   ]
 
   return (
@@ -82,28 +121,36 @@ export function StaffDashboardPage() {
             key={card.label}
             to={card.to}
             data-e2e={card.e2e}
-            className="rounded-lg border border-outline-variant/60 bg-surface p-4 transition-colors hover:border-primary/40"
+            className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-all duration-200 hover:border-primary/40 active:scale-[0.98]"
           >
-            <p className="text-2xl font-semibold text-on-surface">{card.value}</p>
-            <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-              <card.icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-              {card.label}
-            </p>
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-container text-primary">
+                <card.icon className="h-4.5 w-4.5" strokeWidth={1.5} aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-xs font-semibold text-on-surface">{card.label}</span>
+                <span className="block truncate text-xs text-on-surface-variant">{card.caption}</span>
+              </span>
+            </span>
+            <p className="mt-2 text-3xl font-semibold tabular-nums text-on-surface">{compact.format(card.value)}</p>
           </Link>
         ))}
       </div>
 
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-on-surface">Urgent open cases</h2>
+      <SectionCard
+        icon={Flag}
+        title="Urgent open cases"
+        caption="Highest severity first · top 5"
+        action={
           <Link
             to="./reports?severity=urgent"
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-all duration-200 hover:bg-primary-container active:scale-95"
           >
             Open queue
             <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
           </Link>
-        </div>
+        }
+      >
         {urgent.isLoading ? (
           <div className="grid place-items-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
@@ -141,11 +188,55 @@ export function StaffDashboardPage() {
             ))}
           </ul>
         )}
-      </section>
+      </SectionCard>
+
+      {isAdmin && metricsReady && (
+        <SectionCard
+          icon={ChartColumn}
+          title="Success metrics"
+          caption="Community health at a glance"
+          action={
+            <Link
+              to="./metrics"
+              data-e2e="staff-metrics-link"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-all duration-200 hover:bg-primary-container active:scale-95"
+            >
+              Open metrics
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+            </Link>
+          }
+        >
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { label: 'Active clusters', caption: 'Open rooms now', value: compact.format(metrics.data.active_clusters) },
+              { label: 'Active today', caption: 'Message or call in 24h', value: compact.format(metrics.data.daily_active_clusters) },
+              { label: 'Messages · 30d', caption: 'Across all clusters', value: compact.format(metrics.data.messages_30d) },
+              {
+                label: '30-day retention',
+                caption: 'Cohorts still alive',
+                value: retention30 ? `${Math.round(Number(retention30.rate) * 100)}%` : 'n/a',
+              },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                data-e2e="dashboard-metrics-stat"
+                className="rounded-xl border border-outline-variant/60 bg-surface-container/40 p-3"
+              >
+                <p className="text-xl font-semibold tabular-nums text-on-surface">{stat.value}</p>
+                <p className="mt-1 text-xs font-semibold text-on-surface">{stat.label}</p>
+                <p className="text-xs text-on-surface-variant">{stat.caption}</p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {isAdmin && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-on-surface">Operations health</h2>
+        <SectionCard
+          icon={Activity}
+          title="Operations health"
+          caption="Delivery queues and background jobs"
+        >
           {ops.isLoading ? (
             <div className="grid place-items-center py-8">
               <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
@@ -162,24 +253,24 @@ export function StaffDashboardPage() {
               </button>
             </div>
           ) : (
-            <>
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  { label: 'Emails queued', value: health.email_queued, icon: MailWarning, alert: health.email_queued > 50 },
-                  { label: 'Emails failed · 24h', value: health.email_failed_24h, icon: MailWarning, alert: health.email_failed_24h > 0 },
+                  { label: 'Emails queued', value: health.email_queued, icon: Mail, alert: health.email_queued > 50 },
+                  { label: 'Emails failed · 24h', value: health.email_failed_24h, icon: MailX, alert: health.email_failed_24h > 0 },
                   { label: 'Push queued', value: health.push_queued, icon: Send, alert: health.push_queued > 50 },
-                  { label: 'Push failed · 24h', value: health.push_failed_24h, icon: Send, alert: health.push_failed_24h > 0 },
+                  { label: 'Push failed · 24h', value: health.push_failed_24h, icon: TriangleAlert, alert: health.push_failed_24h > 0 },
                 ].map((card) => (
                   <div
                     key={card.label}
                     data-e2e="ops-health-card"
-                    className="rounded-lg border border-outline-variant/60 bg-surface p-4"
+                    className={`rounded-2xl border bg-surface-container/40 p-4 ${card.alert ? 'border-error/40' : 'border-outline-variant/60'}`}
                   >
-                    <p className={`text-2xl font-semibold ${card.alert ? 'text-error' : 'text-on-surface'}`}>{card.value}</p>
-                    <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-                      <card.icon className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-                      {card.label}
-                    </p>
+                    <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${card.alert ? 'bg-error/10 text-error' : 'bg-surface text-primary'}`}>
+                      <card.icon className="h-4.5 w-4.5" strokeWidth={1.5} aria-hidden />
+                    </span>
+                    <p className={`mt-3 text-2xl font-semibold tabular-nums ${card.alert ? 'text-error' : 'text-on-surface'}`}>{compact.format(card.value)}</p>
+                    <p className="mt-1 text-xs font-semibold text-on-surface">{card.label}</p>
                   </div>
                 ))}
               </div>
@@ -189,10 +280,10 @@ export function StaffDashboardPage() {
                   , {health.push_stuck_sending} push stuck, {health.email_abandoned} emails and {health.push_abandoned} push abandoned.
                 </p>
               )}
-              <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+              <div className="rounded-xl border border-outline-variant/60 bg-surface-container/40 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-                    <BellRing className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-on-surface">
+                    <BellRing className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} aria-hidden />
                     Scheduler
                   </p>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Last success</p>
@@ -214,15 +305,15 @@ export function StaffDashboardPage() {
                           />
                           {job.label}
                         </span>
-                        <span className="text-on-surface-variant">{heartbeatLabel(job.at)}</span>
+                        <span className="tabular-nums text-on-surface-variant">{heartbeatLabel(job.at)}</span>
                       </li>
                     )
                   })}
                 </ul>
               </div>
-            </>
+            </div>
           )}
-        </section>
+        </SectionCard>
       )}
     </div>
   )

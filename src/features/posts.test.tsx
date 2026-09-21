@@ -341,7 +341,7 @@ describe('posts', () => {
 
   it('useTogglePostLike patches every keyed id-set entry without clobbering others', async () => {
     // Feed (p1+p2) and detail (p2) entries coexist for one cluster. Unliking
-    // p2 must leave p1's likes alone in both entries — previously a shared
+    // p2 must leave p1's likes alone in both entries; previously a shared
     // key let one screen's refetch zero out the other's counts.
     const pending = new Promise<never>(() => {})
     requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
