@@ -521,16 +521,18 @@ introductions, messages, or membership — only name, status, member count, and 
 ---
 ## Success Metrics
 
+Measured on the admin-only `/admin/metrics` dashboard (nightly Postgres rollups; see `TECHNICAL.md` telemetry). Retained means still active with at least 6 members and a message in the last 30 days.
+
 Primary
-- Cluster Retention Rate (90 Days)
+- Cluster Retention Rate (90 Days) — measured, with 7-day and 30-day interim cohorts until 90 days of history exist.
 
 Secondary
-- Messages per Cluster
-- Daily Active Clusters
-- Cluster Replacement Rate
-- Introduction Completion Rate
-- Average number of active clusters per user. Helps gauge whether multi mode matching adds engagement or spreads users too thin.
-- Mode popularity breakdown. Which matching modes actually get used, to validate which to invest further design effort in.
+- Messages per Cluster — measured (trailing 30 days, mean overall and per mode).
+- Daily Active Clusters — measured live (message or call in the last 24 hours).
+- Cluster Replacement Rate — not yet measured.
+- Introduction Completion Rate — not yet measured.
+- Average number of active clusters per user. Helps gauge whether multi mode matching adds engagement or spreads users too thin. — measured.
+- Mode popularity breakdown. Which matching modes actually get used, to validate which to invest further design effort in. — measured (formed, joins, depth, longest wait per mode).
 
 
 ## Screens and user flow

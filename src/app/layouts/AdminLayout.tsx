@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router'
-import { Flag, LayoutDashboard, MessageSquareWarning, ScrollText, UserCog, Users } from 'lucide-react'
+import { ChartColumn, Flag, LayoutDashboard, MessageSquareWarning, ScrollText, UserCog, Users } from 'lucide-react'
 import { useAuth } from '../auth-context'
 import { BrandMark } from '../../components/BrandMark'
 import { ThemeToggle } from '../../components/theme-toggle'
@@ -14,6 +14,7 @@ const navItems: readonly StaffNavItem[] = [
   { to: '/admin/accounts', label: 'Accounts', icon: Users },
   { to: '/admin/roles', label: 'Roles', icon: UserCog },
   { to: '/admin/audit', label: 'Audit', icon: ScrollText },
+  { to: '/admin/metrics', label: 'Metrics', icon: ChartColumn },
 ] as const
 
 export function AdminLayout() {

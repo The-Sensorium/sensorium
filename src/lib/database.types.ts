@@ -2207,6 +2207,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_cluster_activity: {
+        Args: { p_limit?: number }
+        Returns: {
+          active_members: number
+          cluster_id: string
+          last_message_day: string
+          mode: Database["public"]["Enums"]["matching_mode"]
+          messages_30d: number
+          name: string
+        }[]
+      }
       get_clusters_by_mode: {
         Args: { p_mode: Database["public"]["Enums"]["matching_mode"] }
         Returns: {
@@ -2258,6 +2269,30 @@ export type Database = {
           display_name: string
           id: string
           read_at: string
+        }[]
+      }
+      get_metrics_overview: {
+        Args: never
+        Returns: {
+          active_clusters: number
+          avg_clusters_per_user: number
+          daily_active_clusters: number
+          data_through_day: string | null
+          last_rollup_at: string | null
+          messages_30d: number
+          total_clusters: number
+        }[]
+      }
+      get_mode_breakdown: {
+        Args: never
+        Returns: {
+          active_clusters: number
+          avg_messages_per_cluster: number
+          avg_queue_depth: number
+          clusters_formed: number
+          max_oldest_wait_hours: number
+          mode: Database["public"]["Enums"]["matching_mode"]
+          queue_joins: number
         }[]
       }
       get_moderation_audit: {
@@ -2603,6 +2638,15 @@ export type Database = {
           select_candidate_vote_id: string
           status: Database["public"]["Enums"]["replacement_status"]
           updated_at: string
+        }[]
+      }
+      get_retention: {
+        Args: never
+        Returns: {
+          cohort_days: number
+          formed: number
+          rate: number
+          retained: number
         }[]
       }
       get_signal_reply_counts: {

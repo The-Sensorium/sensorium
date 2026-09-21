@@ -58,6 +58,7 @@ const ModerationQueuePage = lazy(() => import('../pages/staff/ModerationQueuePag
 const ModerationCasePage = lazy(() => import('../pages/staff/ModerationCasePage').then((m) => ({ default: m.ModerationCasePage })))
 const ModerationRolesPage = lazy(() => import('../pages/staff/ModerationRolesPage').then((m) => ({ default: m.ModerationRolesPage })))
 const ModerationAuditPage = lazy(() => import('../pages/staff/ModerationAuditPage').then((m) => ({ default: m.ModerationAuditPage })))
+const MetricsPage = lazy(() => import('../pages/staff/MetricsPage').then((m) => ({ default: m.MetricsPage })))
 const SignUpPage = lazy(() => import('../pages/auth/SignUpPage').then((m) => ({ default: m.SignUpPage })))
 const LoginPage = lazy(() => import('../pages/auth/LoginPage').then((m) => ({ default: m.LoginPage })))
 const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage').then((m) => ({ default: m.VerifyEmailPage })))
@@ -233,6 +234,7 @@ export function AppRouter() {
             <Route path="/admin/accounts/:userId" element={<AccountDetailPage />} />
             <Route path="/admin/roles" element={<ModerationRolesPage />} />
             <Route path="/admin/audit" element={<ModerationAuditPage />} />
+            <Route path="/admin/metrics" element={<MetricsPage />} />
           </Route>
         </Route>
 

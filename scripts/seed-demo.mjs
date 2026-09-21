@@ -356,6 +356,26 @@ function personFor(slot) {
       }
 }
 
+async function ensureAdmin(admin, userId) {
+  const { data, error } = await admin
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('role', 'admin')
+    .is('revoked_at', null)
+    .limit(1)
+  if (error) throw error
+  if (!data?.length) {
+    const { error: insertError } = await admin.from('user_roles').insert({
+      user_id: userId,
+      role: 'admin',
+      granted_by: userId,
+      grant_reason: 'seed: local demo admin',
+    })
+    if (insertError) throw insertError
+  }
+}
+
 async function ensureMembership(admin, clusterId, userId) {
   const { data: memberRows } = await admin
     .from('cluster_members')
@@ -501,6 +521,7 @@ async function seed() {
     .from('profiles')
     .update({ onboarding_completed_at: new Date().toISOString() })
     .eq('id', userId)
+  await ensureAdmin(admin, userId)
 
   // Rio is a fully usable second login, so member-dependent E2E flows (mention
   // autocomplete, read receipts) have a real second actor to drive.

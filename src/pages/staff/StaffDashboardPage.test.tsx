@@ -9,12 +9,19 @@ const hooks = vi.hoisted(() => ({
   useModerationQueueV2: vi.fn(),
   useAdminOpsHealth: vi.fn(),
   useMyAccess: vi.fn(),
+  useMetricsOverview: vi.fn(),
+  useRetention: vi.fn(),
 }))
 
 vi.mock('../../features/admin-moderation', () => ({
   useStaffModerationSummary: hooks.useStaffModerationSummary,
   useModerationQueueV2: hooks.useModerationQueueV2,
   useAdminOpsHealth: hooks.useAdminOpsHealth,
+}))
+
+vi.mock('../../features/metrics', () => ({
+  useMetricsOverview: hooks.useMetricsOverview,
+  useRetention: hooks.useRetention,
 }))
 
 vi.mock('../../features/access', () => ({
@@ -72,6 +79,8 @@ describe('StaffDashboardPage', () => {
     hooks.useModerationQueueV2.mockReturnValue({ data: { pages: [[]] }, isLoading: false })
     hooks.useMyAccess.mockReturnValue({ data: { capabilities: [] } })
     hooks.useAdminOpsHealth.mockReturnValue({ data: null, isLoading: false, isError: false, refetch: vi.fn() })
+    hooks.useMetricsOverview.mockReturnValue({ data: null, isLoading: false, isError: false, refetch: vi.fn() })
+    hooks.useRetention.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn() })
   })
 
   it('renders operational counts with links into the queue', () => {
@@ -126,6 +135,33 @@ describe('StaffDashboardPage', () => {
     })
     renderPage()
     expect(screen.getByText(/harassment/)).toBeInTheDocument()
+  })
+
+  it('shows a metrics strip with headline numbers to admins', () => {
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: ['can_manage_roles'] } })
+    hooks.useMetricsOverview.mockReturnValue({
+      data: { total_clusters: 10, active_clusters: 8, daily_active_clusters: 3, messages_30d: 420, avg_clusters_per_user: 2 },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    hooks.useRetention.mockReturnValue({
+      data: [{ cohort_days: 30, formed: 4, retained: 3, rate: 0.75 }],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    renderPage()
+    expect(screen.getByText('Success metrics')).toBeInTheDocument()
+    expect(screen.getByText('75%')).toBeInTheDocument()
+    expect(document.querySelector('[data-e2e="staff-metrics-link"]')).not.toBeNull()
+  })
+
+  it('hides the metrics strip when metrics fail to load', () => {
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: ['can_manage_roles'] } })
+    hooks.useMetricsOverview.mockReturnValue({ data: null, isLoading: false, isError: true, refetch: vi.fn() })
+    renderPage()
+    expect(screen.queryByText('Success metrics')).not.toBeInTheDocument()
   })
 
   it('shows a spinner while loading', () => {
