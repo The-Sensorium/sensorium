@@ -291,7 +291,7 @@ export function AccountDetailPage() {
                   <li key={`${entry.kind}-${entry.entry_id}`} data-e2e="account-history-row" className="rounded-md bg-surface-container/60 p-3">
                     <div className="flex items-baseline justify-between gap-3">
                       <p className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-                        <span className={`rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${kindFill}`}>
+                        <span className={`rounded px-2 py-1 text-[11px] font-bold uppercase tracking-wider ${kindFill}`}>
                           {entry.kind}
                         </span>
                         <span className="font-semibold text-on-surface">{parts.title}</span>

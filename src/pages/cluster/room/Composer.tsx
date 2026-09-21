@@ -190,13 +190,17 @@ export function Composer({
   }
 
   const actionsButton =
-    'grid h-10 w-10 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60 sm:h-11 sm:w-11'
+    'grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
   const sendButton =
-    'grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface-container transition-colors disabled:opacity-60 sm:h-11 sm:w-11'
+    'grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full bg-surface-container transition-colors disabled:opacity-60'
 
   return (
     <>
-      {error && <p className="text-sm text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-error">
+          {error}
+        </p>
+      )}
       <form
         className="relative flex shrink-0 items-end gap-2 border-t border-outline-variant/60 bg-background py-3"
         onSubmit={(e) => {
@@ -217,7 +221,7 @@ export function Composer({
               type="button"
               aria-label="Cancel reply"
               onClick={onCancelReply}
-              className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+              className="grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
             >
               <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             </button>
@@ -274,7 +278,7 @@ export function Composer({
                   setComposerOpen(false)
                   fileRef.current?.click()
                 }}
-                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2.5 sm:min-h-0 sm:py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
               >
                 <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Send an image
               </button>
@@ -286,7 +290,7 @@ export function Composer({
                   setComposerOpen(false)
                   setGifOpen(true)
                 }}
-                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2.5 sm:min-h-0 sm:py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
               >
                 <ImagePlay className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Send a GIF
               </button>
@@ -298,7 +302,7 @@ export function Composer({
                   setComposerOpen(false)
                   onOpenSignal()
                 }}
-                className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container hover:text-tertiary disabled:opacity-60"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2.5 sm:min-h-0 sm:py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container hover:text-tertiary disabled:opacity-60"
               >
                 <Megaphone className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Raise a signal
               </button>
@@ -312,7 +316,7 @@ export function Composer({
                     setComposerOpen(false)
                     onStartCall()
                   }}
-                  className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2.5 sm:min-h-0 sm:py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
                 >
                   <Phone className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Start a call
                 </button>
@@ -341,7 +345,7 @@ export function Composer({
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => insertMention(candidate)}
                   className={cn(
-                    'flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm text-on-surface transition-colors',
+                    'flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-sm text-on-surface transition-colors sm:min-h-0 sm:py-2',
                     i === mentionIndex ? 'bg-surface-container' : 'hover:bg-surface-container/60',
                   )}
                 >

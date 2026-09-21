@@ -22,8 +22,10 @@ export function NotificationBell({ variant }: { variant: 'top' | 'bottom' }) {
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
               )
             : cn(
-                'flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium',
-                isActive ? 'text-primary' : 'text-on-surface-variant',
+                'flex min-h-[48px] w-full flex-col items-center justify-center gap-0.5 px-4 py-2 text-xs',
+                isActive
+                  ? 'bg-primary-container/15 font-semibold text-primary'
+                  : 'font-medium text-on-surface-variant',
               ),
         )
       }

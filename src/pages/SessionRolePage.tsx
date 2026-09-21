@@ -96,7 +96,7 @@ export function SessionRolePage() {
                 <button
                   type="button"
                   onClick={() => void access.refetch()}
-                  className="mt-4 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                  className="mt-4 inline-flex min-h-[48px] items-center rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
                 >
                   Try again
                 </button>

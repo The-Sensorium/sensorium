@@ -97,7 +97,7 @@ export function CaseHeader({
             : []),
         ].map((item) => (
           <div key={item.label} className={`bg-surface px-3 py-2 ${item.wide ? 'col-span-2 sm:col-span-4' : ''}`}>
-            <dt className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{item.label}</dt>
+            <dt className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">{item.label}</dt>
             <dd className="mt-0.5 truncate text-sm font-semibold text-on-surface" title={item.value}>
               {item.value}
             </dd>

@@ -44,8 +44,8 @@ export function MuteButton({
         aria-label={`${label} ${targetName}`}
         className={
           fullWidth
-            ? 'inline-flex flex-1 items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60 md:w-28 md:flex-none'
-            : 'inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
+            ? 'inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60 md:w-28 md:flex-none'
+            : 'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
         }
       >
         <Icon className="h-4 w-4" strokeWidth={1.5} aria-hidden />

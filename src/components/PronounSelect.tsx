@@ -49,7 +49,7 @@ export function PronounSelect({
           value={mode}
           onChange={(e) => handleSelect(e.target.value)}
           aria-label="Pronouns"
-          className={cn('mt-1.5 w-full appearance-none pr-10 text-sm focus:outline-none', fieldClassName ?? DEFAULT_FIELD)}
+          className={cn('mt-1.5 w-full appearance-none pr-10 text-base leading-6 focus:outline-none sm:text-sm', fieldClassName ?? DEFAULT_FIELD)}
         >
           <option value="">Don’t share</option>
           {PRONOUN_PRESETS.map((p) => (
@@ -75,7 +75,7 @@ export function PronounSelect({
             onChange={(e) => onChange(e.target.value)}
             placeholder="e.g. ze/zir, any pronouns"
             aria-label="Custom pronouns"
-            className={cn('mt-1.5 w-full text-sm focus:outline-none', fieldClassName ?? DEFAULT_FIELD)}
+            className={cn('mt-1.5 w-full text-base leading-6 focus:outline-none sm:text-sm', fieldClassName ?? DEFAULT_FIELD)}
           />
         </div>
       )}

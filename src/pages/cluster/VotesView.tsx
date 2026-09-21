@@ -142,14 +142,14 @@ export function VotesView() {
           <button
             type="button"
             onClick={() => setModal('replace')}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
             Replace a member <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
           <button
             type="button"
             onClick={() => setModal('name')}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
             Suggest a cluster name <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
@@ -242,7 +242,7 @@ export function VotesView() {
             type="button"
             disabled={!targetId || startReplace.isPending}
             onClick={() => void confirmReplace()}
-            className="w-full rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+            className="min-h-[48px] w-full rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
             {startReplace.isPending ? 'Starting…' : 'Start replacement vote'}
           </button>
@@ -260,13 +260,13 @@ export function VotesView() {
             onChange={(e) => setNameSuggestion(e.target.value)}
             maxLength={60}
             placeholder="New cluster name"
-            className="w-full rounded-xl border border-outline-variant/60 bg-surface-container/40 px-3.5 py-2.5 text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+            className="w-full rounded-xl border border-outline-variant/60 bg-surface-container/40 px-3.5 py-2.5 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
           />
           <button
             type="button"
             disabled={!nameSuggestion.trim() || startName.isPending}
             onClick={() => void confirmName()}
-            className="w-full rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+            className="min-h-[48px] w-full rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
             {startName.isPending ? 'Starting…' : 'Start name vote'}
           </button>
@@ -388,7 +388,7 @@ function ActiveVoteCard({
               type="button"
               disabled={pending}
               onClick={() => onVote(vote.id, 'yes')}
-              className="flex-1 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
             >
               Yes
             </button>
@@ -396,7 +396,7 @@ function ActiveVoteCard({
               type="button"
               disabled={pending}
               onClick={() => onVote(vote.id, 'no')}
-              className="flex-1 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
             >
               No
             </button>

@@ -126,7 +126,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
     <div className="mx-auto max-w-2xl space-y-3 md:space-y-4">
       <Link
         to={`/cluster/${clusterId}/members`}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+        className="inline-flex min-h-[44px] items-center gap-2 py-2 text-sm font-semibold text-primary hover:underline"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
         Back to members
@@ -220,7 +220,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             <Link
               to={`/cluster/${clusterId}`}
               className={cn(
-                'flex w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto',
+                'flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto',
               )}
             >
               Message {member.display_name}
@@ -230,7 +230,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
               <button
                 type="button"
                 onClick={() => setReportOpen(true)}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container md:w-28"
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container md:w-28"
               >
                 <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                 Report
@@ -297,7 +297,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                         name={member.display_name}
                         src={member.avatar_url}
                         className="h-5 w-5"
-                        textClassName="text-[10px]"
+                        textClassName="text-[11px]"
                       />
                       <span className="text-xs text-on-surface-variant">
                         · {postTime.format(new Date(post.created_at))}
