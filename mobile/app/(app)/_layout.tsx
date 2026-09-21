@@ -55,7 +55,6 @@ export default function AppTabs() {
         headerShown: false,
         tabBarActiveTintColor: t.primary,
         tabBarInactiveTintColor: t.onSurfaceVariant,
-        tabBarActiveBackgroundColor: t.surfaceContainer,
         tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.outlineVariant },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
         tabBarBadgeStyle: { backgroundColor: t.error, color: t.onError, fontSize: 11, fontWeight: '600', minWidth: 18, height: 18, borderRadius: 9, lineHeight: 16, textAlign: 'center' },

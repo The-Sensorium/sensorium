@@ -138,6 +138,7 @@ export default function IntroductionsScreen() {
         title="Save introductions"
         loadingTitle="Saving…"
         loading={submit.isPending}
+        disabled={!allAnswered}
         onPress={() => void handleSubmit()}
       />
     </Screen>

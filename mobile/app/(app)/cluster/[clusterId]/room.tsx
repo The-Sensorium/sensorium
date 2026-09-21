@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, Phone, Users } from 'lucide-react-native'
@@ -72,7 +72,6 @@ function dayKey(iso: string) {
 
 export default function RoomScreen() {
   const t = useTheme()
-  const { bottom } = useSafeAreaInsets()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -500,7 +499,7 @@ export default function RoomScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       {/* Controller KeyboardAvoidingView (not RN's, whose JS-driven animation
           snaps on Android where keyboardWillShow never fires). Same layout
           semantics, frame-synced natively on both platforms. */}
@@ -869,7 +868,7 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + bottom }}>
+        <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}>
           <Composer
             members={parseMembers}
             selfId={userId}

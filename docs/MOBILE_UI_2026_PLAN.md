@@ -1,6 +1,10 @@
 # Mobile UI 2026 Improvement Plan
 
 Status: implemented on `feat/mobile-ui-2026` (Phases 0 to 6, uncommitted), no backend changes
+
+Device feedback fixes (same branch): removed the tab active background pill (tint only),
+removed the double bottom inset on the room screen (tab bar owns the inset; composer keeps 8px),
+and bumped the cluster leave flow buttons to 48px with 16px labels.
 Date: 2026-09-21
 Scope: `mobile/` only (Expo SDK 57, React Native 0.86, expo-router, React 19)
 Basis: Material 3 Expressive, iOS HIG 2025 to 2026, WCAG 2.2 AA
