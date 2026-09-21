@@ -100,7 +100,7 @@ describe('SettingsPage', () => {
   it('saves profile edits', async () => {
     renderPage()
     fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Ally Updated' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
     await waitFor(() =>
       expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
         display_name: 'Ally Updated',
@@ -113,7 +113,7 @@ describe('SettingsPage', () => {
   it('saves pronouns', async () => {
     renderPage()
     fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: 'they/them' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
     await waitFor(() =>
       expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
         display_name: 'Ally',
@@ -127,7 +127,7 @@ describe('SettingsPage', () => {
     renderPage()
     fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: '__custom__' } })
     fireEvent.change(screen.getByLabelText('Custom pronouns'), { target: { value: 'ze/zir' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
     await waitFor(() =>
       expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
         display_name: 'Ally',
@@ -140,7 +140,7 @@ describe('SettingsPage', () => {
   it('clears pronouns when set to "Don’t share"', async () => {
     renderPage()
     fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: '' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
     await waitFor(() =>
       expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
         display_name: 'Ally',
@@ -154,7 +154,7 @@ describe('SettingsPage', () => {
     renderPage()
     const status = screen.getByPlaceholderText('e.g. Deep in a good book')
     fireEvent.change(status, { target: { value: 'In a meeting' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    fireEvent.click(within(screen.getByRole('region', { name: 'Status' })).getByRole('button', { name: 'Save changes' }))
     await waitFor(() => expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ current_status: 'In a meeting' }))
   })
 

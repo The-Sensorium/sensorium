@@ -4,7 +4,7 @@ import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
-import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, LogOut, MonitorSmartphone, Moon, ShieldCheck, Sun, Trash2, UserRound } from 'lucide-react-native'
+import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, LogOut, MonitorSmartphone, Moon, Save, ShieldCheck, Sun, Trash2, UserRound } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
@@ -190,6 +190,7 @@ export default function SettingsScreen() {
                 title="Save changes"
                 loading={updateProfile.isPending}
                 disabled={!profileDirty}
+                icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
                 onPress={() =>
                   void updateProfile.mutateAsync({
                     display_name: name.trim() || undefined,
@@ -212,7 +213,7 @@ export default function SettingsScreen() {
           <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
             Shown on your member card in every cluster.
           </Text>
-          <View style={{ marginTop: 16, flexDirection: 'row', gap: 8 }}>
+          <View style={{ marginTop: 16, gap: 12 }}>
             <TextInput
               value={status}
               onChangeText={setStatus}
@@ -220,7 +221,6 @@ export default function SettingsScreen() {
               placeholder="e.g. Deep in a good book"
               placeholderTextColor={t.onSurfaceVariant}
               style={{
-                flex: 1,
                 backgroundColor: t.surfaceContainer,
                 borderWidth: 1,
                 borderColor: t.outlineVariant,
@@ -234,9 +234,10 @@ export default function SettingsScreen() {
               }}
             />
             <PrimaryButton
-              title="Save"
+              title="Save changes"
               loading={updateProfile.isPending}
               disabled={!statusDirty}
+              icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
               onPress={() => void updateProfile.mutateAsync({ current_status: status.trim() || null })}
             />
           </View>
@@ -673,12 +674,12 @@ function NotificationPreferences() {
                   open={open}
                   onOpenChange={(next) => setOpen(cluster.id, next)}
                 >
-                  <View style={{ gap: 12 }}>
+                  <View style={{ gap: 2 }}>
                     {PREF_TOGGLES.map((key) => {
                       const value = prefFor(cluster.id, key)
                       const saving = pending[`${cluster.id}:${key}`] !== undefined
                       return (
-                        <View key={key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+                        <View key={key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 36, paddingVertical: 6 }}>
                           <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{PREF_LABELS[key]}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             {saving ? <ActivityIndicator size="small" color={t.onSurfaceVariant} /> : null}
@@ -713,7 +714,7 @@ function ClusterPrefCard({
 }) {
   const t = useTheme()
   return (
-    <View style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.md }}>
+    <View style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.xl, overflow: 'hidden' }}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -762,14 +763,14 @@ function Toggle({ checked, label, onChange }: { checked: boolean; label: string;
         lightHaptic()
         onChange(!checked)
       }}
-      hitSlop={12}
-      style={{ minHeight: 48, minWidth: 48, alignItems: 'center', justifyContent: 'center' }}
+      hitSlop={8}
+      style={{ minHeight: 32, minWidth: 48, alignItems: 'center', justifyContent: 'center' }}
     >
       <Animated.View
         style={{
-          width: 52,
-          height: 32,
-          borderRadius: 16,
+          width: 48,
+          height: 28,
+          borderRadius: 14,
           backgroundColor,
           justifyContent: 'center',
           paddingHorizontal: 2,
@@ -777,9 +778,9 @@ function Toggle({ checked, label, onChange }: { checked: boolean; label: string;
       >
         <Animated.View
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: 14,
+            width: 24,
+            height: 24,
+            borderRadius: 12,
             backgroundColor: t.surfaceLowest,
             transform: [{ translateX }],
           }}
