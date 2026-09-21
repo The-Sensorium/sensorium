@@ -88,12 +88,12 @@ export function ClusterLayout() {
             type="button"
             aria-label="Go back"
             onClick={() => (key === 'default' ? navigate('/clusters', { replace: true }) : navigate(-1))}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+            className="grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="hidden items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-primary sm:flex">
+            <p className="hidden items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary sm:flex">
               <ModeIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
               <span className="truncate">{cluster.data.mode_label}</span>
             </p>
@@ -115,7 +115,7 @@ export function ClusterLayout() {
                 e.stopPropagation()
                 setSectionsOpen((open) => !open)
               }}
-              className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
             >
               <Menu className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             </button>
@@ -152,7 +152,7 @@ export function ClusterLayout() {
               end={section.end}
               className={({ isActive }) =>
                 cn(
-                  'flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] font-medium transition-colors',
+                  'flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1.5 text-xs font-medium transition-colors',
                   'lg:flex-initial lg:flex-row lg:gap-1.5 lg:whitespace-nowrap lg:border-b-2 lg:px-2 lg:py-1 lg:text-sm',
                   isActive
                     ? 'text-primary lg:border-primary lg:font-semibold lg:text-on-surface'

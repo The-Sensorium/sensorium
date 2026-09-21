@@ -99,7 +99,7 @@ export function QueuePage() {
               type="button"
               onClick={() => void handleLeave()}
               disabled={leaving}
-              className="inline-flex items-center gap-2 rounded-pill bg-error px-5 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+              className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
             >
               {leaving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               Confirm leave
@@ -108,7 +108,7 @@ export function QueuePage() {
               type="button"
               onClick={() => setConfirming(false)}
               disabled={leaving}
-              className="rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+              className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
             >
               Cancel
             </button>
@@ -117,7 +117,7 @@ export function QueuePage() {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="mt-6 inline-flex items-center gap-2 rounded-pill border border-primary/50 px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
+            className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-primary/50 px-5 py-2.5 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
           >
             Leave queue
           </button>
@@ -131,7 +131,10 @@ export function QueuePage() {
 
       <p className="text-xs text-on-surface-variant">
         Want to match differently?{' '}
-        <Link to="/clusters" className="font-semibold text-primary hover:underline">
+        <Link
+          to="/clusters"
+          className="inline-flex min-h-[44px] items-center py-2 font-semibold text-primary hover:underline"
+        >
           Explore other modes
         </Link>
         .
@@ -158,7 +161,7 @@ function EmptyState({
       {actionHref && actionLabel && (
         <Link
           to={actionHref}
-          className="mt-5 inline-flex items-center rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          className="mt-5 inline-flex min-h-[48px] items-center rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
         >
           {actionLabel}
         </Link>

@@ -88,7 +88,7 @@ export function CommentItem({
               type="button"
               aria-pressed={likedByMe}
               onClick={() => onLike(comment.id)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition hover:text-primary active:scale-90"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-2 text-xs font-semibold text-on-surface-variant transition hover:text-primary active:scale-90 sm:min-h-[32px] sm:min-w-[32px] sm:px-1 sm:py-1"
               style={{ color: likedByMe ? 'var(--color-like)' : undefined }}
             >
               <Heart
@@ -109,7 +109,7 @@ export function CommentItem({
             <button
               type="button"
               onClick={() => onReply(comment)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition-colors hover:text-primary"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:text-primary sm:min-h-[32px] sm:min-w-[32px] sm:px-1 sm:py-1"
             >
               <CornerUpLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Reply
             </button>
@@ -122,7 +122,7 @@ export function CommentItem({
                 setDeleteError(null)
                 setConfirmOpen(true)
               }}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error sm:min-h-[32px] sm:min-w-[32px] sm:px-1 sm:py-1"
             >
               <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Delete
             </button>
@@ -132,7 +132,7 @@ export function CommentItem({
               type="button"
               aria-label="Report comment"
               onClick={() => setReportOpen(true)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error"
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:text-error sm:min-h-[32px] sm:min-w-[32px] sm:px-1 sm:py-1"
             >
               <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Report
             </button>
@@ -159,13 +159,17 @@ export function CommentItem({
         <p className="mt-3 text-sm text-on-surface-variant">
           This removes this comment and any replies to it. This action can't be undone.
         </p>
-        {deleteError && <p className="mt-3 text-sm text-error">{deleteError}</p>}
+        {deleteError && (
+          <p role="alert" className="mt-3 text-sm text-error">
+            {deleteError}
+          </p>
+        )}
         <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
             onClick={() => setConfirmOpen(false)}
             disabled={del.isPending}
-            className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
             Cancel
           </button>
@@ -173,7 +177,7 @@ export function CommentItem({
             type="button"
             onClick={() => void handleDelete()}
             disabled={del.isPending}
-            className="inline-flex items-center gap-2 rounded-pill bg-error px-4 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
           >
             {del.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {del.isPending ? 'Deleting…' : 'Delete'}

@@ -81,7 +81,7 @@ export function StepCustomization({ userId, draft, patch }: Props) {
             </div>
           )}
           <div className="flex items-center gap-2">
-            <label className="cursor-pointer rounded-pill border border-outline px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container">
+            <label className="inline-flex min-h-[44px] cursor-pointer items-center rounded-pill border border-outline px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container">
               {draft.avatarUrl ? 'Change photo' : 'Upload photo'}
               <input
                 type="file"

@@ -165,7 +165,7 @@ export function SignalDetailPage() {
                   type="button"
                   onClick={() => void handleStatus('resolved')}
                   disabled={setStatus.isPending}
-                  className="inline-flex items-center gap-2 rounded-pill bg-error px-4 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
                 >
                   {setStatus.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
                   Confirm resolve
@@ -177,7 +177,7 @@ export function SignalDetailPage() {
                     setStatusError(null)
                   }}
                   disabled={setStatus.isPending}
-                  className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
+                  className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
                 >
                   Cancel
                 </button>
@@ -193,7 +193,7 @@ export function SignalDetailPage() {
                 }}
                 disabled={setStatus.isPending}
                 className={cn(
-                  'rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60',
+                  'min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60',
                   nextStatus === 'resolved'
                     ? 'border border-error/40 text-error hover:bg-error/5'
                     : 'bg-primary text-on-primary hover:bg-primary-container',
@@ -251,7 +251,7 @@ export function SignalDetailPage() {
                     name={memberById.get(r.author_id)?.display_name ?? 'Member'}
                     src={memberById.get(r.author_id)?.avatar_url}
                     className="h-5 w-5"
-                    textClassName="text-[10px]"
+                    textClassName="text-[11px]"
                   />
                   <span className="text-sm font-semibold text-on-surface">
                     {memberById.get(r.author_id)?.display_name ?? 'Member'}
@@ -285,16 +285,20 @@ export function SignalDetailPage() {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Offer a hand or share a thought…"
-            className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-sm leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+            className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
           />
           <div className="mt-3 flex items-center justify-between gap-3">
             <span className="text-xs text-on-surface-variant">{draft.length}/2000</span>
             <div className="flex items-center gap-2">
-              {error && <span className="text-xs text-error">{error}</span>}
+              {error && (
+                <span role="alert" className="text-xs text-error">
+                  {error}
+                </span>
+              )}
               <button
                 type="submit"
                 disabled={!draft.trim() || reply.isPending}
-                className="rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+                className="min-h-[48px] rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
               >
                 {reply.isPending ? 'Sending…' : 'Reply'}
               </button>

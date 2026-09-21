@@ -177,7 +177,7 @@ export function PostCard({
           type="button"
           aria-pressed={likedByMe}
           onClick={() => onLike(post.id)}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold transition hover:text-primary active:scale-90"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 px-2 py-2 text-sm font-semibold transition hover:text-primary active:scale-90 sm:min-h-[36px] sm:min-w-[36px] sm:px-1.5 sm:py-1"
           style={{ color: likedByMe ? 'var(--color-like)' : undefined }}
         >
           <Heart
@@ -191,7 +191,7 @@ export function PostCard({
 
         <Link
           to={`/posts/${post.id}`}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant transition-colors hover:text-on-surface"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 px-2 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:text-on-surface sm:min-h-[36px] sm:min-w-[36px] sm:px-1.5 sm:py-1"
         >
           <MessageSquare className="h-5 w-5" strokeWidth={2} aria-hidden />
           {commentCount}
@@ -204,7 +204,7 @@ export function PostCard({
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={toggleMenu}
-            className="grid h-8 w-8 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+            className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
           >
             <MoreVertical className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           </button>
@@ -229,7 +229,7 @@ export function PostCard({
                   type="button"
                   role="menuitem"
                   onClick={() => void handleCopy()}
-                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                  className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container sm:min-h-0 sm:py-2"
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
@@ -247,7 +247,7 @@ export function PostCard({
                         setEditing(true)
                         setMenuOpen(false)
                       }}
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                      className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container sm:min-h-0 sm:py-2"
                     >
                       <Pencil className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Edit
                     </button>
@@ -258,7 +258,7 @@ export function PostCard({
                         setMenuOpen(false)
                         setConfirmOpen(true)
                       }}
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/10"
+                      className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/10 sm:min-h-0 sm:py-2"
                     >
                       <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Delete
                     </button>
@@ -271,7 +271,7 @@ export function PostCard({
                       setReportOpen(true)
                       setMenuOpen(false)
                     }}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                    className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container sm:min-h-0 sm:py-2"
                   >
                     <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Report
                   </button>
@@ -292,13 +292,17 @@ export function PostCard({
         <p className="mt-3 text-sm text-on-surface-variant">
           This removes your post from the cluster. This action can't be undone.
         </p>
-        {deleteError && <p className="mt-3 text-sm text-error">{deleteError}</p>}
+        {deleteError && (
+          <p role="alert" className="mt-3 text-sm text-error">
+            {deleteError}
+          </p>
+        )}
         <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
             onClick={() => setConfirmOpen(false)}
             disabled={del.isPending}
-            className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
             Cancel
           </button>
@@ -306,7 +310,7 @@ export function PostCard({
             type="button"
             onClick={() => void handleDelete()}
             disabled={del.isPending}
-            className="inline-flex items-center gap-2 rounded-pill bg-error px-4 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
           >
             {del.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {del.isPending ? 'Deleting…' : 'Delete'}
@@ -331,7 +335,7 @@ export function PostCard({
             onChange={(e) => setTitleDraft(e.target.value)}
             maxLength={200}
             placeholder="Post title (optional)"
-            className="w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm font-semibold text-on-surface outline-none transition-colors placeholder:font-normal placeholder:text-on-surface-variant/60 focus:border-primary"
+            className="w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-base font-semibold leading-6 text-on-surface outline-none transition-colors placeholder:font-normal placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
           />
           <label htmlFor="edit-post" className="sr-only">
             Edit post
@@ -343,21 +347,25 @@ export function PostCard({
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-sm leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+            className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
           />
-          {editError && <p className="text-xs text-error">{editError}</p>}
+          {editError && (
+            <p role="alert" className="text-xs text-error">
+              {editError}
+            </p>
+          )}
           <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!draft.trim() || edit.isPending}
-              className="rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+              className="min-h-[48px] rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
             >
               {edit.isPending ? 'Saving…' : 'Save'}
             </button>

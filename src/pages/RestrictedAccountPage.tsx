@@ -128,7 +128,7 @@ export function RestrictedAccountPage() {
             <>
               <Link
                 to="/appeal"
-                className="inline-flex items-center justify-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
               >
                 <MailWarning className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                 {appealAvailable ? 'Review your appeal' : 'Appeal this decision'}
@@ -137,7 +137,7 @@ export function RestrictedAccountPage() {
                 <button
                   type="button"
                   onClick={() => void signOut()}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
                 >
                   <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                   Sign out
@@ -145,7 +145,7 @@ export function RestrictedAccountPage() {
                 <button
                   type="button"
                   onClick={() => setConfirming(true)}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill border border-error/70 px-4 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/10"
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-error/70 px-4 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/10"
                 >
                   Delete my account
                 </button>

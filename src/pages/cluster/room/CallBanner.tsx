@@ -46,7 +46,7 @@ export function CallBanner({
         data-e2e={joined ? 'return-to-call' : 'join-call'}
         onClick={joined ? onOpen : onJoin}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
       >
         {joined ? 'Return to call' : 'Join'}
       </button>

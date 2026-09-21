@@ -171,16 +171,20 @@ export function ReportModal({
               rows={3}
               maxLength={2000}
               placeholder="Anything that helps our moderators understand the issue…"
-              className="mt-2 w-full resize-none rounded-xl border border-outline-variant/60 bg-surface-container/50 px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
+              className="mt-2 w-full resize-none rounded-xl border border-outline-variant/60 bg-surface-container/50 px-4 py-3 text-base leading-6 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none sm:text-sm"
             />
           </label>
 
-          {error && <p className="text-sm text-error">{error}</p>}
+          {error && (
+            <p role="alert" className="text-sm text-error">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={!reason || active.isPending}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-pill bg-error px-5 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-50"
+            className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-50"
           >
             {active.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Submit report

@@ -99,7 +99,7 @@ export function SettingsView() {
               type="button"
               onClick={() => void handleLeave()}
               disabled={leave.isPending}
-              className="inline-flex items-center gap-2 rounded-pill bg-error px-5 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+              className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
             >
               {leave.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               Confirm leave
@@ -107,7 +107,7 @@ export function SettingsView() {
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
+              className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
             >
               Cancel
             </button>
@@ -116,7 +116,7 @@ export function SettingsView() {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="mt-4 inline-flex items-center gap-2 rounded-pill border border-error/40 px-5 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/5"
+            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-error/40 px-5 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/5"
           >
             <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             Leave cluster

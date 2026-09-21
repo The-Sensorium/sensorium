@@ -98,7 +98,7 @@ export function IntroductionsPage() {
               onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
               placeholder="Write a few honest sentences…"
               aria-required="true"
-              className="mt-3 w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-sm leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+              className="mt-3 w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
             />
             <p
               className={cn(
@@ -111,12 +111,16 @@ export function IntroductionsPage() {
           </div>
         ))}
 
-        {error && <p className="text-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-error">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={!allAnswered || submit.isPending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
         >
           {submit.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

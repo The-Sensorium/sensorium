@@ -39,4 +39,9 @@ describe('PasswordInput', () => {
     await user.click(screen.getByRole('button', { name: 'Show password' }))
     expect(screen.getByLabelText('Password')).toHaveValue('secret123')
   })
+
+  it('renders the input at 16px on mobile so iOS does not auto-zoom on focus', () => {
+    render(<Harness />)
+    expect(screen.getByLabelText('Password')).toHaveClass('text-base')
+  })
 })

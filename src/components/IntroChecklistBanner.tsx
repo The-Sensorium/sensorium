@@ -61,7 +61,7 @@ export function IntroChecklistBanner({
       </p>
       <Link
         to={`/cluster/${clusterId}/introductions`}
-        className="shrink-0 rounded-pill bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
+        className="inline-flex min-h-[44px] shrink-0 items-center rounded-pill bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-container"
       >
         Answer
       </Link>
@@ -70,7 +70,7 @@ export function IntroChecklistBanner({
           type="button"
           aria-label="Dismiss introductions reminder"
           onClick={dismiss}
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+          className="grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
         >
           <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
         </button>

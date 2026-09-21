@@ -286,7 +286,7 @@ export function StaffDashboardPage() {
                     <BellRing className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} aria-hidden />
                     Scheduler
                   </p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Last success</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Last success</p>
                 </div>
                 <ul className="mt-2 space-y-2 text-sm text-on-surface">
                   {[

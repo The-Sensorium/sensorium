@@ -227,7 +227,7 @@ export function CommentThread({
                 type="button"
                 aria-label="Cancel reply"
                 onClick={() => setReplyTo(null)}
-                className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+                className="grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
               </button>
@@ -242,7 +242,7 @@ export function CommentThread({
               maxLength={COMMENT_CONTENT_MAX}
               placeholder="Add a comment…"
               aria-label="Add a comment"
-              className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm leading-5 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+              className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm sm:leading-5"
             />
             {(file || gif) && (
               <div className="mt-1 flex items-center gap-2 text-xs text-on-surface-variant">
@@ -262,13 +262,17 @@ export function CommentThread({
                     setFile(null)
                     setGif(null)
                   }}
-                  className="grid h-5 w-5 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+                  className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
                 >
                   <X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                 </button>
               </div>
             )}
-            {error && <p className="mt-1 text-xs text-error">{error}</p>}
+            {error && (
+              <p role="alert" className="mt-1 text-xs text-error">
+                {error}
+              </p>
+            )}
           </div>
           <div className="mt-2 flex items-center gap-1.5">
             <div className="relative flex items-center gap-1.5">
@@ -277,7 +281,7 @@ export function CommentThread({
                 aria-label="Attach image"
                 onClick={() => fileRef.current?.click()}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-semibold transition-colors',
+                  'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors',
                   file
                     ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
                     : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -295,7 +299,7 @@ export function CommentThread({
                   setGifOpen((o) => !o)
                 }}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-semibold transition-colors',
+                  'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors',
                   gif
                     ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
                     : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -318,7 +322,7 @@ export function CommentThread({
             <button
               type="submit"
               disabled={!hasContent || create.isPending}
-              className="ml-auto inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+              className="ml-auto inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
             >
               {create.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

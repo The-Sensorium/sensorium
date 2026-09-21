@@ -33,14 +33,14 @@ export function PasswordInput({
           autoComplete={autoComplete}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 pr-10 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 pr-12 text-base leading-6 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 sm:text-sm"
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
-          className="absolute inset-y-0 right-0 flex items-center pr-3 text-on-surface-variant transition-colors hover:text-on-surface"
+          className="absolute inset-y-0 right-0 flex min-w-[44px] items-center justify-center px-3 text-on-surface-variant transition-colors hover:text-on-surface"
         >
           {visible ? (
             <EyeOff className="h-4 w-4" strokeWidth={1.5} aria-hidden />

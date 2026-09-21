@@ -43,7 +43,7 @@ export function SignalRow({
               name={author?.display_name ?? 'Member'}
               src={author.avatar_url}
               className="h-6 w-6"
-              textClassName="text-[10px]"
+              textClassName="text-[11px]"
             />
           ) : (
             <span className="grid h-6 w-6 place-items-center rounded-full bg-tertiary-container/25 text-tertiary">

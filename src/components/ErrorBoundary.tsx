@@ -37,11 +37,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <button
             type="button"
             onClick={() => this.setState({ error: null })}
-            className="rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-container"
+            className="inline-flex min-h-[48px] items-center rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary hover:bg-primary-container"
           >
             Try again
           </button>
-          <a href="/" className="rounded-pill border border-outline-variant px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface">
+          <a href="/" className="inline-flex min-h-[44px] items-center rounded-pill border border-outline-variant px-5 py-2.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface">
             Back to home
           </a>
         </div>

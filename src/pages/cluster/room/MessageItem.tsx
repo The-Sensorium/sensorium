@@ -124,7 +124,7 @@ export function MessageItem({
                 e.stopPropagation()
                 onToggleMenu()
               }}
-              className="grid h-6 w-6 place-items-center rounded-full text-on-surface-variant/60 transition-colors hover:bg-surface-container hover:text-on-surface"
+              className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant/60 transition-colors hover:bg-surface-container hover:text-on-surface sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
             >
               <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             </button>
@@ -143,7 +143,7 @@ export function MessageItem({
                     role="menuitem"
                     aria-label="Info"
                     onClick={() => onShowInfo(message)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container sm:min-h-0 sm:py-1.5"
                   >
                     <Info className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                     <span className="hidden sm:inline">Info</span>
@@ -153,7 +153,7 @@ export function MessageItem({
                     role="menuitem"
                     aria-label="Edit"
                     onClick={() => onEdit(message)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold text-on-surface transition-colors hover:bg-surface-container sm:min-h-0 sm:py-1.5"
                   >
                     <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                     <span className="hidden sm:inline">Edit</span>
@@ -163,7 +163,7 @@ export function MessageItem({
                     role="menuitem"
                     aria-label="Delete"
                     onClick={() => onDelete(message.id)}
-                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50 sm:min-h-0 sm:py-1.5"
                   >
                     <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                     <span className="hidden sm:inline">Delete</span>
@@ -175,7 +175,7 @@ export function MessageItem({
                   role="menuitem"
                   aria-label="Report"
                   onClick={() => onReport(message)}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold text-error transition-colors hover:bg-error-container/50"
                 >
                   <Flag className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                   <span className="hidden sm:inline">Report</span>
@@ -233,7 +233,7 @@ export function MessageItem({
                     aria-label="Save edit"
                     disabled={!editDraft.trim() || editPending}
                     onClick={onSaveEdit}
-                    className="grid h-9 w-9 place-items-center rounded-full text-primary transition-colors hover:bg-primary-container/40 disabled:opacity-40"
+                    className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-primary transition-colors hover:bg-primary-container/40 disabled:opacity-40 sm:h-9 sm:w-9 sm:min-h-[36px] sm:min-w-[36px]"
                   >
                     {editPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -245,7 +245,7 @@ export function MessageItem({
                     type="button"
                     aria-label="Cancel edit"
                     onClick={onCancelEdit}
-                    className="grid h-9 w-9 place-items-center rounded-full text-on-surface transition-colors hover:bg-surface-container"
+                    className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface transition-colors hover:bg-surface-container sm:h-9 sm:w-9 sm:min-h-[36px] sm:min-w-[36px]"
                   >
                     <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                   </button>
@@ -293,7 +293,7 @@ export function MessageItem({
               type="button"
               aria-label="Reply"
               onClick={() => onReply(message)}
-              className="grid h-7 w-7 place-items-center rounded-full border border-outline-variant/60 bg-surface text-sm text-on-surface-variant transition-colors hover:bg-surface-container"
+              className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full border border-outline-variant/60 bg-surface text-sm text-on-surface-variant transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
             >
               <CornerUpLeft className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
             </button>
@@ -305,7 +305,7 @@ export function MessageItem({
                 aria-pressed={myReactionKeys.has(`${message.id}:${emoji}`)}
                 onClick={() => onToggleReaction(message.id, emoji)}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-xs transition-colors',
+                  'inline-flex min-h-[44px] items-center gap-1 rounded-pill border px-3 py-2 text-xs transition-colors sm:min-h-[32px] sm:px-2.5 sm:py-1',
                   myReactionKeys.has(`${message.id}:${emoji}`)
                     ? 'border-primary/50 bg-primary/10 text-on-surface'
                     : 'border-outline-variant/60 bg-surface text-on-surface-variant hover:bg-surface-container',
@@ -326,7 +326,7 @@ export function MessageItem({
                       onToggleReaction(message.id, emoji)
                       onTogglePicker()
                     }}
-                    className="grid h-7 w-7 place-items-center rounded-full text-base transition-colors hover:bg-surface-container"
+                    className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-base transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
                   >
                     <span aria-hidden>{emoji}</span>
                   </button>
@@ -340,7 +340,7 @@ export function MessageItem({
                   e.stopPropagation()
                   onTogglePicker()
                 }}
-                className="grid h-7 w-7 place-items-center rounded-full border border-outline-variant/60 bg-surface text-sm text-on-surface-variant transition-colors hover:bg-surface-container"
+                className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full border border-outline-variant/60 bg-surface text-sm text-on-surface-variant transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
               >
                 <span aria-hidden>+</span>
               </button>

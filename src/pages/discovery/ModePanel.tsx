@@ -132,7 +132,7 @@ function JoinCard({
               .catch(() => undefined)
           }
           disabled={join.isPending}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60 sm:w-auto"
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60 sm:w-auto"
         >
           {join.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
           {join.isPending ? 'Joining…' : 'Join this queue'}
@@ -141,14 +141,16 @@ function JoinCard({
           <button
             type="button"
             onClick={onEditLocation}
-            className="w-full text-center text-sm font-semibold text-primary hover:underline sm:w-auto sm:text-left"
+            className="inline-flex min-h-[44px] w-full items-center justify-center py-2 text-center text-sm font-semibold text-primary hover:underline sm:w-auto sm:justify-start sm:text-left"
           >
             Update my location
           </button>
         )}
       </div>
       {join.isError && (
-        <p className="mt-3 text-sm text-error">{joinQueueErrorMessage(join.error, mode)}</p>
+        <p role="alert" className="mt-3 text-sm text-error">
+          {joinQueueErrorMessage(join.error, mode)}
+        </p>
       )}
     </div>
   )
@@ -182,7 +184,7 @@ function JoinedCard({
       <div className="mt-5 flex flex-wrap gap-3">
         <Link
           to={`/queue/${mode}`}
-          className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
         >
           View queue <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
@@ -191,7 +193,7 @@ function JoinedCard({
         <button
           type="button"
           onClick={onEditLocation}
-          className="mt-3 w-full text-center text-sm font-semibold text-primary hover:underline sm:w-auto sm:text-left"
+          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center py-2 text-center text-sm font-semibold text-primary hover:underline sm:w-auto sm:justify-start sm:text-left"
         >
           Update my location
         </button>
@@ -304,7 +306,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
           <button
             type="button"
             onClick={onDone}
-            className="text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-2 py-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
           >
             Cancel
           </button>
@@ -326,7 +328,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
               aria-pressed={radius === r}
               onClick={() => void changeRadius(r as LocalRadius)}
               className={cn(
-                'flex-1 rounded-pill border px-4 py-2.5 text-sm font-semibold transition-colors',
+                'min-h-[44px] flex-1 rounded-pill border px-4 py-2.5 text-sm font-semibold transition-colors',
                 radius === r
                   ? 'border-primary bg-primary text-on-primary'
                   : 'border-outline-variant/70 text-on-surface hover:bg-surface-container',
@@ -342,7 +344,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         type="button"
         onClick={locate}
         disabled={locating || saving}
-        className="mt-5 inline-flex items-center gap-2 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+        className="mt-5 inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
       >
         {locating || saving ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -351,7 +353,11 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         )}
         {locating ? 'Finding your location…' : saving ? 'Saving…' : hasArea ? 'Update location' : 'Share my location'}
       </button>
-      {error && <p className="mt-3 text-sm text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-error">
+          {error}
+        </p>
+      )}
       {place && (
         <p className="mt-3 text-sm text-on-surface-variant">
           Area: <span className="font-semibold text-on-surface">{place.label}</span>

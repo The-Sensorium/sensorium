@@ -64,7 +64,7 @@ function AuditDetailDrawer({ row, onClose, staffBase }: { row: ModerationAuditV2
             type="button"
             onClick={onClose}
             aria-label="Close details"
-            className="grid h-8 w-8 place-items-center rounded-pill text-on-surface-variant transition-colors hover:bg-surface-container"
+            className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-pill text-on-surface-variant transition-colors hover:bg-surface-container"
           >
             <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           </button>

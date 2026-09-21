@@ -87,7 +87,7 @@ export function StepLocal({ draft, patch }: Props) {
               aria-pressed={draft.radiusKm === radius}
               onClick={() => patch({ radiusKm: radius as LocalRadius })}
               className={cn(
-                'flex-1 rounded-pill border px-4 py-2.5 text-sm font-semibold transition-colors',
+                'min-h-[44px] flex-1 rounded-pill border px-4 py-2.5 text-sm font-semibold transition-colors',
                 draft.radiusKm === radius
                   ? 'border-primary bg-primary text-on-primary'
                   : 'border-outline-variant/70 text-on-surface hover:bg-surface-container',
