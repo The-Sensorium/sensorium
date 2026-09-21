@@ -919,6 +919,43 @@ describe('governance and replacement', () => {
     expect(await activeCount(clusterId)).toBe(8)
   })
 
+  it('accept_invitation notifies existing members but not the joiner', async () => {
+    const { clusterId, members } = await clusterOf(8)
+    const c1 = await member('g-joinself')
+    await admin.from('queue_entries').insert({
+      user_id: c1.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    const { error: leaveErr } = await members[0].client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+
+    const { error: acceptErr } = await c1.client.rpc('accept_invitation', {
+      p_invitation_id: await invitationFor(clusterId, c1.id),
+    })
+    expect(acceptErr).toBeNull()
+
+    const { data: notes } = await admin
+      .from('notifications')
+      .select('user_id, body, payload')
+      .eq('cluster_id', clusterId)
+      .eq('title', 'A new member has joined')
+      .order('created_at', { ascending: false })
+      .limit(8)
+    const notified = (notes ?? []).map((n) => n.user_id)
+    expect(notified).not.toContain(c1.id)
+    for (const m of members.slice(1)) {
+      expect(notified).toContain(m.id)
+    }
+    for (const note of notes ?? []) {
+      expect(note.body).toContain('joined the cluster')
+      expect((note.payload as { new_member_id?: string } | null)?.new_member_id).toBe(c1.id)
+    }
+  })
+
   it('vote_on rejects candidate-style choices now that candidate votes are removed', async () => {
     const { clusterId, members } = await clusterOf(3)
     const { data: voteId } = await members[0].client.rpc('start_replace_vote', {

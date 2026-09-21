@@ -327,6 +327,7 @@ If a vacancy opens (a member leaves or a replacement vote succeeds):
 If accepted:
 - Joins cluster
 - Receives access to full cluster history
+- Existing members get an "X joined the cluster" notification that opens the new member's profile (the joiner is not notified about themselves)
 
 ---
 ## Cluster Leaving

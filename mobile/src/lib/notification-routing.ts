@@ -7,6 +7,7 @@ export type PushData = {
   clusterId?: string
   postId?: string
   signalId?: string
+  newMemberId?: string
 }
 
 export function mobileTarget(n: MyNotification): Href | null {
@@ -30,6 +31,9 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
     return { pathname: '/cluster/[clusterId]/votes', params: { clusterId: data.clusterId } }
   }
   if (data.clusterId && data.kind === 'replacement') {
+    if (data.newMemberId) {
+      return { pathname: '/profile/[userId]', params: { userId: data.newMemberId, cluster: data.clusterId } }
+    }
     return { pathname: '/cluster/[clusterId]/votes', params: { clusterId: data.clusterId } }
   }
   if (data.clusterId && data.kind === 'cluster_formed') {
@@ -48,6 +52,11 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
 export function appPathToHref(to: string): Href | null {
   if (to.startsWith('/posts/')) {
     return { pathname: '/posts/[postId]', params: { postId: to.slice('/posts/'.length) } }
+  }
+  if (to.startsWith('/profile/')) {
+    const [userId, query] = to.slice('/profile/'.length).split('?')
+    const cluster = new URLSearchParams(query ?? '').get('cluster') ?? undefined
+    return { pathname: '/profile/[userId]', params: { userId, ...(cluster ? { cluster } : {}) } }
   }
   if (to.startsWith('/cluster/')) {
     const rest = to.slice('/cluster/'.length)
