@@ -671,7 +671,6 @@ export function RoomView() {
           <h2 className="ml-auto font-display text-sm font-semibold text-on-surface">
             <Link
               to="members"
-              aria-label={`View all members, ${onlineCount} of ${memberCount} here`}
               className="inline-flex items-baseline gap-2 whitespace-nowrap rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               In the cluster now

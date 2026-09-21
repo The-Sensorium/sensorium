@@ -413,7 +413,7 @@ describe('RoomView timeline', () => {
 
   it('links the presence strip heading to the members page', () => {
     renderRoom()
-    expect(screen.getByRole('link', { name: /View all members/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /In the cluster now/i })).toHaveAttribute(
       'href',
       '/cluster/c1/members',
     )
