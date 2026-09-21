@@ -465,4 +465,48 @@ describe('posts RLS + RPC', () => {
     const anonSigned = await anon.storage.from('posts-images').createSignedUrl(path, 60)
     expect(anonSigned.error).not.toBeNull()
   })
+
+  it('get_post_counts returns likes/comments counts to members only', async () => {
+    const { a, b, c, clusterId } = await wireCluster()
+    const postId = await createPost(a, clusterId)
+
+    // create_post self-likes; b comments once then likes the post.
+    const { data: commentId } = await b.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'nice',
+      p_image_url: null,
+      p_gif_url: null,
+    })
+    expect(commentId).toBeTruthy()
+    const { error: likeErr } = await b.client.rpc('toggle_post_like', { p_post_id: postId })
+    expect(likeErr).toBeNull()
+
+    const { data: counts, error } = await a.client.rpc('get_post_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+    expect(counts).toHaveLength(1)
+    expect(counts[0].post_id).toBe(postId)
+    expect(counts[0].likes_count).toBe(2)
+    expect(counts[0].comments_count).toBe(1)
+
+    // A non-member (and anon) sees zero rows, not an error.
+    const { data: hidden, error: hErr } = await c.client.rpc('get_post_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(hErr).toBeNull()
+    expect(hidden).toHaveLength(0)
+
+    // A locked (introductions-phase) cluster hides counts even from members.
+    const introCluster = await createCluster(admin, {
+      memberIds: [a.id],
+      status: 'introductions',
+    })
+    clusterIds.push(introCluster)
+    const { data: locked, error: lErr } = await a.client.rpc('get_post_counts', {
+      p_cluster_id: introCluster,
+    })
+    expect(lErr).toBeNull()
+    expect(locked).toHaveLength(0)
+  })
 })

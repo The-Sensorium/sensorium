@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useParams } from 'react-router'
+import { Navigate, useNavigate, useParams } from 'react-router'
 import { Check, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
@@ -9,7 +9,6 @@ import {
   useIntroQuestions,
   useSubmitIntroAnswers,
 } from '../features/introductions'
-import { CountdownTimer } from '../components/CountdownTimer'
 
 export function IntroductionsPage() {
   useDocumentTitle('Introductions')
@@ -21,6 +20,7 @@ export function IntroductionsPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
   const submit = useSubmitIntroAnswers()
+  const navigate = useNavigate()
 
   if (cluster.isLoading || membership.isLoading || questions.isLoading) {
     return (
@@ -38,23 +38,12 @@ export function IntroductionsPage() {
     )
   }
 
-  // Only a member whose own intro is still pending should be here. If the
-  // cluster is already unlocked and they've finished, drop them in the room;
-  // otherwise (formation phase) send them to the waiting screen.
+  // The form is an optional checklist: members who already answered go to
+  // the room, and saving answers returns to the room (never a waiting screen).
   if (membership.data?.intro_completed_at) {
-    return (
-      <Navigate
-        to={
-          cluster.data.introductions_completed_at
-            ? `/cluster/${clusterId}`
-            : `/cluster/${clusterId}/waiting`
-        }
-        replace
-      />
-    )
+    return <Navigate to={`/cluster/${clusterId}`} replace />
   }
 
-  const deadline = cluster.data.introductions_deadline
   const allAnswered =
     (questions.data?.length ?? 0) > 0 &&
     (questions.data ?? []).every((q) => (answers[q.id] ?? '').trim().length > 0)
@@ -64,6 +53,7 @@ export function IntroductionsPage() {
     setError(null)
     try {
       await submit.mutateAsync({ clusterId, answers })
+      navigate(`/cluster/${clusterId}`, { replace: true })
     } catch {
       setError('Something went wrong saving your answers. Please try again.')
     }
@@ -80,14 +70,7 @@ export function IntroductionsPage() {
         </h1>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-on-surface-variant">
           <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
-          {cluster.data.introductions_completed_at ? (
-            'This room is already open. Answer below to join the conversation.'
-          ) : (
-            <>
-              Chat unlocks once everyone answers. Deadline:
-              {deadline ? <CountdownTimer deadline={deadline} className="font-semibold" /> : null}
-            </>
-          )}
+          Answer below to share who you are.
         </p>
       </header>
 
@@ -142,9 +125,7 @@ export function IntroductionsPage() {
           )}
           {submit.isPending
             ? 'Saving…'
-            : cluster.data.introductions_completed_at
-              ? 'Finish introductions'
-              : 'Submit introductions'}
+            : 'Save introductions'}
         </button>
       </form>
     </div>

@@ -8,7 +8,6 @@ import { useAuth } from '../../src/auth-context'
 import { useProfile } from '../../src/lib/use-profile'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { useClusterMembers, useMyClusters, useLatestClusterFormed } from '../../src/features/matching'
-import { useCluster } from '../../src/features/introductions'
 import {
   useRecentClusterPosts,
   usePostLikes,
@@ -25,7 +24,6 @@ import { toErrorMessage } from '../../src/lib/error'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
-import { CountdownTimer } from '../../src/components/CountdownTimer'
 import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 import { MemberClusterCard } from '../../src/components/ClusterCard'
 import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
@@ -94,9 +92,6 @@ export default function HomeScreen() {
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
   )
-  const formedClusterId = formed.data?.cluster_id ?? null
-  const formedCluster = useCluster(formedClusterId)
-
   if (profile.isLoading || !profile.data?.onboarding_completed_at) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
@@ -115,12 +110,6 @@ export default function HomeScreen() {
   const listError =
     (clusters.isError ? 'Couldn’t load your clusters.' : '') ||
     (invitations.isError ? 'Couldn’t load your invitations.' : '')
-  const formedDeadline =
-    formedCluster.data?.introductions_deadline ??
-    (formedClusterId
-      ? (clusters.data ?? []).find((c) => c.cluster.id === formedClusterId)?.cluster
-          .introductions_deadline ?? null
-      : null)
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
@@ -225,12 +214,7 @@ export default function HomeScreen() {
                 Your cluster is ready
               </Text>
               <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
-                Eight of you were matched. Complete intros within 72 hours to unlock chat.
-                {formedDeadline ? (
-                  <Text>
-                    {' '}Deadline: <CountdownTimer deadline={formedDeadline} />
-                  </Text>
-                ) : null}
+                Eight of you were matched. Jump in and say hello.
               </Text>
             </View>
             <ArrowRight size={20} color={t.primary} />

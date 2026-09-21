@@ -4,15 +4,12 @@ import { Users } from 'lucide-react-native'
 import type { MyCluster } from '../features/matching'
 import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
-import { CountdownTimer } from './CountdownTimer'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
-function statusLabel(status: string, introComplete: boolean): string {
+function statusLabel(status: string): string {
   if (status === 'archived') return 'Archived'
-  if (status === 'active') return 'Active'
-  if (introComplete) return 'Introductions complete'
-  return 'Introductions in progress'
+  return 'Active'
 }
 
 export function ClusterCard({
@@ -24,17 +21,10 @@ export function ClusterCard({
 }) {
   const t = useTheme()
   const { cluster } = item
-  const introComplete = cluster.introductions_completed_at !== null
   const info = modeInfo(cluster.matching_mode)
   const Icon = info.icon
-  const pending = cluster.status === 'introductions' && !introComplete
-  const needsIntros = pending && myIntroCompletedAt === null
-  const waitingOnOthers = pending && typeof myIntroCompletedAt === 'string'
-  const target: Href = waitingOnOthers
-    ? { pathname: '/cluster/[clusterId]/waiting', params: { clusterId: cluster.id } }
-    : pending
-      ? { pathname: '/cluster/[clusterId]/introductions', params: { clusterId: cluster.id } }
-      : { pathname: '/cluster/[clusterId]/room', params: { clusterId: cluster.id } }
+  const needsIntros = myIntroCompletedAt === null
+  const target: Href = { pathname: '/cluster/[clusterId]/room', params: { clusterId: cluster.id } }
 
   return (
     <Link href={target} asChild>
@@ -93,25 +83,9 @@ export function ClusterCard({
         </View>
         <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
           {needsIntros ? (
-            <Text>
-              Complete your introductions
-              {cluster.introductions_deadline ? (
-                <Text>
-                  {' '}· Deadline: <CountdownTimer deadline={cluster.introductions_deadline} />
-                </Text>
-              ) : null}
-            </Text>
-          ) : waitingOnOthers ? (
-            <Text>
-              Waiting for the others
-              {cluster.introductions_deadline ? (
-                <Text>
-                  {' '}· Deadline: <CountdownTimer deadline={cluster.introductions_deadline} />
-                </Text>
-              ) : null}
-            </Text>
+            <Text>Complete your introductions</Text>
           ) : (
-            statusLabel(cluster.status, introComplete)
+            statusLabel(cluster.status)
           )}
         </Text>
       </Pressable>

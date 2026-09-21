@@ -489,4 +489,543 @@ describe('governance and replacement', () => {
     })
     expect(hidden).toHaveLength(0)
   })
+
+  it('get_vote_counts returns cast counts plus the caller’s own choice', async () => {
+    const { clusterId, members } = await clusterOf(3)
+    const [initiator, target, voter] = [members[0], members[1], members[2]]
+
+    const { data: voteId, error } = await initiator.client.rpc('start_replace_vote', {
+      p_cluster_id: clusterId,
+      p_target_member_id: target.id,
+    })
+    expect(error).toBeNull()
+
+    for (const m of [initiator, voter]) {
+      const { error: ve } = await m.client.rpc('vote_on', {
+        p_vote_id: voteId,
+        p_choice: 'yes',
+      })
+      expect(ve).toBeNull()
+    }
+
+    const { data: counts, error: cErr } = await initiator.client.rpc('get_vote_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(cErr).toBeNull()
+    expect(counts).toHaveLength(1)
+    expect(counts[0].vote_id).toBe(voteId)
+    expect(counts[0].cast_count).toBe(2)
+    expect(counts[0].my_choice).toBe('yes')
+
+    // A member who has not voted sees the count but no choice.
+    const { data: targetCounts } = await target.client.rpc('get_vote_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(targetCounts).toHaveLength(1)
+    expect(targetCounts[0].cast_count).toBe(2)
+    expect(targetCounts[0].my_choice).toBeNull()
+
+    const outsider = await createUser(admin, 'g-vc-out')
+    userIds.push(outsider.id)
+    const { data: hidden, error: hErr } = await outsider.client.rpc('get_vote_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(hErr).toBeNull()
+    expect(hidden).toHaveLength(0)
+  })
+
+  it('S-06: sources only the eligible candidate, excluding each ineligibility class', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const leaver = members[0]
+
+    const eligible = await member('g-s06-ok')
+    await admin.from('queue_entries').insert({
+      user_id: eligible.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    // Never onboarded: profile exists but onboarding_completed_at is null.
+    const noob = await createUser(admin, 'g-s06-noob')
+    userIds.push(noob.id)
+    await admin.from('queue_entries').insert({
+      user_id: noob.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    // Active cooldown in this mode.
+    const cooled = await member('g-s06-cool')
+    const { error: coolErr } = await admin.from('mode_cooldowns').insert({
+      user_id: cooled.id,
+      mode: 'exact_birthdate',
+      available_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    })
+    expect(coolErr).toBeNull()
+    await admin.from('queue_entries').insert({
+      user_id: cooled.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    // Already an active member of another cluster of the same mode.
+    const busy = await member('g-s06-busy')
+    const otherId = await createCluster(admin, {
+      memberIds: [busy.id],
+      name: 'Other Cluster',
+      mode: 'exact_birthdate',
+      modeLabel: 'Gov',
+      queueKey: '1990-01-01',
+      status: 'active',
+    })
+    clusterIds.push(otherId)
+    await admin.from('queue_entries').insert({
+      user_id: busy.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    const { error } = await leaver.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, invited_user_id, candidate_pool')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.status).toBe('inviting')
+    expect(round?.invited_user_id).toBe(eligible.id)
+    expect(round?.candidate_pool).toEqual([eligible.id])
+
+    // The untouched fn_candidate_eligible() agrees with the inlined predicates.
+    const cases: Array<[TestUser, boolean]> = [
+      [eligible, true],
+      [noob, false],
+      [cooled, false],
+      [busy, false],
+    ]
+    for (const [u, expected] of cases) {
+      const { data, error: fnErr } = await admin.rpc('fn_candidate_eligible', {
+        p_user_id: u.id,
+        p_cluster_id: clusterId,
+        p_mode: 'exact_birthdate',
+        p_exclude: [],
+      })
+      expect(fnErr).toBeNull()
+      expect(data).toBe(expected)
+    }
+  })
+
+  it('S-06: tops up the pool from other queue keys in the same mode', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const leaver = members[0]
+
+    const sameKey = await member('g-s06-top1')
+    const { error: q1Err } = await admin.from('queue_entries').insert({
+      user_id: sameKey.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+      joined_at: new Date(Date.now() - 3000).toISOString(),
+    })
+    expect(q1Err).toBeNull()
+
+    const o1 = await createUser(admin, 'g-s06-top2')
+    userIds.push(o1.id)
+    await onboardUser(admin, o1.id, { dob: '1988-05-20' })
+    await admin.from('queue_entries').insert({
+      user_id: o1.id,
+      mode: 'exact_birthdate',
+      queue_key: '1988-05-20',
+      joined_at: new Date(Date.now() - 2000).toISOString(),
+    })
+
+    const o2 = await createUser(admin, 'g-s06-top3')
+    userIds.push(o2.id)
+    await onboardUser(admin, o2.id, { dob: '1990-07-11' })
+    await admin.from('queue_entries').insert({
+      user_id: o2.id,
+      mode: 'exact_birthdate',
+      queue_key: '1990-07-11',
+      joined_at: new Date(Date.now() - 1000).toISOString(),
+    })
+
+    const { error } = await leaver.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, invited_user_id, candidate_pool, select_candidate_vote_id')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    // Deterministic pick, no vote: the same-key longest-waiting candidate is
+    // invited and the pool holds exactly them.
+    expect(round?.status).toBe('inviting')
+    expect(round?.invited_user_id).toBe(sameKey.id)
+    expect(round?.candidate_pool).toEqual([sameKey.id])
+    expect(round?.select_candidate_vote_id).toBeNull()
+
+    // No candidate-selection vote is ever created.
+    const { data: candidateVotes } = await admin
+      .from('votes')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'select_candidate')
+    expect(candidateVotes).toHaveLength(0)
+
+    const { data: invitations } = await admin
+      .from('invitations')
+      .select('user_id, status')
+      .eq('cluster_id', clusterId)
+    expect(invitations).toHaveLength(1)
+    expect(invitations![0].user_id).toBe(sameKey.id)
+    expect(invitations![0].status).toBe('pending')
+  })
+
+  it('S-06: closes the round as pool_exhausted after 5 empty sourcing attempts, then opens a fresh cycle', async () => {
+    const { clusterId, members } = await clusterOf(4)
+
+    const { error } = await members[0].client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    // leave_cluster is attempt 1; the cron path re-sources the empty pool.
+    for (let i = 0; i < 4; i++) {
+      const { error: progErr } = await admin.rpc('progress_replacements')
+      expect(progErr).toBeNull()
+    }
+
+    const { data: rounds } = await admin
+      .from('replacement_rounds')
+      .select('status, closed_reason, attempts, candidate_pool')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: true })
+
+    // The exhausted round closed after 5 attempts…
+    const exhausted = rounds!.find((r) => r.status === 'closed')
+    expect(exhausted?.attempts).toBe(5)
+    expect(exhausted?.closed_reason).toBe('pool_exhausted')
+    expect(exhausted?.candidate_pool).toEqual([])
+
+    // …and the continuous-refill safety net immediately opened a fresh cycle
+    // so the under-8 cluster keeps attempting to return to 8.
+    const fresh = rounds![rounds!.length - 1]
+    expect(fresh.status).toBe('selecting_candidates')
+  })
+
+  it('S-06: invites from other queue keys when the cluster key pool is empty', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const leaver = members[0]
+
+    // No one waits on the cluster's own key; one eligible candidate waits on
+    // another key in the same mode. Without NULL-safe pool concat this falls
+    // into the empty-pool path instead of inviting.
+    const other = await createUser(admin, 'g-s06-empty1')
+    userIds.push(other.id)
+    await onboardUser(admin, other.id, { dob: '1988-05-20' })
+    await admin.from('queue_entries').insert({
+      user_id: other.id,
+      mode: 'exact_birthdate',
+      queue_key: '1988-05-20',
+    })
+
+    const { error } = await leaver.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, invited_user_id, candidate_pool')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.status).toBe('inviting')
+    expect(round?.invited_user_id).toBe(other.id)
+    expect(round?.candidate_pool).toEqual([other.id])
+  })
+
+  it('S-06: sources candidates from the open_mix global queue', async () => {
+    const m1 = await member('g-s06-om1')
+    const m2 = await member('g-s06-om2')
+    const clusterId = await createCluster(admin, {
+      memberIds: [m1.id, m2.id],
+      name: 'OM Cluster',
+      mode: 'open_mix',
+      modeLabel: 'Open Mix',
+      queueKey: 'open',
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const candidate = await member('g-s06-omc')
+    await admin.from('queue_entries').insert({
+      user_id: candidate.id,
+      mode: 'open_mix',
+      queue_key: 'open',
+    })
+
+    const { error } = await m1.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, invited_user_id')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.status).toBe('inviting')
+    expect(round?.invited_user_id).toBe(candidate.id)
+  })
+
+  async function activeCount(clusterId: string): Promise<number> {
+    const { count } = await admin
+      .from('cluster_members')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('cluster_id', clusterId)
+      .is('left_at', null)
+    return count ?? 0
+  }
+
+  async function activeRounds(clusterId: string) {
+    const { data } = await admin
+      .from('replacement_rounds')
+      .select('id, status, invited_user_id')
+      .eq('cluster_id', clusterId)
+      .in('status', ['selecting_candidates', 'voting', 'inviting'])
+      .order('created_at', { ascending: true })
+    return data ?? []
+  }
+
+  async function invitationFor(clusterId: string, userId: string) {
+    const { data } = await admin
+      .from('invitations')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', userId)
+      .single()
+    return data!.id as string
+  }
+
+  it('refill 8→7→8 starts no extra round once the cluster is full', async () => {
+    const { clusterId, members } = await clusterOf(8)
+    const c1 = await member('g-chain1')
+    await admin.from('queue_entries').insert({
+      user_id: c1.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    const { error: leaveErr } = await members[0].client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+    expect(await activeCount(clusterId)).toBe(7)
+
+    const { error: acceptErr } = await c1.client.rpc('accept_invitation', {
+      p_invitation_id: await invitationFor(clusterId, c1.id),
+    })
+    expect(acceptErr).toBeNull()
+
+    expect(await activeCount(clusterId)).toBe(8)
+    expect(await activeRounds(clusterId)).toHaveLength(0)
+  })
+
+  it('refill 8→6→7→8 keeps one pending invitation at a time and chains cycles', async () => {
+    const { clusterId, members } = await clusterOf(8)
+    const c1 = await member('g-chain2a')
+    const c2 = await member('g-chain2b')
+    await admin.from('queue_entries').insert({
+      user_id: c1.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+      joined_at: new Date(Date.now() - 2000).toISOString(),
+    })
+    await admin.from('queue_entries').insert({
+      user_id: c2.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+      joined_at: new Date(Date.now() - 1000).toISOString(),
+    })
+
+    await members[0].client.rpc('leave_cluster', { p_cluster_id: clusterId })
+    const first = await activeRounds(clusterId)
+    expect(first).toHaveLength(1)
+    expect(first[0].invited_user_id).toBe(c1.id)
+
+    // Second departure while the invitation is pending: same round, same
+    // invitee — no supersede, no second invitation.
+    await members[1].client.rpc('leave_cluster', { p_cluster_id: clusterId })
+    const during = await activeRounds(clusterId)
+    expect(during).toHaveLength(1)
+    expect(during[0].id).toBe(first[0].id)
+    const { data: pending } = await admin
+      .from('invitations')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('status', 'pending')
+    expect(pending).toHaveLength(1)
+    expect(pending![0].user_id).toBe(c1.id)
+
+    // First accept → 7 members, chained second round inviting the next
+    // longest-waiting candidate.
+    const { error: accept1 } = await c1.client.rpc('accept_invitation', {
+      p_invitation_id: await invitationFor(clusterId, c1.id),
+    })
+    expect(accept1).toBeNull()
+    expect(await activeCount(clusterId)).toBe(7)
+    const chained = await activeRounds(clusterId)
+    expect(chained).toHaveLength(1)
+    expect(chained[0].id).not.toBe(first[0].id)
+    expect(chained[0].invited_user_id).toBe(c2.id)
+
+    // Second accept → 8 members, refill complete, no further rounds.
+    const { error: accept2 } = await c2.client.rpc('accept_invitation', {
+      p_invitation_id: await invitationFor(clusterId, c2.id),
+    })
+    expect(accept2).toBeNull()
+    expect(await activeCount(clusterId)).toBe(8)
+    expect(await activeRounds(clusterId)).toHaveLength(0)
+  })
+
+  it('accept_invitation refuses to grow a full cluster (cluster_full)', async () => {
+    const { clusterId } = await clusterOf(8)
+    const stale = await member('g-stale')
+
+    // A stale pending invitation (e.g. orphaned before the cutover).
+    const { data: inv, error: invErr } = await admin
+      .from('invitations')
+      .insert({ cluster_id: clusterId, user_id: stale.id })
+      .select('id')
+      .single()
+    expect(invErr).toBeNull()
+
+    const { error } = await stale.client.rpc('accept_invitation', {
+      p_invitation_id: inv!.id,
+    })
+    expect(error?.message).toContain('cluster_full')
+    expect(await activeCount(clusterId)).toBe(8)
+  })
+
+  it('accept_invitation notifies existing members but not the joiner', async () => {
+    const { clusterId, members } = await clusterOf(8)
+    const c1 = await member('g-joinself')
+    await admin.from('queue_entries').insert({
+      user_id: c1.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+
+    const { error: leaveErr } = await members[0].client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+
+    const { error: acceptErr } = await c1.client.rpc('accept_invitation', {
+      p_invitation_id: await invitationFor(clusterId, c1.id),
+    })
+    expect(acceptErr).toBeNull()
+
+    const { data: notes } = await admin
+      .from('notifications')
+      .select('user_id, body, payload')
+      .eq('cluster_id', clusterId)
+      .eq('title', 'A new member has joined')
+      .order('created_at', { ascending: false })
+      .limit(8)
+    const notified = (notes ?? []).map((n) => n.user_id)
+    expect(notified).not.toContain(c1.id)
+    for (const m of members.slice(1)) {
+      expect(notified).toContain(m.id)
+    }
+    for (const note of notes ?? []) {
+      expect(note.body).toContain('joined the cluster')
+      expect((note.payload as { new_member_id?: string } | null)?.new_member_id).toBe(c1.id)
+    }
+  })
+
+  it('vote_on rejects candidate-style choices now that candidate votes are removed', async () => {
+    const { clusterId, members } = await clusterOf(3)
+    const { data: voteId } = await members[0].client.rpc('start_replace_vote', {
+      p_cluster_id: clusterId,
+      p_target_member_id: members[1].id,
+    })
+
+    const { error } = await members[2].client.rpc('vote_on', {
+      p_vote_id: voteId,
+      p_choice: members[1].id,
+    })
+    expect(error?.message).toContain('invalid_choice')
+  })
+
+  it('close_expired_votes closes stray candidate-selection votes as superseded without inviting', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const c1 = await member('g-dead1')
+    const c2 = await member('g-dead2')
+
+    // A legacy-style open candidate vote + voting round, seeded directly.
+    const { data: vote, error: voteErr } = await admin
+      .from('votes')
+      .insert({
+        cluster_id: clusterId,
+        type: 'select_candidate',
+        initiated_by: members[0].id,
+        closes_at: new Date(Date.now() - 1000).toISOString(),
+      })
+      .select('id')
+      .single()
+    expect(voteErr).toBeNull()
+    const { error: roundErr } = await admin.from('replacement_rounds').insert({
+      cluster_id: clusterId,
+      mode: 'exact_birthdate',
+      status: 'voting',
+      candidate_pool: [c1.id, c2.id],
+      select_candidate_vote_id: vote!.id,
+    })
+    expect(roundErr).toBeNull()
+
+    const { error } = await members[0].client.rpc('close_expired_votes')
+    expect(error).toBeNull()
+
+    const { data: closed } = await admin
+      .from('votes')
+      .select('status, result')
+      .eq('id', vote!.id)
+      .single()
+    expect(closed?.status).toBe('closed')
+    expect(closed?.result?.outcome).toBe('superseded')
+
+    // No winner invited, no fan-out, round untouched.
+    const { data: invitations } = await admin
+      .from('invitations')
+      .select('id')
+      .eq('cluster_id', clusterId)
+    expect(invitations).toHaveLength(0)
+    const { data: notifs } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'vote_result')
+    expect(notifs).toHaveLength(0)
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.status).toBe('voting')
+  })
 })

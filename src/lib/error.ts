@@ -24,8 +24,21 @@ export function toErrorMessage(error: unknown, fallback: string): string {
   return fallback
 }
 
+export function isRateLimited(error: unknown): boolean {
+  return toErrorMessage(error, '').toLowerCase().includes('rate_limited')
+}
+
+/** Friendly copy for hot-write rate limits; falls back to the raw message. */
+export function rateLimitMessage(error: unknown, fallback: string): string {
+  if (isRateLimited(error)) return 'You’re doing that too quickly. Please wait a bit and try again.'
+  return toErrorMessage(error, fallback)
+}
+
 export function joinQueueErrorMessage(error: unknown, mode?: string): string {
   const message = toErrorMessage(error, '').toLowerCase()
+  if (message.includes('rate_limited')) {
+    return 'You’re joining queues too quickly. Please wait a bit and try again.'
+  }
   if (message.includes('cooldown')) {
     const days = mode === 'open_mix' ? 7 : 30
     return `You recently left a cluster in this mode. A ${days}-day cooldown is active.`

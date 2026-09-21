@@ -93,11 +93,11 @@ describe('introductions and social', () => {
     expect(cluster?.status).toBe('introductions')
   })
 
-  it('unlocks the cluster once every active member completes five answers', async () => {
+  it('completing intros marks members done without unlocking or notifying (clusters open at formation)', async () => {
     const members = [await member('i-full-a'), await member('i-full-b')]
     const clusterId = await createCluster(admin, {
       memberIds: members.map((m) => m.id),
-      status: 'introductions',
+      status: 'active',
     })
     clusterIds.push(clusterId)
 
@@ -107,6 +107,15 @@ describe('introductions and social', () => {
         p_answers: ANSWERS,
       })
       expect(error).toBeNull()
+    }
+
+    const { data: memberRows } = await admin
+      .from('cluster_members')
+      .select('intro_completed_at')
+      .eq('cluster_id', clusterId)
+    expect(memberRows).toHaveLength(2)
+    for (const row of memberRows!) {
+      expect(row.intro_completed_at).not.toBeNull()
     }
 
     const { data: cluster } = await admin
@@ -122,7 +131,7 @@ describe('introductions and social', () => {
       .select('user_id')
       .eq('cluster_id', clusterId)
       .eq('type', 'unlocked')
-    expect(unlocked).toHaveLength(2)
+    expect(unlocked).toHaveLength(0)
   })
 
   it('marks a replacement complete in an active cluster without re-unlocking or re-notifying', async () => {
@@ -180,12 +189,12 @@ describe('introductions and social', () => {
     expect(unlocked).toHaveLength(0)
   })
 
-  it('check_intro_deadlines removes non-completers and starts a replacement', async () => {
+  it('check_intro_deadlines is a no-op: incomplete intros never remove members', async () => {
     const completer = await member('i-dl-a')
     const slacker = await member('i-dl-b')
     const clusterId = await createCluster(admin, {
       memberIds: [completer.id, slacker.id],
-      status: 'introductions',
+      status: 'active',
       introductionsDeadline: new Date(Date.now() - 60_000).toISOString(),
     })
     clusterIds.push(clusterId)
@@ -205,13 +214,13 @@ describe('introductions and social', () => {
       .eq('cluster_id', clusterId)
       .eq('user_id', slacker.id)
       .single()
-    expect(slackRow?.left_at).not.toBeNull()
+    expect(slackRow?.left_at).toBeNull()
 
     const { data: rounds } = await admin
       .from('replacement_rounds')
       .select('id')
       .eq('cluster_id', clusterId)
-    expect(rounds!.length).toBeGreaterThan(0)
+    expect(rounds).toHaveLength(0)
   })
 
   it('raise_signal creates the signal and notifies other members', async () => {
@@ -299,6 +308,41 @@ describe('introductions and social', () => {
       .single()
     expect(signal?.status).toBe('resolved')
     expect(signal?.resolved_by).toBe(a.id)
+  })
+
+  it('get_signal_reply_counts returns per-signal reply counts to members only', async () => {
+    const [a, b] = [await member('i-src-a'), await member('i-src-b')]
+    const outsider = await createUser(admin, 'i-src-out')
+    userIds.push(outsider.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help packing',
+    })
+    const { error: replyErr } = await b.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: 'I can help',
+    })
+    expect(replyErr).toBeNull()
+
+    const { data: counts, error } = await a.client.rpc('get_signal_reply_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+    expect(counts).toHaveLength(1)
+    expect(counts[0].signal_id).toBe(signalId)
+    expect(counts[0].reply_count).toBe(1)
+
+    const { data: hidden, error: hErr } = await outsider.client.rpc('get_signal_reply_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(hErr).toBeNull()
+    expect(hidden).toHaveLength(0)
   })
 
   it('send_message rejects before the cluster unlocks', async () => {

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../app/auth-context'
 import type { Database } from '../lib/database.types'
@@ -14,6 +13,9 @@ export function useMyQueueStatus(enabled = true) {
   return useQuery({
     queryKey: ['matching-status', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
+    // Single fetch per mount window: join/leave mutations invalidate
+    // explicitly, so a short stale time avoids refetch storms on remount.
+    staleTime: 30_000,
     queryFn: async () => {
       if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
@@ -111,14 +113,18 @@ export function useClusterMembers(clusterId: string | null, enabled = true) {
   })
 }
 
-/** Live waiting count for a queue via broadcast + 15s poll fallback. */
+/** Waiting count for a queue, polled at a low frequency. There is no live
+ * broadcast sender for queue counts (maybe_form_cluster uses Postgres
+ * pg_notify, which never reaches Supabase Realtime Broadcast), so the poll is
+ * the live path: 60s interval, paused in background tabs, with focus/reconnect
+ * refetch. Same-key mounts share one query via TanStack dedup. */
 export function useQueueCount(mode: MatchingMode, queueKey: string | null) {
-  const [live, setLive] = useState<number | null>(null)
-
   const query = useQuery({
     queryKey: ['queue-count', mode, queueKey ?? 'none'],
     enabled: queueKey !== null,
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
     queryFn: async () => {
       if (!queueKey) return 0
       const supabase = requireSupabase()
@@ -131,23 +137,8 @@ export function useQueueCount(mode: MatchingMode, queueKey: string | null) {
     },
   })
 
-  useEffect(() => {
-    if (!queueKey) return
-    const supabase = requireSupabase()
-    const channel = supabase
-      .channel(`queue:${mode}:${queueKey}`)
-      .on('broadcast', { event: 'queue_update' }, ({ payload }) => {
-        const count = (payload as { count?: number } | null)?.count
-        if (typeof count === 'number') setLive(count)
-      })
-      .subscribe()
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [mode, queueKey])
-
   return {
-    count: live ?? query.data ?? null,
+    count: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
   }

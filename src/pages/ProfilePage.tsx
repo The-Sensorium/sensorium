@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import {
   ArrowLeft,
@@ -20,8 +20,7 @@ import { useClusterMembers, useMyClusters } from '../features/matching'
 import { usePresence } from '../features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import {
-  useClusterPostComments,
-  useClusterPostLikes,
+  usePostCounts,
   usePostImageUrl,
   useUserPosts,
 } from '../features/posts'
@@ -89,38 +88,18 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
   const userPosts = useUserPosts(userId)
-  const postIds = (userPosts.data ?? []).map((p) => p.id)
-  const likes = useClusterPostLikes(clusterId, postIds)
-  const comments = useClusterPostComments(clusterId, postIds)
+  const counts = usePostCounts(clusterId)
 
   const likesByPost = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const l of likes.data ?? []) {
-      counts.set(l.post_id, (counts.get(l.post_id) ?? 0) + 1)
-    }
-    return counts
-  }, [likes.data])
+    const byPost = new Map<string, number>()
+    for (const c of counts.data ?? []) byPost.set(c.post_id, c.likes_count)
+    return byPost
+  }, [counts.data])
   const commentsByPost = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const c of comments.data ?? []) {
-      counts.set(c.post_id, (counts.get(c.post_id) ?? 0) + 1)
-    }
-    return counts
-  }, [comments.data])
-
-  // Engagement counts are cached by cluster, not by post set. When the post set
-  // changes (e.g. an in-place member switch), refetch so the new posts get real
-  // counts instead of the stale 0 from the previous member.
-  const postIdsKey = postIds.join(',')
-  const prevPostIdsKey = useRef(postIdsKey)
-  const refetchEngagement = useRef({ likes: likes.refetch, comments: comments.refetch })
-  refetchEngagement.current = { likes: likes.refetch, comments: comments.refetch }
-  useEffect(() => {
-    if (prevPostIdsKey.current === postIdsKey) return
-    prevPostIdsKey.current = postIdsKey
-    void refetchEngagement.current.likes()
-    void refetchEngagement.current.comments()
-  }, [postIdsKey])
+    const byPost = new Map<string, number>()
+    for (const c of counts.data ?? []) byPost.set(c.post_id, c.comments_count)
+    return byPost
+  }, [counts.data])
 
   const member = (members.data ?? []).find((m) => m.id === userId)
   const cluster = (myClusters.data ?? []).find((c) => c.cluster.id === clusterId)

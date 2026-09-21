@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { Cake, MapPin, PartyPopper } from 'lucide-react-native'
@@ -10,8 +10,6 @@ import {
   useClusterMembers,
   type ClusterFormedNotification,
 } from '../../src/features/matching'
-import { useCluster } from '../../src/features/introductions'
-import { CountdownTimer } from '../../src/components/CountdownTimer'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
@@ -40,8 +38,6 @@ export default function ClusterCreatedScreen() {
 
   const clusterId = notif?.cluster_id ?? null
   const members = useClusterMembers(clusterId, clusterId !== null)
-  const cluster = useCluster(clusterId, clusterId !== null)
-  const deadline = cluster.data?.introductions_deadline ?? null
 
   if (!notif && formed.isLoading) {
     return (
@@ -86,12 +82,7 @@ export default function ClusterCreatedScreen() {
           Your cluster is ready
         </Text>
         <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, textAlign: 'center', color: t.onSurfaceVariant }}>
-          Eight strangers matched. Complete your introductions within 72 hours to unlock the chat.
-          {deadline ? (
-            <Text>
-              {' '}Deadline: <CountdownTimer deadline={deadline} />
-            </Text>
-          ) : null}
+          Eight strangers matched. Jump in and say hello.
         </Text>
       </View>
 
@@ -144,15 +135,25 @@ export default function ClusterCreatedScreen() {
 
       <View style={{ marginTop: 24 }}>
         <PrimaryButton
-          title="Start introductions"
+          title="Open your cluster"
           onPress={() =>
             router.replace({
-              pathname: '/cluster/[clusterId]/introductions',
+              pathname: '/cluster/[clusterId]/room',
               params: { clusterId },
             })
           }
         />
       </View>
+      <Link
+        href={{ pathname: '/cluster/[clusterId]/introductions', params: { clusterId } }}
+        asChild
+      >
+        <Pressable style={{ marginTop: 12, alignItems: 'center' }}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+            Or answer the intro questions first
+          </Text>
+        </Pressable>
+      </Link>
     </Screen>
   )
 }

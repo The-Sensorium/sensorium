@@ -36,13 +36,19 @@ function wrapper({ children }: { children?: ReactNode }) {
 interface ChannelCall {
   table?: string
   event?: string
+  filter?: string
   handler: (...args: never[]) => void
 }
 
 function channelHandlers(client: SupabaseClient): ChannelCall[] {
   const channel = (client.channel as unknown as ReturnType<typeof vi.fn>).mock.results[0].value
   const on = channel.on as unknown as ReturnType<typeof vi.fn>
-  return on.mock.calls.map((call) => ({ table: call[1]?.table, event: call[1]?.event, handler: call[2] }))
+  return on.mock.calls.map((call) => ({
+    table: call[1]?.table,
+    event: call[1]?.event,
+    filter: call[1]?.filter,
+    handler: call[2],
+  }))
 }
 
 function findBy(channels: ChannelCall[], table: string, event: string) {
@@ -78,6 +84,20 @@ describe('useClusterChannel', () => {
     ])
   })
 
+  it('bumps notifications on new cluster message (scoped badge refresh)', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    const client = requireSupabaseMock.mock.results[0].value
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    queryClient.setQueryData(['cluster-messages', 'c1'], [
+      { id: 'm1', created_at: '2026-01-01T00:00:00Z' },
+    ])
+    const handler = findBy(channelHandlers(client), 'messages', 'INSERT')
+    act(() => {
+      handler?.({ new: { id: 'm2', created_at: '2026-01-02T00:00:00Z' } } as never)
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] })
+  })
+
   it('replaces a message on UPDATE', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
     queryClient.setQueryData(['cluster-messages', 'c1'], [{ id: 'm1', content: 'old' }])
@@ -88,19 +108,17 @@ describe('useClusterChannel', () => {
     expect(queryClient.getQueryData(['cluster-messages', 'c1'])).toEqual([{ id: 'm1', content: 'new' }])
   })
 
-  it('routes a reaction INSERT to its cluster cache', async () => {
+  it('routes a reaction INSERT to its cluster cache without a lookup', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
-    mockResult.value = { data: { cluster_id: 'c1' }, error: null }
     queryClient.setQueryData(['cluster-reactions', 'c1'], [])
     const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'message_reactions', 'INSERT')
     act(() => {
-      handler?.({ new: { id: 'r1', message_id: 'm1', user_id: 'u1', emoji: ':wave:' } } as never)
+      handler?.({ new: { id: 'r1', message_id: 'm1', user_id: 'u1', emoji: ':wave:', cluster_id: 'c1' } } as never)
     })
-    await waitFor(() =>
-      expect(queryClient.getQueryData(['cluster-reactions', 'c1'])).toEqual([
-        { id: 'r1', message_id: 'm1', user_id: 'u1', emoji: ':wave:' },
-      ]),
-    )
+    expect(queryClient.getQueryData(['cluster-reactions', 'c1'])).toEqual([
+      { id: 'r1', message_id: 'm1', user_id: 'u1', emoji: ':wave:', cluster_id: 'c1' },
+    ])
+    expect(requireSupabaseMock.mock.results[0].value.from).not.toHaveBeenCalled()
   })
 
   it('prepends a new vote into the cluster cache', () => {
@@ -113,64 +131,88 @@ describe('useClusterChannel', () => {
     expect(queryClient.getQueryData(['cluster-votes', 'c1'])).toEqual([{ id: 'v1' }, { id: 'v0' }])
   })
 
-  it('routes a post-like INSERT to the cluster and single-post caches', async () => {
+  it('routes a post-like INSERT to the cluster and single-post caches', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
-    mockResult.value = { data: { cluster_id: 'c1' }, error: null }
     queryClient.setQueryData(['post-likes', 'c1'], [])
     queryClient.setQueryData(['post-likes', 'single', 'p1'], [])
     const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_likes', 'INSERT')
     act(() => {
-      handler?.({ new: { post_id: 'p1', user_id: 'u2' } } as never)
+      handler?.({ new: { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' } } as never)
     })
-    await waitFor(() =>
-      expect(queryClient.getQueryData(['post-likes', 'c1'])).toEqual([
-        { post_id: 'p1', user_id: 'u2' },
-      ]),
-    )
+    expect(queryClient.getQueryData(['post-likes', 'c1'])).toEqual([
+      { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' },
+    ])
     expect(queryClient.getQueryData(['post-likes', 'single', 'p1'])).toEqual([
-      { post_id: 'p1', user_id: 'u2' },
+      { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' },
     ])
   })
 
-  it('routes a post-like DELETE to the cluster and single-post caches', async () => {
+  it('routes a post-like DELETE to the cluster and single-post caches', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
-    mockResult.value = { data: { cluster_id: 'c1' }, error: null }
-    queryClient.setQueryData(['post-likes', 'c1'], [{ post_id: 'p1', user_id: 'u2' }])
-    queryClient.setQueryData(['post-likes', 'single', 'p1'], [{ post_id: 'p1', user_id: 'u2' }])
+    queryClient.setQueryData(['post-likes', 'c1'], [{ post_id: 'p1', user_id: 'u2', cluster_id: 'c1' }])
+    queryClient.setQueryData(['post-likes', 'single', 'p1'], [{ post_id: 'p1', user_id: 'u2', cluster_id: 'c1' }])
     const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_likes', 'DELETE')
     act(() => {
-      handler?.({ old: { post_id: 'p1', user_id: 'u2' } } as never)
+      handler?.({ old: { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' } } as never)
     })
-    await waitFor(() => expect(queryClient.getQueryData(['post-likes', 'c1'])).toEqual([]))
+    expect(queryClient.getQueryData(['post-likes', 'c1'])).toEqual([])
     expect(queryClient.getQueryData(['post-likes', 'single', 'p1'])).toEqual([])
   })
 
-  it('routes post-like events to every coexisting id-set entry', async () => {
+  it('routes a signal-reply INSERT to the all and per-signal caches', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
-    mockResult.value = { data: { cluster_id: 'c1' }, error: null }
-    const other = { post_id: 'p1', user_id: 'u2' }
-    queryClient.setQueryData(['post-likes', 'c1', 'p1,p2'], [other])
-    queryClient.setQueryData(['post-likes', 'c1', 'p2'], [])
-    const client = requireSupabaseMock.mock.results[0].value
-    const insert = findBy(channelHandlers(client), 'post_likes', 'INSERT')
+    queryClient.setQueryData(['signal-replies', 'c1', 'all'], [])
+    queryClient.setQueryData(['signal-replies', 'c1', 's1'], [])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'signal_replies', 'INSERT')
+    const reply = { id: 'r1', signal_id: 's1', cluster_id: 'c1', created_at: '2026-01-02T00:00:00Z' }
     act(() => {
-      insert?.({ new: { post_id: 'p2', user_id: 'u1' } } as never)
+      handler?.({ new: reply } as never)
     })
-    await waitFor(() =>
-      expect(queryClient.getQueryData(['post-likes', 'c1', 'p1,p2'])).toEqual([
-        other,
-        { post_id: 'p2', user_id: 'u1' },
-      ]),
-    )
-    expect(queryClient.getQueryData(['post-likes', 'c1', 'p2'])).toEqual([
-      { post_id: 'p2', user_id: 'u1' },
+    expect(queryClient.getQueryData(['signal-replies', 'c1', 'all'])).toEqual([reply])
+    expect(queryClient.getQueryData(['signal-replies', 'c1', 's1'])).toEqual([reply])
+  })
+
+  it('routes a post-comment INSERT to the all and per-post caches', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    queryClient.setQueryData(['post-comments', 'c1', 'all'], [])
+    queryClient.setQueryData(['post-comments', 'c1', 'p1'], [])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_comments', 'INSERT')
+    const comment = { id: 'm1', post_id: 'p1', cluster_id: 'c1', created_at: '2026-01-02T00:00:00Z' }
+    act(() => {
+      handler?.({ new: comment } as never)
+    })
+    expect(queryClient.getQueryData(['post-comments', 'c1', 'all'])).toEqual([comment])
+    expect(queryClient.getQueryData(['post-comments', 'c1', 'p1'])).toEqual([comment])
+  })
+
+  it('routes a comment-like INSERT to its cluster cache without a lookup', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    queryClient.setQueryData(['comment-likes', 'c1'], [])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'comment_likes', 'INSERT')
+    act(() => {
+      handler?.({ new: { comment_id: 'x1', user_id: 'u2', cluster_id: 'c1' } } as never)
+    })
+    expect(queryClient.getQueryData(['comment-likes', 'c1'])).toEqual([
+      { comment_id: 'x1', user_id: 'u2', cluster_id: 'c1' },
     ])
-    const del = findBy(channelHandlers(client), 'post_likes', 'DELETE')
-    act(() => {
-      del?.({ old: { post_id: 'p2', user_id: 'u1' } } as never)
-    })
-    await waitFor(() => expect(queryClient.getQueryData(['post-likes', 'c1', 'p2'])).toEqual([]))
-    expect(queryClient.getQueryData(['post-likes', 'c1', 'p1,p2'])).toEqual([other])
+    expect(requireSupabaseMock.mock.results[0].value.from).not.toHaveBeenCalled()
+  })
+
+  it('filters every child-table subscription by cluster_id', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    const handlers = channelHandlers(requireSupabaseMock.mock.results[0].value)
+    for (const table of [
+      'message_reactions',
+      'signal_replies',
+      'post_likes',
+      'post_comments',
+      'comment_likes',
+      'call_participants',
+    ]) {
+      const scoped = handlers.filter((h) => h.table === table)
+      expect(scoped.length).toBeGreaterThan(0)
+      for (const h of scoped) expect(h.filter).toBe('cluster_id=eq.c1')
+    }
   })
 
   it('invalidates replacement rounds when a round is inserted', () => {
@@ -217,20 +259,20 @@ describe('useClusterChannel', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['active-call', 'c1'] })
   })
 
-  it('routes a participant event to its cluster call caches', async () => {
+  it('routes a participant event to its cluster call caches', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     renderHook(() => useClusterChannel('c1'), { wrapper })
-    mockResult.value = { data: { cluster_id: 'c1' }, error: null }
     const handler = findBy(
       channelHandlers(requireSupabaseMock.mock.results[0].value),
       'call_participants',
       'INSERT',
     )
     act(() => {
-      handler?.({ new: { call_id: 'call-1', user_id: 'u2' } } as never)
+      handler?.({ new: { call_id: 'call-1', user_id: 'u2', cluster_id: 'c1' } } as never)
     })
-    await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['active-call', 'c1'] }))
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['active-call', 'c1'] })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['call-participants', 'call-1'] })
+    expect(requireSupabaseMock.mock.results[0].value.from).not.toHaveBeenCalled()
   })
 })
 

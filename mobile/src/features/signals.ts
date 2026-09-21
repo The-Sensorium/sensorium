@@ -27,7 +27,7 @@ export function useClusterSignals(clusterId: string | null, enabled = true) {
 
 /**
  * Replies for a signal (detail) or for the whole cluster (list reply counts).
- * `signalId` null → every reply in the cluster (lookup via signal ids).
+ * `signalId` null → every reply in the cluster via its cluster_id column.
  */
 export function useSignalReplies(
   clusterId: string | null,
@@ -49,20 +49,33 @@ export function useSignalReplies(
         if (error) throw error
         return (data ?? []) as SignalReply[]
       }
-      const { data: signals, error: sErr } = await supabase
-        .from('signals')
-        .select('id')
-        .eq('cluster_id', clusterId)
-      if (sErr) throw sErr
-      const ids = (signals ?? []).map((s) => s.id)
-      if (ids.length === 0) return [] as SignalReply[]
       const { data, error } = await supabase
         .from('signal_replies')
         .select('*')
-        .in('signal_id', ids)
+        .eq('cluster_id', clusterId)
         .order('created_at', { ascending: true })
       if (error) throw error
       return (data ?? []) as SignalReply[]
+    },
+  })
+}
+
+export type SignalReplyCount = { signal_id: string; reply_count: number }
+
+/** Per-signal reply counts (bounded GROUP BY; RLS: active members). List views
+ * rank/badge from this instead of downloading every reply row. */
+export function useSignalReplyCounts(clusterId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['signal-reply-counts', clusterId ?? 'none'],
+    enabled: enabled && clusterId !== null,
+    queryFn: async () => {
+      if (!clusterId) throw new Error('No cluster')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_signal_reply_counts', {
+        p_cluster_id: clusterId,
+      })
+      if (error) throw error
+      return (data ?? []) as SignalReplyCount[]
     },
   })
 }
@@ -108,6 +121,7 @@ export function useReplySignal(clusterId: string | null, signalId: string | null
           queryKey: ['signal-replies', clusterId, signalId ?? 'all'],
         })
         void queryClient.invalidateQueries({ queryKey: ['signal-replies', clusterId, 'all'] })
+        void queryClient.invalidateQueries({ queryKey: ['signal-reply-counts', clusterId] })
       }
     },
   })

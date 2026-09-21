@@ -12,6 +12,13 @@ async function login(page: Page) {
   await page.getByLabel('Email').fill(EMAIL)
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Login' }).click()
+  await expect(
+    page.getByRole('navigation').or(page.getByRole('heading', { name: 'Choose a workspace' })),
+  ).toBeVisible()
+  const memberWorkspace = page.getByRole('button', { name: /For your clusters/i })
+  if (await memberWorkspace.isVisible()) {
+    await memberWorkspace.click()
+  }
   await expect(page.getByRole('navigation')).toBeVisible()
 }
 
@@ -24,8 +31,7 @@ test.describe('posts (seeded)', () => {
     const text = `E2E post ${Date.now()}`
 
     await page.goto('/posts')
-    // Diya can belong to several clusters (e.g. a locked introductions
-    // cluster sorts first by recency); post in Aurora, which is unlocked.
+    // Diya can belong to several clusters; post in Aurora.
     await page.getByRole('tab', { name: 'Aurora' }).click()
     const trigger = page.getByRole('button', { name: 'New post' })
     await expect(trigger).toBeVisible()

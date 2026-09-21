@@ -74,9 +74,40 @@ describe('notificationTarget', () => {
     expect(notificationTarget(n('vote_started', 'c1'))?.to).toContain('/votes')
   })
 
+  it('links new-member-joined replacement notices to the joiner profile', () => {
+    const joined = {
+      ...n('replacement', 'c1'),
+      title: 'A new member has joined',
+      payload: { new_member_id: 'u9' },
+    } as MyNotification
+    expect(notificationTarget(joined)).toEqual({ to: '/profile/u9?cluster=c1' })
+  })
+
+  it('links legacy join notices without payload to members by title', () => {
+    const legacy = {
+      ...n('replacement', 'c1'),
+      title: 'A new member has joined',
+      payload: null,
+    } as unknown as MyNotification
+    expect(notificationTarget(legacy)).toEqual({ to: '/cluster/c1/members' })
+  })
+
+  it('keeps other replacement notices on the votes view', () => {
+    const other = {
+      ...n('replacement', 'c1'),
+      title: 'A spot just opened',
+      payload: {},
+    } as unknown as MyNotification
+    expect(notificationTarget(other)).toEqual({ to: '/cluster/c1/votes' })
+  })
+
   it('links invitations and queue updates', () => {
     expect(notificationTarget(n('invitation_received', 'c1'))).toEqual({ to: '/home' })
     expect(notificationTarget(n('queue_update', 'c1'))).toEqual({ to: '/clusters' })
+  })
+
+  it('links cluster_formed directly to the open room', () => {
+    expect(notificationTarget(n('cluster_formed', 'c1'))).toEqual({ to: '/cluster/c1' })
   })
 
   it('falls back to the cluster, or null when unmappable and clusterless', () => {
@@ -230,14 +261,21 @@ describe('useNotificationsChannel', () => {
     expect(channelMock.subscribe).toHaveBeenCalledTimes(1)
     expect(channelMock.on).toHaveBeenCalledWith(
       'postgres_changes',
-      expect.objectContaining({ table: 'messages' }),
+      expect.objectContaining({ table: 'notifications' }),
       expect.any(Function),
     )
+    expect(channelMock.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      expect.objectContaining({ table: 'invitations' }),
+      expect.any(Function),
+    )
+    const tables = channelMock.on.mock.calls.map((c) => (c[1] as { table?: string }).table)
+    expect(tables).not.toContain('messages')
     unmount()
     expect(removeChannel).toHaveBeenCalledTimes(1)
   })
 
-  it('bumps notifications on message changes', async () => {
+  it('bumps notifications on notification INSERT', async () => {
     const channelMock = {
       on: vi.fn(() => channelMock),
       subscribe: vi.fn(() => ({})),
@@ -250,47 +288,38 @@ describe('useNotificationsChannel', () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
 
     renderHook(() => useNotificationsChannel('u1'), { wrapper })
-    const messageCall = channelMock.on.mock.calls.find(
-      (c) => (c[1] as { table?: string }).table === 'messages',
+    const notificationCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'notifications',
     )
-    expect(messageCall).toBeDefined()
-    ;(messageCall![2] as () => void)()
+    expect(notificationCall).toBeDefined()
+    ;(notificationCall![2] as () => void)()
     await waitFor(() => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
     })
   })
 
-  it('trailing bump refetches when messages arrive during the throttle window', () => {
-    vi.useFakeTimers()
-    try {
-      const channelMock = {
-        on: vi.fn(() => channelMock),
-        subscribe: vi.fn(() => ({})),
-      }
-      const client = {
-        channel: vi.fn(() => channelMock),
-        removeChannel: vi.fn(),
-      } as unknown as SupabaseClient
-      requireSupabaseMock.mockReturnValue(client)
-      const spy = vi.spyOn(queryClient, 'invalidateQueries')
-
-      renderHook(() => useNotificationsChannel('u1'), { wrapper })
-      const messageCall = channelMock.on.mock.calls.find(
-        (c) => (c[1] as { table?: string }).table === 'messages',
-      )
-      const bump = messageCall![2] as () => void
-      spy.mockClear()
-
-      bump()
-      expect(spy).toHaveBeenCalledTimes(2)
-      bump()
-      expect(spy).toHaveBeenCalledTimes(2)
-      vi.advanceTimersByTime(300)
-      expect(spy).toHaveBeenCalledTimes(4)
-    } finally {
-      vi.useRealTimers()
+  it('bumps invitations on invitation INSERT', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
     }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const invitationCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'invitations',
+    )
+    expect(invitationCall).toBeDefined()
+    ;(invitationCall![2] as () => void)()
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['my-invitations'] })
+    })
   })
 
   it('does not subscribe when there is no user', () => {

@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronUp, Loader2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useDocumentTitle } from '../../lib/use-document-title'
@@ -13,8 +12,8 @@ import {
 } from '../../features/posts'
 import {
   useClusterPosts,
-  useClusterPostComments,
   useClusterPostLikes,
+  usePostCounts,
   useTogglePostLike,
 } from '../../features/posts'
 import { useClusterChannel } from '../../features/realtime'
@@ -43,8 +42,8 @@ export function PostsFeedPage() {
   const clusterId = selectedId
   const posts = useClusterPosts(clusterId)
   const members = useClusterMembers(clusterId)
-  const likes = useClusterPostLikes(clusterId, (posts.data ?? []).map((p) => p.id))
-  const comments = useClusterPostComments(clusterId, (posts.data ?? []).map((p) => p.id))
+  const likes = useClusterPostLikes(clusterId)
+  const counts = usePostCounts(clusterId)
   const toggle = useTogglePostLike(clusterId)
   const loadEarlier = useLoadEarlierPosts(clusterId)
   const myMutes = useMyMutes(clusterId != null)
@@ -60,21 +59,37 @@ export function PostsFeedPage() {
     () => new Map((members.data ?? []).map((m) => [m.id, m])),
     [members.data],
   )
+  const countByPost = useMemo(() => {
+    const map = new Map<string, { likes: number; comments: number }>()
+    for (const c of counts.data ?? []) {
+      map.set(c.post_id, { likes: c.likes_count, comments: c.comments_count })
+    }
+    return map
+  }, [counts.data])
+  const mineByPost = useMemo(() => {
+    const set = new Set<string>()
+    for (const l of likes.data ?? []) {
+      if (l.user_id === userId) set.add(l.post_id)
+    }
+    return set
+  }, [likes.data, userId])
   const likesMap = useMemo(() => {
     const byPost = new Map<string, { count: number; mine: boolean }>()
-    for (const l of likes.data ?? []) {
-      const entry = byPost.get(l.post_id) ?? { count: 0, mine: false }
-      entry.count += 1
-      if (l.user_id === userId) entry.mine = true
-      byPost.set(l.post_id, entry)
+    for (const [postId, c] of countByPost) {
+      byPost.set(postId, { count: c.likes, mine: mineByPost.has(postId) })
+    }
+    for (const postId of mineByPost) {
+      const entry = byPost.get(postId) ?? { count: 0, mine: false }
+      entry.mine = true
+      byPost.set(postId, entry)
     }
     return byPost
-  }, [likes.data, userId])
+  }, [countByPost, mineByPost])
   const commentCount = useMemo(() => {
     const byPost = new Map<string, number>()
-    for (const c of comments.data ?? []) byPost.set(c.post_id, (byPost.get(c.post_id) ?? 0) + 1)
+    for (const [postId, c] of countByPost) byPost.set(postId, c.comments)
     return byPost
-  }, [comments.data])
+  }, [countByPost])
 
   const sorted = useMemo(
     () =>
@@ -86,22 +101,9 @@ export function PostsFeedPage() {
     [posts.data, sort, likesMap, commentCount],
   )
 
-  // Likes/comments are cluster-scoped caches that fetch once for the initially
-  // loaded posts. When "Load earlier" grows the set, refetch them so newly added
-  // posts are ranked on their real engagement instead of a 0-engagement tie.
-  const postIdsKey = (posts.data ?? []).map((p) => p.id).join(',')
-  const prevPostIdsKey = useRef(postIdsKey)
-  const refetchEngagement = useRef({ likes: likes.refetch, comments: comments.refetch })
-  refetchEngagement.current = { likes: likes.refetch, comments: comments.refetch }
-  useEffect(() => {
-    if (prevPostIdsKey.current === postIdsKey) return
-    prevPostIdsKey.current = postIdsKey
-    void refetchEngagement.current.likes()
-    void refetchEngagement.current.comments()
-  }, [postIdsKey])
-
+  // Likes/comments are whole-cluster caches (S-09 cluster_id), so earlier pages
+  // are already covered; the live channel patches arrivals.
   const selected = (clusters.data ?? []).find((c) => c.cluster.id === selectedId)
-  const isLocked = !selected?.cluster.introductions_completed_at
   const hasMore =
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
 
@@ -166,22 +168,11 @@ export function PostsFeedPage() {
             ))}
           </div>
 
-          {clusterId && !isLocked && <PostComposer clusterId={clusterId} />}
+          {clusterId && <PostComposer clusterId={clusterId} />}
 
           {posts.isLoading || myMutes.isLoading || !selected ? (
             <div className="flex items-center gap-2 text-sm text-on-surface-variant">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading posts…
-            </div>
-          ) : isLocked ? (
-            <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">
-              Posts unlock after introductions.{' '}
-              <Link
-                to={`/cluster/${selected.cluster.id}/waiting`}
-                className="font-semibold text-primary hover:underline"
-              >
-                Complete your introductions
-              </Link>{' '}
-              to start sharing.
             </div>
           ) : (posts.data ?? []).length === 0 ? (
             <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">

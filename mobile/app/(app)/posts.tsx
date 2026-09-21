@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Link } from 'expo-router'
 import { useAuth } from '../../src/auth-context'
 import { useClusterMembers, useMyClusters } from '../../src/features/matching'
 import {
@@ -46,8 +45,8 @@ export default function PostsFeedScreen() {
   const clusterId = selectedId
   const posts = useClusterPosts(clusterId)
   const members = useClusterMembers(clusterId)
-  const likes = useClusterPostLikes(clusterId, (posts.data ?? []).map((p) => p.id))
-  const comments = useClusterPostComments(clusterId, (posts.data ?? []).map((p) => p.id))
+  const likes = useClusterPostLikes(clusterId)
+  const comments = useClusterPostComments(clusterId)
   const toggle = useTogglePostLike(clusterId)
   const loadEarlier = useLoadEarlierPosts(clusterId)
   const myMutes = useMyMutes(clusterId != null)
@@ -109,7 +108,6 @@ export default function PostsFeedScreen() {
   }, [postIdsKey])
 
   const selected = (clusters.data ?? []).find((c) => c.cluster.id === selectedId)
-  const isLocked = !selected?.cluster.introductions_completed_at
   const hasMore =
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
   const inCluster = !clusters.isLoading && (clusters.data ?? []).length > 0
@@ -199,7 +197,7 @@ export default function PostsFeedScreen() {
                 })}
               </View>
             ) : null}
-            {inCluster && clusterId && !isLocked ? <PostComposer clusterId={clusterId} /> : null}
+            {inCluster && clusterId ? <PostComposer clusterId={clusterId} /> : null}
           </>
         }
         ListEmptyComponent={
@@ -215,22 +213,6 @@ export default function PostsFeedScreen() {
             <Card>
               <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
                 You aren’t in a cluster yet. Join a matching mode to start sharing posts.
-              </Text>
-            </Card>
-          ) : isLocked ? (
-            <Card plain>
-              <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
-                Posts unlock after introductions.{' '}
-                <Link
-                  href={{
-                    pathname: '/cluster/[clusterId]/waiting',
-                    params: { clusterId: selected.cluster.id },
-                  }}
-                  style={{ fontWeight: '600', color: t.primary }}
-                >
-                  Complete your introductions
-                </Link>{' '}
-                to start sharing.
               </Text>
             </Card>
           ) : (

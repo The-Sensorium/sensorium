@@ -8,7 +8,7 @@ const hooks = vi.hoisted(() => ({
   useMyClusters: vi.fn(),
   useClusterMembers: vi.fn(),
   useClusterPosts: vi.fn(),
-  useClusterPostComments: vi.fn(),
+  usePostCounts: vi.fn(),
   useClusterPostLikes: vi.fn(),
   useTogglePostLike: vi.fn(),
   useLoadEarlierPosts: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock('../../features/matching', () => ({
 }))
 vi.mock('../../features/posts', () => ({
   useClusterPosts: hooks.useClusterPosts,
-  useClusterPostComments: hooks.useClusterPostComments,
+  usePostCounts: hooks.usePostCounts,
   useClusterPostLikes: hooks.useClusterPostLikes,
   useTogglePostLike: hooks.useTogglePostLike,
   useLoadEarlierPosts: hooks.useLoadEarlierPosts,
@@ -64,32 +64,28 @@ function renderPage() {
   )
 }
 
-describe('PostsFeedPage introductions lock', () => {
+describe('PostsFeedPage composer availability', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1' })
     hooks.useMyClusters.mockReturnValue(queryStub([locked, unlocked]))
     hooks.useClusterMembers.mockReturnValue(queryStub([]))
     hooks.useClusterPosts.mockReturnValue(queryStub([]))
-    hooks.useClusterPostComments.mockReturnValue(queryStub([]))
+    hooks.usePostCounts.mockReturnValue(queryStub([]))
     hooks.useClusterPostLikes.mockReturnValue(queryStub([]))
     hooks.useTogglePostLike.mockReturnValue({ mutateAsync: vi.fn() })
     hooks.useLoadEarlierPosts.mockReturnValue({ mutate: vi.fn(), isPending: false, data: undefined })
     hooks.useMyMutes.mockReturnValue(queryStub([]))
   })
 
-  it('hides the composer and shows the lock notice for a locked cluster', () => {
+  it('shows the composer immediately even before introductions are done', () => {
     renderPage()
-    expect(screen.getByText(/Posts unlock after introductions/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Complete your introductions' })).toHaveAttribute(
-      'href',
-      '/cluster/locked1/waiting',
-    )
-    expect(screen.queryByTestId('post-composer')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Share the first one/)).not.toBeInTheDocument()
+    expect(screen.getByTestId('post-composer')).toBeInTheDocument()
+    expect(screen.queryByText(/Posts unlock after introductions/)).not.toBeInTheDocument()
+    expect(screen.getByText('No posts in Drift yet. Share the first one.')).toBeInTheDocument()
   })
 
-  it('shows the composer once an unlocked cluster is selected', () => {
+  it('shows the composer once another cluster is selected', () => {
     renderPage()
     fireEvent.click(screen.getByRole('tab', { name: 'Aurora' }))
     expect(screen.getByTestId('post-composer')).toBeInTheDocument()

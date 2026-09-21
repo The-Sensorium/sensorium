@@ -34,13 +34,13 @@ export function WhatsNextSteps({
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
           <Clock size={iconSize} color={t.primary} strokeWidth={1.5} />
           <Text style={{ flex: 1, fontSize: bodySize, lineHeight: bodyLine, color: t.onSurfaceVariant }}>
-            Once your cluster forms, you have 72 hours to complete intros or you&rsquo;ll lose your spot.
+            Jump straight into the conversation once your cluster forms.
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
           <MessageSquare size={iconSize} color={t.primary} strokeWidth={1.5} />
           <Text style={{ flex: 1, fontSize: bodySize, lineHeight: bodyLine, color: t.onSurfaceVariant }}>
-            Chat unlocks once everyone answers.
+            Answer the 5 intro questions when you’re ready.
           </Text>
         </View>
       </View>

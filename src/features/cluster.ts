@@ -138,23 +138,21 @@ export function useSendMessage() {
 }
 
 /**
- * Reactions on the messages currently loaded in the room. message_reactions has
- * no cluster column, so the query is bounded to the loaded ids instead of every
- * message ever sent in the cluster.
+ * All reactions in a cluster (RLS: active members). Clusters are small, so one
+ * filtered query replaces the old fetch-ids-then-.in() fan-out; the live
+ * channel patches new reactions into this cache.
  */
-export function useClusterReactions(clusterId: string | null, messageIds?: string[]) {
+export function useClusterReactions(clusterId: string | null) {
   return useQuery({
     queryKey: ['cluster-reactions', clusterId ?? 'none'],
     enabled: clusterId !== null,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
-      const ids = (messageIds ?? []).filter((id): id is string => Boolean(id))
-      if (ids.length === 0) return [] as Reaction[]
       const supabase = requireSupabase()
       const { data, error } = await supabase
         .from('message_reactions')
-        .select('*')
-        .in('message_id', ids)
+        .select('message_id,user_id,emoji')
+        .eq('cluster_id', clusterId)
       if (error) throw error
       return (data ?? []) as Reaction[]
     },
@@ -193,13 +191,16 @@ export function useReplyTargets(clusterId: string | null, parentIds: string[]) {
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .in('id', parentIds)
-      if (error) throw error
+      const ids = [...new Set(parentIds)]
       const map = new Map<string, Message>()
-      for (const m of data ?? []) map.set(m.id, m as Message)
+      for (let i = 0; i < ids.length; i += 50) {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .in('id', ids.slice(i, i + 50))
+        if (error) throw error
+        for (const m of data ?? []) map.set(m.id, m as Message)
+      }
       return map
     },
   })
@@ -234,7 +235,7 @@ export function useToggleReaction(clusterId: string | null) {
         if (base.some(mine)) return base.filter((r) => !mine(r))
         return [
           ...base,
-          { message_id: messageId, user_id: userId, emoji, created_at: new Date().toISOString() },
+          { message_id: messageId, user_id: userId, emoji, cluster_id: clusterId, created_at: new Date().toISOString() },
         ]
       })
       return { prev }

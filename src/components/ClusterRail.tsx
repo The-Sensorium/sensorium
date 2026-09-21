@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Loader2, MessageCircle, MessageSquare, Scale } from 'lucide-react'
-import { useClusterSignals, useSignalReplies } from '../features/signals'
+import { useClusterSignals, useSignalReplyCounts } from '../features/signals'
 import { useClusterVotes } from '../features/votes'
 import { CountdownTimer } from './CountdownTimer'
 import type { Signal } from '../features/signals'
@@ -61,16 +61,18 @@ export function ClusterRail({
   stickyTop?: string
 }) {
   const signals = useClusterSignals(clusterId)
-  const replies = useSignalReplies(clusterId, null)
+  const replyCounts = useSignalReplyCounts(clusterId)
   const votes = useClusterVotes(clusterId)
 
   const replyCount = new Map<string, number>()
-  for (const r of replies.data ?? []) {
-    replyCount.set(r.signal_id, (replyCount.get(r.signal_id) ?? 0) + 1)
+  for (const r of replyCounts.data ?? []) {
+    replyCount.set(r.signal_id, r.reply_count)
   }
 
   const activeSignals = (signals.data ?? []).filter((s) => s.status !== 'resolved').slice(0, 3)
-  const openVotes = (votes.data ?? []).filter((v) => v.status === 'open').slice(0, 3)
+  const openVotes = (votes.data ?? [])
+    .filter((v) => v.status === 'open' && v.type !== 'select_candidate')
+    .slice(0, 3)
 
   return (
     <div className={cn('sticky space-y-4', stickyTop)}>

@@ -1,11 +1,14 @@
 // create-call-token: mints a short-lived LiveKit access token for a cluster call.
 //
 // The browser/app can never hold the LiveKit API secret, so token signing
-// lives here. The gateway verifies the caller's Supabase JWT (verify_jwt), and
-// this function re-asserts access by hand with the service-role key: the caller
-// must be an active member of the call's cluster, the call must not have ended,
-// and the cluster must not be archived. (The function bypasses RLS, so these
-// checks mirror the RPC/RLS predicates in 0107/0108 instead of relying on them.)
+// lives here. The gateway verifies the caller's Supabase JWT before this code
+// runs ([functions.create-call-token] verify_jwt = true in supabase/config.toml),
+// so the base64 parse below is identity extraction only, not verification.
+// Access is re-asserted with ONE get_call_token_context RPC (service-role):
+// the caller must be an active member of the call's cluster, the call must not
+// have ended, and the cluster must not be archived. (The function bypasses RLS,
+// so these checks mirror the RPC/RLS predicates in 0107/0108 instead of relying
+// on them.) The RPC also enforces the mint rate limit (0138).
 //
 // Env (function env only, never the client or DB):
 //   LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET
@@ -13,11 +16,16 @@
 
 const TOKEN_TTL_SECONDS = 600
 
-interface CallRow {
-  id: string
-  cluster_id: string
-  status: 'ringing' | 'active' | 'ended'
-  expires_at: string
+interface CallTokenContext {
+  call_found: boolean
+  call_status: string | null
+  call_expires_at: string | null
+  cluster_id: string | null
+  cluster_status: string | null
+  is_active: boolean
+  is_member: boolean
+  is_participant: boolean
+  display_name: string | null
 }
 
 function base64UrlEncode(bytes: Uint8Array): string {
@@ -76,17 +84,6 @@ async function mintLiveKitToken(
   )
   const unsigned = `${header}.${payload}`
   return `${unsigned}.${await signHs256(unsigned, apiSecret)}`
-}
-
-async function rest<T>(supabaseUrl: string, serviceRoleKey: string, path: string): Promise<T> {
-  const res = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-    },
-  })
-  if (!res.ok) throw new Error(`rest ${res.status}: ${await res.text()}`)
-  return (await res.json()) as T
 }
 
 async function rpc<T>(
@@ -166,77 +163,42 @@ Deno.serve(async (request) => {
     return json({ error: 'unauthorized' }, 401)
   }
 
+  // Single round-trip for membership, participation, account/cluster/call
+  // state, display name, and the mint rate limit (get_call_token_context).
   // Mirror the RPC predicate: a suspended/banned account can't mint a token even
   // if it still holds an open participant row.
-  let activeAccount: boolean
+  let ctxs: CallTokenContext[]
   try {
-    activeAccount = await rpc<boolean>(supabaseUrl, serviceRoleKey, 'is_account_active', {
+    ctxs = await rpc<CallTokenContext[]>(supabaseUrl, serviceRoleKey, 'get_call_token_context', {
+      p_call_id: callId,
       p_user_id: callerId,
     })
   } catch (error) {
-    console.error('account check failed:', error)
+    if (String(error).includes('rate_limited')) return json({ error: 'rate_limited' }, 429)
+    console.error('call context lookup failed:', error)
     return json({ error: 'misconfigured' }, 500)
   }
-  if (!activeAccount) return json({ error: 'account_inactive' }, 403)
-
-  let calls: CallRow[]
-  try {
-    calls = await rest<CallRow[]>(
-      supabaseUrl,
-      serviceRoleKey,
-      `calls?id=eq.${callId}&select=id,cluster_id,status,expires_at`,
-    )
-  } catch (error) {
-    console.error('call lookup failed:', error)
-    return json({ error: 'misconfigured' }, 500)
-  }
-  const call = calls[0]
-  if (!call) return json({ error: 'call_not_found' }, 404)
-  if (call.status === 'ended' || Date.parse(call.expires_at) <= Date.now()) {
+  const ctx = ctxs[0]
+  if (!ctx || !ctx.call_found) return json({ error: 'call_not_found' }, 404)
+  if (ctx.call_status === 'ended' || (ctx.call_expires_at && Date.parse(ctx.call_expires_at) <= Date.now())) {
     return json({ error: 'call_ended' }, 403)
   }
+  if (!ctx.is_active) return json({ error: 'account_inactive' }, 403)
+  if (!ctx.is_member) return json({ error: 'not_member' }, 403)
+  if (ctx.cluster_status === 'archived') return json({ error: 'cluster_archived' }, 403)
+  // Membership is not enough: the caller must have joined via join_call/start_call,
+  // so the participant list (and its cap) is the real gate to the media plane.
+  if (!ctx.is_participant) return json({ error: 'not_participant' }, 403)
 
-  let members: { user_id: string }[]
-  let clusters: { status: string }[]
-  let participants: { user_id: string }[]
-  let profiles: { display_name: string | null }[]
   let token: string
   try {
-    ;[members, clusters, participants, profiles] = await Promise.all([
-      rest<{ user_id: string }[]>(
-        supabaseUrl,
-        serviceRoleKey,
-        `cluster_members?cluster_id=eq.${call.cluster_id}&user_id=eq.${callerId}&left_at=is.null&select=user_id`,
-      ),
-      rest<{ status: string }[]>(
-        supabaseUrl,
-        serviceRoleKey,
-        `clusters?id=eq.${call.cluster_id}&select=status`,
-      ),
-      rest<{ user_id: string }[]>(
-        supabaseUrl,
-        serviceRoleKey,
-        `call_participants?call_id=eq.${call.id}&user_id=eq.${callerId}&left_at=is.null&select=user_id`,
-      ),
-      rest<{ display_name: string | null }[]>(
-        supabaseUrl,
-        serviceRoleKey,
-        `profiles?id=eq.${callerId}&select=display_name`,
-      ),
-    ])
-    if (members.length === 0) return json({ error: 'not_member' }, 403)
-    if (clusters[0]?.status === 'archived') return json({ error: 'cluster_archived' }, 403)
-    // Membership is not enough: the caller must have joined via join_call/start_call,
-    // so the participant list (and its cap) is the real gate to the media plane.
-    if (participants.length === 0) return json({ error: 'not_participant' }, 403)
-
     // Room is unique per call, not per cluster: a stable name would surface any
     // lingering connection from a previous call in the same cluster (ghost
     // participant) inside the new call. call.id is shared by every joiner.
     token = await mintLiveKitToken(
-      `cluster:${call.cluster_id}:${call.id}`,
+      `cluster:${ctx.cluster_id}:${callId}`,
       callerId,
-      profiles[0]?.display_name ?? null,
+      ctx.display_name ?? null,
       apiKey,
       apiSecret,
     )

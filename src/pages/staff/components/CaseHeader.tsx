@@ -91,7 +91,7 @@ export function CaseHeader({
           ...(data.escalated_at
             ? [{
               label: 'Escalated',
-              value: `${timeAgo(data.escalated_at)}${data.escalation_reason ? ` — ${data.escalation_reason}` : ''}`,
+              value: `${timeAgo(data.escalated_at)}${data.escalation_reason ? ` - ${data.escalation_reason}` : ''}`,
               wide: true,
             }]
             : []),

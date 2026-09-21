@@ -4,7 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
-import { makeSupabaseClient, initialMockResult, asError, type MockSupabaseResult } from '../test/supabase-client'
+import { makeSupabaseClient, initialMockResult, type MockSupabaseResult } from '../test/supabase-client'
 import {
   parseVoteResult,
   useAcceptInvitation,
@@ -12,10 +12,10 @@ import {
   useClusterVotes,
   useDeclineInvitation,
   useMyPendingInvitations,
-  useReplacementCandidates,
   useReplacementRound,
   useStartNameVote,
   useStartReplaceVote,
+  useVoteCounts,
   useVoteOn,
 } from './votes'
 
@@ -92,6 +92,22 @@ describe('votes', () => {
     await waitFor(() => expect(result.current.data).toEqual([]))
   })
 
+  it('useVoteCounts calls get_vote_counts for the cluster', async () => {
+    mockResult.value = { data: [{ vote_id: 'v1', cast_count: 2, my_choice: 'yes' }], error: null }
+    const { result } = renderHook(() => useVoteCounts('c1'), { wrapper })
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ vote_id: 'v1', cast_count: 2, my_choice: 'yes' }]),
+    )
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_vote_counts', {
+      p_cluster_id: 'c1',
+    })
+  })
+
+  it('useVoteCounts is disabled without a cluster', async () => {
+    const { result } = renderHook(() => useVoteCounts(null), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+  })
+
   it('useReplacementRound reads the first row of get_replacement_round', async () => {
     mockResult.value = { data: [{ id: 'round-1' }], error: null }
     const { result } = renderHook(() => useReplacementRound('c1'), { wrapper })
@@ -99,13 +115,6 @@ describe('votes', () => {
     expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_replacement_round', {
       p_cluster_id: 'c1',
     })
-  })
-
-  it('useReplacementCandidates throws when there is no round', async () => {
-    mockResult.value = asError('nope')
-    const { result } = renderHook(() => useReplacementCandidates('round-1'), { wrapper })
-    await waitFor(() => expect(result.current.isError).toBe(true))
-    expect((result.current.error as Error).message).toBe('nope')
   })
 
   it('useMyPendingInvitations is disabled while signed out', () => {

@@ -73,7 +73,7 @@ describe('MyReportsPage', () => {
     } as never)
     renderPage()
     expect(document.querySelectorAll('[data-e2e="my-report-row"]')).toHaveLength(2)
-    expect(screen.getByText('Reviewed — action taken.')).toBeInTheDocument()
+    expect(screen.getByText('Reviewed. Action taken.')).toBeInTheDocument()
     expect(screen.getByText('Bo · Member')).toBeInTheDocument()
     expect(screen.getByText('“kept pinging me”')).toBeInTheDocument()
   })

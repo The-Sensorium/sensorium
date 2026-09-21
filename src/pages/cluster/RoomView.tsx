@@ -24,7 +24,7 @@ import {
   type Message,
   type Reaction,
 } from '../../features/cluster'
-import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../features/signals'
+import { useClusterSignals, useSignalReplyCounts, useRaiseSignal, type Signal } from '../../features/signals'
 import { useClusterVotes, type Vote } from '../../features/votes'
 import {
   useActiveCall,
@@ -36,7 +36,7 @@ import {
 import { useMarkClusterRead } from '../../features/notifications'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
-import { toErrorMessage } from '../../lib/error'
+import { rateLimitMessage, toErrorMessage } from '../../lib/error'
 import { usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
@@ -47,6 +47,7 @@ import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { TypingBubble } from './room/TypingBubble'
 import { CallBanner } from './room/CallBanner'
 import { CallOverlay } from './room/CallOverlay'
+import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
 import { SignalRow } from './room/SignalRow'
 import { VoteRow } from './room/VoteRow'
 import { ReportModal } from '../../components/ReportModal'
@@ -68,11 +69,11 @@ export function RoomView() {
 
   const messages = useClusterMessages(clusterId)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
-  const reactions = useClusterReactions(clusterId, loadedMessageIds)
+  const reactions = useClusterReactions(clusterId)
   const loadEarlier = useLoadEarlierMessages(clusterId)
   const queryClient = useQueryClient()
   const signals = useClusterSignals(clusterId)
-  const signalReplies = useSignalReplies(clusterId, null)
+  const signalReplyCounts = useSignalReplyCounts(clusterId)
   const votes = useClusterVotes(clusterId)
   const members = useClusterMembers(clusterId)
   const send = useSendMessage()
@@ -222,11 +223,11 @@ export function RoomView() {
 
   const replyCount = useMemo(() => {
     const map = new Map<string, number>()
-    for (const r of signalReplies.data ?? []) {
-      map.set(r.signal_id, (map.get(r.signal_id) ?? 0) + 1)
+    for (const r of signalReplyCounts.data ?? []) {
+      map.set(r.signal_id, r.reply_count)
     }
     return map
-  }, [signalReplies.data])
+  }, [signalReplyCounts.data])
 
   // Read receipts for the message whose Info action was tapped. read_at comes
   // from message_reads (0049), a per-message timestamp frozen on first read, so
@@ -376,7 +377,7 @@ export function RoomView() {
     if ((messages.data?.length ?? 0) >= CHAT_PAGE_SIZE) setHasMore(true)
   }, [messages.data])
 
-  // Reactions are fetched for the loaded messages only. Refetch when the oldest
+  // Reactions are fetched cluster-wide. Refetch when the oldest
   // loaded message changes (initial load or an earlier page prepended), but not
   // when a new message is appended by the live channel: a fresh message can't
   // have reactions yet, so refetching for every incoming message is wasted work.
@@ -428,7 +429,7 @@ export function RoomView() {
         .filter((s) => s.status !== 'resolved')
         .map((s) => ({ kind: 'signal' as const, data: s })),
       ...(votes.data ?? [])
-        .filter((v) => v.status === 'open')
+        .filter((v) => v.status === 'open' && v.type !== 'select_candidate')
         .map((v) => ({ kind: 'vote' as const, data: v })),
     ]
     return items.sort((a, b) => a.data.created_at.localeCompare(b.data.created_at))
@@ -465,7 +466,7 @@ export function RoomView() {
     try {
       await toggleReaction.mutateAsync({ messageId, emoji })
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not react to that message.'))
+      setError(rateLimitMessage(e, 'Could not react to that message.'))
     }
   }
 
@@ -688,8 +689,9 @@ export function RoomView() {
           onOpen={() => setInCall(true)}
         />
       )}
+      <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
       {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
-       the timeline scrolls inside the container and the page never moves. */}
+      the timeline scrolls inside the container and the page never moves. */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {messages.isLoading || myMutes.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">

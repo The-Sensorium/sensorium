@@ -179,25 +179,19 @@ export function useUserPosts(authorId: string | null, enabled = true) {
   })
 }
 
-/** Cache key for a set of posts' likes. The id set is part of the key: feed,
- * detail, and profile pages read different id sets for one cluster, and a
- * shared key lets one screen's refetch overwrite another screen's counts. */
-export function postLikesKey(clusterId: string | null, postIds: string[]) {
-  return ['post-likes', clusterId ?? 'none', [...postIds].sort().join(',')] as const
-}
-
-/** Likes on the posts currently loaded (post_likes carries no cluster column). */
-export function useClusterPostLikes(clusterId: string | null, postIds: string[]) {
+/** Likes in a cluster (RLS: active members). One filtered query; the live
+ * channel patches new likes into this cache. */
+export function useClusterPostLikes(clusterId: string | null) {
   return useQuery({
-    queryKey: postLikesKey(clusterId, postIds),
-    enabled: clusterId !== null && postIds.length > 0,
+    queryKey: ['post-likes', clusterId ?? 'none'],
+    enabled: clusterId !== null,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
       const { data, error } = await supabase
         .from('post_likes')
-        .select('*')
-        .in('post_id', postIds)
+        .select('post_id,user_id')
+        .eq('cluster_id', clusterId)
       if (error) throw error
       return (data ?? []) as PostLike[]
     },
@@ -224,18 +218,18 @@ export function usePostLikes(postId: string | null) {
   })
 }
 
-/** Likes on the comments currently loaded (comment_likes carries no cluster column). */
-export function useClusterCommentLikes(clusterId: string | null, commentIds: string[]) {
+/** Likes on the comments currently loaded (one filtered query per cluster). */
+export function useClusterCommentLikes(clusterId: string | null) {
   return useQuery({
     queryKey: ['comment-likes', clusterId ?? 'none'],
-    enabled: clusterId !== null && commentIds.length > 0,
+    enabled: clusterId !== null,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
       const { data, error } = await supabase
         .from('comment_likes')
-        .select('*')
-        .in('comment_id', commentIds)
+        .select('comment_id,user_id')
+        .eq('cluster_id', clusterId)
       if (error) throw error
       return (data ?? []) as CommentLike[]
     },
@@ -262,7 +256,7 @@ export function useToggleCommentLike(clusterId: string | null) {
         const base = cur ?? prev ?? []
         const liked = base.some((l) => l.comment_id === commentId && l.user_id === userId)
         if (liked) return base.filter((l) => !(l.comment_id === commentId && l.user_id === userId))
-        return [...base, { comment_id: commentId, user_id: userId, liked_at: new Date().toISOString() }]
+        return [...base, { comment_id: commentId, user_id: userId, cluster_id: clusterId, liked_at: new Date().toISOString() }]
       })
       return { prev }
     },
@@ -279,17 +273,17 @@ export function useToggleCommentLike(clusterId: string | null) {
   })
 }
 
-/** All comments for a set of posts (feed list grouping). */
-export function useClusterPostComments(clusterId: string | null, postIds: string[]) {  return useQuery({
+/** All comments in a cluster (feed list grouping). */
+export function useClusterPostComments(clusterId: string | null) {  return useQuery({
     queryKey: ['post-comments', clusterId ?? 'none', 'all'],
-    enabled: clusterId !== null && postIds.length > 0,
+    enabled: clusterId !== null,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
       const { data, error } = await supabase
         .from('post_comments')
         .select('*')
-        .in('post_id', postIds)
+        .eq('cluster_id', clusterId)
         .order('created_at', { ascending: true })
         .order('id', { ascending: true })
       if (error) throw error
@@ -314,6 +308,27 @@ export function usePostComments(clusterId: string | null, postId: string | null)
         .order('id', { ascending: true })
       if (error) throw error
       return ((data ?? []) as PostComment[]).sort(byOldest)
+    },
+  })
+}
+
+export type PostCount = { post_id: string; likes_count: number; comments_count: number }
+
+/** Per-post engagement counts (bounded GROUP BY; RLS: active members of an
+ * unlocked cluster). Feed/profile rank from this instead of downloading every
+ * like and comment row; detail pages keep row queries for threads and flags. */
+export function usePostCounts(clusterId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['post-counts', clusterId ?? 'none'],
+    enabled: enabled && clusterId !== null,
+    queryFn: async () => {
+      if (!clusterId) throw new Error('No cluster')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_post_counts', {
+        p_cluster_id: clusterId,
+      })
+      if (error) throw error
+      return (data ?? []) as PostCount[]
     },
   })
 }
@@ -347,6 +362,7 @@ export function useCreatePost(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
       }
     },
@@ -403,6 +419,7 @@ export function useDeletePost(clusterId: string | null) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-posts', 'single', postId] })
         void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId, 'all'] })
       }
     },
@@ -426,13 +443,13 @@ export function useTogglePostLike(clusterId: string | null) {
       if (!clusterId || !userId) return
       const prefix = { queryKey: ['post-likes', clusterId] } as const
       await queryClient.cancelQueries(prefix)
-      // Every keyed id-set entry (feed/detail/profile) gets the same toggle
-      // so no screen's counts go stale or get clobbered by another's refetch.
+      // Every likes cache for this cluster (feed/detail/profile share one key)
+      // gets the same toggle so no screen's counts go stale on refetch.
       const prev = queryClient.getQueriesData<PostLike[]>(prefix)
       const toggleLike = (base: PostLike[]) => {
         const liked = base.some((l) => l.post_id === postId && l.user_id === userId)
         if (liked) return base.filter((l) => !(l.post_id === postId && l.user_id === userId))
-        return [...base, { post_id: postId, user_id: userId, liked_at: new Date().toISOString() }]
+        return [...base, { post_id: postId, user_id: userId, cluster_id: clusterId, liked_at: new Date().toISOString() }]
       }
       queryClient.setQueriesData<PostLike[]>(prefix, (cur) => toggleLike(cur ?? []))
       const singleKey = ['post-likes', 'single', postId] as const
@@ -451,6 +468,7 @@ export function useTogglePostLike(clusterId: string | null) {
     onSettled: (_d, _e, postId) => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
       }
       void queryClient.invalidateQueries({ queryKey: ['post-likes', 'single', postId] })
     },
@@ -487,6 +505,7 @@ export function useCreateComment(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
     },
@@ -524,6 +543,7 @@ export function useDeleteComment(clusterId: string | null) {
           },
         )
         void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
     },

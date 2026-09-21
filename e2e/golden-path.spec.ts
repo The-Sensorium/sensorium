@@ -12,6 +12,13 @@ async function login(page: Page) {
   await page.getByLabel('Email').fill(EMAIL)
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'Login' }).click()
+  await expect(
+    page.getByRole('navigation').or(page.getByRole('heading', { name: 'Choose a workspace' })),
+  ).toBeVisible()
+  const memberWorkspace = page.getByRole('button', { name: /For your clusters/i })
+  if (await memberWorkspace.isVisible()) {
+    await memberWorkspace.click()
+  }
   await expect(page.getByRole('navigation')).toBeVisible()
 }
 
@@ -33,6 +40,16 @@ test.describe('golden path (seeded)', () => {
     await expect(exact).toBeVisible()
     await exact.click()
     await expect(page).toHaveURL(/\/discovery\/exact_birthdate/)
+  })
+
+  test('generation tile links to its mode page', async ({ page }) => {
+    await page.goto('/clusters')
+
+    const modes = page.getByRole('region', { name: 'Matching modes' })
+    const generation = modes.getByRole('link', { name: /Generation/i })
+    await expect(generation).toBeVisible()
+    await generation.click()
+    await expect(page).toHaveURL(/\/discovery\/generation/)
   })
 
   test('open mix tile links to its mode page', async ({ page }) => {

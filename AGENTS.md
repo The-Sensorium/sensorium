@@ -40,6 +40,7 @@ Env is just `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (both public). The br
 
 - All server reads go through feature modules in `src/features/` (`cluster.ts`, `signals.ts`, etc.) that wrap TanStack Query. Components never talk to Supabase directly.
 - `@/` aliases `src/`. Strict TypeScript. No comments unless they carry meaning.
+- Never use em dashes or en dashes anywhere in the app (UI copy, code strings, comments, docs); use hyphens, commas, or colons instead.
 - Tailwind utilities restricted to tokens in `docs/DESIGN.md` — no new colors, typefaces, or radii.
 - Tests are colocated with source (`foo.ts` + `foo.test.ts(x)`).
 

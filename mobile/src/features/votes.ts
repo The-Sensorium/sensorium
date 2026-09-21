@@ -6,7 +6,6 @@ import { requireSupabase } from '../lib/supabase'
 export type Vote = Database['public']['Tables']['votes']['Row']
 export type VoteResponse = Database['public']['Tables']['vote_responses']['Row']
 export type ReplacementRound = Database['public']['Functions']['get_replacement_round']['Returns'][number]
-export type CandidateProfile = Database['public']['Functions']['get_candidate_profiles']['Returns'][number]
 export type PendingInvitation = Database['public']['Functions']['get_pending_invitations']['Returns'][number]
 
 /** All votes in a cluster (RLS: active members), newest first. */
@@ -53,6 +52,27 @@ export function useClusterVoteResponses(clusterId: string | null, enabled = true
   })
 }
 
+export type VoteCount = { vote_id: string; cast_count: number; my_choice: string | null }
+
+/** Per-vote cast counts plus the caller's own choice (bounded GROUP BY; RLS:
+ * active members). Replaces the two-step vote_ids-then-.in() responses fetch
+ * for counting; the live vote path invalidates this key on settle. */
+export function useVoteCounts(clusterId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ['vote-counts', clusterId ?? 'none'],
+    enabled: enabled && clusterId !== null,
+    queryFn: async () => {
+      if (!clusterId) throw new Error('No cluster')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_vote_counts', {
+        p_cluster_id: clusterId,
+      })
+      if (error) throw error
+      return (data ?? []) as VoteCount[]
+    },
+  })
+}
+
 /** The cluster's active replacement round, if any (RLS: active members). */
 export function useReplacementRound(clusterId: string | null, enabled = true) {
   return useQuery({
@@ -66,23 +86,6 @@ export function useReplacementRound(clusterId: string | null, enabled = true) {
       })
       if (error) throw error
       return (data?.[0] as ReplacementRound | undefined) ?? null
-    },
-  })
-}
-
-/** Profile cards for a round's candidate pool (security definer RPC). */
-export function useReplacementCandidates(roundId: string | null, enabled = true) {
-  return useQuery({
-    queryKey: ['replacement-candidates', roundId ?? 'none'],
-    enabled: enabled && roundId !== null,
-    queryFn: async () => {
-      if (!roundId) throw new Error('No round')
-      const supabase = requireSupabase()
-      const { data, error } = await supabase.rpc('get_candidate_profiles', {
-        p_round_id: roundId,
-      })
-      if (error) throw error
-      return (data ?? []) as CandidateProfile[]
     },
   })
 }
@@ -105,6 +108,7 @@ export function useStartReplaceVote(clusterId: string | null) {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['vote-responses', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
       }
     },
   })
@@ -128,6 +132,7 @@ export function useStartNameVote(clusterId: string | null) {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['vote-responses', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
       }
     },
   })
@@ -149,6 +154,7 @@ export function useVoteOn(clusterId: string | null) {
     onSuccess: () => {
       if (clusterId) {
         void queryClient.invalidateQueries({ queryKey: ['vote-responses', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
       }
     },
   })

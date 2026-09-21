@@ -155,8 +155,9 @@ const PEOPLE = [
 
 // Member slots are 'diya' / 'rio' (the two login accounts) or an index into
 // PEOPLE. `introductionsDone` marks how many of a cluster's members have
-// already answered the intro questions (for the introductions phase only).
-// `formedDaysAgo` gives clusters a realistic formation date on the tile.
+// already answered the intro questions (checklist progress; every cluster is
+// active and open). `formedDaysAgo` gives clusters a realistic formation date
+// on the tile.
 const CLUSTERS = [
   {
     name: 'Aurora',
@@ -181,7 +182,7 @@ const CLUSTERS = [
     mode: 'exact_birthdate',
     modeLabel: 'Exact Birthdate',
     queueKey: '1990-05-20',
-    status: 'introductions',
+    status: 'active',
     formedDaysAgo: 2,
     members: [14, 15, 16, 17, 18, 19, 20, 21],
     introductionsDone: 2,
@@ -209,28 +210,28 @@ const CLUSTERS = [
     mode: 'birth_year_month',
     modeLabel: 'Birth Year + Month',
     queueKey: '1985-12',
-    status: 'introductions',
+    status: 'active',
     formedDaysAgo: 1,
     members: [31, 32, 33, 34, 35, 36, 37, 38],
     introductionsDone: 1,
   },
   {
-    name: 'April Bloom',
-    mode: 'birth_month',
-    modeLabel: 'Birth Month',
-    queueKey: '04',
+    name: 'Early 90s',
+    mode: 'generation',
+    modeLabel: 'Born 1990-1994',
+    queueKey: '1990-1994',
     status: 'active',
     formedDaysAgo: 30,
-    members: [1, 5, 9, 13, 17, 21, 24, 26],
+    members: [1, 4, 6, 7, 10, 14, 17, 20],
   },
   {
-    name: 'December Nights',
-    mode: 'birth_month',
-    modeLabel: 'Birth Month',
-    queueKey: '12',
-    status: 'introductions',
+    name: 'Late 90s',
+    mode: 'generation',
+    modeLabel: 'Born 1995-1999',
+    queueKey: '1995-1999',
+    status: 'active',
     formedDaysAgo: 3,
-    members: [4, 8, 12, 16, 20, 25, 27, 39],
+    members: [2, 5, 11, 13, 19, 29, 40, 42],
     introductionsDone: 3,
   },
   {
@@ -247,7 +248,7 @@ const CLUSTERS = [
     mode: 'birth_year',
     modeLabel: 'Birth Year',
     queueKey: '1999',
-    status: 'introductions',
+    status: 'active',
     formedDaysAgo: 0,
     members: [40, 41, 42, 43, 44, 45, 46, 47],
     introductionsDone: 0,
@@ -266,7 +267,7 @@ const CLUSTERS = [
     mode: 'local',
     modeLabel: 'Local',
     queueKey: 'PT:porto:50',
-    status: 'introductions',
+    status: 'active',
     formedDaysAgo: 2,
     members: [9, 13, 21, 29, 33, 37, 41, 45],
     introductionsDone: 2,
@@ -294,7 +295,7 @@ const CLUSTERS = [
     mode: 'open_mix',
     modeLabel: 'Open Mix',
     queueKey: 'open',
-    status: 'introductions',
+    status: 'active',
     formedDaysAgo: 0,
     members: [2, 7, 12, 'diya', 17, 22, 27, 32],
     introductionsDone: 3,
@@ -355,6 +356,26 @@ function personFor(slot) {
       }
 }
 
+async function ensureAdmin(admin, userId) {
+  const { data, error } = await admin
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('role', 'admin')
+    .is('revoked_at', null)
+    .limit(1)
+  if (error) throw error
+  if (!data?.length) {
+    const { error: insertError } = await admin.from('user_roles').insert({
+      user_id: userId,
+      role: 'admin',
+      granted_by: userId,
+      grant_reason: 'seed: local demo admin',
+    })
+    if (insertError) throw insertError
+  }
+}
+
 async function ensureMembership(admin, clusterId, userId) {
   const { data: memberRows } = await admin
     .from('cluster_members')
@@ -371,18 +392,18 @@ async function ensureMembership(admin, clusterId, userId) {
 }
 
 async function ensureCluster(admin, spec) {
-  const active = spec.status === 'active'
   const { data: existing } = await admin
     .from('clusters')
     .select('id, status')
     .eq('name', spec.name)
     .limit(1)
   let clusterId = existing?.[0]?.id
-  const introductionsDeadline = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
   const formedAt = new Date(
     Date.now() - (spec.formedDaysAgo ?? 0) * 24 * 60 * 60 * 1000,
   ).toISOString()
 
+  // Every seeded cluster is active and open; introductions are checklist
+  // progress only.
   if (!clusterId) {
     const { data, error } = await admin
       .from('clusters')
@@ -391,51 +412,42 @@ async function ensureCluster(admin, spec) {
         matching_mode: spec.mode,
         mode_label: spec.modeLabel,
         queue_key: spec.queueKey,
-        status: spec.status,
+        status: 'active',
         created_at: formedAt,
-        introductions_deadline: active ? null : introductionsDeadline,
-        introductions_completed_at: active ? new Date().toISOString() : null,
+        introductions_deadline: null,
+        introductions_completed_at: new Date().toISOString(),
       })
       .select('id')
       .single()
     if (error) throw error
     clusterId = data.id
-  } else if (existing?.[0]?.status !== spec.status) {
+  } else if (existing?.[0]?.status !== 'active') {
     // Idempotent reseed keeps a cluster's state aligned with the catalog.
     const { error } = await admin
       .from('clusters')
       .update({
-        status: spec.status,
+        status: 'active',
         created_at: formedAt,
-        introductions_deadline: active ? null : introductionsDeadline,
-        introductions_completed_at: active ? new Date().toISOString() : null,
+        introductions_deadline: null,
+        introductions_completed_at: new Date().toISOString(),
       })
       .eq('id', clusterId)
     if (error) throw error
   }
 
-  const introductionsDone = spec.introductionsDone ?? 0
+  // `introductionsDone` (default: everyone) controls how many members show
+  // completed checklist progress. Reseeds also clear the rest, so re-running
+  // the seed restores the fixture even after someone completed manually.
+  const introductionsDone = spec.introductionsDone ?? spec.members.length
   for (let i = 0; i < spec.members.length; i += 1) {
     const person = personFor(spec.members[i])
     const userId = await ensureUser(admin, person.email, person)
     await ensureMembership(admin, clusterId, userId)
-    // Active clusters were unlocked by their roster, so every member has a
-    // completed intro; in the introductions phase only the first N have.
-    // Reseeds also clear the rest, so re-running the seed restores the
-    // fixture even after someone (e.g. diya in Drift) completed manually.
-    if (active || i < introductionsDone) {
-      await admin
-        .from('cluster_members')
-        .update({ intro_completed_at: new Date().toISOString() })
-        .eq('cluster_id', clusterId)
-        .eq('user_id', userId)
-    } else if (!active) {
-      await admin
-        .from('cluster_members')
-        .update({ intro_completed_at: null })
-        .eq('cluster_id', clusterId)
-        .eq('user_id', userId)
-    }
+    await admin
+      .from('cluster_members')
+      .update({ intro_completed_at: i < introductionsDone ? new Date().toISOString() : null })
+      .eq('cluster_id', clusterId)
+      .eq('user_id', userId)
   }
   return clusterId
 }
@@ -509,6 +521,7 @@ async function seed() {
     .from('profiles')
     .update({ onboarding_completed_at: new Date().toISOString() })
     .eq('id', userId)
+  await ensureAdmin(admin, userId)
 
   // Rio is a fully usable second login, so member-dependent E2E flows (mention
   // autocomplete, read receipts) have a real second actor to drive.

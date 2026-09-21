@@ -8,8 +8,8 @@ function makeCluster(overrides: Partial<ClusterTile> = {}): ClusterTile {
   return {
     id: 'c1',
     name: 'The Night Owls',
-    matching_mode: 'birth_month',
-    mode_label: 'Birth Month',
+    matching_mode: 'generation',
+    mode_label: 'Born 2000-2004',
     status: 'active',
     member_count: 8,
     created_at: '2024-06-01T12:00:00.000Z',
@@ -25,7 +25,7 @@ describe('PublicClusterCard', () => {
       </MemoryRouter>,
     )
     expect(screen.getByText('The Night Owls')).toBeInTheDocument()
-    expect(screen.getByText('Birth Month')).toBeInTheDocument()
+    expect(screen.getByText('Generation')).toBeInTheDocument()
     expect(screen.getByText('8 members')).toBeInTheDocument()
     expect(screen.getByText('Active')).toBeInTheDocument()
     expect(screen.getByText(/Formed/)).toBeInTheDocument()

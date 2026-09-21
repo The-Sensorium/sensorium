@@ -7,7 +7,7 @@ const hooks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useClusterMembers: vi.fn(),
   useClusterSignals: vi.fn(),
-  useSignalReplies: vi.fn(),
+  useSignalReplyCounts: vi.fn(),
   useRaiseSignal: vi.fn(),
   useAvatarUrl: vi.fn(),
   useMyMutes: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterM
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
 vi.mock('../../features/signals', () => ({
   useClusterSignals: hooks.useClusterSignals,
-  useSignalReplies: hooks.useSignalReplies,
+  useSignalReplyCounts: hooks.useSignalReplyCounts,
   useRaiseSignal: hooks.useRaiseSignal,
 }))
 vi.mock('../../features/moderation', () => ({ useMyMutes: hooks.useMyMutes, isMutedAuthor: (muted: Set<string>, id: string) => muted.has(id), mutedIds: (mutes: Array<{ muted_user_id: string }> | undefined) => new Set((mutes ?? []).map((m) => m.muted_user_id)) }))
@@ -63,7 +63,7 @@ describe('SignalsView', () => {
     hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1' })
     hooks.useClusterMembers.mockReturnValue(queryStub(members))
     hooks.useClusterSignals.mockReturnValue(queryStub([]))
-    hooks.useSignalReplies.mockReturnValue(queryStub([]))
+    hooks.useSignalReplyCounts.mockReturnValue(queryStub([]))
     hooks.useRaiseSignal.mockReturnValue(raise)
     hooks.useMyMutes.mockReturnValue(queryStub([]))
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
