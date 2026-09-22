@@ -641,6 +641,17 @@ export function RoomView() {
         className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft max-lg:[html.keyboard-open_&]:hidden"
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h2 className="font-display text-sm font-semibold text-on-surface">
+            <Link
+              to="members"
+              className="inline-flex items-baseline gap-2 whitespace-nowrap rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              In the cluster now
+              <span className="text-xs font-normal text-on-surface-variant">
+                {onlineCount} of {memberCount} here
+              </span>
+            </Link>
+          </h2>
           <ul className="flex flex-wrap items-center gap-2">
             {(members.data ?? []).map((m) => {
               const isMe = m.id === userId
@@ -668,17 +679,6 @@ export function RoomView() {
               )
             })}
           </ul>
-          <h2 className="ml-auto font-display text-sm font-semibold text-on-surface">
-            <Link
-              to="members"
-              className="inline-flex items-baseline gap-2 whitespace-nowrap rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              In the cluster now
-              <span className="text-xs font-normal text-on-surface-variant">
-                {onlineCount} of {memberCount} here
-              </span>
-            </Link>
-          </h2>
         </div>
       </section>
       {activeCall.data && !inCall && (

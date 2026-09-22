@@ -89,6 +89,67 @@ describe('push outbox fan-out', () => {
     expect(rows[0]!.data).toMatchObject({ v: 1, kind: 'mention', clusterId })
   })
 
+  it('fans plain chat out as message push without a notification row', async () => {
+    const a = await member('push-plain-a')
+    const b = await member('push-plain-b')
+    await admin.from('profiles').update({ display_name: 'Plain Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'hello plain' })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
+    expect(rows[0]!.title).toContain('Plain Sender')
+    expect(rows[0]!.body).toBe('hello plain')
+    expect(rows[0]!.data).toMatchObject({ v: 1, kind: 'message', clusterId })
+
+    // Plain chat stays out of the notifications table (ephemeral inbox entry only).
+    const { data: stored } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', b.id)
+      .eq('cluster_id', clusterId)
+    expect(stored ?? []).toHaveLength(0)
+
+    // The author gets nothing.
+    expect((await outbox(admin)).filter((r) => r.user_id === a.id)).toHaveLength(0)
+  })
+
+  it('does not double-push mentioned members with a message push', async () => {
+    const a = await member('push-nodbl-a')
+    const b = await member('push-nodbl-b')
+    await admin.from('profiles').update({ display_name: 'Nodbl Target' }).eq('id', b.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hello @Nodbl Target',
+    })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.type).toBe('mention')
+  })
+
+  it('skips plain chat push when messages are disabled in prefs', async () => {
+    const a = await member('push-plainpref-a')
+    const b = await member('push-plainpref-b')
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await admin.from('notification_prefs').insert({
+      user_id: b.id,
+      cluster_id: clusterId,
+      messages: false,
+    })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'you will not see this' })
+
+    expect((await outbox(admin)).filter((r) => r.user_id === b.id)).toHaveLength(0)
+  })
+
   it('fans one row per registered token with independent delivery state', async () => {
     const a = await member('push-mt-a')
     const b = await member('push-mt-b')

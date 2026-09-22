@@ -679,7 +679,7 @@ function NotificationPreferences() {
                       const value = prefFor(cluster.id, key)
                       const saving = pending[`${cluster.id}:${key}`] !== undefined
                       return (
-                        <View key={key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 36, paddingVertical: 6 }}>
+                        <View key={key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 36, paddingVertical: 1 }}>
                           <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{PREF_LABELS[key]}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             {saving ? <ActivityIndicator size="small" color={t.onSurfaceVariant} /> : null}
