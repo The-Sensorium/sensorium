@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StaffDashboardPage } from './StaffDashboardPage'
@@ -11,6 +11,8 @@ const hooks = vi.hoisted(() => ({
   useMyAccess: vi.fn(),
   useMetricsOverview: vi.fn(),
   useRetention: vi.fn(),
+  useModeBreakdown: vi.fn(),
+  useClusterActivity: vi.fn(),
 }))
 
 vi.mock('../../features/admin-moderation', () => ({
@@ -22,6 +24,9 @@ vi.mock('../../features/admin-moderation', () => ({
 vi.mock('../../features/metrics', () => ({
   useMetricsOverview: hooks.useMetricsOverview,
   useRetention: hooks.useRetention,
+  useModeBreakdown: hooks.useModeBreakdown,
+  useClusterActivity: hooks.useClusterActivity,
+  DEFAULT_ACTIVITY_LIMIT: 50,
 }))
 
 vi.mock('../../features/access', () => ({
@@ -81,6 +86,8 @@ describe('StaffDashboardPage', () => {
     hooks.useAdminOpsHealth.mockReturnValue({ data: null, isLoading: false, isError: false, refetch: vi.fn() })
     hooks.useMetricsOverview.mockReturnValue({ data: null, isLoading: false, isError: false, refetch: vi.fn() })
     hooks.useRetention.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn() })
+    hooks.useModeBreakdown.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn() })
+    hooks.useClusterActivity.mockReturnValue({ data: [], isLoading: false, isError: false, refetch: vi.fn() })
   })
 
   it('renders operational counts with links into the queue', () => {
@@ -162,6 +169,51 @@ describe('StaffDashboardPage', () => {
     hooks.useMetricsOverview.mockReturnValue({ data: null, isLoading: false, isError: true, refetch: vi.fn() })
     renderPage()
     expect(screen.queryByText('Success metrics')).not.toBeInTheDocument()
+  })
+
+  it('warms the metrics queries when hovering the metrics link', () => {
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: ['can_manage_roles'] } })
+    hooks.useMetricsOverview.mockReturnValue({
+      data: { total_clusters: 10, active_clusters: 8, daily_active_clusters: 3, messages_30d: 420, avg_clusters_per_user: 2 },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    hooks.useRetention.mockReturnValue({
+      data: [{ cohort_days: 30, formed: 4, retained: 3, rate: 0.75 }],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    renderPage()
+    const link = document.querySelector('[data-e2e="staff-metrics-link"]')
+    expect(link).not.toBeNull()
+    expect(hooks.useModeBreakdown).toHaveBeenLastCalledWith(false)
+    fireEvent.mouseEnter(link!)
+    expect(hooks.useModeBreakdown).toHaveBeenLastCalledWith(true)
+    expect(hooks.useClusterActivity).toHaveBeenLastCalledWith(50, true)
+  })
+
+  it('warms the metrics queries on touch start for devices without hover', () => {
+    hooks.useMyAccess.mockReturnValue({ data: { capabilities: ['can_manage_roles'] } })
+    hooks.useMetricsOverview.mockReturnValue({
+      data: { total_clusters: 10, active_clusters: 8, daily_active_clusters: 3, messages_30d: 420, avg_clusters_per_user: 2 },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    hooks.useRetention.mockReturnValue({
+      data: [{ cohort_days: 30, formed: 4, retained: 3, rate: 0.75 }],
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    renderPage()
+    const link = document.querySelector('[data-e2e="staff-metrics-link"]')
+    expect(link).not.toBeNull()
+    fireEvent.touchStart(link!)
+    expect(hooks.useModeBreakdown).toHaveBeenLastCalledWith(true)
+    expect(hooks.useClusterActivity).toHaveBeenLastCalledWith(50, true)
   })
 
   it('shows a spinner while loading', () => {

@@ -1,17 +1,26 @@
 import { Text, View } from 'react-native'
 import { availabilityMeta, type Availability } from '../lib/availability'
 import { radii } from '../lib/theme-tokens'
+import { useResolvedScheme } from '../lib/theme-choice'
 import { useTheme } from '../lib/use-theme'
 
-const DOT_COLORS: Record<string, string> = {
-  'bg-emerald-500': '#10b981',
-  'bg-amber-500': '#f59e0b',
-  'bg-red-500': '#ef4444',
+const DOT_COLORS: Partial<Record<Availability, { light: string; dark: string }>> = {
+  available: { light: '#10b981', dark: '#34d399' },
+  busy: { light: '#f59e0b', dark: '#fbbf24' },
+  dnd: { light: '#ef4444', dark: '#f87171' },
 }
 
 export function AvailabilityBadge({ value }: { value: Availability }) {
   const t = useTheme()
+  const scheme = useResolvedScheme()
   const meta = availabilityMeta(value)
+  const palette = DOT_COLORS[value]
+  const dotColor =
+    palette !== undefined
+      ? scheme === 'dark'
+        ? palette.dark
+        : palette.light
+      : t.onSurfaceVariant
   return (
     <View
       style={{
@@ -29,7 +38,7 @@ export function AvailabilityBadge({ value }: { value: Availability }) {
           width: 8,
           height: 8,
           borderRadius: 4,
-          backgroundColor: DOT_COLORS[meta.dotClass] ?? t.onSurfaceVariant,
+          backgroundColor: dotColor,
         }}
       />
       <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>

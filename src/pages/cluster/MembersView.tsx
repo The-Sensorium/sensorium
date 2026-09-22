@@ -8,7 +8,6 @@ import { useReplacementRound } from '../../features/votes'
 import { usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
-import { AvailabilityBadge } from '../../components/AvailabilityBadge'
 import { MuteButton } from '../../components/MuteButton'
 import { PronounBadge } from '../../components/PronounBadge'
 import { countryName } from '../../lib/countries'
@@ -68,12 +67,19 @@ export function MembersView() {
                     className="block"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="shrink-0">
+                      <div className="relative shrink-0">
                         <Avatar
                           name={member.display_name}
                           src={member.avatar_url}
                           className="h-11 w-11"
                         />
+                        {onlineNow ? (
+                          <span
+                            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
+                            aria-hidden
+                          />
+                        ) : null}
+                        <span className="sr-only">{onlineNow ? 'Online' : 'Offline'}</span>
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-on-surface">
@@ -101,30 +107,22 @@ export function MembersView() {
                       </div>
                     </div>
                   </Link>
-                  <div className="mt-3 flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      {onlineNow ? (
+                  {(member.current_status || member.id !== userId) && (
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        {member.current_status ? (
+                          <span className="min-w-0 flex-1 truncate text-xs text-on-surface-variant">
+                            “{member.current_status}”
+                          </span>
+                        ) : null}
+                      </div>
+                      {member.id !== userId && (
                         <span className="shrink-0">
-                          <AvailabilityBadge value={member.availability} />
-                        </span>
-                      ) : (
-                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
-                          <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
-                          Offline
+                          <MuteButton targetUserId={member.id} targetName={member.display_name} />
                         </span>
                       )}
-                      {member.current_status ? (
-                        <span className="min-w-0 flex-1 truncate text-xs text-on-surface-variant">
-                          “{member.current_status}”
-                        </span>
-                      ) : null}
                     </div>
-                    {member.id !== userId && (
-                      <span className="shrink-0">
-                        <MuteButton targetUserId={member.id} targetName={member.display_name} />
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
               </li>
             )

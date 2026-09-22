@@ -7,19 +7,20 @@ import { useClusterMembers } from '../../../../src/features/matching'
 import { useReplacementRound } from '../../../../src/features/votes'
 import { usePresence } from '../../../../src/features/realtime'
 import { Avatar } from '../../../../src/components/Avatar'
-import { AvailabilityBadge } from '../../../../src/components/AvailabilityBadge'
 import { MuteButton } from '../../../../src/components/MuteButton'
 import { PronounBadge } from '../../../../src/components/PronounBadge'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { countryName } from '../../../../src/lib/countries'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
+import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 export default function MembersScreen() {
   const t = useTheme()
+  const scheme = useResolvedScheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -92,7 +93,27 @@ export default function MembersScreen() {
                 style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 16, marginBottom: 12 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Avatar name={member.display_name} src={member.avatar_url} size={44} />
+                  <View style={{ position: 'relative' }}>
+                    <Avatar name={member.display_name} src={member.avatar_url} size={44} />
+                    {onlineNow ? (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          bottom: -2,
+                          right: -2,
+                          width: 14,
+                          height: 14,
+                          borderRadius: 7,
+                          borderWidth: 2,
+                          borderColor: t.surface,
+                          backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
+                        }}
+                      />
+                    ) : null}
+                    <Text style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
+                      {onlineNow ? 'Online' : 'Offline'}
+                    </Text>
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
                       {member.display_name}
@@ -122,32 +143,22 @@ export default function MembersScreen() {
                     </View>
                   </View>
                 </View>
-                <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {onlineNow ? (
-                      <View style={{ flexShrink: 0 }}>
-                        <AvailabilityBadge value={member.availability} />
-                      </View>
-                    ) : (
-                      <View style={{ flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.onSurfaceVariant }} />
-                        <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
-                          Offline
+                {member.current_status || member.id !== userId ? (
+                  <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      {member.current_status ? (
+                        <Text style={{ flex: 1, flexShrink: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1} ellipsizeMode="tail">
+                          “{member.current_status}”
                         </Text>
+                      ) : null}
+                    </View>
+                    {member.id !== userId ? (
+                      <View style={{ flexShrink: 0 }}>
+                        <MuteButton targetUserId={member.id} targetName={member.display_name} />
                       </View>
-                    )}
-                    {member.current_status ? (
-                      <Text style={{ flex: 1, flexShrink: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1} ellipsizeMode="tail">
-                        “{member.current_status}”
-                      </Text>
                     ) : null}
                   </View>
-                  {member.id !== userId ? (
-                    <View style={{ flexShrink: 0 }}>
-                      <MuteButton targetUserId={member.id} targetName={member.display_name} />
-                    </View>
-                  ) : null}
-                </View>
+                ) : null}
               </Pressable>
             </Link>
           )

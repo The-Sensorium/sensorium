@@ -15,11 +15,15 @@ const formedFormatter = new Intl.DateTimeFormat(undefined, {
 })
 
 const statusMeta: Record<ClusterTile['status'], { icon: typeof CircleCheck; label: string; className: string }> = {
-  active: { icon: CircleCheck, label: 'Active', className: 'text-emerald-700' },
+  active: {
+    icon: CircleCheck,
+    label: 'Active',
+    className: 'text-emerald-700 dark:text-emerald-300',
+  },
   introductions: {
     icon: Hourglass,
     label: 'Introductions in progress',
-    className: 'text-amber-700',
+    className: 'text-amber-700 dark:text-amber-300',
   },
   archived: { icon: Archive, label: 'Archived', className: 'text-on-surface-variant' },
 }

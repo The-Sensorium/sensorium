@@ -77,17 +77,19 @@ describe('MembersView', () => {
     expect(screen.getByText('“Deep in a book”')).toBeInTheDocument()
   })
 
-  it('shows the availability badge for online members', () => {
+  it('shows a presence dot on the avatar for online members', () => {
     hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
-    renderPage()
-    expect(screen.getAllByText('Available').length).toBeGreaterThan(0)
-    expect(screen.queryByText('Offline')).not.toBeInTheDocument()
+    const { container } = renderPage()
+    const dot = container.querySelector('.bg-emerald-500')
+    expect(dot).not.toBeNull()
+    expect(dot?.classList.contains('h-3.5')).toBe(true)
+    expect(screen.getByText('Online', { selector: '.sr-only' })).toBeInTheDocument()
   })
 
-  it('shows Offline for members not in the presence set', () => {
-    renderPage()
-    expect(screen.getByText('Offline')).toBeInTheDocument()
-    expect(screen.queryByText('Available')).not.toBeInTheDocument()
+  it('shows no presence dot for members not in the presence set', () => {
+    const { container } = renderPage()
+    expect(container.querySelector('.bg-emerald-500')).toBeNull()
+    expect(screen.getByText('Offline', { selector: '.sr-only' })).toBeInTheDocument()
   })
 
   it('shows the replacement banner when a spot is open', () => {
