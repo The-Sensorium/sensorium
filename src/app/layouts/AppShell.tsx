@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { Home, Newspaper, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -6,6 +7,7 @@ import { BrandMark } from '../../components/BrandMark'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { NotificationBell } from '../../components/NotificationBell'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
+import { RoutePending } from '../../components/RoutePending'
 import { useNotificationsChannel } from '../../features/notifications'
 
 const navItems = [
@@ -66,7 +68,9 @@ export function AppShell() {
 
       {/* Main content */}
       <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-6 pb-24 pt-6 overscroll-contain md:pb-8">
-        <Outlet />
+        <Suspense fallback={<RoutePending />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Bottom nav - mobile only. Its height must match --bottom-nav-offset

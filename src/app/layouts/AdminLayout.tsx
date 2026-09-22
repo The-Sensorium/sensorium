@@ -1,9 +1,11 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 import { ChartColumn, Flag, LayoutDashboard, MessageSquareWarning, ScrollText, UserCog, Users } from 'lucide-react'
 import { useAuth } from '../auth-context'
 import { BrandMark } from '../../components/BrandMark'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
+import { RoutePending } from '../../components/RoutePending'
 import { StaffMobileNav, StaffNavigation, type StaffNavItem } from '../../components/StaffNavigation'
 import { useNotificationsChannel } from '../../features/notifications'
 
@@ -38,7 +40,9 @@ export function AdminLayout() {
         </div>
       </header>
       <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 overscroll-contain sm:px-6 md:pb-8">
-        <Outlet />
+        <Suspense fallback={<RoutePending />}>
+          <Outlet />
+        </Suspense>
       </main>
       <StaffMobileNav items={navItems} />
     </div>
