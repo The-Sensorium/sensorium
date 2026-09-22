@@ -10,6 +10,12 @@ export function MentionText({ content, members }: { content: string; members: Me
       {parts.map((part, i) =>
         part.type === 'text' ? (
           <Text key={i}>{part.value}</Text>
+        ) : part.type === 'everyone' ? (
+          // Broadcast chip: styled like a mention but never a profile link.
+          <Text key={i}>
+            {part.prefix}
+            <Text style={{ fontWeight: '600', color: t.primary }}>@{part.name}</Text>
+          </Text>
         ) : (
           <Text key={i}>
             {part.prefix}

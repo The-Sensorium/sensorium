@@ -79,6 +79,28 @@ test.describe('cluster room (seeded Aurora)', () => {
     await expect(sent.locator('xpath=..').getByRole('link', { name: '@Rio Mendez' })).toBeVisible()
   })
 
+  test('@everyone autocomplete inserts a broadcast chip into the timeline', async ({ page }) => {
+    await openRoom(page)
+    const composer = page.getByRole('combobox', { name: 'Message' })
+    await composer.click()
+    await composer.fill('@every')
+    const listbox = page.getByRole('listbox', { name: 'Mention a member' })
+    await expect(listbox).toBeVisible()
+    const first = listbox.getByRole('option').first()
+    await expect(first).toHaveText('everyone')
+    await expect(first).toHaveAttribute('aria-selected', 'true')
+    await page.keyboard.press('Enter')
+    await expect(composer).toHaveValue('@everyone ')
+    const text = `e2e everyone ${Date.now()}`
+    await composer.pressSequentially(text)
+    await page.getByRole('button', { name: 'Send message' }).click()
+    const sent = page.getByText(text, { exact: true })
+    await expect(sent).toBeVisible()
+    const container = sent.locator('xpath=..')
+    await expect(container.getByText('@everyone')).toBeVisible()
+    await expect(container.getByRole('link')).toHaveCount(0)
+  })
+
   test('raise signal modal opens and can be cancelled without submitting', async ({ page }) => {
     await openRoom(page)
     await page.getByRole('button', { name: 'Room actions' }).click()

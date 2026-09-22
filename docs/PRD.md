@@ -230,7 +230,7 @@ Real names are not required.
 Supported:
 - Text Messages
 - Message Replies (threaded, Instagram-style)
-- @-Mentions
+- @-Mentions (per-member plus `@everyone`, which notifies all other active members)
 - Images
 - GIFs
 - Emoji Reactions
@@ -1199,7 +1199,7 @@ Edit
 Delete
 React
 Reply
-@-mentions
+@-mentions (including `@everyone`)
 Audio / Video Call (start or join from the room)
 Read receipts (Info on your own message)
 ```
