@@ -1,6 +1,6 @@
 // Seed the local Supabase stack with a rich, realistic demo dataset so every
 // discovery/matching state is visible: clusters across all six matching modes,
-// in both active and introductions phases, with varied member counts. The E2E
+// all active and open at formation, with varied member counts. The E2E
 // golden path is preserved: diya@demo.example stays an active member of the
 // 8-person "Aurora" cluster alongside rio@demo.example, who is both a mention
 // target and a second fully usable login for multi-user E2E flows (read receipts).

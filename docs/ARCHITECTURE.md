@@ -27,12 +27,12 @@ Each layer has a single, clear responsibility:
 | Layer | Responsibility |
 |---|---|
 | **React SPA** | Renders the UI. Owns component tree, state, and styling. |
-| **React Router** | Maps URLs to pages and enforces access via route guards (guest, authenticated, onboarded). |
+| **React Router** | Maps URLs to pages and enforces access via route guards (guest, authenticated, onboarded, active-account, restriction, and staff capability). |
 | **TanStack Query** | Fetches and caches server state; keeps the UI in sync with Supabase without manual bookkeeping. |
-| **Supabase Auth** | Email/password identity. The SPA holds only the public anon key; everything privileged runs server-side. |
+| **Supabase Auth** | Email/password plus Google OAuth identity. The SPA holds only the public anon key; everything privileged runs server-side. |
 | **Supabase Postgres** | The source of truth. All data lives here and is guarded by Row Level Security (RLS). |
 | **Supabase Realtime** | Pushes live changes (chat messages, presence, notifications) to subscribed clients. |
-| **Supabase Storage** | Private file buckets for chat images and avatars, served via short-lived signed URLs. |
+| **Supabase Storage** | Private file buckets for chat images, avatars, and post images, served via short-lived signed URLs. |
 
 ## 2. Repository Structure
 
@@ -44,8 +44,8 @@ The repository is organized so the frontend and backend live side by side, with 
 | `src/app/` | The app skeleton: router, providers, auth context, access guards, and page layouts. |
 | `src/pages/` | One component per route/page, composed from shared and feature components. |
 | `src/components/` | Reusable UI: avatars, modals, cards, pickers, navigation chrome. |
-| `src/features/` | Domain logic: matching, cluster, introductions, signals, votes, notifications, moderation, appeals, posts. One module per domain, with its hooks and tests. |
-| `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, image helpers, and constants. |
+| `src/features/` | Domain logic: matching, cluster, cluster-calls, introductions, signals, votes, notifications, moderation, admin-moderation, admin-accounts, metrics, appeals, posts, discovery, access, avatars, mentions, gifs, realtime. One module per domain, with its hooks and tests. |
+| `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, image helpers, device, error handling, query retry, Turnstile, document-title/online/profile hooks, and constants. |
 | `mobile/` | The Expo/React Native Android app. Its own router (`app/`) and mirrors of the shared feature modules (`src/features/`). Member-only; staff surfaces stay web-only. |
 | `supabase/migrations/` | The entire database schema as ordered SQL files (the single source of truth for the backend). |
 | `supabase/functions/` | Edge Functions: `send-emails` (Resend), `send-push` (Expo), and `create-call-token` (LiveKit), plus shared email templates. |
@@ -88,7 +88,7 @@ The routing guards in `src/app/` enforce this order: guests can't reach onboardi
 The frontend is a feature-first React app built on a small set of opinionated tools.
 
 - **React 19**: components and hooks. State is kept local and small; server state is pushed to TanStack Query.
-- **React Router**: declarative routes in `src/app/router.tsx`, with layout components (`AppShell`, `PublicLayout`, `ClusterLayout`) and guard components that redirect based on auth/onboarding state.
+- **React Router**: declarative routes in `src/app/router.tsx`, with layout components (`AppShell`, `PublicLayout`, `ClusterLayout`, `ModeratorLayout`, `AdminLayout`) and guard components (`RequireAuth`, `RequireGuest`, `RequireOnboarded`, `RequireActiveAccount`, `RequireCapability`, `RequireRestricted`, `RequireSessionRole`) that redirect based on auth, onboarding, restriction, and staff capability state.
 - **TanStack Query**: every server read goes through a feature module in `src/features/`, which exposes hooks that wrap TanStack Query. Components call hooks; they never talk to Supabase directly.
 - **Supabase client**: a single typed client instance in `src/lib/supabase.ts`, with a generated TypeScript type for the database.
 
@@ -105,7 +105,7 @@ This keeps components small and focused, prevents duplicated logic, and makes a 
 
 There is no application server. Supabase provides every backend service, and the frontend talks to it directly using only the public anon key.
 
-- **Authentication**: email/password. The anon key can initiate auth flows but nothing privileged.
+- **Authentication**: email/password plus Google OAuth. The anon key can initiate auth flows but nothing privileged.
 - **PostgreSQL**: the database is the single source of truth. All tables, functions, policies, and scheduled jobs are defined in `supabase/migrations/`.
 - **Row Level Security**: every table has RLS enabled. Users only ever see rows they're allowed to; the frontend never bypasses this.
 - **RPC Functions**: privileged operations are exposed as Postgres functions (often `security definer`) and called via `.rpc()`. This is how the frontend performs actions it isn't allowed to do with direct row writes.
@@ -163,7 +163,7 @@ Production and staging are always isolated: different Vercel environments, diffe
 The pipelines validate every branch and release changes in a controlled order. GitHub Actions handles it; for the exact steps and secrets, see [`TECHNICAL.md`](TECHNICAL.md#ci-and-deployment).
 
 - **Web CI (`ci.yml`)**: runs on push/PR to `main` and `develop`, and on push to `feature/*`, `fix/*`, and `docs/*`. It skips changes that only touch markdown or `docs/**`. When it runs, it runs lint, unit tests with a coverage gate, the production build, applies migrations to a throwaway local Supabase stack, runs the integration suite, and runs the blocking Playwright E2E suite.
-- **Mobile CI (`mobile.yml`)**: runs when `mobile/**` changes; lints and typechecks the Expo app.
+- **Mobile CI (`mobile.yml`)**: runs when `mobile/**` changes; lints, typechecks, runs `expo-doctor`, and does a production `expo export` for Android.
 - **Staging migration (`migrate-staging.yml`)**: on merge/push to `develop`, applies pending migrations to the staging Supabase project. Feature branches never apply migrations directly; migration SQL is applied only once the PR lands on `develop`.
 - **Production migration (`migrate-production.yml`)**: on merge/push to `main`, applies the same pending migrations to the production Supabase project.
 - **Android builds (`eas-build.yml`, `android-apk-build.yml`)**: manual workflows that build the mobile app through EAS or produce a CI-built APK artifact for side-loading.

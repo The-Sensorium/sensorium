@@ -169,7 +169,7 @@ Behavior:
 
 - **Three modes:** `light` (default), `system`, and `dark`. `system` follows the OS `prefers-color-scheme` and reacts to live changes.
 - **Mechanism:** a `dark` class on `<html>` swaps the design tokens; components never branch on theme. A `sensorium:theme` value in `localStorage` persists the choice. A tiny inline script in `index.html` applies the saved/system theme before first paint to prevent flash of the wrong theme.
-- **Tokens:** the dark values live in the `colors-dark` front-matter above and mirror the light set 1:1 (every light token has a dark counterpart, including `fixed`/`inverse` roles). No new hue families are introduced.
+- **Tokens:** the dark values live in the `colors-dark` front-matter above and mirror the light set with two known exceptions: `surface-variant` is light-only and the `tertiary-fixed` family is dark-only (neither is emitted into `src/index.css`). No new hue families are introduced.
 - **Accent:** `--color-primary: #2F6BEE` (blue) is the single vivid moment on dark, used for actions, active states, and brand highlights including the themeable logo mark (which inherits `primary`, so it renders terracotta `#9d3d1c` in light mode and blue in dark mode). Semantic colors stay independent of the accent: the liked heart uses `--color-like` (red `#ba1a1a` in light, luminous red `#e5484d` in dark), destructive stays on the `error` roles, success green, warning amber.
 - **Elevation:** shadows go deeper and more neutral in dark mode; prefer the same token classes over `dark:shadow-*` variants.
 - **Identity preserved:** typography (Plus Jakarta Sans / Special Elite), radii, and the soft, tactile tone of the light theme are unchanged in dark mode; only the color treatment inverts.
@@ -212,7 +212,7 @@ The shape language is characterized by **Generous Radii**, mimicking organic for
 ## Components
 
 ### Buttons
-- **Primary:** Solid primary background (terracotta in light, indigo in dark) with white text. High roundedness (pill-shaped). 
+- **Primary:** Solid primary background (terracotta in light, blue in dark) with white text. High roundedness (pill-shaped). 
 - **Secondary/Ghost:** Outlined with 1px primary or neutral borders. Use the `font-brand` (Special Elite) treatment sparingly for wordmark moments; interface buttons stay in Plus Jakarta Sans.
 
 ### Cards
