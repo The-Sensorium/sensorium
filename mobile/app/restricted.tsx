@@ -112,6 +112,7 @@ export default function RestrictedScreen() {
               <PrimaryButton
                 title="Delete my account"
                 loading={deleteAccount.isPending}
+                tone="error"
                 onPress={() => void handleDelete()}
               />
               <Pressable
