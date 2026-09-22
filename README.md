@@ -25,7 +25,7 @@
 
 ## About
 
-Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date, location, or Open Mix (no filter). Once matched, the room opens immediately at formation, and you get tools built for long-term friendship: realtime chat with reactions and read receipts, a cluster-scoped posts feed, audio/video calls, availability check-ins, Signals (requests for help), and community governance through votes. Answering the five introduction questions is an optional in-cluster checklist that never blocks access. It ships as a **web app** and an **Android app** that share one Supabase backend, plus moderator/admin workspaces and a transactional email + push pipeline.
+Sensorium is an open-source social platform that places you into a group of exactly **eight people**, called a **cluster**, matched by birth date, location, or Open Mix (no filter). Once matched, the room opens immediately at formation, and you get tools built for long-term friendship: realtime chat with reactions and read receipts, a cluster-scoped posts feed, audio/video calls, availability check-ins, Signals (requests for help), and community governance through votes. Answering the five introduction questions is an optional in-cluster checklist that never blocks access. It ships as a **web app** and an **Android app** that share one Supabase backend, plus moderator/admin workspaces and a transactional email + push pipeline.
 
 ## Platforms
 
