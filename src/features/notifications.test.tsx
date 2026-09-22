@@ -270,7 +270,7 @@ describe('useNotificationsChannel', () => {
       expect.any(Function),
     )
     const tables = channelMock.on.mock.calls.map((c) => (c[1] as { table?: string }).table)
-    expect(tables).not.toContain('messages')
+    expect(tables).toContain('messages')
     unmount()
     expect(removeChannel).toHaveBeenCalledTimes(1)
   })
@@ -297,6 +297,55 @@ describe('useNotificationsChannel', () => {
       expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
       expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
     })
+  })
+
+  it('bumps badge and list on message INSERT (plain chat writes no row)', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
+    }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    spy.mockClear()
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const messageCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'messages',
+    )
+    expect(messageCall).toBeDefined()
+    expect((messageCall![1] as { event?: string }).event).toBe('INSERT')
+    ;(messageCall![2] as () => void)()
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
+    })
+  })
+
+  it('ignores our own sends (they cannot change our unread)', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
+    }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    spy.mockClear()
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const messageCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'messages',
+    )
+    expect(messageCall).toBeDefined()
+    ;(messageCall![2] as (payload: unknown) => void)({ new: { author_id: 'u1' } })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
   })
 
   it('bumps invitations on invitation INSERT', async () => {

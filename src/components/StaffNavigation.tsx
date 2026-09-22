@@ -215,8 +215,10 @@ export function StaffMobileNav({ items }: { items: readonly StaffNavItem[] }) {
                   end={item.end}
                   className={({ isActive }) =>
                     cn(
-                      'flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors',
-                      isActive ? 'text-primary' : 'text-on-surface-variant',
+                      'flex min-h-[48px] w-full flex-col items-center justify-center gap-0.5 px-4 py-2 text-xs transition-colors',
+                      isActive
+                        ? 'bg-primary-container/15 font-semibold text-primary'
+                        : 'font-medium text-on-surface-variant',
                     )
                   }
                 >
@@ -237,8 +239,10 @@ export function StaffMobileNav({ items }: { items: readonly StaffNavItem[] }) {
                 aria-expanded={open}
                 aria-haspopup="menu"
                 className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors',
-                  open || active ? 'text-primary' : 'text-on-surface-variant',
+                  'flex min-h-[48px] w-full flex-col items-center justify-center gap-0.5 px-4 py-2 text-xs transition-colors',
+                  open || active
+                    ? 'bg-primary-container/15 font-semibold text-primary'
+                    : 'font-medium text-on-surface-variant',
                 )}
               >
                 <span className="relative">

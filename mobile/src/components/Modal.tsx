@@ -26,14 +26,16 @@ export function Modal({
       >
         <Pressable
           onPress={() => {}}
-          style={{ backgroundColor: t.surface, borderRadius: radii.xl, padding: 24, maxHeight: '85%' }}
+          style={{ backgroundColor: t.surface, borderRadius: radii.xl, padding: 24, maxHeight: '85%', width: '100%', maxWidth: 480, alignSelf: 'center' }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>{title}</Text>
+            <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">{title}</Text>
             <Pressable
               accessibilityLabel="Close dialog"
+              accessibilityRole="button"
               onPress={onClose}
-              style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+              hitSlop={8}
+              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
             >
               <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
@@ -42,7 +44,7 @@ export function Modal({
             {/* Keyboard-aware scroll view from react-native-keyboard-controller:
                 scrolls the focused field above the keyboard on both platforms
                 via native contentInset (no layout thrash, no manual offsets). */}
-            <KeyboardAwareScrollView keyboardShouldPersistTaps="handled">
+            <KeyboardAwareScrollView keyboardShouldPersistTaps="handled" bottomOffset={16}>
               {children}
             </KeyboardAwareScrollView>
           </SafeAreaView>

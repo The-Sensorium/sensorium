@@ -18,9 +18,12 @@ export function useMyNotifications(enabled = true) {
   return useQuery({
     queryKey: ['notifications', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
-    // No poll: realtime INSERT invalidation (useNotificationsChannel) plus
-    // per-cluster message invalidation (useClusterChannel) keeps the list live,
-    // and focus/reconnect refetches cover the "came back to the tab" case.
+    // Realtime INSERT invalidation (useNotificationsChannel) plus per-cluster
+    // message invalidation (useClusterChannel) keeps the list live. A slow
+    // background-paused poll heals a dropped realtime event without waking
+    // hidden tabs; focus/reconnect refetches cover the "came back" case.
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     queryFn: async () => {
@@ -40,7 +43,10 @@ export function useUnreadCount(enabled = true) {
   return useQuery({
     queryKey: ['notifications', 'unread', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
-    // No poll: same realtime + focus/reconnect strategy as useMyNotifications.
+    // Same realtime + focus/reconnect strategy as useMyNotifications, with the
+    // same background-paused healing poll.
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     queryFn: async () => {
@@ -271,13 +277,16 @@ export function useUpsertNotificationPrefs() {
 /**
  * Subscribes to the signed-in user's realtime channel (docs 04 §1): notification
  * INSERT bumps the badge + list; invitation INSERT refreshes the Home banner.
- * Plain chat writes no notification row (synthesized at read time); when the user
- * is viewing a cluster, its per-cluster channel (useClusterChannel) bumps the
- * badge + list in a scoped way (RLS + cluster_id filter, so only viewers of that
- * cluster refetch). There is deliberately no global messages subscription here:
- * waking every client on every message DB-wide does not scale. Outside a cluster
- * view, focus/reconnect refetches cover the "came back to the tab" case. Mount
- * once in the app shell.
+ * Plain chat writes no notification row (synthesized at read time), so message
+ * INSERTs must also bump the badge + list or cross-cluster chat only appears
+ * on poll/focus. The server scopes message events by RLS (active members of
+ * unlocked clusters), so a client only receives its own clusters, not every
+ * message DB-wide. Those bumps are throttled: each one runs two
+ * security-definer RPCs, so a chat burst would otherwise fan out a refetch per
+ * message per member. The first event bumps immediately and a trailing bump
+ * runs if more arrived during the 300ms window. The per-cluster channel
+ * (useClusterChannel) additionally bumps viewers of that cluster; the 60s
+ * background-paused poll heals a dropped event. Mount once in the app shell.
  */
 export function useNotificationsChannel(userId: string | null) {
   const queryClient = useQueryClient()
@@ -285,6 +294,27 @@ export function useNotificationsChannel(userId: string | null) {
   useEffect(() => {
     if (!userId) return
     const supabase = requireSupabase()
+
+    let chatCooldown: ReturnType<typeof setTimeout> | null = null
+    let chatPending = false
+    const bumpChat = (payload?: { new?: { author_id?: unknown } }) => {
+      // Own sends can never change our unread (author_id <> auth.uid() in the
+      // badge/center RPCs), so skip the two security-definer refetches.
+      if (payload?.new?.author_id === userId) return
+      if (chatCooldown !== null) {
+        chatPending = true
+        return
+      }
+      void queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+      chatCooldown = setTimeout(() => {
+        chatCooldown = null
+        if (chatPending) {
+          chatPending = false
+          bumpChat()
+        }
+      }, 300)
+    }
 
     const channel = supabase
       .channel(`user:${userId}`)
@@ -297,6 +327,7 @@ export function useNotificationsChannel(userId: string | null) {
           void queryClient.invalidateQueries({ queryKey: ['staff', 'unread'] })
         },
       )
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, bumpChat)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'invitations', filter: `user_id=eq.${userId}` },
@@ -307,6 +338,7 @@ export function useNotificationsChannel(userId: string | null) {
       .subscribe()
 
     return () => {
+      if (chatCooldown !== null) clearTimeout(chatCooldown)
       supabase.removeChannel(channel)
     }
   }, [userId, queryClient])

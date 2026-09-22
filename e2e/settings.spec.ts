@@ -44,7 +44,7 @@ test.describe('settings (seeded)', () => {
     const updated = `e2e ${Date.now()}`
 
     await nameField.fill(updated)
-    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByRole('region', { name: 'Profile' }).getByRole('button', { name: 'Save changes', exact: true }).click()
     await expect(page.getByRole('heading', { name: updated })).toBeVisible()
 
     // Persisted server-side (self-write RLS round-trip)?
@@ -53,7 +53,7 @@ test.describe('settings (seeded)', () => {
 
     // Restore the original so the seeded account stays idempotent.
     await page.getByLabel('Display name').fill(original)
-    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByRole('region', { name: 'Profile' }).getByRole('button', { name: 'Save changes', exact: true }).click()
     await expect(page.getByRole('heading', { name: original })).toBeVisible()
   })
 

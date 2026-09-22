@@ -60,6 +60,7 @@ export function StepLocal({
           borderRadius: radii.md,
           paddingHorizontal: 16,
           paddingVertical: 12,
+          minHeight: 48,
         }}
       >
         {locating ? (
@@ -69,7 +70,8 @@ export function StepLocal({
         )}
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 16,
+            lineHeight: 24,
             fontWeight: '600',
             color: draft.shareLocation ? t.primary : t.onSurface,
           }}
@@ -101,18 +103,23 @@ export function StepLocal({
             <Pressable
               key={radius}
               onPress={() => patch({ radiusKm: radius as LocalRadius })}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${radius} kilometer radius`}
               style={{
                 flex: 1,
                 borderWidth: 1,
                 borderColor: active ? t.primary : t.outlineVariant,
                 backgroundColor: active ? t.primary : 'transparent',
                 borderRadius: radii.pill,
-                paddingVertical: 10,
+                paddingVertical: 12,
+                minHeight: 48,
+                justifyContent: 'center',
                 alignItems: 'center',
               }}
             >
               <Text
-                style={{ fontSize: 14, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}
+                style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}
               >
                 {radius} km
               </Text>

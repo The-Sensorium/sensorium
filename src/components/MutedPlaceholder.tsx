@@ -25,7 +25,7 @@ export function MutedPlaceholder({
         type="button"
         onClick={onToggle}
         aria-label={`Show muted ${kind}`}
-        className="rounded px-2 py-1 font-semibold text-primary hover:underline"
+        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded px-4 py-2.5 font-semibold text-primary hover:underline sm:min-h-[32px] sm:min-w-0 sm:px-2 sm:py-1"
       >
         Show
       </button>
@@ -51,7 +51,7 @@ export function MutedHideBar({
         type="button"
         onClick={onToggle}
         aria-label={`Hide muted ${kind}`}
-        className="rounded px-2 py-1 font-semibold text-primary hover:underline"
+        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded px-4 py-2.5 font-semibold text-primary hover:underline sm:min-h-[32px] sm:min-w-0 sm:px-2 sm:py-1"
       >
         Hide
       </button>

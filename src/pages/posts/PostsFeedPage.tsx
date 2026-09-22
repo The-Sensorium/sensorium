@@ -126,7 +126,7 @@ export function PostsFeedPage() {
               aria-pressed={sort === option}
               onClick={() => setSort(option)}
               className={cn(
-                'rounded-pill px-3 py-1 text-xs font-semibold capitalize transition-colors',
+                'min-h-[44px] rounded-pill px-4 py-2.5 text-xs font-semibold capitalize transition-colors',
                 sort === option
                   ? 'bg-primary-container/15 text-primary'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -139,8 +139,8 @@ export function PostsFeedPage() {
       </div>
 
       {clusters.isLoading ? (
-        <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+        <div role="status" className="flex items-center gap-2 text-sm text-on-surface-variant">
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> Loading…
         </div>
       ) : (clusters.data ?? []).length === 0 ? (
         <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">
@@ -157,7 +157,7 @@ export function PostsFeedPage() {
                 aria-selected={c.cluster.id === selectedId}
                 onClick={() => setSelectedId(c.cluster.id)}
                 className={cn(
-                  'rounded-pill px-4 py-2 text-sm font-semibold transition-colors',
+                  'min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold transition-colors',
                   c.cluster.id === selectedId
                     ? 'bg-primary-container/15 text-primary'
                     : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -171,8 +171,18 @@ export function PostsFeedPage() {
           {clusterId && <PostComposer clusterId={clusterId} />}
 
           {posts.isLoading || myMutes.isLoading || !selected ? (
-            <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading posts…
+            <div role="status" aria-label="Loading posts" className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+                <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> Loading posts…
+              </div>
+              <div aria-hidden className="space-y-4">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-24 animate-pulse rounded-2xl border border-outline-variant/60 bg-surface-container/60 motion-reduce:animate-none"
+                  />
+                ))}
+              </div>
             </div>
           ) : (posts.data ?? []).length === 0 ? (
             <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">
@@ -222,7 +232,7 @@ export function PostsFeedPage() {
                   type="button"
                   onClick={() => void loadEarlier.mutate()}
                   disabled={loadEarlier.isPending}
-                  className="flex w-full items-center justify-center gap-2 rounded-pill border border-outline-variant/70 px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-60"
+                  className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-60"
                 >
                   {loadEarlier.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

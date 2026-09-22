@@ -78,12 +78,25 @@ jobs:
       - name: Prebuild Android project
         run: npx expo prebuild --platform android --clean
 
+      - name: Tune Gradle for CI release
+        # Prebuild regenerates mobile/android from the Expo template, so patch
+        # the generated gradle.properties here rather than committing android/.
+        # Release APKs only need ARM ABIs; x86/x86_64 are emulator-only and
+        # double native build time plus packaging memory. 2g/512m OOMs in
+        # :app:packageRelease (see IncrementalSplitterRunnable failure).
+        working-directory: mobile/android
+        run: |
+          sed -i "s/^reactNativeArchitectures=.*/reactNativeArchitectures=armeabi-v7a,arm64-v8a/" gradle.properties
+          sed -i "s/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g/" gradle.properties
+          cat gradle.properties
+        shell: bash
+
       - name: Install project NDK
         run: yes | sdkmanager "ndk;27.1.12297006" 2>/dev/null || true
 
       - name: Build release APK
         working-directory: mobile/android
-        run: ./gradlew app:assembleRelease -x lint --no-daemon
+        run: ./gradlew app:assembleRelease -x lint --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

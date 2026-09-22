@@ -82,7 +82,7 @@ export function SignalsView() {
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
         >
           <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
           Raise a signal
@@ -216,18 +216,22 @@ export function SignalsView() {
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-on-surface-variant">{prompt.length}/{MAX_PROMPT}</span>
             <div className="flex items-center gap-2">
-              {error && <span className="text-xs text-error">{error}</span>}
+              {error && (
+                <span role="alert" className="text-xs text-error">
+                  {error}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+                className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!prompt.trim() || raise.isPending}
-                className="rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+                className="min-h-[48px] rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
               >
                 {raise.isPending ? 'Raising…' : 'Raise signal'}
               </button>
@@ -272,7 +276,7 @@ function SignalCard({
             name={author?.display_name ?? 'Member'}
             src={author?.avatar_url}
             className="h-5 w-5"
-            textClassName="text-[10px]"
+            textClassName="text-[11px]"
           />
           <span className="text-sm font-medium text-on-surface">
             {author?.display_name ?? 'Member'}

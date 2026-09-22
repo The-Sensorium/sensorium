@@ -60,7 +60,7 @@ export function GifPicker({
       }}
     >
       <Field
-        label=""
+        label="Search GIFs"
         value={query}
         onChangeText={setQuery}
         placeholder="Search KLIPY…"
@@ -109,7 +109,7 @@ export function GifPicker({
               </Pressable>
             ))}
           </ScrollView>
-          <Text style={{ padding: 4, textAlign: 'center', fontSize: 10, color: t.onSurfaceVariant }}>
+          <Text style={{ padding: 4, textAlign: 'center', fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
             Powered by KLIPY
           </Text>
         </>

@@ -53,7 +53,7 @@ export function QueueCard({ entry }: { entry: MyQueueEntry }) {
         style={{
           backgroundColor: t.surfaceLowest,
           borderRadius: radii.xl,
-          padding: 20,
+          padding: 16,
           marginBottom: 16,
           ...shadowShape,
           shadowColor: t.shadowColor,
@@ -75,8 +75,9 @@ export function QueueCard({ entry }: { entry: MyQueueEntry }) {
           </Text>
         </View>
         <Text
-          style={{ marginTop: 4, fontSize: 18, fontWeight: '600', color: t.onSurface }}
+          style={{ marginTop: 4, fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}
           numberOfLines={1}
+          maxFontSizeMultiplier={1.4}
         >
           {entry.mode === 'open_mix' ? 'Open pool' : entry.queue_key}
         </Text>

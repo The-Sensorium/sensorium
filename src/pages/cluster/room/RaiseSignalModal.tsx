@@ -46,18 +46,22 @@ export function RaiseSignalModal({
             {prompt.length}/{MAX_SIGNAL_PROMPT}
           </span>
           <div className="flex items-center gap-2">
-            {error && <span className="text-xs text-error">{error}</span>}
+            {error && (
+              <span role="alert" className="text-xs text-error">
+                {error}
+              </span>
+            )}
             <button
               type="button"
               onClick={onClose}
-              className="rounded-pill px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!prompt.trim() || pending}
-              className="rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+              className="min-h-[48px] rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
             >
               {pending ? 'Raising…' : 'Raise signal'}
             </button>

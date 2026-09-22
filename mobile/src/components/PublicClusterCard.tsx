@@ -34,7 +34,7 @@ export function PublicClusterCard({
 
   const body = (
     <View
-      style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 20, ...shadowShape, shadowColor: t.shadowColor }}
+      style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 16, ...shadowShape, shadowColor: t.shadowColor }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
         <View style={{ flex: 1 }}>
@@ -55,8 +55,9 @@ export function PublicClusterCard({
             </Text>
           </View>
           <Text
-            style={{ marginTop: 4, fontSize: 18, fontWeight: '600', color: t.onSurface }}
+            style={{ marginTop: 4, fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}
             numberOfLines={1}
+            maxFontSizeMultiplier={1.4}
           >
             {cluster.name}
           </Text>

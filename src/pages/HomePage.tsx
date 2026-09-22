@@ -122,7 +122,7 @@ export function HomePage() {
               type="button"
               disabled={acceptInvite.isPending || declineInvite.isPending}
               onClick={() => acceptInvite.mutateAsync(inv.id).catch(() => {})}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
             >
               {acceptInvite.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -134,7 +134,7 @@ export function HomePage() {
               type="button"
               disabled={acceptInvite.isPending || declineInvite.isPending}
               onClick={() => declineInvite.mutateAsync(inv.id).catch(() => {})}
-              className="inline-flex flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
             >
               Decline
             </button>

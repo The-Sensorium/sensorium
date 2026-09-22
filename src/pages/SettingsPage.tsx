@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, Loader2, LogOut, ShieldCheck, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, Loader2, LogOut, Save, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -92,7 +92,7 @@ export function SettingsPage() {
         </div>
 
         <div className="mt-5 flex items-center gap-4">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container">
+          <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container">
             {avatarUploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ImagePlus className="h-4 w-4" strokeWidth={1.5} aria-hidden />}
             {profile.data?.avatar_url ? 'Change' : 'Upload photo'}
             <input
@@ -108,13 +108,17 @@ export function SettingsPage() {
               onClick={() => setRemoveAvatarOpen(true)}
               disabled={updateProfile.isPending}
               aria-label="Remove photo"
-              className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-error/40 hover:text-error disabled:opacity-60"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:border-error/40 hover:text-error disabled:opacity-60"
             >
               <ImageMinus className="h-4 w-4" strokeWidth={1.5} aria-hidden />
               Remove
             </button>
           )}
-          {avatarError && <p className="text-sm text-error">{avatarError}</p>}
+          {avatarError && (
+            <p role="alert" className="text-sm text-error">
+              {avatarError}
+            </p>
+          )}
         </div>
 
         <form
@@ -136,7 +140,7 @@ export function SettingsPage() {
               maxLength={40}
               onChange={(e) => setName(e.target.value)}
               placeholder="What members see"
-              className="mt-1.5 w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
+              className="mt-1.5 w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-base leading-6 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none sm:text-sm"
             />
           </label>
           <div className="block">
@@ -151,7 +155,7 @@ export function SettingsPage() {
               rows={3}
               onChange={(e) => setBio(e.target.value)}
               placeholder="A few sentences so your cluster knows who you are."
-              className="mt-1.5 w-full resize-none rounded-lg border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
+              className="mt-1.5 w-full resize-none rounded-lg border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-base leading-6 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none sm:text-sm"
             />
             <span className="mt-1 block text-right text-xs text-on-surface-variant">{bio.length}/500</span>
           </label>
@@ -161,9 +165,13 @@ export function SettingsPage() {
           <button
             type="submit"
             disabled={updateProfile.isPending || (name.trim() === (profile.data?.display_name ?? '') && bio.trim() === (profile.data?.bio ?? '') && pronouns.trim() === (profile.data?.pronouns ?? ''))}
-            className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
-            {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {updateProfile.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Save className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            )}
             Save changes
           </button>
         </form>
@@ -178,7 +186,7 @@ export function SettingsPage() {
           Shown on your member card in every cluster.
         </p>
         <form
-          className="mt-4 flex flex-wrap items-center gap-2"
+          className="mt-4 space-y-4"
           onSubmit={(e) => {
             e.preventDefault()
             void updateProfile.mutateAsync({ current_status: status.trim() || null })
@@ -190,15 +198,19 @@ export function SettingsPage() {
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             placeholder="e.g. Deep in a good book"
-            className="min-w-0 flex-1 rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none"
+            className="w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-base leading-6 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none sm:text-sm"
           />
           <button
             type="submit"
             disabled={updateProfile.isPending || status.trim() === (profile.data?.current_status ?? '')}
-            className="inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
-            {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            Save
+            {updateProfile.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Save className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            )}
+            Save changes
           </button>
         </form>
       </section>
@@ -213,7 +225,7 @@ export function SettingsPage() {
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-pill border border-error/40 px-5 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/5 sm:flex-1"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill border border-error/40 px-5 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/5 sm:flex-1"
           >
             <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             Delete account
@@ -221,7 +233,7 @@ export function SettingsPage() {
           <button
             type="button"
             onClick={() => setSignOutOpen(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container sm:flex-1"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container sm:flex-1"
           >
             <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             Sign out
@@ -287,13 +299,17 @@ function RemoveAvatarModal({
         <p className="text-sm leading-6 text-on-surface-variant">
           Your photo will be removed from your profile, and members will see your initials instead.
         </p>
-        {error && <p className="text-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-error">
+            {error}
+          </p>
+        )}
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={pending}
-            className="flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+            className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
           >
             Cancel
           </button>
@@ -301,7 +317,7 @@ function RemoveAvatarModal({
             type="button"
             onClick={() => void handleRemove()}
             disabled={pending}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Remove photo
@@ -353,15 +369,19 @@ function DeleteAccountModal({
             onChange={(e) => setConfirm(e.target.value)}
             placeholder="Type DELETE to confirm"
             autoComplete="off"
-            className="w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-error focus:outline-none"
+              className="w-full rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-base leading-6 text-on-surface placeholder:text-on-surface-variant focus:border-error focus:outline-none sm:text-sm"
           />
         </label>
-        {error && <p className="text-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-error">
+            {error}
+          </p>
+        )}
         <button
           type="button"
           disabled={confirm !== 'DELETE' || deleteAccount.isPending}
           onClick={() => void handleDelete()}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-pill bg-error px-5 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-50"
+          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-50"
         >
           {deleteAccount.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           Delete my account
@@ -386,7 +406,7 @@ function SafetySection() {
       </p>
       <Link
         to="/settings/reports"
-        className="mt-3 inline-flex items-center rounded-pill border border-primary/50 px-5 py-2 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
+        className="mt-3 inline-flex min-h-[44px] items-center rounded-pill border border-primary/50 px-5 py-2 text-sm font-semibold text-primary transition-colors hover:border-primary hover:bg-primary/5"
       >
         My reports
       </Link>

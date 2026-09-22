@@ -38,13 +38,17 @@ export function SignOutModal({
         <p className="text-sm leading-6 text-on-surface-variant">
           You'll need to sign back in to see your clusters and conversations.
         </p>
-        {error && <p className="text-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-error">
+            {error}
+          </p>
+        )}
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={pending}
-            className="flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+            className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
           >
             Cancel
           </button>
@@ -52,7 +56,7 @@ export function SignOutModal({
             type="button"
             onClick={() => void handleSignOut()}
             disabled={pending}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Sign out

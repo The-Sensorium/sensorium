@@ -31,7 +31,7 @@ function TitleBar() {
         paddingVertical: 12,
       }}
     >
-      <Text style={{ fontSize: 17, fontWeight: '600', color: t.onSurface }}>Cluster call</Text>
+      <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Cluster call</Text>
     </View>
   )
 }
@@ -162,12 +162,15 @@ export default function CallScreen() {
           <Pressable
             accessibilityLabel="Close"
             onPress={finishCall}
+            hitSlop={4}
             style={{
               borderWidth: 1,
               borderColor: t.outlineVariant,
               borderRadius: radii.pill,
-              paddingHorizontal: 16,
-              paddingVertical: 8,
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              minHeight: 48,
+              justifyContent: 'center',
             }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Close</Text>
@@ -197,12 +200,15 @@ export default function CallScreen() {
             <Pressable
               accessibilityLabel="Close"
               onPress={finishCall}
+              hitSlop={4}
               style={{
                 borderWidth: 1,
                 borderColor: t.outlineVariant,
                 borderRadius: radii.pill,
-                paddingHorizontal: 16,
-                paddingVertical: 8,
+                paddingHorizontal: 20,
+                paddingVertical: 12,
+                minHeight: 48,
+                justifyContent: 'center',
               }}
             >
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Close</Text>

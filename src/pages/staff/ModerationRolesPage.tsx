@@ -72,7 +72,7 @@ export function ModerationRolesPage() {
         <button
           type="button"
           onClick={() => setGrantOpen(true)}
-          className="inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
         >
           <UserCog className="h-4 w-4" strokeWidth={1.5} aria-hidden />
           Grant role
@@ -496,7 +496,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
         <button
           type="button"
           onClick={() => onClose()}
-          className="rounded-pill px-4 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+          className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
         >
           Cancel
         </button>
@@ -504,7 +504,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
           type="button"
           onClick={() => void submit()}
           disabled={grant.isPending || !selectedAccount || !reason.trim()}
-          className="inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+          className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
         >
           {grant.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           Grant role

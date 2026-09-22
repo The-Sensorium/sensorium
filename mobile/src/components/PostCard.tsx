@@ -10,6 +10,7 @@ import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
+import { lightHaptic, mediumHaptic } from '../lib/haptics'
 import { dateTimeFormatter } from './room/format'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -84,25 +85,28 @@ export function PostCard({
     >
       <Link href={{ pathname: '/posts/[postId]', params: { postId: post.id } }} asChild>
         <Pressable
-          onLongPress={() => setMenuOpen(true)}
+          onLongPress={() => {
+            mediumHaptic()
+            setMenuOpen(true)
+          }}
           delayLongPress={350}
         >
           {compact ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
-                  <Text style={{ fontWeight: '500' }}>{author?.display_name ?? 'Member'}</Text>
-                  {isMine ? <Text style={{ color: t.onSurfaceVariant }}> (you)</Text> : null}
-                  <Text style={{ color: t.onSurfaceVariant }}> · {dateTimeFormatter.format(new Date(post.created_at))}</Text>
-                  {post.edited_at ? <Text style={{ color: t.onSurfaceVariant }}> · edited</Text> : null}
+              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '500', color: t.onSurface }} maxFontSizeMultiplier={1.4}>
+                {author?.display_name ?? 'Member'}
+              </Text>
+              {isMine ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>(you)</Text> : null}
+              <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>
+                · {dateTimeFormatter.format(new Date(post.created_at))}
+              </Text>
+              {post.edited_at ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>· edited</Text> : null}
+              {clusterName ? (
+                <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: t.primary }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+                  · {clusterName}
                 </Text>
-                {clusterName ? (
-                  <Text style={{ marginTop: 2, fontSize: 12, fontWeight: '600', color: t.primary }} numberOfLines={1}>
-                    {clusterName}
-                  </Text>
-                ) : null}
-              </View>
+              ) : null}
             </View>
           ) : (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
@@ -139,8 +143,14 @@ export function PostCard({
           <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <Pressable
               accessibilityLabel="Like post"
-              onPress={() => onLike(post.id)}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: likedByMe }}
+              onPress={() => {
+                lightHaptic()
+                onLike(post.id)
+              }}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 12, minWidth: 48, minHeight: 48 }}
             >
               <Heart
                 size={22}
@@ -160,8 +170,8 @@ export function PostCard({
               <Pressable
                 accessibilityLabel="Post actions"
                 onPress={() => setMenuOpen(true)}
-                hitSlop={6}
-                style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+                hitSlop={8}
+                style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
               >
                 <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
               </Pressable>
@@ -199,7 +209,8 @@ export function PostCard({
           <Pressable
             onPress={() => setConfirmOpen(false)}
             disabled={del.isPending}
-            style={{ paddingHorizontal: 16, paddingVertical: 10, opacity: del.isPending ? 0.6 : 1 }}
+            hitSlop={8}
+            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: del.isPending ? 0.6 : 1 }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
           </Pressable>
@@ -227,7 +238,8 @@ export function PostCard({
               borderRadius: radii.md,
               paddingHorizontal: 16,
               paddingVertical: 10,
-              fontSize: 14,
+              fontSize: 16,
+              lineHeight: 24,
               fontWeight: '600',
               color: t.onSurface,
             }}
@@ -246,8 +258,8 @@ export function PostCard({
               borderRadius: radii.md,
               paddingHorizontal: 16,
               paddingVertical: 12,
-              fontSize: 14,
-              lineHeight: 22,
+              fontSize: 16,
+              lineHeight: 24,
               minHeight: 104,
               textAlignVertical: 'top',
               color: t.onSurface,
@@ -255,7 +267,7 @@ export function PostCard({
           />
           {editError ? <Text style={{ fontSize: 12, color: t.error }}>{editError}</Text> : null}
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
-            <Pressable onPress={() => setEditing(false)} style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
+            <Pressable onPress={() => setEditing(false)} hitSlop={8} style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}>
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
             </Pressable>
             <PrimaryButton

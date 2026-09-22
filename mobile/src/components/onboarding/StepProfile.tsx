@@ -34,9 +34,11 @@ function CountryField({ value, onChange }: { value: string; onChange: (code: str
           borderRadius: radii.md,
           paddingHorizontal: 16,
           paddingVertical: 12,
+          minHeight: 48,
+          justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 14, color: value ? t.onSurface : t.onSurfaceVariant }}>
+        <Text style={{ fontSize: 16, lineHeight: 24, color: value ? t.onSurface : t.onSurfaceVariant }}>
           {value ? countryName(value) : 'Select your country…'}
         </Text>
       </Pressable>
@@ -55,17 +57,17 @@ function CountryField({ value, onChange }: { value: string; onChange: (code: str
                   onChange(item.code)
                   setOpen(false)
                 }}
-                style={{ paddingHorizontal: spacing.containerMargin, paddingVertical: 12 }}
+                style={{ paddingHorizontal: spacing.containerMargin, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
               >
-                <Text style={{ fontSize: 15, color: t.onSurface }}>{item.name}</Text>
+                <Text style={{ fontSize: 16, lineHeight: 24, color: t.onSurface }}>{item.name}</Text>
               </Pressable>
             )}
           />
           <Pressable
             onPress={() => setOpen(false)}
-            style={{ padding: spacing.gutter, alignItems: 'center' }}
+            style={{ padding: spacing.gutter, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Close</Text>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Close</Text>
           </Pressable>
         </SafeAreaView>
       </Modal>

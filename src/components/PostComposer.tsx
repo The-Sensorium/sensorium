@@ -89,7 +89,7 @@ export function PostComposer({
         type="button"
         aria-label="New post"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
+        className="inline-flex min-h-[48px] items-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
       >
         <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
         New post
@@ -111,7 +111,7 @@ export function PostComposer({
         maxLength={POST_TITLE_MAX}
         placeholder="Post title (optional)"
         aria-label="Post title"
-        className="w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-sm font-semibold text-on-surface outline-none transition-colors placeholder:font-normal placeholder:text-on-surface-variant/60 focus:border-primary"
+        className="w-full rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-base font-semibold leading-6 text-on-surface outline-none transition-colors placeholder:font-normal placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
       />
       <textarea
         ref={bodyRef}
@@ -121,7 +121,7 @@ export function PostComposer({
         maxLength={POST_CONTENT_MAX}
         placeholder="Share something with your cluster…"
         aria-label="New post"
-        className="mt-2 w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-sm leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary"
+        className="mt-2 w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
       />
       {(file || gif) && (
         <div className="mt-2 flex items-center gap-2 text-xs text-on-surface-variant">
@@ -141,21 +141,25 @@ export function PostComposer({
               setFile(null)
               setGif(null)
             }}
-            className="grid h-5 w-5 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container"
+            className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
           >
             <X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
           </button>
         </div>
       )}
-      {error && <p className="mt-2 text-xs text-error">{error}</p>}
-      <div className="mt-3 flex items-center gap-2">
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-error">
+          {error}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <div className="relative flex items-center gap-1.5">
           <button
             type="button"
             aria-label="Attach image"
             onClick={() => fileRef.current?.click()}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-pill px-3 py-2 text-sm font-semibold transition-colors',
+              'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors',
               file
                 ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
                 : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -173,7 +177,7 @@ export function PostComposer({
               setGifOpen((o) => !o)
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 rounded-pill px-3 py-2 text-sm font-semibold transition-colors',
+              'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors',
               gif
                 ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
                 : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -193,7 +197,7 @@ export function PostComposer({
             />
           )}
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <button
             type="button"
             disabled={create.isPending}
@@ -202,14 +206,14 @@ export function PostComposer({
               setGifOpen(false)
               setError(null)
             }}
-            className="rounded-pill px-3 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-50"
+            className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!hasContent || create.isPending}
-            className="inline-flex items-center gap-2 rounded-pill bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+            className="inline-flex min-h-[48px] shrink-0 items-center gap-2 whitespace-nowrap rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
           >
             {create.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

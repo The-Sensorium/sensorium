@@ -641,14 +641,17 @@ export function RoomView() {
         className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft max-lg:[html.keyboard-open_&]:hidden"
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-display text-sm font-semibold text-on-surface">
+          <h2 className="font-display text-sm font-semibold text-on-surface">
+            <Link
+              to="members"
+              className="inline-flex items-baseline gap-2 whitespace-nowrap rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
               In the cluster now
-            </h2>
-            <span className="text-xs text-on-surface-variant">
-              {onlineCount} of {memberCount} here
-            </span>
-          </div>
+              <span className="text-xs font-normal text-on-surface-variant">
+                {onlineCount} of {memberCount} here
+              </span>
+            </Link>
+          </h2>
           <ul className="flex flex-wrap items-center gap-2">
             {(members.data ?? []).map((m) => {
               const isMe = m.id === userId
@@ -694,8 +697,18 @@ export function RoomView() {
       the timeline scrolls inside the container and the page never moves. */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {messages.isLoading || myMutes.isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading the room…
+          <div role="status" aria-label="Loading the room" className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+              <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> Loading the room…
+            </div>
+            <div aria-hidden className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-16 animate-pulse rounded-2xl bg-surface-container/60 motion-reduce:animate-none"
+                />
+              ))}
+            </div>
           </div>
         ) : timeline.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">
@@ -709,7 +722,7 @@ export function RoomView() {
                   type="button"
                   onClick={() => void handleLoadEarlier()}
                   disabled={loadEarlier.isPending}
-                  className="inline-flex items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-surface px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-surface px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
                 >
                   {loadEarlier.isPending ? 'Loading earlier messages…' : 'Load earlier messages'}
                 </button>
@@ -858,7 +871,7 @@ export function RoomView() {
             setPinned(true)
             setNewCount(0)
           }}
-          className="fixed bottom-[calc(var(--bottom-nav-offset)+6.5rem)] left-1/2 z-20 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
+          className="fixed bottom-[calc(var(--bottom-nav-offset)+6.5rem)] left-1/2 z-20 inline-flex min-h-[48px] -translate-x-1/2 items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
         >
           <ArrowDown className="h-4 w-4" strokeWidth={2} aria-hidden />
           {newCount} new message{newCount === 1 ? '' : 's'}

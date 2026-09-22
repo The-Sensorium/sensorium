@@ -55,7 +55,7 @@ export function ClusterCreatedPage() {
         </p>
         <Link
           to="/home"
-          className="mt-5 inline-flex items-center gap-2 rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          className="mt-5 inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
         >
           Back to home
         </Link>

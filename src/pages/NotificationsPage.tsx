@@ -80,7 +80,7 @@ export function NotificationsPage() {
           type="button"
           onClick={() => void markAll.mutateAsync()}
           disabled={items.length === 0 || markAll.isPending}
-          className="inline-flex items-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
         >
           {markAll.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           Mark all read

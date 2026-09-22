@@ -111,14 +111,14 @@
 
   /* borders / outlines + muted warm grey */
   --color-outline: #78736f;
-  --color-outline-variant: #2a2a2a;
+  --color-outline-variant: #404040;
 
-  /* primary - blue for comfortable nighttime use */
-  --color-primary: #3b82f6;
+  /* primary - blue for comfortable nighttime use, white text 4.71:1 (AA) */
+  --color-primary: #2f6bee;
   --color-on-primary: #ffffff;
   --color-primary-container: #1e3a8a;
   --color-on-primary-container: #dbeafe;
-  --color-inverse-primary: #60a5fa;
+  --color-inverse-primary: #818cf8;
   --color-primary-fixed: #dbeafe;
   --color-primary-fixed-dim: #93c5fd;
   --color-on-primary-fixed: #172554;
@@ -239,7 +239,8 @@
   }
 
   /* Height of the fixed mobile bottom nav (+ safe area). The room composer and
-     its new-messages pill anchor above it on small screens. */
+     its new-messages pill anchor above it on small screens. 4rem fits the
+     48px bottom-tab targets with room for the label; keep pb-24 clearance. */
   :root {
     --bottom-nav-offset: calc(4rem + max(env(safe-area-inset-bottom), 0.5rem));
   }

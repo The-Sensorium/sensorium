@@ -83,7 +83,7 @@ export function CallOverlay({ callId, videoOnJoin, startedAt, expiresAt, onHangU
           aria-label="Hang up"
           data-e2e="hang-up-call"
           onClick={onHangUp}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant/60 bg-surface text-on-surface transition-colors hover:bg-surface-container"
+          className="inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-outline-variant/60 bg-surface text-on-surface transition-colors hover:bg-surface-container"
         >
           <X className="h-4 w-4" strokeWidth={2} aria-hidden />
         </button>
@@ -101,7 +101,7 @@ export function CallOverlay({ callId, videoOnJoin, startedAt, expiresAt, onHangU
             <button
               type="button"
               onClick={onHangUp}
-              className="rounded-pill border border-outline-variant/60 bg-surface px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+              className="min-h-[44px] rounded-pill border border-outline-variant/60 bg-surface px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
             >
               Close
             </button>

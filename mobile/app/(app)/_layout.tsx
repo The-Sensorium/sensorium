@@ -6,6 +6,7 @@ import { useNotificationsChannel, useUnreadCount } from '../../src/features/noti
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { useTheme } from '../../src/lib/use-theme'
 import { onPushResponse, getLaunchPushData, syncBadgeCount } from '../../src/lib/push'
+import { badgeLabel } from '../../src/lib/tab-badge'
 import { pushDataToHref, type PushData } from '../../src/lib/notification-routing'
 
 export default function AppTabs() {
@@ -15,7 +16,8 @@ export default function AppTabs() {
   useActiveAccountGate('member')
   useNotificationsChannel(userId)
   const unread = useUnreadCount()
-  const badge = (unread.data ?? 0) > 0 ? String(unread.data) : undefined
+  const unreadCount = unread.data ?? 0
+  const badge = badgeLabel(unreadCount)
   useEffect(() => {
     void syncBadgeCount(unread.data ?? 0)
   }, [unread.data])
@@ -53,8 +55,10 @@ export default function AppTabs() {
         headerShown: false,
         tabBarActiveTintColor: t.primary,
         tabBarInactiveTintColor: t.onSurfaceVariant,
-        tabBarStyle: { backgroundColor: t.surface },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+        tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.outlineVariant },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
+        tabBarBadgeStyle: { backgroundColor: t.error, color: t.onError, fontSize: 11, fontWeight: '600', minWidth: 18, height: 18, borderRadius: 9, lineHeight: 16, textAlign: 'center' },
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen

@@ -82,7 +82,7 @@ export function GifPicker({
               </li>
             ))}
           </ul>
-          <p className="px-1 text-center text-[10px] text-on-surface-variant/60">
+          <p className="px-1 text-center text-xs leading-4 text-on-surface-variant/60">
             Powered by KLIPY
           </p>
         </>

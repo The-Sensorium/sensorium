@@ -38,9 +38,9 @@ export default function DiscoveryModeScreen() {
           That matching mode doesn’t exist.
         </Text>
         <Link href="/(app)/clusters" asChild>
-          <Pressable style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Pressable hitSlop={8} style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48 }}>
             <ArrowLeft size={16} color={t.primary} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
               Back to clusters
             </Text>
           </Pressable>
@@ -62,7 +62,8 @@ export default function DiscoveryModeScreen() {
             alignItems: 'center',
             alignSelf: 'flex-start',
             gap: 6,
-            paddingVertical: 8,
+            paddingVertical: 12,
+            minHeight: 48,
             paddingRight: 16,
             marginBottom: 8,
           }}
@@ -73,10 +74,10 @@ export default function DiscoveryModeScreen() {
           </Text>
         </Pressable>
       </Link>
-      <Text style={{ marginTop: 4, fontSize: 28, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
         {info.label}
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant, marginBottom: 16 }}>
+      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 16 }}>
         {info.detail}
       </Text>
 

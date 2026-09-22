@@ -12,6 +12,7 @@ import {
 } from '../features/posts'
 import type { Gif } from '../features/gifs'
 import { toErrorMessage } from '../lib/error'
+import { errorHaptic, successHaptic } from '../lib/haptics'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { resolveParentCommentId, type ReplyTarget } from './comment-helpers'
@@ -130,7 +131,9 @@ export function CommentComposer({
       setImage(null)
       setGif(null)
       onPosted()
+      successHaptic()
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not comment. Try again.'))
     }
   }
@@ -150,7 +153,8 @@ export function CommentComposer({
             <Pressable
               accessibilityLabel="Cancel reply"
               onPress={onCancelReply}
-              style={{ width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}
+              hitSlop={14}
+              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
             >
               <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
@@ -173,8 +177,8 @@ export function CommentComposer({
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 10,
-            fontSize: 14,
-            lineHeight: 20,
+            fontSize: 16,
+            lineHeight: 24,
             minHeight: 64,
             textAlignVertical: 'top',
             color: t.onSurface,
@@ -201,7 +205,8 @@ export function CommentComposer({
                 setImage(null)
                 setGif(null)
               }}
-              style={{ width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}
+              hitSlop={14}
+              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
             >
               <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
@@ -224,7 +229,8 @@ export function CommentComposer({
           <Pressable
             accessibilityLabel="Attach image"
             onPress={() => void handlePickImage()}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6 }}
+            hitSlop={4}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
           >
             <ImagePlus size={16} color={image ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
             <Text style={{ fontSize: 14, fontWeight: '600', color: image ? t.primary : t.onSurfaceVariant }}>
@@ -234,7 +240,8 @@ export function CommentComposer({
           <Pressable
             accessibilityLabel="Add a GIF"
             onPress={() => setGifOpen((o) => !o)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6 }}
+            hitSlop={4}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
           >
             <ImagePlay size={16} color={gif ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
             <Text style={{ fontSize: 14, fontWeight: '600', color: gif ? t.primary : t.onSurfaceVariant }}>
@@ -243,15 +250,17 @@ export function CommentComposer({
           </Pressable>
           <Pressable
             disabled={!hasContent || create.isPending}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !hasContent || create.isPending }}
             onPress={() => void handleComment()}
-            style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, opacity: !hasContent || create.isPending ? 0.6 : 1 }}
+            style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, opacity: !hasContent || create.isPending ? 0.6 : 1 }}
           >
             {create.isPending ? (
               <ActivityIndicator size="small" color={t.onPrimary} />
             ) : (
               <Send size={16} color={t.onPrimary} strokeWidth={1.5} />
             )}
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>Comment</Text>
+            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>Comment</Text>
           </Pressable>
         </View>
       </View>

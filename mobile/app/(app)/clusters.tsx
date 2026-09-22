@@ -26,8 +26,8 @@ export default function ClustersScreen() {
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
-      <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>Clusters</Text>
-      <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant, marginBottom: 24 }}>
+      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Clusters</Text>
+      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 24 }}>
         Every cluster you’ve been matched into. Browse a matching mode below to meet more people.
       </Text>
       <ErrorText message={pull.error} />
@@ -96,7 +96,7 @@ function ModeTile({
   return (
     <Link href={{ pathname: '/mode/[modeId]', params: { modeId: value } }} asChild>
       <Pressable
-        style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 20, marginBottom: 16 }}
+        style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.xl, padding: 16, marginBottom: 16 }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
