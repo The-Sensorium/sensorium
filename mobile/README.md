@@ -21,7 +21,7 @@ and the Android APK CI workflows.
 | Runtime | Expo SDK 57, React Native 0.86, React 19 |
 | Routing | `expo-router` (file-based, typed routes) |
 | Server state | TanStack Query 5 + Supabase Realtime |
-| Backend | Supabase (Postgres, Auth, Storage, Realtime) — shared with web |
+| Backend | Supabase (Postgres, Auth, Storage, Realtime) - shared with web |
 | Auth | Supabase Auth: email/password and Google OAuth (via `expo-web-browser` + a deep-link callback) |
 | Calls | LiveKit (`@livekit/react-native` + `@livekit/react-native-webrtc`); WebRTC globals registered in `src/lib/livekit.ts`; tokens minted by the `create-call-token` Edge Function |
 | Push | `expo-notifications` → Expo Push → FCM on Android |
@@ -58,7 +58,7 @@ mobile/
 │  └─ auth/callback.tsx    # OAuth / recovery deep-link landing (redirects home; handled in _layout)
 ├─ src/
 │  ├─ components/          # shared + feature UI (room/, call/, posts, onboarding)
-│  ├─ features/            # data hooks (TanStack Query) — mirrors web modules
+│  ├─ features/            # data hooks (TanStack Query) - mirrors web modules
 │  ├─ lib/                 # supabase client, auth, push, livekit, theme, geo, utils
 │  └─ legal/               # privacy policy / terms content
 ├─ assets/                 # icons, splash, notification icon
@@ -217,7 +217,7 @@ npm test
   `firebase login`, then `firebase appdistribution:distribute <apk> --app <app-id> --groups beta`
   (the App ID is on the Firebase console General Settings page).
 - Automated upload: rerun the CI workflow with `distribute: true` and a
-  `tester-group`. It needs the `FIREBASE_SERVICE_ACCOUNT_JSON` secret —
+  `tester-group`. It needs the `FIREBASE_SERVICE_ACCOUNT_JSON` secret -
   a base64-encoded service-account key with the Firebase App Distribution Admin role.
 - Testers open the invite email on their phone, sign in, and download the APK
   (the App Tester app is optional). Builds expire after 150 days.

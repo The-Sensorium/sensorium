@@ -29,7 +29,7 @@ Sensorium is an open-source social platform that places you into a group of exac
 
 ## Platforms
 
-- **Web app** (`src/`): the full product — chat, posts, discovery, moderation, and admin surfaces — served on Vercel.
+- **Web app** (`src/`): the full product - chat, posts, discovery, moderation, and admin surfaces - served on Vercel.
 - **Android app** (`mobile/`): an Expo/React Native companion for members, sharing the same Supabase backend and accounts, with push notifications via Expo. Admin and moderation stay web-only. See [`mobile/README.md`](mobile/README.md).
 
 ## Features
@@ -39,7 +39,7 @@ Sensorium is an open-source social platform that places you into a group of exac
 - **Read receipts**: per-message "seen by" detail with the time each member first read it, updated automatically as members scroll.
 - **Cluster calls**: start or join audio/video calls from the room on web and Android, with ringing state and membership gating powered by LiveKit.
 - **Introduction checklist**: a five-question shared intro stays answerable at any time as an optional in-cluster checklist (progress nudge, never a gate, no deadline).
-- **Posts**: a cluster-scoped feed of text, images, and GIFs — optional titles, heart likes, and threaded comments and replies, visible only to the cluster.
+- **Posts**: a cluster-scoped feed of text, images, and GIFs - optional titles, heart likes, and threaded comments and replies, visible only to the cluster.
 - **Clusters directory**: browse matching modes and preview a mode's non-archived clusters (name, status, member count, formation date).
 - **Availability**: per-cluster availability status shown to members.
 - **Signals**: raise a request for help, reply in threads, and track open, in-progress, and resolved states.

@@ -179,10 +179,10 @@ Behavior:
 
 The typographic system pairs a humanist sans-serif with a single typewriter accent used sparingly for brand moments.
 
-- **Headlines:** all headings (`h1`–`h6`) render in Plus Jakarta Sans via the `font-display` token, weighted Semibold (`600`) in the app shell. Headlines stay tight and contemporary rather than decorative.
+- **Headlines:** all headings (`h1`-`h6`) render in Plus Jakarta Sans via the `font-display` token, weighted Semibold (`600`) in the app shell. Headlines stay tight and contemporary rather than decorative.
 - **Body & Labels:** Plus Jakarta Sans (`font-sans`) with open counters and friendly, rounded terminals. It keeps the UI feeling modern and accessible.
 - **Brand:** the "Sensorium" wordmark (on the landing page, auth layouts, and the app shell header) uses **Special Elite** (`font-brand`), a typewriter-style face with monospace fallback, with wide letter-spacing (`0.15em` to `0.2em`). It is reserved for the wordmark only; it is never used for body copy or interface text.
-- **Styling:** generous line heights (1.5x body) keep the UI from feeling cluttered. The two fonts are loaded from `@fontsource` (Plus Jakarta Sans 400–700, Special Elite 400) in `src/main.tsx`.
+- **Styling:** generous line heights (1.5x body) keep the UI from feeling cluttered. The two fonts are loaded from `@fontsource` (Plus Jakarta Sans 400-700, Special Elite 400) in `src/main.tsx`.
 
 ## Layout & Spacing
 

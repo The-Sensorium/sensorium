@@ -76,7 +76,7 @@ flowchart TD
 - **Authentication**: signup, login, email verification, and password reset.
 - **Onboarding**: profile setup before the user can enter queues.
 - **Matching Queue**: the user opts into up to six matching modes; each queues them separately.
-- **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed — and opens immediately.
+- **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed - and opens immediately.
 - **Open Cluster**: members get chat, audio/video calls, availability, Signals, posts, votes, and notifications from formation. No locks, no deadlines, no removal for unfinished intros.
 - **Introductions Checklist**: a shared five-question intro stays answerable at any time as an optional in-cluster checklist (progress nudge, never a gate).
 - **Restriction & Appeal**: a moderated suspension/ban shows on the restricted-account screen, where the member may open one in-app appeal (`/appeal`). Admins review the queue (`/admin/appeals`) and decide; the outcome emails the appellant and lifts the restriction when accepted.
@@ -112,7 +112,7 @@ There is no application server. Supabase provides every backend service, and the
 - **Storage**: private buckets for chat images and avatars. Files are served through short-lived signed URLs, never through public object URLs.
 - **Realtime**: the SPA subscribes to database changes (chat, presence, notifications) and reacts live.
 - **Scheduled Jobs**: pg_cron runs database functions on a schedule (e.g. expiring stale signals, rebalancing membership, pumping the email outbox).
-- **Edge Functions**: stateless workers around the DB. `send-emails` and `send-push` are invoked by their cron-driven outbox pumps — and only by them, guarded by a shared secret — claim queued rows under the service-role key, and forward to Resend and Expo respectively. `create-call-token` mints short-lived LiveKit tokens for cluster calls, verifying membership before it does. The DB is the source of truth; the functions hold no state.
+- **Edge Functions**: stateless workers around the DB. `send-emails` and `send-push` are invoked by their cron-driven outbox pumps - and only by them, guarded by a shared secret - claim queued rows under the service-role key, and forward to Resend and Expo respectively. `create-call-token` mints short-lived LiveKit tokens for cluster calls, verifying membership before it does. The DB is the source of truth; the functions hold no state.
 
 The important mental model: **security lives in the database, not in the client**. The browser is untrusted; RLS and RPC functions are the enforcement point.
 
