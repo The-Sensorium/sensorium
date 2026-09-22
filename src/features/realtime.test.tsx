@@ -98,6 +98,19 @@ describe('useClusterChannel', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] })
   })
 
+  it('refetches instead of dropping when the message cache is empty', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    const client = requireSupabaseMock.mock.results[0].value
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const handler = findBy(channelHandlers(client), 'messages', 'INSERT')
+    act(() => {
+      handler?.({ new: { id: 'm9', created_at: '2026-01-02T00:00:00Z' } } as never)
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-messages', 'c1'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] })
+    expect(queryClient.getQueryData(['cluster-messages', 'c1'])).toBeUndefined()
+  })
+
   it('replaces a message on UPDATE', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
     queryClient.setQueryData(['cluster-messages', 'c1'], [{ id: 'm1', content: 'old' }])

@@ -389,18 +389,42 @@ export function RoomView() {
     void queryClient.invalidateQueries({ queryKey: ['cluster-reactions', clusterId] })
   }, [loadedMessageIds, clusterId, queryClient])
 
-  // Debounce: advance the room's read marker while the member is pinned to the
-  // newest messages (on open, on scroll-to-bottom, and as messages stream in).
-  // Clearing the timer on each new message collapses bursts into one write.
+  // Throttle: advance the room's read marker at most every 5s while the
+  // member is pinned to the newest messages (on open, on scroll-to-bottom,
+  // and as messages stream in). Leading edge marks immediately; a trailing
+  // timer collapses a burst into one write per window instead of one write
+  // per message batch. Switching tab away flushes immediately so unread
+  // clears even if the room unmounts unseen.
   const markReadTimer = useRef<number | null>(null)
+  const lastMarkAt = useRef(0)
   useEffect(() => {
     if (!pinned || !clusterId) return
+    if (Date.now() - lastMarkAt.current >= 5_000) {
+      lastMarkAt.current = Date.now()
+      markRead.mutate(clusterId)
+      return
+    }
     if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
-    markReadTimer.current = window.setTimeout(() => markRead.mutate(clusterId), 400)
+    markReadTimer.current = window.setTimeout(() => {
+      lastMarkAt.current = Date.now()
+      markRead.mutate(clusterId)
+    }, 5_000)
     return () => {
       if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
     }
   }, [pinned, clusterId, messages.data, markRead])
+
+  useEffect(() => {
+    if (!pinned || !clusterId) return
+    function flushOnHide() {
+      if (document.visibilityState === 'hidden') {
+        lastMarkAt.current = Date.now()
+        markRead.mutate(clusterId)
+      }
+    }
+    document.addEventListener('visibilitychange', flushOnHide)
+    return () => document.removeEventListener('visibilitychange', flushOnHide)
+  }, [pinned, clusterId, markRead])
 
   // Close the message action menu and reaction picker on outside click / Escape.
   useEffect(() => {
