@@ -5,8 +5,7 @@
 <h1 align="center">Sensorium</h1>
 
 <p align="center">
-  <strong>Eight strangers. One cluster.</strong><br />
-  Small, permanent groups where real friendships actually grow.
+  <strong>Eight strangers. One cluster.</strong>
 </p>
 
 <p align="center">
