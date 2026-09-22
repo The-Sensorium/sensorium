@@ -402,6 +402,7 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
           loadingTitle="Deleting…"
           loading={deleteAccount.isPending}
           disabled={confirm.trim() !== 'DELETE'}
+          tone="error"
           onPress={() => void handleDelete()}
         />
       </View>

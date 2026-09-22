@@ -18,6 +18,27 @@ type Vote = Database['public']['Tables']['votes']['Row']
 
 const byCreatedAsc = (a: Message, b: Message) => a.created_at.localeCompare(b.created_at)
 
+/**
+ * Route a message INSERT into the room cache. When there is no cache yet the
+ * initial fetch is still in flight or failed (cold start from a push tap):
+ * dropping the event would lose the message, so refetch instead.
+ */
+export function patchMessageInsert(
+  queryClient: ReturnType<typeof useQueryClient>,
+  clusterId: string,
+  row: Message,
+) {
+  const key = ['cluster-messages', clusterId]
+  if (!queryClient.getQueryData<Message[]>(key)) {
+    void queryClient.invalidateQueries({ queryKey: key })
+    return
+  }
+  queryClient.setQueryData<Message[]>(key, (cur) => {
+    if (!cur || cur.some((m) => m.id === row.id)) return cur
+    return [...cur, row].sort(byCreatedAsc)
+  })
+}
+
 /** Route a reaction event to the query cache of the cluster its message belongs to. */
 async function patchReaction(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -231,11 +252,7 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           filter: `cluster_id=eq.${clusterId}`,
         },
         (payload) => {
-          const row = payload.new as Message
-          queryClient.setQueryData<Message[]>(messagesKey, (cur) => {
-            if (!cur || cur.some((m) => m.id === row.id)) return cur
-            return [...cur, row].sort(byCreatedAsc)
-          })
+          patchMessageInsert(queryClient, clusterId, payload.new as Message)
         },
       )
       .on(

@@ -16,7 +16,32 @@ type PostCommentRealtime = PostComment
 type PostLikeRealtime = PostLike
 type CommentLikeRealtime = CommentLike
 
-const byCreatedAsc = (a: Message, b: Message) => a.created_at.localeCompare(b.created_at)
+// Same ordering as the fetch (created_at, id): same-transaction inserts can
+// share a timestamp, and the patched row must sort exactly where a refetch
+// would put it.
+const byCreatedAsc = (a: Message, b: Message) =>
+  a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
+
+/**
+ * Route a message INSERT into the room cache. When there is no cache yet the
+ * initial fetch is still in flight or failed (deep link racing the fetch):
+ * dropping the event would lose the message, so refetch instead.
+ */
+export function patchMessageInsert(
+  queryClient: ReturnType<typeof useQueryClient>,
+  clusterId: string,
+  row: Message,
+) {
+  const key = ['cluster-messages', clusterId]
+  if (!queryClient.getQueryData<Message[]>(key)) {
+    void queryClient.invalidateQueries({ queryKey: key })
+    return
+  }
+  queryClient.setQueryData<Message[]>(key, (cur) => {
+    if (!cur || cur.some((m) => m.id === row.id)) return cur
+    return [...cur, row].sort(byCreatedAsc)
+  })
+}
 
 /** Route a reaction event to its cluster cache (reactions carry cluster_id). */
 function patchReaction(
@@ -172,11 +197,7 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           filter: `cluster_id=eq.${clusterId}`,
         },
         (payload) => {
-          const row = payload.new as Message
-          queryClient.setQueryData<Message[]>(messagesKey, (cur) => {
-            if (!cur || cur.some((m) => m.id === row.id)) return cur
-            return [...cur, row].sort(byCreatedAsc)
-          })
+          patchMessageInsert(queryClient, clusterId, payload.new as Message)
           // Plain chat writes no notification row (synthesized at read time),
           // so a new message must also bump the badge + list. Scoped here on
           // purpose: only viewers of this cluster (RLS + cluster_id filter)

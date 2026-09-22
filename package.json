@@ -13,6 +13,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test --project=chromium && playwright test --project=mobile-chromium",
     "check:release": "node scripts/check-release-merge.mjs",
+    "load:chat": "node scripts/load/chat-burst.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "sync:legal": "node scripts/sync-legal.mjs",
     "preview": "vite preview"

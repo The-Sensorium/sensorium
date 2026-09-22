@@ -169,6 +169,7 @@ export function PrimaryButton({
   loading,
   disabled,
   icon,
+  tone = 'primary',
 }: {
   title: string
   loadingTitle?: string
@@ -176,9 +177,12 @@ export function PrimaryButton({
   loading?: boolean
   disabled?: boolean
   icon?: ReactNode
+  tone?: 'primary' | 'error'
 }) {
   const t = useTheme()
   const inactive = disabled || loading
+  const backgroundColor = tone === 'error' ? t.error : t.primary
+  const color = tone === 'error' ? t.onError : t.onPrimary
   return (
     <Pressable
       onPress={onPress}
@@ -186,7 +190,7 @@ export function PrimaryButton({
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive }}
       style={{
-        backgroundColor: t.primary,
+        backgroundColor,
         borderRadius: radii.pill,
         paddingHorizontal: 24,
         paddingVertical: 16,
@@ -199,7 +203,7 @@ export function PrimaryButton({
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         {!loading ? icon : null}
-        <Text style={{ color: t.onPrimary, fontSize: 16, lineHeight: 24, fontWeight: '600' }}>
+        <Text style={{ color, fontSize: 16, lineHeight: 24, fontWeight: '600' }}>
           {loading ? (loadingTitle ?? 'Please wait…') : title}
         </Text>
       </View>

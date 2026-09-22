@@ -217,6 +217,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Moderation and admin v2 (0117-0128)**: severity and queue v2, case workspace, post and comment cases, admin account ops, policy templates, case-v2 targets, appeals v2, audit export, rate limits and SLA watch, staff grants, and restore/reopen flows.
 - **Queue, feed, and hardening follow-ups (0129-0130, 0134-0141)**: Local radius fallback on join (`0129`), single-owner push tokens (`0130`), unread perf (`0134`), scoped queue counts (`0135`), cron batch limits (`0136`), single-wake push (`0137`), hot-write rate limits (`0138`), child cluster scoping (`0139`), feed counts (`0140`), and inline source candidates (`0141`).
 - **Plain-chat push (0153)**: the message-to-`push_outbox` fan-out trigger so plain chat writes produce pushes while the inbox stays ephemeral (one row per cluster).
+- **Read-receipt batch cap + outbox retry indexes (0154)**: `mark_cluster_read` / `mark_all_read` freeze receipts in bounded 2000-row batches (same rows, same instant, same watermark), with room screens throttled to one mark per 5s plus a hide/background flush (web `RoomView`, mobile `room.tsx`); partial retry indexes cover the outbox claim predicates (`queued` + retryable `failed`).
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
@@ -359,6 +360,7 @@ The migration workflows are environment-aware and expect the following repositor
 | `npm run test:watch` | run Vitest in watch mode |
 | `npm run test:e2e` | run the Playwright suite |
 | `npm run seed:demo` | seed the local database with demo data |
+| `npm run load:chat` | chat-burst load test (default 25 clusters x 8 users x 5 msgs) against local or staging |
 | `npm run check:release` | dry-run the `develop` → `main` release merge (touches nothing) |
 | `npm run sync:legal` | refresh the legal content pages |
 

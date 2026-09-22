@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  AppState,
   FlatList,
   Platform,
   Pressable,
@@ -76,8 +77,13 @@ export default function RoomScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
+  const authed = auth.state === 'signedIn'
+  // Never fetch or subscribe before the session is restored: a pre-session
+  // request fails RLS (permanent error, no retry) and a pre-session channel
+  // receives nothing, leaving a push-tapped room stuck without its message.
+  const authedClusterId = authed ? clusterId || null : null
 
-  useClusterChannel(clusterId || null)
+  useClusterChannel(authedClusterId)
   useFocusEffect(
     useCallback(() => {
       setSuppressedPushCluster(clusterId || null)
@@ -86,30 +92,30 @@ export default function RoomScreen() {
       }
     }, [clusterId]),
   )
-  const cluster = useCluster(clusterId || null)
-  const messages = useClusterMessages(clusterId || null)
+  const cluster = useCluster(authedClusterId)
+  const messages = useClusterMessages(authedClusterId)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
-  const reactions = useClusterReactions(clusterId || null)
-  const loadEarlier = useLoadEarlierMessages(clusterId || null)
+  const reactions = useClusterReactions(authedClusterId)
+  const loadEarlier = useLoadEarlierMessages(authedClusterId)
   const queryClient = useQueryClient()
-  const signals = useClusterSignals(clusterId || null)
-  const signalReplies = useSignalReplies(clusterId || null, null)
-  const votes = useClusterVotes(clusterId || null)
-  const members = useClusterMembers(clusterId || null)
+  const signals = useClusterSignals(authedClusterId)
+  const signalReplies = useSignalReplies(authedClusterId, null)
+  const votes = useClusterVotes(authedClusterId)
+  const members = useClusterMembers(authedClusterId)
   const send = useSendMessage()
   const toggleReaction = useToggleReaction(clusterId || null)
   const editMessage = useEditMessage(clusterId || null)
   const deleteMessage = useDeleteMessage(clusterId || null)
   const raise = useRaiseSignal(clusterId || null)
   const markRead = useMarkClusterRead()
-  const myMutes = useMyMutes(clusterId !== '')
+  const myMutes = useMyMutes(authedClusterId !== null)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
   const { typing, signalTyping, resetTyping, online } = usePresence(clusterId || null)
-  const roomClusterId = clusterId || null
+  const roomClusterId = authedClusterId
   const activeCall = useActiveCall(roomClusterId)
   const callParticipants = useCallParticipants(activeCall.data?.id ?? null)
   const startCall = useStartCall(roomClusterId)
@@ -174,7 +180,7 @@ export default function RoomScreen() {
         .filter((id) => !loadedById.has(id)),
     [messages.data, loadedById],
   )
-  const replyTargets = useReplyTargets(clusterId || null, missingParentIds)
+  const replyTargets = useReplyTargets(authedClusterId, missingParentIds)
   const replyById = useMemo(() => {
     const map = new Map<string, Message>(loadedById)
     for (const [id, m] of replyTargets.data ?? []) map.set(id, m)
@@ -251,7 +257,7 @@ export default function RoomScreen() {
     () => (infoFor ? (messages.data ?? []).find((m) => m.id === infoFor) ?? null : null),
     [infoFor, messages.data],
   )
-  const messageReads = useMessageReads(clusterId || null, infoMessage?.id ?? null)
+  const messageReads = useMessageReads(authedClusterId, infoMessage?.id ?? null)
   const readIds = useMemo(
     () => new Set((messageReads.data ?? []).map((r) => r.id)),
     [messageReads.data],
@@ -320,14 +326,46 @@ export default function RoomScreen() {
   }, [loadedMessageIds, clusterId, queryClient])
 
   const markReadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastMarkAt = useRef(0)
   useEffect(() => {
-    if (!focused || !pinned || !clusterId) return
+    if (!focused || !pinned || !clusterId || auth.state !== 'signedIn') return
+    if (Date.now() - lastMarkAt.current >= 5_000) {
+      lastMarkAt.current = Date.now()
+      markRead.mutate(clusterId)
+      return
+    }
     if (markReadTimer.current) clearTimeout(markReadTimer.current)
-    markReadTimer.current = setTimeout(() => markRead.mutate(clusterId), 400)
+    markReadTimer.current = setTimeout(() => {
+      lastMarkAt.current = Date.now()
+      markRead.mutate(clusterId)
+    }, 5_000)
     return () => {
       if (markReadTimer.current) clearTimeout(markReadTimer.current)
     }
-  }, [focused, pinned, clusterId, messages.data, markRead])
+  }, [focused, pinned, clusterId, messages.data, markRead, auth.state])
+
+  // One AppState subscription for both directions: flush the read marker
+  // when backgrounded while pinned (never when scrolled up reading history),
+  // and heal an errored message query when foregrounded (a mount fetch that
+  // failed while the app was waking would otherwise sit on stale rows with
+  // the new message missing until remount).
+  useEffect(() => {
+    if (!focused || !clusterId) return
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        if (!pinned || auth.state !== 'signedIn') return
+        if (markReadTimer.current) clearTimeout(markReadTimer.current)
+        lastMarkAt.current = Date.now()
+        markRead.mutate(clusterId)
+      } else if (state === 'active') {
+        const key = ['cluster-messages', clusterId]
+        if (queryClient.getQueryState(key)?.status === 'error') {
+          void queryClient.invalidateQueries({ queryKey: key })
+        }
+      }
+    })
+    return () => sub.remove()
+  }, [focused, pinned, clusterId, markRead, queryClient, auth.state])
 
   useFocusEffect(
     useCallback(() => {
