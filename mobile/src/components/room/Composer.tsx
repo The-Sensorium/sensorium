@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Phone, Plus, Send, X } from 'lucide-react-native'
+import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
 import {
   EVERYONE_NAME,
@@ -334,8 +334,8 @@ export function Composer({
                     hitSlop={4}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
                   >
-                    <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
-                      <Megaphone size={16} color={t.onSurface} strokeWidth={1.5} />
+                    <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}>
+                      <Users size={16} color={t.primary} strokeWidth={1.5} />
                     </View>
                     <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
                       everyone
