@@ -438,7 +438,9 @@ function PastVoteCard({
         <span
           className={cn(
             'inline-flex shrink-0 items-center rounded-pill px-3 py-1 text-xs font-semibold',
-            passed ? 'bg-emerald-500/15 text-emerald-700' : 'bg-error/10 text-error',
+            passed
+              ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300'
+              : 'bg-error/10 text-error',
           )}
         >
           {passed ? 'Passed' : 'Failed'}
@@ -454,7 +456,7 @@ function PastVoteCard({
       </p>
 
       <p className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-on-surface-variant">
-        <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-2.5 py-1 text-emerald-700">
+        <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-2.5 py-1 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
           <ThumbsUp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
           {result?.yes ?? 0}
         </span>
