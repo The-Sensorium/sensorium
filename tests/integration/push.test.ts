@@ -134,6 +134,29 @@ describe('push outbox fan-out', () => {
     expect(rows[0]!.type).toBe('mention')
   })
 
+  it('fans @everyone out as mention pushes without message pushes', async () => {
+    const a = await member('push-ev-a')
+    const b = await member('push-ev-b')
+    const c = await member('push-ev-c')
+    await withToken(b.id)
+    await withToken(c.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id, c.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hi @everyone',
+    })
+
+    for (const recipient of [b, c]) {
+      const rows = (await outbox(admin)).filter((r) => r.user_id === recipient.id)
+      expect(rows).toHaveLength(1)
+      expect(rows[0]!.type).toBe('mention')
+      expect(rows[0]!.channel).toBe('mentions')
+      expect(rows[0]!.title).toContain('mentioned everyone')
+    }
+    expect((await outbox(admin)).filter((r) => r.user_id === a.id)).toHaveLength(0)
+  })
+
   it('skips plain chat push when messages are disabled in prefs', async () => {
     const a = await member('push-plainpref-a')
     const b = await member('push-plainpref-b')

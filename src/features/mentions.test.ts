@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   filterMentionCandidates,
+  matchesEveryone,
   parseMentionQuery,
   parseMentions,
   type MentionMember,
@@ -128,5 +129,74 @@ describe('filterMentionCandidates', () => {
   it('limits results', () => {
     const many = Array.from({ length: 12 }, (_, i) => ({ id: `x${i}`, display_name: `Person ${i}` }))
     expect(filterMentionCandidates('', many, 'u0')).toHaveLength(8)
+  })
+})
+
+describe('parseMentions @everyone', () => {
+  it('parses a broadcast token with its prefix', () => {
+    expect(parseMentions('Hi @everyone!', members)).toEqual([
+      { type: 'text', value: 'Hi' },
+      { type: 'everyone', prefix: ' ', name: 'everyone' },
+      { type: 'text', value: '!' },
+    ])
+  })
+
+  it('matches case-insensitively at the start and end of content', () => {
+    expect(parseMentions('@Everyone', members)).toEqual([
+      { type: 'everyone', prefix: '', name: 'Everyone' },
+    ])
+    expect(parseMentions('say (@EVERYONE)!', members)).toEqual([
+      { type: 'text', value: 'say ' },
+      { type: 'everyone', prefix: '(', name: 'EVERYONE' },
+      { type: 'text', value: ')!' },
+    ])
+  })
+
+  it('does not match mid-word @ or a longer token', () => {
+    expect(parseMentions('email me@everyone now', members)).toEqual([
+      { type: 'text', value: 'email me@everyone now' },
+    ])
+    expect(parseMentions('@everyoneelse is not a broadcast', members)).toEqual([
+      { type: 'text', value: '@everyoneelse is not a broadcast' },
+    ])
+  })
+
+  it('parses a broadcast with no members present', () => {
+    expect(parseMentions('Hi @everyone', [])).toEqual([
+      { type: 'text', value: 'Hi' },
+      { type: 'everyone', prefix: ' ', name: 'everyone' },
+    ])
+  })
+
+  it('wins over a member literally named Everyone', () => {
+    const withEveryone = [...members, { id: 'u9', display_name: 'Everyone' }]
+    expect(parseMentions('Hi @Everyone', withEveryone)).toEqual([
+      { type: 'text', value: 'Hi' },
+      { type: 'everyone', prefix: ' ', name: 'Everyone' },
+    ])
+  })
+
+  it('parses a broadcast alongside member mentions', () => {
+    const parts = parseMentions('Hi @everyone and @Casey', members)
+    expect(parts).toEqual([
+      { type: 'text', value: 'Hi' },
+      { type: 'everyone', prefix: ' ', name: 'everyone' },
+      { type: 'text', value: ' and' },
+      { type: 'mention', prefix: ' ', name: 'Casey', id: 'u3' },
+    ])
+  })
+})
+
+describe('matchesEveryone', () => {
+  it('matches empty and prefix queries case-insensitively', () => {
+    expect(matchesEveryone('')).toBe(true)
+    expect(matchesEveryone('eve')).toBe(true)
+    expect(matchesEveryone('EVERY')).toBe(true)
+  })
+
+  it('rejects non-prefix queries', () => {
+    expect(matchesEveryone('everyone!')).toBe(false)
+    expect(matchesEveryone('all')).toBe(false)
+    expect(matchesEveryone('rio')).toBe(false)
   })
 })

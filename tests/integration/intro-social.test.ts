@@ -465,6 +465,85 @@ describe('introductions and social', () => {
     expect(mentions![0].user_id).toBe(b.id)
   })
 
+  it('send_message to @everyone notifies every other active member', async () => {
+    const [a, b, c] = [await member('i-ev-a'), await member('i-ev-b'), await member('i-ev-c')]
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { error } = await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hi @everyone, check this',
+    })
+    expect(error).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id, title')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(2)
+    expect(mentions!.map((m) => m.user_id).sort()).toEqual([b.id, c.id].sort())
+    for (const m of mentions!) expect(m.title).toContain('mentioned everyone')
+  })
+
+  it('does not broadcast on a mid-word or extended @everyone', async () => {
+    const [a, b] = [await member('i-ev-d'), await member('i-ev-e')]
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    for (const content of ['email me@everyone now', 'hi @everyoneelse']) {
+      const { error } = await a.client.rpc('send_message', {
+        p_cluster_id: clusterId,
+        p_content: content,
+      })
+      expect(error).toBeNull()
+    }
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(0)
+  })
+
+  it('excludes departed members from an @everyone broadcast', async () => {
+    const [a, b, c] = [await member('i-ev-x'), await member('i-ev-y'), await member('i-ev-z')]
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // c departs; the broadcast reaches only the remaining members.
+    const { error: leaveErr } = await admin
+      .from('cluster_members')
+      .update({ left_at: new Date().toISOString() })
+      .eq('cluster_id', clusterId)
+      .eq('user_id', c.id)
+    expect(leaveErr).toBeNull()
+
+    const { error } = await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hi @everyone',
+    })
+    expect(error).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(1)
+    expect(mentions![0].user_id).toBe(b.id)
+  })
+
   it('does not mention on a mid-word @', async () => {
     const [a, b] = [await member('i-ment-e'), await member('i-ment-f')]
     const { error: nameErr } = await admin

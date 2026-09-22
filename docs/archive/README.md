@@ -37,6 +37,7 @@ Status reflects the feature in the live app, not the doc's original framing.
 | [`POLISH_PLAN.md`](POLISH_PLAN.md) | Optimistic reactions, password visibility, pinned presence | Shipped |
 | [`TURNSTILE_BOT_PROTECTION_PLAN.md`](TURNSTILE_BOT_PROTECTION_PLAN.md) | Cloudflare Turnstile bot protection for Supabase Auth | Shipped |
 | [`WHATS_NEXT_FLOW_PLAN.md`](WHATS_NEXT_FLOW_PLAN.md) | Queue → intros expectation flow ("What happens next" steps + 72h deadline urgency) | Shipped |
+| [`MENTION_EVERYONE_PLAN.md`](MENTION_EVERYONE_PLAN.md) | `@everyone` broadcast mention (inbox + push + email via the `mention` pipeline) | Shipped |
 
 Older plans may contain stale "Status" lines written before the work landed; the
 table above is the source of truth for what is live.

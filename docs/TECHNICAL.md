@@ -97,7 +97,7 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `moderation.ts` | reporting, moderation queue and case actions, account restriction status, per-user mute + "My Reports" |
 | `admin-moderation.ts` | admin-only moderation/role administration queries |
 | `avatars.ts` | avatar signed URLs and storage paths |
-| `mentions.ts` | mention parsing and linkification |
+| `mentions.ts` | mention parsing and linkification (per-member plus `@everyone` broadcast) |
 | `gifs.ts` | KLIPY GIF search and result parsing |
 | `appeals.ts` | in-app appeals (restricted users) and the admin appeal queue |
 | `admin-accounts.ts` | admin account operations surfaced in the staff workspace |
@@ -110,7 +110,7 @@ Email is outbound-only and queued in the DB. `outbound_emails` rows are written 
 
 ### Push pipeline
 
-Push mirrors the email pipeline on the DB side. A `notifications` INSERT trigger fans out into `push_outbox` (one row per recipient token), gated by the per-cluster notification prefs, account-active state, and token presence. Plain chat writes no notification row, so a second trigger on `messages` INSERT fans out message pushes directly (same gates, author and mentioned members excluded, title/body preview mirroring the inbox); the inbox stays ephemeral with one row per cluster. A pg_cron pump POSTs batches to the `send-push` Edge Function (guarded by `SENSORIUM_PUSH_SECRET`), which claims rows under the service-role key, sends through the Expo Push API (using `EXPO_ACCESS_TOKEN` when set), marks rows sent/failed, and deletes tokens Expo reports as `DeviceNotRegistered`. An immediate-wake path nudges the worker when a row lands so delivery is not stuck waiting for the next cron tick. While a room is focused, its pushes arrive banner-free (the messages are on screen). See `docs/archive/PUSH_NOTIFICATIONS_PLAN.md`.
+Push mirrors the email pipeline on the DB side. A `notifications` INSERT trigger fans out into `push_outbox` (one row per recipient token), gated by the per-cluster notification prefs, account-active state, and token presence. Plain chat writes no notification row, so a second trigger on `messages` INSERT fans out message pushes directly (same gates, author and mentioned members excluded, `@everyone` broadcast recipients count as mentioned, title/body preview mirroring the inbox); the inbox stays ephemeral with one row per cluster. `send_message` treats a word-boundary `@everyone` token as a mention of every other active member (type `mention`, title `<author> mentioned everyone`). A pg_cron pump POSTs batches to the `send-push` Edge Function (guarded by `SENSORIUM_PUSH_SECRET`), which claims rows under the service-role key, sends through the Expo Push API (using `EXPO_ACCESS_TOKEN` when set), marks rows sent/failed, and deletes tokens Expo reports as `DeviceNotRegistered`. An immediate-wake path nudges the worker when a row lands so delivery is not stuck waiting for the next cron tick. While a room is focused, its pushes arrive banner-free (the messages are on screen). See `docs/archive/PUSH_NOTIFICATIONS_PLAN.md`.
 
 ### Posts
 
@@ -218,6 +218,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 - **Queue, feed, and hardening follow-ups (0129-0130, 0134-0141)**: Local radius fallback on join (`0129`), single-owner push tokens (`0130`), unread perf (`0134`), scoped queue counts (`0135`), cron batch limits (`0136`), single-wake push (`0137`), hot-write rate limits (`0138`), child cluster scoping (`0139`), feed counts (`0140`), and inline source candidates (`0141`).
 - **Plain-chat push (0153)**: the message-to-`push_outbox` fan-out trigger so plain chat writes produce pushes while the inbox stays ephemeral (one row per cluster).
 - **Read-receipt batch cap + outbox retry indexes (0154)**: `mark_cluster_read` / `mark_all_read` freeze receipts in bounded 2000-row batches (same rows, same instant, same watermark), with room screens throttled to one mark per 5s plus a hide/background flush (web `RoomView`, mobile `room.tsx`); partial retry indexes cover the outbox claim predicates (`queued` + retryable `failed`).
+- **@everyone broadcast mention (0155)**: `is_mentioned_everyone()` word-boundary helper; `send_message` fans a broadcast out to every other active member as `mention` rows titled `<author> mentioned everyone`; the plain-chat push trigger skips broadcast recipients so they get only the `mention` push.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 

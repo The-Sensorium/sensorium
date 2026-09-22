@@ -227,6 +227,40 @@ describe('notifications', () => {
     expect(list ?? []).toHaveLength(0)
   })
 
+  it('hides an @everyone broadcast when the mentions pref is disabled', async () => {
+    const a = await member('n-ev-pref')
+    const b = await member('n-ev-pref2')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // b disables mention notifications for this cluster.
+    const { error: prefErr } = await admin.from('notification_prefs').insert({
+      user_id: b.id,
+      cluster_id: clusterId,
+      mentions: false,
+    })
+    expect(prefErr).toBeNull()
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'Hi @everyone' })
+
+    // Fan-out is read-gated, so the row is still written ...
+    const { data: stored } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', b.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(stored ?? []).toHaveLength(1)
+
+    // ... but b sees no mention rows in the center.
+    const { data: list } = await b.client.rpc('get_my_notifications')
+    const mentions = ((list ?? []) as MyNotificationRow[]).filter((n) => n.type === 'mention')
+    expect(mentions).toHaveLength(0)
+  })
+
   it('mark_all_read deletes event notifications and clears chat unread', async () => {
     const a = await member('n-all-a')
     const b = await member('n-all-b')
