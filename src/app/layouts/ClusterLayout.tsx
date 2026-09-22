@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Loader2, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -6,6 +6,7 @@ import { modeInfo } from '../../lib/modes'
 import { useCluster, useMyMembership } from '../../features/introductions'
 import { useClusterChannel } from '../../features/realtime'
 import { ClusterRail } from '../../components/ClusterRail'
+import { RoutePending } from '../../components/RoutePending'
 
 const SECTIONS = [
   { to: '', label: 'Room', icon: MessageSquare, end: true },
@@ -180,7 +181,9 @@ export function ClusterLayout() {
             isRoom && 'flex min-h-0 flex-1 flex-col lg:h-full',
           )}
         >
-          <Outlet />
+          <Suspense fallback={<RoutePending />}>
+            <Outlet />
+          </Suspense>
         </div>
         {!isSettings && (
           <aside

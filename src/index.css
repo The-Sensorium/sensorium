@@ -200,6 +200,28 @@
   }
 }
 
+/* Route pending bar - indeterminate top progress for slow route transitions. */
+@keyframes route-pending-bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.route-pending-bar {
+  animation: route-pending-bar 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-pending-bar {
+    animation: none;
+    width: 100%;
+    transform: none;
+  }
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
