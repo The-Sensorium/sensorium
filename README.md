@@ -5,8 +5,7 @@
 <h1 align="center">Sensorium</h1>
 
 <p align="center">
-  <strong>Eight strangers. One cluster.</strong><br />
-  Small, permanent groups where real friendships actually grow.
+  <strong>Eight strangers. One cluster.</strong>
 </p>
 
 <p align="center">
@@ -26,7 +25,7 @@
 
 ## About
 
-Sensorium is an open-source social platform that places you into a permanent group of exactly **eight people**, called a **cluster**, matched by birth date or location. Once matched, the room unlocks after a 72-hour introduction phase, and you get tools built for long-term friendship: realtime chat with reactions and read receipts, a cluster-scoped posts feed, audio/video calls, availability check-ins, Signals (requests for help), and community governance through votes. It ships as a **web app** and an **Android app** that share one Supabase backend, plus moderator/admin workspaces and a transactional email + push pipeline.
+Sensorium is an open-source social platform that places you into a group of exactly **eight people**, called a **cluster**, matched by birth date, location, or Open Mix (no filter). Once matched, the room opens immediately at formation, and you get tools built for long-term friendship: realtime chat with reactions and read receipts, a cluster-scoped posts feed, audio/video calls, availability check-ins, Signals (requests for help), and community governance through votes. Answering the five introduction questions is an optional in-cluster checklist that never blocks access. It ships as a **web app** and an **Android app** that share one Supabase backend, plus moderator/admin workspaces and a transactional email + push pipeline.
 
 ## Platforms
 
@@ -39,11 +38,11 @@ Sensorium is an open-source social platform that places you into a permanent gro
 - **Cluster chat**: realtime messaging with edits, reply threads, @-mentions, emoji reactions, image sharing, a GIF picker (KLIPY), and presence (who is here, who is typing, who is online).
 - **Read receipts**: per-message "seen by" detail with the time each member first read it, updated automatically as members scroll.
 - **Cluster calls**: start or join audio/video calls from the room on web and Android, with ringing state and membership gating powered by LiveKit.
-- **Introduction phase**: a five-question shared intro must be completed before the room opens, with a 72-hour deadline.
+- **Introduction checklist**: a five-question shared intro stays answerable at any time as an optional in-cluster checklist (progress nudge, never a gate, no deadline).
 - **Posts**: a cluster-scoped feed of text, images, and GIFs — optional titles, heart likes, and threaded comments and replies, visible only to the cluster.
-- **Clusters directory**: browse matching modes and preview a mode's active clusters (name, status, member count, formation date only).
+- **Clusters directory**: browse matching modes and preview a mode's non-archived clusters (name, status, member count, formation date).
 - **Availability**: per-cluster availability status shown to members.
-- **Signals**: raise a request for help, reply in threads, and track open and resolved states.
+- **Signals**: raise a request for help, reply in threads, and track open, in-progress, and resolved states.
 - **Governance**: votes for cluster renames and member replacement, invitation flows, and cooldowns.
 - **Notifications & push**: a per-cluster notification center with per-type preferences, plus Android push notifications delivered through an Expo outbox pipeline.
 - **Moderation, roles & appeals**: member reporting, a moderation queue with moderator/admin workspaces, warnings, temporary suspensions and permanent bans, and an in-app appeal flow with email notifications.
@@ -115,9 +114,9 @@ The Android app lives in `mobile/` and shares the web app's Supabase backend and
 
 ```bash
 cd mobile
-cp .env.example .env          # EXPO_PUBLIC_SUPABASE_URL + anon key (staging first)
+cp .env.example .env          # EXPO_PUBLIC_SUPABASE_URL + publishable key (staging first)
 npm install
-npm run sync:db-types         # refresh database.types.ts from the web build
+npm run sync:db-types         # refresh synced db types + shared lib/feature modules from web (realtime.ts stays pinned)
 npx expo start                # scan with Expo Go or run on a device
 ```
 
@@ -129,6 +128,10 @@ Android builds with push enabled require `mobile/google-services.json` and EAS c
 |---|---|---|
 | `VITE_SUPABASE_URL` | yes | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | yes | Public anon (publishable) key |
+| `VITE_KLIPY_APP_KEY` | no | KLIPY app key that enables the chat/post GIF picker |
+| `VITE_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`) |
+| `VITE_GEOCODING_ENDPOINT` | no | Geocoding endpoint override used by Local mode |
+| `VITE_TURNSTILE_SITE_KEY` | no | Cloudflare Turnstile site key for auth bot protection; empty means the widget is hidden (local dev only) |
 
 Only the anon key is used in the browser. All privileged operations run through Postgres RPC functions guarded by Row Level Security. See [`docs/TECHNICAL.md`](docs/TECHNICAL.md#security) for how the environments, deployments, and CI secrets fit together.
 
@@ -176,7 +179,7 @@ The Android app is built through the EAS/CI release workflows and shares the sam
 ## Security
 
 - Every table has **Row Level Security enabled**. The frontend never writes tables directly except through RPC functions or RLS-permitted inserts.
-- Chat media and profile photos are stored in **private buckets** and served through short-lived signed URLs.
+- Chat media, post images, and profile photos are stored in **private buckets** (`chat-images`, `posts-images`, `avatars`) and served through short-lived signed URLs.
 - Push notifications route through a **database outbox** drained by the cron-woken `send-push` Edge Function (Expo); transactional emails route through `send-emails` (Resend). Both are guarded by secrets and are never reachable from the browser.
 - No secrets ship in the client. Use `VITE_` variables for public values only.
 

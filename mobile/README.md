@@ -47,13 +47,15 @@ Delivery is server-side: the web repo's `send-push` Edge Function drains the
 mobile/
 ├─ app/                    # expo-router routes (file-based)
 │  ├─ (auth)/              # login, signup, verify-email, forgot/reset password
-│  ├─ (onboarding)/        # profile + matching-mode selection
+│  ├─ (onboarding)/        # single index.tsx, 5 steps: profile, customization, modes, local, review
 │  ├─ (app)/               # member shell
 │  │  ├─ home.tsx, posts.tsx, clusters.tsx, notifications.tsx, settings.tsx
-│  │  └─ cluster/[clusterId]/   # room, members, signals, votes, settings, call
+│  │  ├─ cluster-created.tsx, mode/, posts/, profile/, queue/, settings/
+│  │  └─ cluster/[clusterId]/   # room, members, signals (+ signals/[signalId]), votes, settings, call, introductions, waiting
 │  ├─ appeal.tsx           # restricted-account appeal
 │  ├─ restricted.tsx       # suspended/banned landing
-│  └─ auth/callback.tsx    # OAuth / recovery deep-link landing
+│  ├─ index.tsx, privacy-policy.tsx, terms.tsx
+│  └─ auth/callback.tsx    # OAuth / recovery deep-link landing (redirects home; handled in _layout)
 ├─ src/
 │  ├─ components/          # shared + feature UI (room/, call/, posts, onboarding)
 │  ├─ features/            # data hooks (TanStack Query) — mirrors web modules
@@ -103,6 +105,7 @@ belong here - the anon/publishable key is the only credential the app holds.
 | `npm run lint` | run oxlint |
 | `npm test` | run the mobile Vitest suite |
 | `npm run sync:db-types` | regenerate synced db types + helpers from the web build |
+| `npm run sync:db-types:check` | verify the synced copies are up to date (CI) |
 
 There is also a local APK helper at [`scripts/android-build.ps1`](scripts/android-build.ps1)
 for building an installable APK without EAS.
@@ -112,8 +115,10 @@ for building an installable APK without EAS.
 - **Email/password** and **Google OAuth** through Supabase Auth.
 - Email/password and resend flows carry a Turnstile `captchaToken` when the project enforces bot protection: the app opens a `CaptchaSheet` WebView on the web `/auth/mobile-challenge` page (`EXPO_PUBLIC_WEB_URL`) and submits the posted token. Empty URL means verification is skipped (local dev only); release builds fail closed with an explicit error.
 - OAuth and password-recovery redirects come back to the app's `sensorium://`
-  deep link and are completed in [`src/lib/deep-links.ts`](src/lib/deep-links.ts)
-  (`handleAuthCallback`), landing on `app/auth/callback.tsx`.
+  deep link and are completed in `app/_layout.tsx` (`useAuthDeepLinks` +
+  `Linking` listener, via `src/lib/google-auth.ts` `handleAuthCallback`).
+  `app/auth/callback.tsx` is only a redirect home. URL handling lives in
+  [`src/lib/deep-links.ts`](src/lib/deep-links.ts).
 - The URL scheme (`sensorium`) and app id (`online.thesensorium.app`) are declared
   in [`app.json`](app.json). The Google provider must allow the mobile redirect in
   the Supabase dashboard.
@@ -132,11 +137,14 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
 ## Push notifications
 
 - `expo-notifications` obtains an **Expo push token** (FCM-backed on Android) and
-  upserts it into the `push_tokens` table on sign-in; it is refreshed on foreground
-  and removed on sign-out ([`src/lib/push.ts`](src/lib/push.ts)).
+  registers it via the `register_push_token` / `unregister_push_token` RPCs on
+  sign-in; it is refreshed on foreground and removed on sign-out
+  ([`src/lib/push.ts`](src/lib/push.ts)).
 - Android channels: `messages`, `mentions`, `invites`, `governance`.
-- Cold-start taps are routed via `getLaunchPushData()`; warm taps via a response
-  listener, in [`src/lib/notification-routing.ts`](src/lib/notification-routing.ts).
+- Cold-start taps are routed via `getLaunchPushData()` in
+  [`src/lib/push.ts`](src/lib/push.ts); warm taps via a response
+  listener. Push-to-route mapping lives in
+  [`src/lib/notification-routing.ts`](src/lib/notification-routing.ts).
   A `replacement` push carrying `newMemberId` (new-member-joined) opens the
   joiner's profile; other governance pushes land on the votes tab.
 - Push is a no-op in Expo Go and on web (guarded by `Constants.appOwnership`).
@@ -160,13 +168,15 @@ Everything else is hand-written for mobile. Notable exceptions to keep an eye on
 - `src/features/realtime.ts` is **pinned** (the mobile copy uses a ref-counted
   `useClusterChannel` for tab-kept-mounted screens). If the web copy changes,
   reconcile it by hand.
-- `src/features/cluster-calls.ts`, `src/features/avatars.ts`, and everything in
-  `src/lib/` not listed above are mobile-only.
+- `src/features/cluster-calls.ts` and `src/features/avatars.ts` are
+  mobile-maintained forks: the web app has diverged copies at the same paths
+  that are intentionally not synced. `admin-moderation.ts`, `admin-accounts.ts`,
+  and `metrics.ts` are web-only with no mobile copy.
 
 ## Conventions
 
 - Same as root [`AGENTS.md`](../AGENTS.md): strict TS, `@/` → `src/`, and only design tokens from `src/lib/theme-tokens.ts` (ported from [`../docs/DESIGN.md`](../docs/DESIGN.md)). No new colors, typefaces, or radii.
-- Components never touch Supabase directly - reads/writes go through `src/features/` hooks wrapping TanStack Query, mirroring the web feature modules.
+- Reads/writes should go through `src/features/` hooks wrapping TanStack Query, mirroring the web feature modules; components should not touch Supabase directly.
 - Never edit `src/lib/database.types.ts` by hand - rerun `sync:db-types` after migrations.
 - Member-only: do not port staff/admin surfaces into the app.
 
@@ -186,8 +196,9 @@ npm test
 
 ## Building and release
 
-- **EAS** ([`eas.json`](eas.json)): `development` (dev client), `preview` and
-  `production` (internal APK). Requires the `EXPO_TOKEN` secret in CI.
+- **EAS** ([`eas.json`](eas.json)): `development` (dev client), `preview` (internal
+  APK distribution) and `production` (store build, no `distribution` field).
+  Requires the `EXPO_TOKEN` secret in CI.
 - **Android APK CI workflow**: builds a release APK artifact on a Linux runner,
   reading `EXPO_PUBLIC_*` values per environment from repo variables and restoring
   `google-services.json` from the `GOOGLE_SERVICES_JSON` secret.
