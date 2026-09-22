@@ -9,9 +9,21 @@ export interface AvailabilityMeta {
 }
 
 export const AVAILABILITY: AvailabilityMeta[] = [
-  { value: 'available', label: 'Available', dotClass: 'bg-emerald-500' },
-  { value: 'busy', label: 'Busy', dotClass: 'bg-amber-500' },
-  { value: 'dnd', label: 'Do not disturb', dotClass: 'bg-red-500' },
+  {
+    value: 'available',
+    label: 'Available',
+    dotClass: 'bg-emerald-500 dark:bg-emerald-400',
+  },
+  {
+    value: 'busy',
+    label: 'Busy',
+    dotClass: 'bg-amber-500 dark:bg-amber-400',
+  },
+  {
+    value: 'dnd',
+    label: 'Do not disturb',
+    dotClass: 'bg-red-500 dark:bg-red-400',
+  },
 ]
 
 export function availabilityMeta(value: Availability): AvailabilityMeta {

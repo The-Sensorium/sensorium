@@ -2706,6 +2706,7 @@ export type Database = {
         Args: { p_content: string; p_display_name: string }
         Returns: boolean
       }
+      is_mentioned_everyone: { Args: { p_content: string }; Returns: boolean }
       issue_warning: {
         Args: { p_policy_code?: string; p_reason: string; p_report_id?: string; p_user_id: string }
         Returns: undefined

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router'
 import { Loader2 } from 'lucide-react'
+import { RoutePending } from '../components/RoutePending'
 import { AppShell } from './layouts/AppShell'
 import { PublicLayout } from './layouts/PublicLayout'
 import { ClusterLayout } from './layouts/ClusterLayout'
@@ -132,7 +133,10 @@ export function AppRouter() {
         <Route
           element={
             <RequireAuth>
-              <Suspense fallback={<PageFallback />}>
+              {/* Outer fallback covers shell-less routes (/entry, /onboarding,
+                  /select-role). Shells below add their own inner Suspense so
+                  nav chrome stays mounted during lazy transitions. */}
+              <Suspense fallback={<RoutePending />}>
                 <Outlet />
               </Suspense>
             </RequireAuth>

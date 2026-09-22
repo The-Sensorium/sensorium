@@ -62,6 +62,7 @@ import { ReportModal } from '../../../../src/components/ReportModal'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
+import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 
 type TimelineItem =
   | { kind: 'message'; data: Message }
@@ -74,6 +75,7 @@ function dayKey(iso: string) {
 
 export default function RoomScreen() {
   const t = useTheme()
+  const scheme = useResolvedScheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -693,7 +695,7 @@ export default function RoomScreen() {
                             borderRadius: 5,
                             borderWidth: 2,
                             borderColor: t.surface,
-                            backgroundColor: '#10b981',
+                            backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
                           }}
                         />
                       ) : null}

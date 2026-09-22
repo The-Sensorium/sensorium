@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Activity, ArrowRight, BellRing, ChartColumn, Clock, Eye, Flag, Inbox, Loader2, Mail, MailX, Send, Timer, TriangleAlert, UserRound, type LucideIcon } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { timeAgo } from '../../features/notifications'
 import { useMyAccess } from '../../features/access'
 import { useAdminOpsHealth, useModerationQueueV2, useStaffModerationSummary } from '../../features/admin-moderation'
-import { useMetricsOverview, useRetention } from '../../features/metrics'
+import { useClusterActivity, useMetricsOverview, useModeBreakdown, useRetention, DEFAULT_ACTIVITY_LIMIT } from '../../features/metrics'
 
 function heartbeatLabel(iso: string | null): string {
   if (!iso) return 'Never ran successfully'
@@ -60,6 +61,13 @@ export function StaffDashboardPage() {
   const ops = useAdminOpsHealth(isAdmin)
   const metrics = useMetricsOverview(isAdmin)
   const retention = useRetention(isAdmin)
+  const [metricsIntent, setMetricsIntent] = useState(false)
+  const prefetchMetrics = isAdmin && metricsIntent
+  useModeBreakdown(prefetchMetrics)
+  useClusterActivity(DEFAULT_ACTIVITY_LIMIT, prefetchMetrics)
+  useEffect(() => {
+    if (isAdmin) void import('./MetricsPage').catch(() => {})
+  }, [isAdmin])
   const retention30 = retention.data?.find((row) => row.cohort_days === 30)
   const metricsReady = metrics.data && !metrics.isError && !retention.isError
   const health = ops.data
@@ -199,6 +207,9 @@ export function StaffDashboardPage() {
             <Link
               to="./metrics"
               data-e2e="staff-metrics-link"
+              onMouseEnter={() => setMetricsIntent(true)}
+              onFocus={() => setMetricsIntent(true)}
+              onTouchStart={() => setMetricsIntent(true)}
               className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-primary px-4 py-1.5 text-xs font-semibold text-on-primary transition-all duration-200 hover:bg-primary-container active:scale-95"
             >
               Open metrics

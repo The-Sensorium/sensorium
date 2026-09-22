@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, X } from 'lucide-react'
+import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import {
+  EVERYONE_NAME,
   filterMentionCandidates,
+  matchesEveryone,
   parseMentionQuery,
   type MentionMember,
 } from '../../../features/mentions'
@@ -65,10 +67,15 @@ export function Composer({
     return members.filter((m) => m.id !== selfId)
   }, [members, selfId])
 
+  const showEveryone = mention !== null && matchesEveryone(mention.query)
   const mentionCandidates = useMemo(() => {
     if (!mention || mentionMembers.length === 0) return []
-    return filterMentionCandidates(mention.query, mentionMembers, selfId ?? '')
-  }, [mention, mentionMembers, selfId])
+    return filterMentionCandidates(mention.query, mentionMembers, selfId ?? '').slice(
+      0,
+      showEveryone ? 7 : 8,
+    )
+  }, [mention, mentionMembers, selfId, showEveryone])
+  const mentionTotal = (showEveryone ? 1 : 0) + mentionCandidates.length
 
   useEffect(() => {
     return () => {
@@ -103,9 +110,8 @@ export function Composer({
     typingTimer.current = window.setTimeout(() => onStopTyping(), 2000)
   }
 
-  function insertMention(member: MentionMember) {
+  function insertToken(name: string) {
     if (!mention) return
-    const name = member.display_name
     const next = `${draft.slice(0, mention.start)}@${name} ${draft.slice(mention.end)}`
     setDraft(next)
     setMention(null)
@@ -120,17 +126,29 @@ export function Composer({
     })
   }
 
+  function insertMention(member: MentionMember) {
+    insertToken(member.display_name)
+  }
+
+  function insertEveryone() {
+    insertToken(EVERYONE_NAME)
+  }
+
   function handleInputKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (mention && mentionCandidates.length > 0) {
+    if (mention && mentionTotal > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setMentionIndex((i) => (i + 1) % mentionCandidates.length)
+        setMentionIndex((i) => (i + 1) % mentionTotal)
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
-        setMentionIndex((i) => (i - 1 + mentionCandidates.length) % mentionCandidates.length)
+        setMentionIndex((i) => (i - 1 + mentionTotal) % mentionTotal)
       } else if (e.key === 'Enter' || e.key === 'Tab') {
         e.preventDefault()
-        insertMention(mentionCandidates[mentionIndex])
+        if (showEveryone && mentionIndex === 0) insertEveryone()
+        else {
+          const candidate = mentionCandidates[mentionIndex - (showEveryone ? 1 : 0)]
+          if (candidate) insertMention(candidate)
+        }
       } else if (e.key === 'Escape') {
         e.preventDefault()
         setMention(null)
@@ -328,36 +346,59 @@ export function Composer({
           Message
         </label>
         <div className="relative min-w-0 flex-1">
-          {mention && mentionCandidates.length > 0 && (
+          {mention && mentionTotal > 0 && (
             <div
               id="mention-listbox"
               role="listbox"
               aria-label="Mention a member"
               className="absolute bottom-full left-0 z-20 mb-2 w-max min-w-44 max-w-full overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-soft"
             >
-              {mentionCandidates.map((candidate, i) => (
+              {showEveryone && (
                 <button
-                  key={candidate.id}
-                  id={`mention-option-${i}`}
+                  key="everyone"
+                  id="mention-option-0"
                   type="button"
                   role="option"
-                  aria-selected={i === mentionIndex}
+                  aria-selected={mentionIndex === 0}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => insertMention(candidate)}
+                  onClick={() => insertEveryone()}
                   className={cn(
                     'flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-sm text-on-surface transition-colors sm:min-h-0 sm:py-2',
-                    i === mentionIndex ? 'bg-surface-container' : 'hover:bg-surface-container/60',
+                    mentionIndex === 0 ? 'bg-surface-container' : 'hover:bg-surface-container/60',
                   )}
                 >
-                  <Avatar
-                    name={candidate.display_name}
-                    src={candidate.avatar_url}
-                    className="h-6 w-6"
-                    textClassName="text-xs"
-                  />
-                  <span className="truncate">{candidate.display_name}</span>
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-container/25 text-primary" aria-hidden>
+                    <Users className="h-4 w-4" strokeWidth={1.5} />
+                  </span>
+                  <span className="truncate">everyone</span>
                 </button>
-              ))}
+              )}
+              {mentionCandidates.map((candidate, i) => {
+                const index = i + (showEveryone ? 1 : 0)
+                return (
+                  <button
+                    key={candidate.id}
+                    id={`mention-option-${index}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === mentionIndex}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertMention(candidate)}
+                    className={cn(
+                      'flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-sm text-on-surface transition-colors sm:min-h-0 sm:py-2',
+                      index === mentionIndex ? 'bg-surface-container' : 'hover:bg-surface-container/60',
+                    )}
+                  >
+                    <Avatar
+                      name={candidate.display_name}
+                      src={candidate.avatar_url}
+                      className="h-6 w-6"
+                      textClassName="text-xs"
+                    />
+                    <span className="truncate">{candidate.display_name}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
           {/* 16px on phones stops iOS auto-zooming the page on focus - that zoom
@@ -368,11 +409,11 @@ export function Composer({
             role="combobox"
             minRows={1}
             maxRows={5}
-            aria-expanded={mention !== null && mentionCandidates.length > 0}
+            aria-expanded={mention !== null && mentionTotal > 0}
             aria-controls="mention-listbox"
             aria-autocomplete="list"
             aria-activedescendant={
-              mention && mentionCandidates.length > 0 ? `mention-option-${mentionIndex}` : undefined
+              mention && mentionTotal > 0 ? `mention-option-${mentionIndex}` : undefined
             }
             value={draft}
             onChange={(e) => handleInputChange(e.target.value)}

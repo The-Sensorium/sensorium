@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Phone, Plus, Send, X } from 'lucide-react-native'
+import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
 import {
+  EVERYONE_NAME,
   filterMentionCandidates,
+  matchesEveryone,
   parseMentionQuery,
   type MentionMember,
 } from '../../features/mentions'
@@ -24,6 +26,8 @@ export interface PickedImage {
   width: number
   height: number
 }
+
+type MentionOption = { key: string; kind: 'everyone' } | { key: string; kind: 'member'; member: MentionMember }
 
 export function Composer({
   members,
@@ -75,10 +79,22 @@ export function Composer({
     return members.filter((m) => m.id !== selfId)
   }, [members, selfId])
 
+  const showEveryone = mention !== null && matchesEveryone(mention.query)
   const mentionCandidates = useMemo(() => {
     if (!mention || mentionMembers.length === 0) return []
-    return filterMentionCandidates(mention.query, mentionMembers, selfId ?? '')
-  }, [mention, mentionMembers, selfId])
+    return filterMentionCandidates(mention.query, mentionMembers, selfId ?? '').slice(
+      0,
+      showEveryone ? 7 : 8,
+    )
+  }, [mention, mentionMembers, selfId, showEveryone])
+  const mentionOpen = mention !== null && (showEveryone || mentionCandidates.length > 0)
+  const mentionOptions = useMemo<MentionOption[]>(
+    () => [
+      ...(showEveryone ? [{ key: 'everyone', kind: 'everyone' as const }] : []),
+      ...mentionCandidates.map((member) => ({ key: member.id, kind: 'member' as const, member })),
+    ],
+    [showEveryone, mentionCandidates],
+  )
 
   useEffect(() => {
     return () => {
@@ -94,11 +110,18 @@ export function Composer({
     typingTimer.current = setTimeout(() => onStopTyping(), 2000)
   }
 
-  function insertMention(member: MentionMember) {
+  function insertToken(name: string) {
     if (!mention) return
-    const name = member.display_name
     setDraft(`${draft.slice(0, mention.start)}@${name} ${draft.slice(mention.end)}`)
     setMention(null)
+  }
+
+  function insertMention(member: MentionMember) {
+    insertToken(member.display_name)
+  }
+
+  function insertEveryone() {
+    insertToken(EVERYONE_NAME)
   }
 
   async function handleSend() {
@@ -284,24 +307,56 @@ export function Composer({
           ) : null}
         </View>
       ) : null}
-      {mention && mentionCandidates.length > 0 ? (
-        <View style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 4, marginBottom: 8 }}>
-          {mentionCandidates.map((candidate) => (
-            <Pressable
-              key={candidate.id}
-              onPress={() => insertMention(candidate)}
-              hitSlop={4}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
-            >
-              <Avatar name={candidate.display_name} src={candidate.avatar_url} size={24} />
-              <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
-                {candidate.display_name}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+        {mentionOpen ? (
+          <View
+            style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: 0,
+              minWidth: 176,
+              maxWidth: '85%',
+              marginBottom: 8,
+              maxHeight: 216,
+              backgroundColor: t.surfaceLowest,
+              borderRadius: radii.xl,
+            }}
+          >
+            <FlatList
+              data={mentionOptions}
+              keyExtractor={(option) => option.key}
+              keyboardShouldPersistTaps="always"
+              contentContainerStyle={{ padding: 4 }}
+              renderItem={({ item: option }) =>
+                option.kind === 'everyone' ? (
+                  <Pressable
+                    onPress={() => insertEveryone()}
+                    hitSlop={4}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
+                  >
+                    <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}>
+                      <Users size={16} color={t.primary} strokeWidth={1.5} />
+                    </View>
+                    <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
+                      everyone
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={() => insertMention(option.member)}
+                    hitSlop={4}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
+                  >
+                    <Avatar name={option.member.display_name} src={option.member.avatar_url} size={24} />
+                    <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
+                      {option.member.display_name}
+                    </Text>
+                  </Pressable>
+                )
+              }
+            />
+          </View>
+        ) : null}
         <Pressable
           accessibilityLabel="Room actions"
           disabled={raisePending}

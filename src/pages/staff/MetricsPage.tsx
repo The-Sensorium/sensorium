@@ -21,11 +21,12 @@ import {
   useMetricsOverview,
   useModeBreakdown,
   useRetention,
+  DEFAULT_ACTIVITY_LIMIT,
 } from '../../features/metrics'
 
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 
-const ACTIVITY_PAGE_SIZES = [50, 100, 200, 500]
+const ACTIVITY_PAGE_SIZES = [DEFAULT_ACTIVITY_LIMIT, 100, 200, 500]
 const MAX_ACTIVITY_LIMIT = ACTIVITY_PAGE_SIZES[ACTIVITY_PAGE_SIZES.length - 1]
 
 function formatWait(hours: number): string {
@@ -539,9 +540,15 @@ export function MetricsPage() {
                       age === null
                         ? { dot: 'bg-outline-variant', label: 'No messages yet' }
                         : age <= 7
-                          ? { dot: 'bg-emerald-700', label: 'Active this week' }
+                          ? {
+                              dot: 'bg-emerald-700 dark:bg-emerald-400',
+                              label: 'Active this week',
+                            }
                           : age <= 30
-                            ? { dot: 'bg-amber-700', label: 'Quiet for over a week' }
+                            ? {
+                                dot: 'bg-amber-700 dark:bg-amber-400',
+                                label: 'Quiet for over a week',
+                              }
                             : { dot: 'bg-outline-variant', label: 'Silent for over a month' }
                     return (
                       <tr key={row.cluster_id} data-e2e="metrics-activity-row" className="border-b border-outline-variant/40 last:border-0">
@@ -557,7 +564,7 @@ export function MetricsPage() {
                         </td>
                         <td className="whitespace-nowrap px-4 py-2.5 text-on-surface-variant">
                           <span className="flex items-center gap-1.5">
-                            <span title={health.label} className={`h-2 w-2 shrink-0 rounded-full ${health.dot}`} />
+                            <span title={health.label} className={`h-2.5 w-2.5 shrink-0 rounded-full ${health.dot}`} />
                             {formatDay(row.last_message_day)}
                           </span>
                         </td>

@@ -11,6 +11,10 @@ export type ClusterActivityRow = Database['public']['Functions']['get_cluster_ac
 // Success-metrics telemetry is a daily batch (pg_cron rollup at 03:00 UTC),
 // so a long stale time is correct: only the daily-active count moves intraday,
 // and it refreshes on remount after 12h. No realtime subscriptions.
+// Initial cluster-activity page size. Shared by MetricsPage and the staff
+// dashboard prefetch so both use the exact same activity query key.
+export const DEFAULT_ACTIVITY_LIMIT = 50
+
 const STALE_TIME = 12 * 60 * 60 * 1000
 
 function useAdminUserId() {
@@ -67,7 +71,7 @@ export function useModeBreakdown(enabled = true) {
   })
 }
 
-export function useClusterActivity(limit = 50, enabled = true) {
+export function useClusterActivity(limit = DEFAULT_ACTIVITY_LIMIT, enabled = true) {
   const userId = useAdminUserId()
   return useQuery({
     queryKey: ['metrics-activity', userId ?? 'signed-out', limit],

@@ -16,6 +16,7 @@ vi.mock('../../features/metrics', () => ({
   useRetention: hooks.useRetention,
   useModeBreakdown: hooks.useModeBreakdown,
   useClusterActivity: hooks.useClusterActivity,
+  DEFAULT_ACTIVITY_LIMIT: 50,
 }))
 
 function ok<T>(data: T) {

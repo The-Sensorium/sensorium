@@ -110,6 +110,23 @@ describe('Composer', () => {
     expect(screen.queryByRole('option', { name: /Rio Mendez/ })).not.toBeInTheDocument()
   })
 
+  it('pins @everyone first on a bare @ and inserts it on Enter', async () => {
+    setup()
+    await userEvent.type(input(), 'hey @')
+    const options = screen.getAllByRole('option')
+    expect(options[0]).toHaveTextContent('everyone')
+    expect(options[0]).toHaveAttribute('aria-selected', 'true')
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(input()).toHaveValue('hey @everyone '))
+  })
+
+  it('inserts @everyone when selected by click', async () => {
+    setup()
+    await userEvent.type(input(), '@every')
+    await userEvent.click(screen.getByRole('option', { name: 'everyone', exact: true }))
+    await waitFor(() => expect(input()).toHaveValue('@everyone '))
+  })
+
   it('calls onOpenSignal from the room actions menu', async () => {
     const { props } = setup()
     await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
