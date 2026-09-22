@@ -134,6 +134,7 @@ Required Fields
 Optional Fields
 - Profile Photo
 - Bio
+- Pronouns
 - Location (only required if using Local mode)
 
 Users may edit profile information at any time except date of birth.
@@ -273,16 +274,9 @@ read.
 ---
 ## Status System
 
-Users may set a current status.
-
-Examples:
-- Working
-- Studying
-- Gaming
-- Traveling
-- Sleeping
-
-Visible to cluster members.
+Users see each cluster's status as freeform text (for example working, studying,
+or traveling). There is no preset status list; availability stays a fixed set
+(Available, Busy, Do Not Disturb).
 
 ---
 ## Availability System
@@ -429,7 +423,7 @@ Moderators cannot take enforcement action against other moderators or admins, an
 ---
 ### Appeals
 
-- A suspended or banned account may submit one in-app appeal (`/appeal`) explaining why a decision should be reconsidered. An active account cannot appeal; a lapsed suspension counts as active, so it cannot.
+- A suspended or banned account may submit an in-app appeal (`/appeal`) explaining why a decision should be reconsidered. Only one appeal may be open at a time per user, and repeat filings are rate-limited (a 4th appeal within 24 hours is blocked); a user whose appeal is resolved may file again later. An active account cannot appeal; a lapsed suspension counts as active, so it cannot.
 - Appeals are reviewed and decided by administrators only. Granting an appeal lifts the restriction and restores the account; rejecting keeps it.
 - The appellant receives the admin's response by email; the origin of the restriction (moderator identity or internal notes) is never shared.
 
@@ -501,7 +495,8 @@ settings.
 The directory lives on the **Clusters** page (`/clusters`; the old `/discovery`
 path redirects there). Users browse available matching modes as tiles, one per
 mode. Selecting a mode opens its page (`/discovery/{mode}`) with the queue/join
-flow for that mode and a directory of the mode's active clusters.
+flow for that mode and a directory of the mode's active clusters. There is no
+standalone tabbed `/discovery` page; `/discovery` redirects to `/clusters`.
 
 Discovery tiles show:
 - Matching Mode (Exact Birthdate, Birth Year + Month, Generation, Birth Year, Local, Open Mix)
@@ -516,7 +511,7 @@ Birth Year + Month: 1996-March
 6 / 8 Waiting
 
 Users cannot see queue members, and neither the tiles nor the directory expose cluster
-introductions, messages, or membership — only name, status, member count, and formation date.
+introductions, messages, or membership - only name, status, member count, and formation date.
 
 ---
 ## Success Metrics
@@ -524,15 +519,15 @@ introductions, messages, or membership — only name, status, member count, and 
 Measured on the admin-only `/admin/metrics` dashboard (nightly Postgres rollups; see `TECHNICAL.md` telemetry). Retained means still active with at least 6 members and a message in the last 30 days.
 
 Primary
-- Cluster Retention Rate (90 Days) — measured, with 7-day and 30-day interim cohorts until 90 days of history exist.
+- Cluster Retention Rate (90 Days) - measured, with 7-day and 30-day interim cohorts until 90 days of history exist.
 
 Secondary
-- Messages per Cluster — measured (trailing 30 days, mean overall and per mode).
-- Daily Active Clusters — measured live (message or call in the last 24 hours).
-- Cluster Replacement Rate — not yet measured.
-- Introduction Completion Rate — not yet measured.
-- Average number of active clusters per user. Helps gauge whether multi mode matching adds engagement or spreads users too thin. — measured.
-- Mode popularity breakdown. Which matching modes actually get used, to validate which to invest further design effort in. — measured (formed, joins, depth, longest wait per mode).
+- Messages per Cluster - measured (trailing 30 days, mean overall and per mode).
+- Daily Active Clusters - measured live (message or call in the last 24 hours).
+- Cluster Replacement Rate - not yet measured.
+- Introduction Completion Rate - not yet measured.
+- Average number of active clusters per user. Helps gauge whether multi mode matching adds engagement or spreads users too thin. - measured.
+- Mode popularity breakdown. Which matching modes actually get used, to validate which to invest further design effort in. - measured (formed, joins, depth, longest wait per mode).
 
 
 ## Screens and user flow
@@ -559,14 +554,18 @@ Authenticated Area
 |   `-- Settings
 |-- Profile
 |-- Notifications
-|-- Account Settings (+ My Reports, theme, delete account)
+|-- Account Settings (+ My Reports, muted members, delete account; theme lives in the app shell header)
+|-- Entry / Select-role (staff session role picker)
 |-- Restricted account (suspended/banned)
 |   `-- Appeal
-`-- Staff workspaces (moderator/admin only)
+|-- Moderator workspace (moderator only)
+|   `-- Reports queue, case detail
+`-- Admin workspace (admin only)
     |-- Reports queue
-    |-- Appeals queue (admin)
-    |-- Platform roles (admin)
-    `-- Audit log (admin)
+    |-- Appeals queue
+    |-- Platform roles and accounts
+    |-- Audit log
+    `-- Metrics dashboard
 ```
 
 ---
@@ -765,6 +764,7 @@ Fields
 Display Name
 Date of Birth
 Country
+Pronouns (optional)
 ```
 
 Validation
@@ -920,13 +920,10 @@ Explore More Matching Modes
 
 ### 7. Discovery Page
 
-Route
+Canonical route is `/clusters` (tile directory). `/discovery` redirects to
+`/clusters`; per-mode pages live at `/discovery/{mode}`.
 
-```text
-/discovery
-```
-
-Tabs
+Mode tiles
 
 ```text
 Exact Birthdate
@@ -1080,7 +1077,8 @@ MountainFox
 Button
 
 ```text
-Start Introductions
+Open your cluster (primary, goes to the room)
+Or answer the intro questions first (secondary link)
 ```
 
 ---
@@ -1093,11 +1091,9 @@ Route
 /cluster/{id}/introductions
 ```
 
-Countdown
-
-```text
-72 Hours Remaining
-```
+No countdown and no deadline; introductions are an optional in-cluster
+checklist that never blocks access. Saving returns to the room; there is no
+waiting screen.
 
 Questions
 
@@ -1139,27 +1135,10 @@ Submit Introductions
 
 ---
 
-### 11. Waiting For Others Page
+### 11. Waiting For Others Page (retired)
 
-Route
-
-```text
-/cluster/{id}/waiting
-```
-
-Content
-
-```text
-5 / 8 Introductions Completed
-```
-
-Member list
-
-```text
-[x] CodeNomad
-[x] TokyoReader
-[ ] MountainFox
-```
+Route `/cluster/{id}/waiting` is a compatibility redirect to the room. Clusters
+open at formation with full access; there is no 5/8 waiting gate.
 
 ---
 
@@ -1390,19 +1369,10 @@ No
 
 ---
 
-Candidate Vote
-
-```text
-Candidate A
-Candidate B
-Candidate C
-```
-
-Vote
-
-```text
-Select Candidate
-```
+Candidate voting (`select_candidate`) is retired: the UI hides legacy
+`select_candidate` votes instead of rendering a ballot. Replacement invites the
+longest-waiting eligible candidate deterministically with no cluster vote on
+candidates.
 
 ---
 
@@ -1483,7 +1453,7 @@ Route
 /notifications
 ```
 
-Items
+Items (stored types also include replacement, queue updates, unlocks, and staff `report_new` / `appeal_new` notices)
 
 ```text
 Vote Started
@@ -1547,17 +1517,17 @@ Do Not Disturb
 
 Appearance
 
-```text
-Theme: Light / System / Dark
-```
+Theme (Light / System / Dark) lives in the app shell header and on public
+pages, not in `/settings`.
 
-Notification Preferences (per cluster)
+Notification Preferences (per cluster; post activity is two separate toggles)
 
 ```text
 Messages
 Mentions
 Reactions
-Posts, post comments/replies, post likes
+Posts, post comments/replies (`post_comment`)
+Post likes (`post_like`)
 Votes
 Invitations
 New Signals
@@ -1595,13 +1565,9 @@ down
 [Per mode, independently:]
 Wait For 8 Members
 down
-Cluster Created
+Cluster Created (opens immediately with full access)
 down
-Complete Introductions
-down
-Wait For Others
-down
-Cluster Unlocks
+Answer the 5 intro questions at any time (optional checklist, never a gate)
 down
 Chat, Calls, Posts, Signals
 down

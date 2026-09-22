@@ -63,11 +63,11 @@ sensorium/
 │  ├─ migrations/         # order-dependent SQL: schema, RLS, functions, cron
 │  └─ functions/          # Edge Functions (send-emails, send-push, create-call-token + shared)
 ├─ src/
-│  ├─ app/                # router, providers, guards, auth + session-role context, layouts
+│  ├─ app/                # router, providers, guards, auth + session-role context, layouts (AppShell, PublicLayout, ClusterLayout, ModeratorLayout, AdminLayout)
 │  ├─ pages/              # route page components
 │  ├─ components/         # shared and feature components
 │  ├─ features/           # domain hooks, TanStack Query sources, realtime subscriptions
-│  ├─ lib/                # supabase client, typed database, modes, availability, theme, utils
+│  ├─ lib/                # supabase client, typed database, modes, availability, theme, geo, countries, images, device, error, query-retry, Turnstile, shared hooks, utils
 │  └─ test/               # unit test helpers
 ├─ e2e/                   # Playwright E2E specs (golden path, cluster room, posts, safety, settings, notifications)
 ├─ tests/integration/     # Vitest integration suite against the local Supabase stack
@@ -100,6 +100,8 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `mentions.ts` | mention parsing and linkification |
 | `gifs.ts` | KLIPY GIF search and result parsing |
 | `appeals.ts` | in-app appeals (restricted users) and the admin appeal queue |
+| `admin-accounts.ts` | admin account operations surfaced in the staff workspace |
+| `metrics.ts` | admin success-metrics dashboard queries (`/admin/metrics`) |
 | `posts.ts` | standalone cluster-scoped posts feed (`/posts`), optional post title, heart likes (post + comment/reply), threaded replies, post/comment-image signed URLs, comment/reply + like notifications |
 
 ### Email pipeline
@@ -118,7 +120,7 @@ belongs to exactly one cluster and is visible only to its active members
 (`is_active_member` + `cluster_unlocked`); the feed shows one selected cluster at
 a time.
 
-- **Schema (0072–0082)**: `posts` (`title` optional, `content`, `image_url`,
+- **Schema (0072-0082)**: `posts` (`title` optional, `content`, `image_url`,
   `gif_url`, `moderation_status`), `post_comments` (flat thread with a
   `parent_comment_id` reply target), `post_likes`, and `comment_likes`. Post and
   comment media live in a private `posts-images` bucket; GIFs are remote KLIPY
@@ -144,7 +146,7 @@ a time.
 
 Calls are audio/video rooms scoped to a cluster, backed by LiveKit, on both the web SPA and the Expo app.
 
-- **Schema (0107–0112)**: a `calls` table (one live call per cluster, `status` `ringing`/`active`/`ended`, `expires_at`) and `call_participants`. `start_call`, `join_call`, `leave_call`, and `end_call` are `security definer` RPCs that enforce active membership and the single-active-call invariant; a duration limit is enforced in `0110`, and leaving/departing a cluster cleans up memberships in `0111`.
+- **Schema (0107-0112)**: a `calls` table (one live call per cluster, `status` `ringing`/`active`/`ended`, `expires_at`) and `call_participants`. `start_call`, `join_call`, `leave_call`, and `end_call` are `security definer` RPCs that enforce active membership and the single-active-call invariant; a duration limit is enforced in `0110`, and leaving/departing a cluster cleans up memberships in `0111`.
 - **Tokens**: `create-call-token` (Edge Function) verifies membership and mints a short-lived LiveKit token. The client never holds the LiveKit API secret; the secret lives only in the function environment.
 - **Realtime**: `calls` / `call_participants` changes are published so the cluster's "ringing" banner and participant list update live.
 - **Clients**: web renders the call UI inside the cluster room (`@livekit/components-react`); mobile has a hand-built call screen (`mobile/app/(app)/cluster/[clusterId]/call.tsx`, `@livekit/react-native`).
@@ -156,8 +158,8 @@ Room members each carry a read watermark, `cluster_members.last_read_message_at`
 on join. It drives unread counts. Unread chat surfaces in the notification
 center as one `message` entry per cluster (0051), and the header badge is derived
 from that same projection (0114), so the two never disagree even when a cluster
-has several unread messages. The watermark is a cursor — it advances to
-`now()` on every read — so it is **not** the read time shown in receipts.
+has several unread messages. The watermark is a cursor - it advances to
+`now()` on every read - so it is **not** the read time shown in receipts.
 
 Per-message read times live in `message_reads` (0049): one immutable
 `(message_id, user_id, read_at)` row is written the first time a member's
@@ -165,7 +167,7 @@ watermark passes a message (inside `mark_cluster_read` / `mark_all_read`, same
 transaction as the watermark advance). Both the backfill and every later
 `mark_cluster_read` only record reads for messages sent after a member joined
 (`created_at > joined_at`), so a member who joins after a message was sent is
-listed under "Not seen yet" for it permanently — they were never present to read
+listed under "Not seen yet" for it permanently - they were never present to read
 it. Backfilled read times use the member's watermark as a frozen approximation
 of their first read, not the true first-read instant (the live path records
 `now()` exactly). `get_message_reads` (0049) exposes a message's readers to its
@@ -177,47 +179,50 @@ in `src/pages/cluster/room/seen-by.ts` split readers into the seen list and the
 remaining active members (author excluded) into the not-seen list. Every
 `mark_cluster_read` also bumps the watermark, so the existing `cluster_members`
 UPDATE realtime handler invalidates `['message-reads', clusterId]` and an open
-dialog updates live — while each member's read time stays frozen at first read.
+dialog updates live - while each member's read time stays frozen at first read.
 
 ## Frontend Patterns
 
-- **Routing**: declarative routes in `src/app/router.tsx`, with layout components (`AppShell`, `PublicLayout`, `ClusterLayout`) and guard components that redirect based on auth and onboarding state.
+- **Routing**: declarative routes in `src/app/router.tsx`, with layout components (`AppShell`, `PublicLayout`, `ClusterLayout`, `ModeratorLayout`, `AdminLayout`) and guard components (`RequireAuth`, `RequireGuest`, `RequireOnboarded`, `RequireActiveAccount`, `RequireCapability`, `RequireRestricted`, `RequireSessionRole`) that redirect based on auth, onboarding, restriction, and staff capability state.
 - **Server state**: every server read goes through a feature module that wraps TanStack Query. Components call hooks; they never talk to Supabase directly.
 - **Typed client**: a single typed Supabase client instance in `src/lib/supabase.ts`, with a generated TypeScript type for the database in `src/lib/database.types.ts`.
-- **Styling**: Tailwind utility classes restricted to the tokens in `docs/DESIGN.md`, mirrored into `src/index.css`. No new colors, typefaces, or radii outside the documented tokens.
+- **Styling**: Tailwind utility classes restricted to the tokens in `docs/DESIGN.md`, mirrored into `src/index.css` except the known gaps (`surface-variant` light-only and the `tertiary-fixed` family dark-only are not emitted). No new colors, typefaces, or radii outside the documented tokens.
 
 ## Database
 
 All schema lives in `supabase/migrations/` and is **order-dependent**. Migrations build on each other and are never edited after they have been applied; changes come as new ordered files on top.
 
-- **Core schema (0001–0010)**: enums, profiles, queues and clusters, chat, signals, status and availability, votes and member replacement, notifications, reports, and demo seed data.
-- **Functions (0011–0015)**: matching, intro and social helpers, vote and replacement functions, and the pg_cron schedule.
-- **Storage, grants, realtime (0016–0024)**: storage buckets, grants, and realtime publications for chat, signal replies, governance events, and notification payloads.
-- **Hardening (0025–0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
-- **Chat and profile UX (0035–0051)**: content-length and duplicate-report guards, member counts, the read watermark (`0038`), idempotent cron, the public cluster directory, reaction/vote RLS hardening, the intro-unlock guard, message replies (`0046`), pronouns (`0047`), read receipts (`0048`), per-message `message_reads` (`0049`), storage object GC (`0050`), and the notification center (`0051`).
-- **Moderation and platform roles (0052–0067)**: platform access primitives (`user_roles`, `account_restrictions`, `moderation_actions`), the reports queue and claim/release/resolve workflow, content enforcement (hide/restore), warnings, temporary suspensions and permanent bans, platform role administration, staff status guards, and moderation workflow guards (claim locks, action-close-report, report validation, restriction-lift no-ops). The access model is described in `PRD.md` (Moderation) and enforced by the `access.ts` / `admin-moderation.ts` modules.
-- **Email and appeals (0068–0071, 0101)**: the `outbound_emails` outbox + `email_settings`, the appeals table and RPCs, enforcement-time enqueue, and the email pump cron (with the outbox retry fix in `0101`).
-- **Posts (0072–0085)**: the standalone cluster posts surface — schema (`posts`, `post_comments`, `post_likes`, `comment_likes`), RPCs (create/edit/delete, like toggles, report, hide/restore), realtime, the private `posts-images` bucket, post/comment + like notifications, the optional post title, and threaded comment deletion. See the Posts subsection above.
-- **Staff notifications (0086–0088)**: `report_new` / `appeal_new` notification types, fan-out to eligible staff, and the role-guarded per-user read RPC.
-- **Safety and self-service (0089–0093)**: queue ordering, per-user `user_mutes`, and the "My Reports" RPCs (`get_my_reports`, with target profiles).
-- **Push (0094, 0097, 0100, 0102–0105)**: owner-scoped `push_tokens`, the `push_outbox` queue and fan-out trigger, per-token delivery, an immediate-wake path, and the pump/recovery grants.
-- **Messaging polish (0095–0096, 0098–0099, 0106)**: idempotent message deletion, self-likes on posts and comments, and the atomic `toggle_message_reaction` RPC.
-- **Cluster calls (0107–0112)**: the `calls` / `call_participants` schema, call RPCs, leave/end, the duration limit, membership cleanup, and service-role grants. See the Cluster calls subsection above.
+- **Core schema (0001-0010)**: enums, profiles, queues and clusters, chat, signals, status and availability, votes and member replacement, notifications, reports, and demo seed data.
+- **Functions (0011-0015)**: matching, intro and social helpers, vote and replacement functions, and the pg_cron schedule.
+- **Storage, grants, realtime (0016-0024)**: storage buckets, grants, and realtime publications for chat, signal replies, governance events, and notification payloads. Note: `0018` (`fn_queue_key`) and `0020` (`fn_mode_label`) are matching helpers that landed in this numeric range.
+- **Hardening (0025-0034)**: RLS and privilege tightening, account deletion, private storage buckets, member read access, avatar privacy, and discovery-in-cluster.
+- **Chat and profile UX (0035-0051)**: content-length and duplicate-report guards, member counts, the read watermark (`0038`), idempotent cron, the public cluster directory, reaction/vote RLS hardening, the intro-unlock guard, message replies (`0046`), pronouns (`0047`), read receipts (`0048`), per-message `message_reads` (`0049`), storage object GC (`0050`), and the notification center (`0051`).
+- **Moderation and platform roles (0052-0067)**: platform access primitives (`user_roles`, `account_restrictions`, `moderation_actions`), the reports queue and claim/release/resolve workflow, content enforcement (hide/restore), warnings, temporary suspensions and permanent bans, platform role administration, staff status guards, and moderation workflow guards (claim locks, action-close-report, report validation, restriction-lift no-ops). The access model is described in `PRD.md` (Moderation) and enforced by the `access.ts` / `admin-moderation.ts` modules.
+- **Email and appeals (0068-0071, 0101)**: the `outbound_emails` outbox + `email_settings`, the appeals table and RPCs, enforcement-time enqueue, and the email pump cron (with the outbox retry fix in `0101`).
+- **Posts (0072-0085)**: the standalone cluster posts surface - schema (`posts`, `post_comments`, `post_likes`, `comment_likes`), RPCs (create/edit/delete, like toggles, report, hide/restore), realtime, the private `posts-images` bucket, post/comment + like notifications, the optional post title, and threaded comment deletion. See the Posts subsection above.
+- **Staff notifications (0086-0088)**: `report_new` / `appeal_new` notification types, fan-out to eligible staff, and the role-guarded per-user read RPC.
+- **Safety and self-service (0089-0093)**: queue ordering, per-user `user_mutes`, and the "My Reports" RPCs (`get_my_reports`, with target profiles).
+- **Push (0094, 0097, 0100, 0102-0105, plus 0130, 0137, 0153)**: owner-scoped `push_tokens` (single-owner enforced in `0130`), the `push_outbox` queue and fan-out trigger, per-token delivery, an immediate-wake path (`0137` single-wake), plain-chat message push fan-out (`0153`), and the pump/recovery grants.
+- **Messaging polish (0095-0096, 0098-0099, 0106, plus 0139)**: idempotent message deletion, self-likes on posts and comments, the atomic `toggle_message_reaction` RPC, and child-cluster RPC scoping (`0139`).
+- **Cluster calls (0107-0112)**: the `calls` / `call_participants` schema, call RPCs, leave/end, the duration limit, membership cleanup, and service-role grants. See the Cluster calls subsection above.
 - **Public table grants (0113)**: the explicit grant surface for public tables.
-- **Consistent unread badge (0114)**: `get_unread_notification_count` is derived from `get_my_notifications`, so the badge always equals the number of unread rows the center shows — one consolidated entry per cluster for chat, and excluding moderation-hidden messages.
+- **Consistent unread badge (0114)**: `get_unread_notification_count` is derived from `get_my_notifications`, so the badge always equals the number of unread rows the center shows - one consolidated entry per cluster for chat, and excluding moderation-hidden messages.
 - **Chat volume in the center (0115)**: the consolidated chat entry titles itself "N new messages" when a cluster has more than one unread message (single messages keep "X sent a message").
 - **Seen-vs-clear center (0116, 0133)**: `get_my_notifications` returns recent read and unread stored rows, so a single read greys the card instead of dropping it; only "Mark all read" empties the page (`mark_all_read` deletes the caller's stored rows and advances chat watermarks). Opening a room advances the cluster watermark that clears that cluster's synthesized chat entry. The derived badge (`0114`, counting `read_at is null`) matches.
-- **Open Mix (0131–0132)**: the `open_mix` matching-mode enum value, `fn_queue_key` global `'open'` queue, `fn_mode_label` "Open Mix", `fn_cooldown_interval` (7 days for `open_mix`, 30 days otherwise) used by `leave_cluster` and vote-removal, and the `get_my_matching_status` branch.
-- **Cluster lifecycle simplification (0142–0143)**: clusters form `active` with `introductions_completed_at` stamped at formation (open at 8; intros are checklist-only, `check_intro_deadlines` is a no-op and the `intro-deadline` cron is unscheduled); replacement invites the longest-waiting eligible candidate deterministically (`candidate_pool=[selected]`, no candidate votes — `vote_on`/`close_expired_votes` are governance-only, stray candidate votes close as `superseded`); `leave_cluster` no longer supersedes an in-flight round and `accept_invitation` chains the next cycle while below 8 with a `cluster_full` guard, plus a `progress_replacements()` safety net so active clusters continuously return to 8.
-- **Join-notice follow-ups (0144–0145)**: `accept_invitation` no longer notifies the joiner about themselves (the fan-out excludes `v_inv.user_id`); the `A new member has joined` notice names the joiner (`<display name> joined the cluster.`) and carries `payload.new_member_id`, which the push fan-out passes through as `newMemberId`. Clients route join notices to the joiner's profile (`/profile/:id?cluster=:id`; legacy title-only rows without a payload fall back to the members tab) while other `replacement` notices stay on the votes tab.
-- **Success-metrics telemetry (0148–0152)**: aggregate-only Postgres telemetry for the PRD success metrics — `cluster_daily_stats` / `mode_daily_stats` snapshot tables (RLS-closed, no `user_id` columns), a queue-join counting trigger (`queue_entries` rows vanish at formation, so joins are counted at insert), an idempotent nightly `rollup_daily_metrics()` `pg_cron` job (03:00 UTC) with history backfill and 24-month purge, and four admin-guarded RPCs (`get_metrics_overview`, `get_retention`, `get_mode_breakdown`, `get_cluster_activity`) surfaced on the admin-only `/admin/metrics` page. Retention = still active with ≥ 6 members and a trailing-30d message, over 7/30/90-day formation cohorts. Service role holds execute on the rollup for manual refills (0149). The overview RPC additionally exposes `data_through_day` + `last_rollup_at` so the dashboard header states measured freshness (0150). Follow-ups: the depth average excludes the partial today row (0151) and the activity list is capped at 500 rows (0152).
-- **Generation mode (0146–0147)**: the `generation` matching-mode enum value (0-anchored 5-year birth cohorts, e.g. `1995-1999` via `floor(year/5)*5`), `fn_queue_key` `start-end` keys, `fn_mode_label` `Born <range>`, and a `join_queue` `mode_retired` guard for `birth_month`. Beta-only cleanup deletes all `birth_month` queues, clusters (cascade, plus explicit `reports` delete — the one non-cascade child), and cooldowns. The `birth_month` enum value stays in the type, unused and join-blocked. Cooldown stays 30 days via the `fn_cooldown_interval` else branch; `get_my_matching_status`/`maybe_form_cluster`/replacement pick the mode up generically.
+- **Open Mix (0131-0132)**: the `open_mix` matching-mode enum value, `fn_queue_key` global `'open'` queue, `fn_mode_label` "Open Mix", `fn_cooldown_interval` (7 days for `open_mix`, 30 days otherwise) used by `leave_cluster` and vote-removal, and the `get_my_matching_status` branch.
+- **Cluster lifecycle simplification (0142-0143)**: clusters form `active` with `introductions_completed_at` stamped at formation (open at 8; intros are checklist-only, `check_intro_deadlines` is a no-op and the `intro-deadline` cron is unscheduled); replacement invites the longest-waiting eligible candidate deterministically (`candidate_pool=[selected]`, no candidate votes - `vote_on`/`close_expired_votes` are governance-only, stray candidate votes close as `superseded`); `leave_cluster` no longer supersedes an in-flight round and `accept_invitation` chains the next cycle while below 8 with a `cluster_full` guard, plus a `progress_replacements()` safety net so active clusters continuously return to 8.
+- **Join-notice follow-ups (0144-0145)**: `accept_invitation` no longer notifies the joiner about themselves (the fan-out excludes `v_inv.user_id`); the `A new member has joined` notice names the joiner (`<display name> joined the cluster.`) and carries `payload.new_member_id`, which the push fan-out passes through as `newMemberId`. Clients route join notices to the joiner's profile (`/profile/:id?cluster=:id`; legacy title-only rows without a payload fall back to the members tab) while other `replacement` notices stay on the votes tab.
+- **Success-metrics telemetry (0148-0152)**: aggregate-only Postgres telemetry for the PRD success metrics - `cluster_daily_stats` / `mode_daily_stats` snapshot tables (RLS-closed, no `user_id` columns), a queue-join counting trigger (`queue_entries` rows vanish at formation, so joins are counted at insert), an idempotent nightly `rollup_daily_metrics()` `pg_cron` job (03:00 UTC) with history backfill and 24-month purge, and four admin-guarded RPCs (`get_metrics_overview`, `get_retention`, `get_mode_breakdown`, `get_cluster_activity`) surfaced on the admin-only `/admin/metrics` page. Retention = still active with ≥ 6 members and a trailing-30d message, over 7/30/90-day formation cohorts. Service role holds execute on the rollup for manual refills (0149). The overview RPC additionally exposes `data_through_day` + `last_rollup_at` so the dashboard header states measured freshness (0150). Follow-ups: the depth average excludes the partial today row (0151) and the activity list is capped at 500 rows (0152).
+- **Generation mode (0146-0147)**: the `generation` matching-mode enum value (0-anchored 5-year birth cohorts, e.g. `1995-1999` via `floor(year/5)*5`), `fn_queue_key` `start-end` keys, `fn_mode_label` `Born <range>`, and a `join_queue` `mode_retired` guard for `birth_month`. Beta-only cleanup deletes all `birth_month` queues, clusters (cascade, plus explicit `reports` delete - the one non-cascade child), and cooldowns. The `birth_month` enum value stays in the type, unused and join-blocked. Cooldown stays 30 days via the `fn_cooldown_interval` else branch; `get_my_matching_status`/`maybe_form_cluster`/replacement pick the mode up generically.
+- **Moderation and admin v2 (0117-0128)**: severity and queue v2, case workspace, post and comment cases, admin account ops, policy templates, case-v2 targets, appeals v2, audit export, rate limits and SLA watch, staff grants, and restore/reopen flows.
+- **Queue, feed, and hardening follow-ups (0129-0130, 0134-0141)**: Local radius fallback on join (`0129`), single-owner push tokens (`0130`), unread perf (`0134`), scoped queue counts (`0135`), cron batch limits (`0136`), single-wake push (`0137`), hot-write rate limits (`0138`), child cluster scoping (`0139`), feed counts (`0140`), and inline source candidates (`0141`).
+- **Plain-chat push (0153)**: the message-to-`push_outbox` fan-out trigger so plain chat writes produce pushes while the inbox stays ephemeral (one row per cluster).
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 
 ### Scheduled jobs
 
-Database functions run on a pg_cron schedule: expiring stale signals, rebalancing membership, expiring lapsed suspensions, and pumping the email and push outboxes (with a recovery job for rows stuck in `sending`). Each schedule is defined in a migration and is idempotent.
+Database functions run on a pg_cron schedule: closing expired votes, expiring invitations and lapsed suspensions, expiring calls, watching moderation SLAs, rolling up daily metrics, rebalancing membership via replacement progress, and pumping the email and push outboxes (with recovery jobs for rows stuck in `sending`). The legacy `intro-deadline` schedule is unscheduled and `check_intro_deadlines()` is a no-op since clusters open at formation. Each schedule is defined in a migration and is idempotent.
 
 ## Storage
 
@@ -252,7 +257,7 @@ Security lives in the database, not in the client. The browser holds only the pu
 | `VITE_GEOCODING_ENDPOINT` | no | Geocoding endpoint override used by Local mode (falls back to keyless BigDataCloud, then raw coordinates) |
 | `VITE_TURNSTILE_SITE_KEY` | no | Cloudflare Turnstile site key for auth bot protection; empty means the widget is hidden (local dev only) |
 
-The mobile app uses the `EXPO_PUBLIC_` equivalents (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT`) plus `EXPO_PUBLIC_WEB_URL` (web origin hosting `/auth/mobile-challenge`; required on device builds, empty only for local dev); see [`../mobile/README.md`](../mobile/README.md).
+The mobile app uses the `EXPO_PUBLIC_` equivalents (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT`, `EXPO_PUBLIC_GEOCODING_ENDPOINT`) plus `EXPO_PUBLIC_WEB_URL` (web origin hosting `/auth/mobile-challenge`; required on device builds, empty only for local dev); see [`../mobile/README.md`](../mobile/README.md).
 
 Only the anon/publishable key is used in the clients. All privileged operations run through Postgres RPC functions guarded by Row Level Security. No secrets ship in the client.
 
@@ -362,4 +367,4 @@ Non-npm helpers live in `scripts/`:
 - `scripts/push-local.ps1` - after `supabase db reset`, `push_settings` is re-seeded as inert (`edge_url=null`, `enabled=false`). This script re-points it at the locally served `send-push` Edge Function and starts that worker in the background so the cron pump can drain `push_outbox` again. Only needed when testing push locally. Run from the repo root: `powershell -ExecutionPolicy Bypass -File scripts/push-local.ps1`.
 - `scripts/seed-demo.mjs`, `scripts/sync-legal.mjs`, `scripts/check-release-merge.mjs` - the implementations behind the npm scripts above.
 
-Mobile scripts live in `mobile/package.json` (`npm start`, `npm run android`, `npm test`, `npm run lint`, `npm run sync:db-types`). See [`../mobile/README.md`](../mobile/README.md).
+Mobile scripts live in `mobile/package.json` (`npm start`, `npm run android`, `npm run ios`, `npm test`, `npm run lint`, `npm run sync:db-types`). See [`../mobile/README.md`](../mobile/README.md).

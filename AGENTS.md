@@ -31,10 +31,10 @@ Env is just `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (both public). The br
 
 ## Git workflow
 
-- Staging-driven: branch from `develop` (`feat/...`, `fix/...`, `docs/...`), target `develop` in PRs. **Never branch from or PR into `main`**; main is release-only via a `develop` → `main` PR.
+- Staging-driven: branch from `develop` (`feature/...`, `fix/...`, `docs/...`), target `develop` in PRs. **Never branch from or PR into `main`**; main is release-only via a `develop` → `main` PR.
 - **Releases (`develop` → `main`) merge with "Create a merge commit" — never squash.** Squash on `main` severs the shared history and re-freezes the merge-base, so every later release re-merges everything and conflicts. Run `npm run check:release` (dry-runs the merge, touches nothing) before opening the release PR — it must pass. Feature PRs into `develop` stay squash.
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
-- Pre-push: `npm run lint`, `npm run test:coverage`, `npm run build`. If migrations changed, also `supabase db reset` + `npm run test:integration`. If a synced web file changed (anything copied by `mobile/scripts/sync-db-types.mjs`), also run `node mobile/scripts/sync-db-types.mjs --check` and commit the regenerated mobile copies.
+- Pre-push: `npm run lint`, `npm run test:coverage`, `npm run build`. Docs-only changes (`*.md`, plus comment-only tweaks that change no behavior) skip the coverage and build gates; lint is enough since CI skips markdown/docs-only changes. If migrations changed, also `supabase db reset` + `npm run test:integration`. If a synced web file changed (anything copied by `mobile/scripts/sync-db-types.mjs`), also run `node mobile/scripts/sync-db-types.mjs --check` and commit the regenerated mobile copies.
 
 ## Conventions
 
