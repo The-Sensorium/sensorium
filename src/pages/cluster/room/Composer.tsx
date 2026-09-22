@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, X } from 'lucide-react'
+import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { Avatar } from '../../../components/Avatar'
 import {
@@ -367,8 +367,8 @@ export function Composer({
                     mentionIndex === 0 ? 'bg-surface-container' : 'hover:bg-surface-container/60',
                   )}
                 >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center" aria-hidden>
-                    <Megaphone className="h-4 w-4" strokeWidth={1.5} />
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-container/25 text-primary" aria-hidden>
+                    <Users className="h-4 w-4" strokeWidth={1.5} />
                   </span>
                   <span className="truncate">everyone</span>
                 </button>
