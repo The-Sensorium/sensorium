@@ -42,6 +42,7 @@ import {
   useStartCall,
 } from '../../../../src/features/cluster-calls'
 import { useMarkClusterRead } from '../../../../src/features/notifications'
+import { getSuppressedPushCluster, setSuppressedPushCluster } from '../../../../src/lib/push-suppress'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { toErrorMessage } from '../../../../src/lib/error'
@@ -77,6 +78,14 @@ export default function RoomScreen() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
   useClusterChannel(clusterId || null)
+  useFocusEffect(
+    useCallback(() => {
+      setSuppressedPushCluster(clusterId || null)
+      return () => {
+        if (getSuppressedPushCluster() === (clusterId || null)) setSuppressedPushCluster(null)
+      }
+    }, [clusterId]),
+  )
   const cluster = useCluster(clusterId || null)
   const messages = useClusterMessages(clusterId || null)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])

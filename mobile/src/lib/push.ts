@@ -1,5 +1,6 @@
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
+import { shouldSuppressPushBanner, getSuppressedPushCluster } from './push-suppress'
 import { supabase } from './supabase'
 
 const projectId =
@@ -22,12 +23,16 @@ async function notifications(): Promise<NotificationsModule | null> {
   try {
     const mod = await import('expo-notifications')
     mod.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: false,
-        shouldSetBadge: false,
-      }),
+      handleNotification: async (notification) => {
+        const data = (notification.request.content.data ?? {}) as Record<string, unknown>
+        const suppressed = shouldSuppressPushBanner(data, getSuppressedPushCluster())
+        return {
+          shouldShowBanner: !suppressed,
+          shouldShowList: true,
+          shouldPlaySound: !suppressed,
+          shouldSetBadge: false,
+        }
+      },
     })
     if (Platform.OS === 'android') {
       const importance = mod.AndroidImportance?.HIGH ?? 4
