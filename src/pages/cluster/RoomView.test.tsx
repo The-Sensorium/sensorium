@@ -532,6 +532,32 @@ describe('RoomView timeline', () => {
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
+  it('asks for confirmation before deleting a message', async () => {
+    hooks.messages.data = [msg({ id: 'm1', author_id: 'u1', content: 'my message' })]
+    renderRoom()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete message?' })
+    expect(hooks.deleteMessage.mutateAsync).not.toHaveBeenCalled()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    expect(hooks.deleteMessage.mutateAsync).toHaveBeenCalledWith('m1')
+  })
+
+  it('cancels the message delete confirmation without deleting', async () => {
+    hooks.messages.data = [msg({ id: 'm1', author_id: 'u1', content: 'my message' })]
+    renderRoom()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete message?' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(hooks.deleteMessage.mutateAsync).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: 'Delete message?' })).not.toBeInTheDocument()
+  })
+
   it('shows the empty seen state when no one has read the message', async () => {
     hooks.messages.data = [
       msg({ id: 'm1', author_id: 'u1', content: 'my message', created_at: '2026-01-01T10:00:00Z' }),

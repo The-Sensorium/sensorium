@@ -59,6 +59,8 @@ import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalMod
 import { TypingBubble } from '../../../../src/components/room/TypingBubble'
 import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows'
 import { ReportModal } from '../../../../src/components/ReportModal'
+import { Modal } from '../../../../src/components/Modal'
+import { PrimaryButton } from '../../../../src/components/ui'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
@@ -134,6 +136,8 @@ export default function RoomScreen() {
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [infoFor, setInfoFor] = useState<string | null>(null)
   const [reportFor, setReportFor] = useState<Message | null>(null)
+  const [deleteFor, setDeleteFor] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
@@ -445,11 +449,12 @@ export default function RoomScreen() {
 
   async function remove(messageId: string) {
     setMenuFor(null)
-    setError(null)
+    setDeleteError(null)
     try {
       await deleteMessage.mutateAsync(messageId)
+      setDeleteFor(null)
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not delete your message.'))
+      setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
 
@@ -879,7 +884,11 @@ export default function RoomScreen() {
                     onToggleMenu={() => setMenuFor(menuFor === m.id ? null : m.id)}
                     onShowInfo={showInfo}
                     onEdit={startEdit}
-                    onDelete={(messageId) => void remove(messageId)}
+                    onDelete={(messageId) => {
+                      setMenuFor(null)
+                      setDeleteError(null)
+                      setDeleteFor(messageId)
+                    }}
                     onReply={startReply}
                     onReport={startReport}
                     onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
@@ -974,6 +983,34 @@ export default function RoomScreen() {
             messageId={reportFor.id}
           />
         ) : null}
+
+        <Modal open={deleteFor !== null} onClose={() => { if (!deleteMessage.isPending) { setDeleteFor(null); setDeleteError(null) } }} title="Delete message?">
+          <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
+            This removes your message from the cluster chat. This action can&apos;t be undone.
+          </Text>
+          {deleteError ? (
+            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
+          ) : null}
+          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+            <Pressable
+              onPress={() => {
+                setDeleteFor(null)
+                setDeleteError(null)
+              }}
+              disabled={deleteMessage.isPending}
+              hitSlop={8}
+              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: deleteMessage.isPending ? 0.6 : 1 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+            </Pressable>
+            <PrimaryButton
+              title="Delete"
+              loadingTitle="Deleting…"
+              loading={deleteMessage.isPending}
+              onPress={() => deleteFor && void remove(deleteFor)}
+            />
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )

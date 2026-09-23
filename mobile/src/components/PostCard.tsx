@@ -218,6 +218,7 @@ export function PostCard({
             title="Delete"
             loadingTitle="Deleting…"
             loading={del.isPending}
+            tone="error"
             onPress={() => void handleDelete()}
           />
         </View>

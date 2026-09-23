@@ -104,7 +104,7 @@ export function MessageItem({
             />
           </span>
         )}
-        <div className={cn('max-w-[78%] sm:max-w-[70%]', mine ? 'items-end' : 'items-start')}>
+        <div className={cn(isEditing ? 'min-w-0 flex-1' : 'max-w-[78%] sm:max-w-[70%]', mine ? 'items-end' : 'items-start')}>
           <p
             className={cn(
               'mb-0.5 flex items-baseline gap-2 text-xs',
