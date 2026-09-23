@@ -43,6 +43,7 @@ import {
   useStartCall,
 } from '../../../../src/features/cluster-calls'
 import { useMarkClusterRead } from '../../../../src/features/notifications'
+import { clearClusterPushNotifications } from '../../../../src/lib/push'
 import { getSuppressedPushCluster, setSuppressedPushCluster } from '../../../../src/lib/push-suppress'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
@@ -91,6 +92,7 @@ export default function RoomScreen() {
   useFocusEffect(
     useCallback(() => {
       setSuppressedPushCluster(clusterId || null)
+      if (clusterId) void clearClusterPushNotifications(clusterId)
       return () => {
         if (getSuppressedPushCluster() === (clusterId || null)) setSuppressedPushCluster(null)
       }

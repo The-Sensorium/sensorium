@@ -5,9 +5,17 @@ import { useAuth } from '../../src/auth-context'
 import { useNotificationsChannel, useUnreadCount } from '../../src/features/notifications'
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { useTheme } from '../../src/lib/use-theme'
-import { onPushResponse, getLaunchPushData, syncBadgeCount } from '../../src/lib/push'
+import { onPushResponse, getLaunchPushData, syncBadgeCount, clearClusterPushNotifications } from '../../src/lib/push'
+import { pushClusterId } from '../../src/lib/push-suppress'
 import { badgeLabel } from '../../src/lib/tab-badge'
 import { pushDataToHref, type PushData } from '../../src/lib/notification-routing'
+
+function handlePushTap(data: PushData) {
+  const clusterId = pushClusterId(data)
+  if (clusterId) void clearClusterPushNotifications(clusterId)
+  const target = pushDataToHref(data)
+  if (target) router.push(target)
+}
 
 export default function AppTabs() {
   const t = useTheme()
@@ -25,8 +33,7 @@ export default function AppTabs() {
     let disposed = false
     let unsubscribe: (() => void) | undefined
     void onPushResponse((data) => {
-      const target = pushDataToHref(data as PushData)
-      if (target) router.push(target)
+      handlePushTap(data as PushData)
     }).then((fn) => {
       if (disposed) fn()
       else unsubscribe = fn
@@ -34,10 +41,7 @@ export default function AppTabs() {
     // A tap that cold-starts a terminated app is not delivered through the
     // listener above; it must be read once at startup.
     void getLaunchPushData().then((data) => {
-      if (!disposed && data) {
-        const target = pushDataToHref(data as PushData)
-        if (target) router.push(target)
-      }
+      if (!disposed && data) handlePushTap(data as PushData)
     })
     return () => {
       disposed = true
