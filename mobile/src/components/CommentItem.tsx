@@ -157,11 +157,12 @@ export function CommentItem({
         {deleteError ? (
           <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
         ) : null}
-        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
           <Pressable
             onPress={() => setConfirmOpen(false)}
             disabled={del.isPending}
-            style={{ paddingHorizontal: 16, paddingVertical: 10, opacity: del.isPending ? 0.6 : 1 }}
+            hitSlop={8}
+            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: del.isPending ? 0.6 : 1 }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
           </Pressable>

@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
-import { Link } from 'expo-router'
+import { Link, router } from 'expo-router'
 import { Heart, MessageSquare, MoreVertical } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { Avatar } from './Avatar'
@@ -56,6 +56,13 @@ export function PostCard({
   const edit = useEditPost(clusterId)
   const del = useDeletePost(clusterId)
 
+  const hasMedia = Boolean(post.image_url || post.gif_url)
+  const [bodyOverflows, setBodyOverflows] = useState(false)
+
+  useEffect(() => {
+    setBodyOverflows(false)
+  }, [post.id, compact, hasMedia])
+
   async function handleDelete() {
     setDeleteError(null)
     try {
@@ -92,21 +99,23 @@ export function PostCard({
           delayLongPress={350}
         >
           {compact ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
-              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '500', color: t.onSurface }} maxFontSizeMultiplier={1.4}>
-                {author?.display_name ?? 'Member'}
-              </Text>
-              {isMine ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>(you)</Text> : null}
-              <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>
-                · {dateTimeFormatter.format(new Date(post.created_at))}
-              </Text>
-              {post.edited_at ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>· edited</Text> : null}
-              {clusterName ? (
-                <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: t.primary }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
-                  · {clusterName}
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+                  <Text style={{ fontWeight: '500' }}>{author?.display_name ?? 'Member'}</Text>
+                  {isMine ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}> (you)</Text> : null}
+                  <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
+                    {' '}· {dateTimeFormatter.format(new Date(post.created_at))}
+                  </Text>
+                  {post.edited_at ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}> · edited</Text> : null}
                 </Text>
-              ) : null}
+                {clusterName ? (
+                  <Text style={{ marginTop: 2, fontSize: 12, lineHeight: 16, fontWeight: '600', color: t.primary }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+                    {clusterName}
+                  </Text>
+                ) : null}
+              </View>
             </View>
           ) : (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
@@ -134,10 +143,36 @@ export function PostCard({
               {post.title}
             </Text>
           ) : null}
-          {post.content ? (
-            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurface }} numberOfLines={compact ? 2 : undefined}>
+          {post.content && !(compact && hasMedia) ? (
+            <Text
+              style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurface }}
+              numberOfLines={compact ? 5 : undefined}
+            >
               {post.content}
             </Text>
+          ) : null}
+          {compact && !hasMedia && post.content ? (
+            <View style={{ height: 0, overflow: 'hidden' }} accessible={false} aria-hidden>
+              <Text
+                style={{ fontSize: 14, lineHeight: 22 }}
+                accessible={false}
+                aria-hidden
+                onTextLayout={(e) => setBodyOverflows(e.nativeEvent.lines.length > 5)}
+              >
+                {post.content}
+              </Text>
+            </View>
+          ) : null}
+          {compact && !hasMedia && bodyOverflows ? (
+            <Pressable
+              accessibilityLabel="Read full post"
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/posts/[postId]', params: { postId: post.id } })}
+              hitSlop={8}
+              style={{ marginTop: 4, alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 8, minHeight: 44, justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Read more</Text>
+            </Pressable>
           ) : null}
           <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />
           <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 16 }}>

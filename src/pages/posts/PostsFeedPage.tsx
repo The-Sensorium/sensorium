@@ -217,6 +217,7 @@ export function PostsFeedPage() {
                       <PostCard
                         post={post}
                         clusterId={clusterId!}
+                        compact
                         author={memberById.get(post.author_id)}
                         likeCount={like?.count ?? 0}
                         likedByMe={like?.mine ?? false}

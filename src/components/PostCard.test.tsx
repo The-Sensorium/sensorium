@@ -132,9 +132,90 @@ describe('PostCard', () => {
     )
     expect(screen.getByText('Rio')).toBeInTheDocument()
     expect(screen.getByText('Aurora')).toBeInTheDocument()
-    expect(screen.getByText('Hello world')).toHaveClass('line-clamp-2')
+    expect(screen.getByText('Hello world')).toHaveClass('line-clamp-5')
     expect(screen.getByTestId('post-media')).toHaveAttribute('data-compact', 'true')
     expect(screen.getByRole('link', { name: /Rio/ }).getAttribute('href')).toBe('/posts/p1')
+  })
+
+  it('hides the body in compact mode when the post has an image', () => {
+    const post = fixture({ title: 'Sunset', content: 'A long body that should be hidden', image_url: 'c1/p.png' })
+    vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    vi.mocked(useEditPost).mockReturnValue({ mutateAsync: editMutate, isPending: false } as never)
+    vi.mocked(useDeletePost).mockReturnValue({ mutateAsync: deleteMutate, isPending: false } as never)
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={post}
+          clusterId="c1"
+          compact
+          author={{ id: post.author_id, display_name: 'Rio', avatar_url: null }}
+          likeCount={0}
+          likedByMe={false}
+          commentCount={0}
+          onLike={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Sunset')).toBeInTheDocument()
+    expect(screen.queryByText('A long body that should be hidden')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Read more' })).not.toBeInTheDocument()
+  })
+
+  it('keeps the full body on the detail page when the post has an image', () => {
+    setup({ title: 'Sunset', content: 'Full body stays visible', image_url: 'c1/p.png' })
+    expect(screen.getByText('Full body stays visible')).toBeInTheDocument()
+  })
+
+  it('shows no Read more in compact mode when the body fits', () => {
+    const post = fixture({ content: 'Short body' })
+    vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    vi.mocked(useEditPost).mockReturnValue({ mutateAsync: editMutate, isPending: false } as never)
+    vi.mocked(useDeletePost).mockReturnValue({ mutateAsync: deleteMutate, isPending: false } as never)
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={post}
+          clusterId="c1"
+          compact
+          author={{ id: post.author_id, display_name: 'Rio', avatar_url: null }}
+          likeCount={0}
+          likedByMe={false}
+          commentCount={0}
+          onLike={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Short body')).toHaveClass('line-clamp-5')
+    expect(screen.queryByRole('button', { name: 'Read more' })).not.toBeInTheDocument()
+  })
+
+  it('shows Read more in compact mode when the body overflows five lines', () => {
+    const post = fixture({ content: 'A very long body that overflows' })
+    vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    vi.mocked(useEditPost).mockReturnValue({ mutateAsync: editMutate, isPending: false } as never)
+    vi.mocked(useDeletePost).mockReturnValue({ mutateAsync: deleteMutate, isPending: false } as never)
+    render(
+      <MemoryRouter initialEntries={['/posts']}>
+        <PostCard
+          post={post}
+          clusterId="c1"
+          compact
+          author={{ id: post.author_id, display_name: 'Rio', avatar_url: null }}
+          likeCount={0}
+          likedByMe={false}
+          commentCount={0}
+          onLike={vi.fn()}
+        />
+      </MemoryRouter>,
+    )
+    const body = screen.getByText('A very long body that overflows')
+    Object.defineProperty(body, 'scrollHeight', { value: 200, configurable: true })
+    Object.defineProperty(body, 'clientHeight', { value: 120, configurable: true })
+    fireEvent(window, new Event('resize'))
+    expect(screen.getByRole('button', { name: 'Read more' })).toBeInTheDocument()
   })
 
   it('keeps natural height in compact mode without pinning the engagement row', () => {
