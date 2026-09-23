@@ -652,3 +652,34 @@ describe('RoomView calls', () => {
     expect(screen.getByTestId('call-overlay-stub')).toHaveTextContent('call-1')
   })
 })
+
+describe('RoomView read marker', () => {
+  it('marks the room read on open and adds no extra write on leave', () => {
+    hooks.messages.data = [msg({ id: 'm1', content: 'one' })]
+    const { unmount } = renderRoom()
+
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+    expect(hooks.markRead.mutate).toHaveBeenCalledWith('c1')
+
+    unmount()
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+  })
+
+  it('flushes a pending trailing mark when leaving the room', () => {
+    hooks.messages.data = [msg({ id: 'm1', content: 'one' })]
+    const { unmount, rerender } = renderRoom()
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+
+    // A message streams in inside the throttle window: the trailing mark is
+    // scheduled but has not fired.
+    hooks.messages.data = [...hooks.messages.data, msg({ id: 'm2', content: 'two' })]
+    rerender(makeUi())
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+
+    // Leaving before the window elapses fires the pending mark instead of
+    // dropping it, so the home card shows no stale unread.
+    unmount()
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(2)
+    expect(hooks.markRead.mutate).toHaveBeenLastCalledWith('c1')
+  })
+})

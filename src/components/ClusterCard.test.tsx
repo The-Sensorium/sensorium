@@ -101,4 +101,50 @@ describe('ClusterCard', () => {
     )
     expect(screen.getByText('Archived')).toBeInTheDocument()
   })
+
+  it('hides the unread badge when there is nothing unread', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <ClusterCard item={makeCluster()} unreadCount={0} />
+      </MemoryRouter>,
+    )
+    expect(container.querySelector('[data-e2e="cluster-unread-badge-c1"]')).toBeNull()
+  })
+
+  it('shows the unread badge with the cluster count', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <ClusterCard item={makeCluster()} unreadCount={3} />
+      </MemoryRouter>,
+    )
+    expect(container.querySelector('[data-e2e="cluster-unread-badge-c1"]')).not.toBeNull()
+    expect(screen.getByLabelText('3 unread messages')).toBeInTheDocument()
+  })
+
+  it('caps a large unread count at 9+', () => {
+    render(
+      <MemoryRouter>
+        <ClusterCard item={makeCluster()} unreadCount={42} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('9+')).toBeInTheDocument()
+    expect(screen.getByLabelText('42 unread messages')).toBeInTheDocument()
+  })
+
+  it('keeps the status row stable with and without unread', () => {
+    const { container, rerender } = render(
+      <MemoryRouter>
+        <ClusterCard item={makeCluster()} unreadCount={0} />
+      </MemoryRouter>,
+    )
+    const row = container.querySelector('p.text-on-surface-variant')?.parentElement
+    expect(row).not.toBeNull()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+    rerender(
+      <MemoryRouter>
+        <ClusterCard item={makeCluster()} unreadCount={3} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Active').parentElement).toBe(row)
+  })
 })

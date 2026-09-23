@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, Loader2 } from 'lucide-react'
@@ -396,38 +396,70 @@ export function RoomView() {
   // member is pinned to the newest messages (on open, on scroll-to-bottom,
   // and as messages stream in). Leading edge marks immediately; a trailing
   // timer collapses a burst into one write per window instead of one write
-  // per message batch. Switching tab away flushes immediately so unread
-  // clears even if the room unmounts unseen.
+  // per message batch. Switching tab away flushes immediately, and leaving
+  // the room flushes a pending trailing mark, so unread clears even if the
+  // room unmounts unseen.
   const markReadTimer = useRef<number | null>(null)
   const lastMarkAt = useRef(0)
+  const pendingMarkRef = useRef(false)
+  const clearMarkTimer = useCallback(() => {
+    if (markReadTimer.current) {
+      window.clearTimeout(markReadTimer.current)
+      markReadTimer.current = null
+    }
+  }, [])
+  const markRoomRead = markRead.mutate
+  const fireMark = useCallback(
+    (id: string) => {
+      lastMarkAt.current = Date.now()
+      pendingMarkRef.current = false
+      markRoomRead(id)
+    },
+    [markRoomRead],
+  )
   useEffect(() => {
     if (!pinned || !clusterId) return
     if (Date.now() - lastMarkAt.current >= 5_000) {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      clearMarkTimer()
+      fireMark(clusterId)
       return
     }
-    if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
+    clearMarkTimer()
+    pendingMarkRef.current = true
     markReadTimer.current = window.setTimeout(() => {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      markReadTimer.current = null
+      fireMark(clusterId)
     }, 5_000)
     return () => {
-      if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
+      clearMarkTimer()
     }
-  }, [pinned, clusterId, messages.data, markRead])
+  }, [pinned, clusterId, messages.data, markRead, fireMark, clearMarkTimer])
+
+  // Leaving the room fires a pending trailing mark instead of dropping it:
+  // pinned means the new messages were on screen, so they count as read.
+  // The cleanup also runs when the callback identity changes on cluster
+  // switch, flushing the previous room. Scrolled-up readers keep their
+  // unread, which the room clears on return.
+  const flushPendingMark = useCallback(() => {
+    if (!pendingMarkRef.current || !pinnedRef.current || !clusterId) return
+    clearMarkTimer()
+    fireMark(clusterId)
+  }, [clusterId, fireMark, clearMarkTimer])
+  useEffect(() => () => {
+    flushPendingMark()
+  }, [flushPendingMark])
 
   useEffect(() => {
     if (!pinned || !clusterId) return
     function flushOnHide() {
       if (document.visibilityState === 'hidden') {
-        lastMarkAt.current = Date.now()
-        markRead.mutate(clusterId)
+        clearMarkTimer()
+        fireMark(clusterId)
       }
     }
     document.addEventListener('visibilitychange', flushOnHide)
     return () => document.removeEventListener('visibilitychange', flushOnHide)
-  }, [pinned, clusterId, markRead])
+  }, [pinned, clusterId, fireMark, clearMarkTimer])
 
   // Close the message action menu and reaction picker on outside click / Escape.
   useEffect(() => {

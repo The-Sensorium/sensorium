@@ -425,6 +425,8 @@ describe('introductions and social', () => {
     expect(messages![0].content).toBe('Hello everyone')
 
     // Chat unread is tracked via last_read_message_at, not notification rows.
+    // It surfaces in get_unread_chat_counts (card badges) and is excluded
+    // from the header badge (stored rows only).
     const { data: notifs } = await admin
       .from('notifications')
       .select('id')
@@ -432,8 +434,12 @@ describe('introductions and social', () => {
       .eq('type', 'message')
     expect(notifs).toHaveLength(0)
 
+    const { data: chatCounts } = await b.client.rpc('get_unread_chat_counts')
+    expect(chatCounts).toHaveLength(1)
+    expect(Number(chatCounts![0].unread_count)).toBe(1)
+
     const { data: unread } = await b.client.rpc('get_unread_notification_count')
-    expect(unread).toBe(1)
+    expect(unread).toBe(0)
   })
 
   it('send_message creates a mention notification', async () => {

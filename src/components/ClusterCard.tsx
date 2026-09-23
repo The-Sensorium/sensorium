@@ -1,9 +1,10 @@
 import { Link } from 'react-router'
-import { Users } from 'lucide-react'
+import { MessagesSquare, Users } from 'lucide-react'
 import type { Database } from '../lib/database.types'
 import type { MyCluster } from '../features/matching'
 import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
+import { UnreadBadge } from './UnreadBadge'
 
 type ClusterStatus = Database['public']['Enums']['cluster_status']
 
@@ -15,14 +16,17 @@ function statusLabel(status: ClusterStatus): string {
 export function ClusterCard({
   item,
   myIntroCompletedAt,
+  unreadCount,
 }: {
   item: MyCluster
   myIntroCompletedAt?: string | null
+  unreadCount?: number
 }) {
   const { cluster } = item
   const info = modeInfo(cluster.matching_mode)
   const target = `/cluster/${cluster.id}`
   const needsIntros = myIntroCompletedAt === null
+  const count = unreadCount ?? 0
 
   return (
     <Link
@@ -44,24 +48,36 @@ export function ClusterCard({
           {item.memberCount} members
         </span>
       </div>
-      <p className="mt-3 text-sm text-on-surface-variant">
-        {needsIntros ? (
-          <>Complete your introductions</>
-        ) : (
-          statusLabel(cluster.status)
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="min-w-0 flex-1 text-sm text-on-surface-variant">
+          {needsIntros ? (
+            <>Complete your introductions</>
+          ) : (
+            statusLabel(cluster.status)
+          )}
+        </p>
+        {count > 0 && (
+          <span
+            data-e2e={`cluster-unread-badge-${cluster.id}`}
+            className="relative inline-flex shrink-0 items-center rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-on-surface-variant"
+          >
+            <MessagesSquare className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+            <UnreadBadge count={count} label={`${count} unread messages`} />
+          </span>
         )}
-      </p>
+      </div>
     </Link>
   )
 }
 
 /** ClusterCard with the caller's intro state: personalizes the pending copy. */
-export function MemberClusterCard({ item }: { item: MyCluster }) {
+export function MemberClusterCard({ item, unreadCount }: { item: MyCluster; unreadCount?: number }) {
   const membership = useMyMembership(item.cluster.id)
   return (
     <ClusterCard
       item={item}
       myIntroCompletedAt={membership.data ? membership.data.intro_completed_at : undefined}
+      unreadCount={unreadCount}
     />
   )
 }

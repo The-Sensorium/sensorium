@@ -333,22 +333,48 @@ export default function RoomScreen() {
 
   const markReadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastMarkAt = useRef(0)
+  const pendingMarkRef = useRef(false)
+  const markRoomRead = markRead.mutate
+  const clearMarkTimer = useCallback(() => {
+    if (markReadTimer.current) {
+      clearTimeout(markReadTimer.current)
+      markReadTimer.current = null
+    }
+  }, [])
+  const fireMark = useCallback(
+    (id: string) => {
+      lastMarkAt.current = Date.now()
+      pendingMarkRef.current = false
+      markRoomRead(id)
+    },
+    [markRoomRead],
+  )
   useEffect(() => {
     if (!focused || !pinned || !clusterId || auth.state !== 'signedIn') return
     if (Date.now() - lastMarkAt.current >= 5_000) {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      clearMarkTimer()
+      fireMark(clusterId)
       return
     }
-    if (markReadTimer.current) clearTimeout(markReadTimer.current)
+    clearMarkTimer()
+    pendingMarkRef.current = true
     markReadTimer.current = setTimeout(() => {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      markReadTimer.current = null
+      fireMark(clusterId)
     }, 5_000)
     return () => {
-      if (markReadTimer.current) clearTimeout(markReadTimer.current)
+      clearMarkTimer()
     }
-  }, [focused, pinned, clusterId, messages.data, markRead, auth.state])
+  }, [focused, pinned, clusterId, messages.data, markRead, auth.state, fireMark, clearMarkTimer])
+
+  // Leaving the screen fires a pending trailing mark instead of dropping it:
+  // pinned means the new messages were on screen, so they count as read.
+  // Scrolled-up readers keep their unread, which the room clears on return.
+  const flushPendingMark = useCallback(() => {
+    if (!pendingMarkRef.current || !pinnedRef.current || !clusterId || auth.state !== 'signedIn') return
+    clearMarkTimer()
+    fireMark(clusterId)
+  }, [clusterId, auth.state, fireMark, clearMarkTimer])
 
   // One AppState subscription for both directions: flush the read marker
   // when backgrounded while pinned (never when scrolled up reading history),
@@ -360,9 +386,8 @@ export default function RoomScreen() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
         if (!pinned || auth.state !== 'signedIn') return
-        if (markReadTimer.current) clearTimeout(markReadTimer.current)
-        lastMarkAt.current = Date.now()
-        markRead.mutate(clusterId)
+        clearMarkTimer()
+        fireMark(clusterId)
       } else if (state === 'active') {
         const key = ['cluster-messages', clusterId]
         if (queryClient.getQueryState(key)?.status === 'error') {
@@ -371,13 +396,16 @@ export default function RoomScreen() {
       }
     })
     return () => sub.remove()
-  }, [focused, pinned, clusterId, markRead, queryClient, auth.state])
+  }, [focused, pinned, clusterId, markRead, queryClient, auth.state, fireMark, clearMarkTimer])
 
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
-      return () => setFocused(false)
-    }, []),
+      return () => {
+        flushPendingMark()
+        setFocused(false)
+      }
+    }, [flushPendingMark]),
   )
 
   const typingMembers = [...typing]
