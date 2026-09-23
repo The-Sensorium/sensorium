@@ -371,8 +371,6 @@ export function Screen({
       offset={{ closed: 0, opened: bottom }}
       style={{
         backgroundColor: t.background,
-        borderTopWidth: 1,
-        borderTopColor: t.outlineVariant,
         paddingHorizontal: spacing.containerMargin,
         paddingTop: 8,
         paddingBottom: 8 + bottom,

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { CornerUpLeft, ImagePlay, ImagePlus, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react-native'
+import { CornerUpLeft, ImagePlus, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
+import { CollapsibleChrome } from '../CollapsibleChrome'
 import {
   EVERYONE_NAME,
   filterMentionCandidates,
@@ -104,6 +105,12 @@ export function Composer({
 
   function handleInputChange(value: string) {
     setDraft(value)
+    // The + and GIF toggles hide while typing, so an open menu or picker
+    // must not linger above the composer without its trigger visible.
+    if (value.trim().length > 0) {
+      setMenuOpen(false)
+      setGifOpen(false)
+    }
     setMention(parseMentionQuery(value, caret))
     onTyping()
     if (typingTimer.current) clearTimeout(typingTimer.current)
@@ -184,6 +191,9 @@ export function Composer({
   }
 
   const canSend = (draft.trim().length > 0 || stagedImage !== null) && !pending && !uploading
+  // Mirror the comment composer: while typing, the actions button collapses
+  // so the input gets the full width. Send stays visible throughout.
+  const isTyping = draft.trim().length > 0
 
   return (
     <View>
@@ -267,23 +277,6 @@ export function Composer({
           }}
         >
           <MenuRow
-            label="Send an image"
-            disabled={uploading}
-            onPress={() => void handlePickImage()}
-          >
-            <ImagePlus size={16} color={t.onSurface} strokeWidth={1.5} />
-          </MenuRow>
-          <MenuRow
-            label="Send a GIF"
-            disabled={uploading}
-            onPress={() => {
-              setMenuOpen(false)
-              setGifOpen(true)
-            }}
-          >
-            <ImagePlay size={16} color={t.onSurface} strokeWidth={1.5} />
-          </MenuRow>
-          <MenuRow
             label="Raise a signal"
             disabled={raisePending}
             onPress={() => {
@@ -307,7 +300,7 @@ export function Composer({
           ) : null}
         </View>
       ) : null}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {mentionOpen ? (
           <View
             style={{
@@ -357,56 +350,107 @@ export function Composer({
             />
           </View>
         ) : null}
-        <Pressable
-          accessibilityLabel="Room actions"
-          disabled={raisePending}
-          onPress={() => {
-            setGifOpen(false)
-            setMenuOpen((o) => !o)
-          }}
-          hitSlop={4}
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: raisePending ? 0.6 : 1,
-          }}
-        >
-          {menuOpen ? (
-            <X size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
-          ) : (
-            <Plus size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
-          )}
-        </Pressable>
-        <TextInput
-          accessibilityLabel="Message"
-          value={draft}
-          onChangeText={handleInputChange}
-          onSelectionChange={(e) => setCaret(e.nativeEvent.selection.start)}
-          onBlur={() => {
-            onStopTyping()
-            setMention(null)
-          }}
-          placeholder={stagedImage ? 'Add a caption…' : 'Write to your cluster…'}
-          placeholderTextColor={t.onSurfaceVariant}
-          maxLength={2000}
-          multiline
+        <View
           style={{
             flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
             backgroundColor: t.surfaceLowest,
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.md,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            fontSize: 16,
-            lineHeight: 24,
-            maxHeight: 120,
-            color: t.onSurface,
+            paddingLeft: 6,
+            paddingRight: 4,
+            paddingVertical: 4,
           }}
-        />
+        >
+          <CollapsibleChrome shown={!isTyping} width={44} height={44}>
+            <Pressable
+              accessibilityLabel="Room actions"
+              disabled={raisePending}
+              onPress={() => {
+                setGifOpen(false)
+                setMenuOpen((o) => !o)
+              }}
+              hitSlop={4}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: raisePending ? 0.6 : 1,
+              }}
+            >
+              {menuOpen ? (
+                <X size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              ) : (
+                <Plus size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              )}
+            </Pressable>
+          </CollapsibleChrome>
+          <TextInput
+            accessibilityLabel="Message"
+            value={draft}
+            onChangeText={handleInputChange}
+            onSelectionChange={(e) => setCaret(e.nativeEvent.selection.start)}
+            onBlur={() => {
+              onStopTyping()
+              setMention(null)
+            }}
+            placeholder={stagedImage ? 'Add a caption…' : 'Write to your cluster…'}
+            placeholderTextColor={t.onSurfaceVariant}
+            maxLength={2000}
+            multiline
+            style={{
+              flex: 1,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              fontSize: 16,
+              lineHeight: 22,
+              maxHeight: 120,
+              color: t.onSurface,
+            }}
+          />
+          <CollapsibleChrome shown={!isTyping} width={44} height={44}>
+            <Pressable
+              accessibilityLabel="Attach image"
+              accessibilityRole="button"
+              onPress={() => void handlePickImage()}
+              hitSlop={4}
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <ImagePlus size={22} color={stagedImage ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
+            </Pressable>
+          </CollapsibleChrome>
+          <CollapsibleChrome shown={!isTyping} width={44} height={44}>
+            <Pressable
+              accessibilityLabel="Add a GIF"
+              accessibilityRole="button"
+              onPress={() => {
+                setMenuOpen(false)
+                setGifOpen((o) => !o)
+              }}
+              hitSlop={4}
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <View
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: gifOpen ? t.primary : t.onSurfaceVariant,
+                  borderRadius: 6,
+                  paddingHorizontal: 5,
+                  paddingVertical: 3,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '800', color: gifOpen ? t.primary : t.onSurfaceVariant }}>
+                  GIF
+                </Text>
+              </View>
+            </Pressable>
+          </CollapsibleChrome>
+        </View>
         <Pressable
           accessibilityLabel="Send message"
           disabled={!canSend}
@@ -414,19 +458,19 @@ export function Composer({
           onPress={() => void handleSend()}
           hitSlop={4}
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 24,
-            backgroundColor: t.surfaceContainer,
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: t.primary,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: canSend ? 1 : 0.6,
+            opacity: !canSend ? 0.4 : 1,
           }}
         >
           {pending || uploading ? (
-            <ActivityIndicator size="small" color={t.primary} />
+            <ActivityIndicator size="small" color={t.onPrimary} />
           ) : (
-            <Send size={20} color={canSend ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
+            <Send size={20} color={t.onPrimary} strokeWidth={1.5} />
           )}
         </Pressable>
       </View>
