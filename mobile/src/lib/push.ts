@@ -28,7 +28,7 @@ async function notifications(): Promise<NotificationsModule | null> {
         const suppressed = shouldSuppressPushBanner(data, getSuppressedPushCluster())
         return {
           shouldShowBanner: !suppressed,
-          shouldShowList: true,
+          shouldShowList: !suppressed,
           shouldPlaySound: !suppressed,
           shouldSetBadge: false,
         }
@@ -136,6 +136,31 @@ export async function syncBadgeCount(unread: number) {
     const mod = await notifications()
     if (!mod) return
     await mod.setBadgeCountAsync(Math.max(0, unread)).catch(() => undefined)
+  } catch {
+  }
+}
+
+/**
+ * Dismiss delivered OS notifications for one cluster (notification shade /
+ * center). Opening the room marks chat read server-side, but the OS keeps
+ * already-delivered pushes until dismissed, so the tray would otherwise keep
+ * showing a message already on screen. No-op when empty or unavailable.
+ */
+export async function clearClusterPushNotifications(clusterId: string) {
+  try {
+    if (!clusterId) return
+    const mod = await notifications()
+    if (!mod) return
+    const presented = await mod.getPresentedNotificationsAsync().catch(() => [])
+    const targets = presented.filter((n) =>
+      shouldSuppressPushBanner(
+        (n.request.content.data ?? {}) as Record<string, unknown>,
+        clusterId,
+      ),
+    )
+    await Promise.all(
+      targets.map((n) => mod.dismissNotificationAsync(n.request.identifier).catch(() => undefined)),
+    )
   } catch {
   }
 }
