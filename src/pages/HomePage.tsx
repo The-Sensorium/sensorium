@@ -23,6 +23,7 @@ import {
   type Post,
 } from '../features/posts'
 import { MemberClusterCard } from '../components/ClusterCard'
+import { useUnreadChatCounts } from '../features/notifications'
 import { MutedHideBar, MutedPlaceholder } from '../components/MutedPlaceholder'
 import { PostCard } from '../components/PostCard'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../features/moderation'
@@ -222,6 +223,8 @@ function GetStarted() {
 }
 
 function YourClusters({ clusters }: { clusters: MyCluster[] }) {
+  const unread = useUnreadChatCounts(clusters.length > 0)
+  const unreadByCluster = unread.data ?? new Map<string, number>()
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
@@ -235,7 +238,11 @@ function YourClusters({ clusters }: { clusters: MyCluster[] }) {
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {clusters.map((item) => (
-          <MemberClusterCard key={item.cluster.id} item={item} />
+          <MemberClusterCard
+            key={item.cluster.id}
+            item={item}
+            unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
+          />
         ))}
       </div>
     </section>

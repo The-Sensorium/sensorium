@@ -66,58 +66,56 @@ describe('notifications', () => {
 
     const { data, error } = await b.client.rpc('get_my_notifications')
     expect(error).toBeNull()
-    // 2 mention rows + 1 synthesized chat entry for the unread messages.
-    expect(data?.length).toBe(3)
+    // 2 mention rows. Plain chat no longer synthesizes a center entry; unread
+    // chat lives in get_unread_chat_counts (see below).
+    expect(data?.length).toBe(2)
     const rows = (data ?? []) as MyNotificationRow[]
     const mentions = rows.filter((n) => n.type === 'mention')
     const chat = rows.filter((n) => n.type === 'message')
     expect(mentions).toHaveLength(2)
     for (const m of mentions) expect(m.title).toContain('mentioned you')
-    expect(chat).toHaveLength(1)
-    expect(chat[0]!.title).toBe('2 new messages')
-    expect(chat[0]!.body ?? '').toContain('Hey @Briana Mention')
+    expect(chat).toHaveLength(0)
+
+    // The same two messages still count as unread chat for the card badges.
+    const { data: counts } = await b.client.rpc('get_unread_chat_counts')
+    expect(counts).toHaveLength(1)
+    expect(counts![0].cluster_id).toBe(clusterId)
+    expect(Number(counts![0].unread_count)).toBe(2)
 
     const { data: mine } = await a.client.rpc('get_my_notifications')
     expect(mine).toHaveLength(0)
   })
 
-  it('surfaces unread chat in the center until the cluster is marked read', async () => {
+  it('keeps plain chat out of the center; counts carry the unread', async () => {
     const a = await member('n-center-a')
     const b = await member('n-center-b')
-    await admin.from('profiles').update({ display_name: 'Casey Chat' }).eq('id', a.id)
     const clusterId = await createCluster(admin, {
       memberIds: [a.id, b.id],
       status: 'active',
     })
     clusterIds.push(clusterId)
 
-    // Plain chat (no mention) appears as a synthesized `message` entry carrying
-    // the sender's name, not just an unread-badge number.
+    // Plain chat (no mention) writes no center entry for the recipient.
     await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'plain hello' })
 
-    let { data } = await b.client.rpc('get_my_notifications')
-    expect(data).toHaveLength(1)
-    expect(data![0].type).toBe('message')
-    expect(data![0].title).toBe('Casey Chat sent a message')
-    expect(data![0].body).toBe('plain hello')
-    expect(data![0].read_at).toBeNull()
+    const { data } = await b.client.rpc('get_my_notifications')
+    expect(data).toHaveLength(0)
 
-    // A photo-only message previews as [Photo].
+    // ... but the card counts RPC reports it.
+    const { data: counts } = await b.client.rpc('get_unread_chat_counts')
+    expect(counts).toHaveLength(1)
+    expect(Number(counts![0].unread_count)).toBe(1)
+
+    // Photo and GIF messages count the same way.
     await a.client.rpc('send_message', { p_cluster_id: clusterId, p_image_url: 'chat-images/demo.png' })
-    const { data: again } = await b.client.rpc('get_my_notifications')
-    expect(again).toHaveLength(1)
-    expect(again![0].body).toBe('[Photo]')
-
-    // A GIF message previews as [GIF], not the raw gif: URL.
     await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'gif:https://media.tenor.com/x.gif' })
-    const { data: gif } = await b.client.rpc('get_my_notifications')
-    expect(gif).toHaveLength(1)
-    expect(gif![0].body).toBe('[GIF]')
+    const { data: counts3 } = await b.client.rpc('get_unread_chat_counts')
+    expect(Number(counts3![0].unread_count)).toBe(3)
 
-    // Opening the room advances the watermark and clears the entry.
+    // Opening the room advances the watermark and clears the counts.
     const { error } = await b.client.rpc('mark_cluster_read', { p_cluster_id: clusterId })
     expect(error).toBeNull()
-    const { data: after } = await b.client.rpc('get_my_notifications')
+    const { data: after } = await b.client.rpc('get_unread_chat_counts')
     expect(after).toHaveLength(0)
   })
 
@@ -141,23 +139,26 @@ describe('notifications', () => {
       .eq('type', 'message')
     expect(rows).toHaveLength(0)
 
-    // Each member has exactly one unread chat message (the other's).
+    // Each member has exactly one unread chat message (the other's), visible
+    // in the card counts but excluded from the header badge.
+    const { data: bCounts } = await b.client.rpc('get_unread_chat_counts')
+    expect(Number(bCounts![0].unread_count)).toBe(1)
     const { data: bUnread } = await b.client.rpc('get_unread_notification_count')
-    expect(bUnread).toBe(1)
+    expect(bUnread).toBe(0)
     const { data: aUnread } = await a.client.rpc('get_unread_notification_count')
-    expect(aUnread).toBe(1)
+    expect(aUnread).toBe(0)
 
-    // Reading the room advances last_read_message_at and clears the badge.
+    // Reading the room advances last_read_message_at and clears the counts.
     const { error: readErr } = await b.client.rpc('mark_cluster_read', {
       p_cluster_id: clusterId,
     })
     expect(readErr).toBeNull()
 
-    const { data: bUnread2 } = await b.client.rpc('get_unread_notification_count')
-    expect(bUnread2).toBe(0)
+    const { data: bCounts2 } = await b.client.rpc('get_unread_chat_counts')
+    expect(bCounts2 ?? []).toHaveLength(0)
   })
 
-  it('badge matches the center rows when a cluster has several unread messages', async () => {
+  it('header badge excludes chat; card counts carry the exact number', async () => {
     const a = await member('n-match-a')
     const b = await member('n-match-b')
     await admin.from('profiles').update({ display_name: 'Mina Match' }).eq('id', a.id)
@@ -171,12 +172,15 @@ describe('notifications', () => {
     await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'two' })
     await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'three' })
 
+    // No chat rows in the center; the counts RPC carries the exact number and
+    // the header badge stays quiet (chat lives on the cards).
     const { data: list } = await b.client.rpc('get_my_notifications')
+    expect(list ?? []).toHaveLength(0)
+    const { data: counts } = await b.client.rpc('get_unread_chat_counts')
+    expect(counts).toHaveLength(1)
+    expect(Number(counts![0].unread_count)).toBe(3)
     const { data: count } = await b.client.rpc('get_unread_notification_count')
-    const unreadRows = ((list ?? []) as MyNotificationRow[]).filter((n) => n.read_at === null)
-    expect(unreadRows).toHaveLength(1)
-    expect(unreadRows[0]!.title).toBe('3 new messages')
-    expect(count).toBe(unreadRows.length)
+    expect(count).toBe(0)
   })
 
   it('does not badge a hidden message the center withholds', async () => {
@@ -221,6 +225,10 @@ describe('notifications', () => {
 
     const { data: unread } = await b.client.rpc('get_unread_notification_count')
     expect(unread).toBe(0)
+
+    // The messages pref also hides the cluster from the card counts.
+    const { data: counts } = await b.client.rpc('get_unread_chat_counts')
+    expect(counts ?? []).toHaveLength(0)
 
     // The messages pref also hides the synthesized chat entry from the center.
     const { data: list } = await b.client.rpc('get_my_notifications')
@@ -271,14 +279,15 @@ describe('notifications', () => {
     })
     clusterIds.push(clusterId)
 
-    // b receives both a mention event and one unread chat message.
+    // b receives both a mention event and one unread chat message. The badge
+    // counts the mention only; chat lives on the cards.
     await a.client.rpc('send_message', {
       p_cluster_id: clusterId,
       p_content: 'Hello @Dana All',
     })
 
     const { data: before } = await b.client.rpc('get_unread_notification_count')
-    expect(before).toBeGreaterThanOrEqual(2)
+    expect(before).toBe(1)
 
     const { error } = await b.client.rpc('mark_all_read')
     expect(error).toBeNull()
@@ -326,7 +335,10 @@ describe('notifications', () => {
 
     const { data: count } = await b.client.rpc('get_unread_notification_count')
     const stillUnread = ((after ?? []) as MyNotificationRow[]).filter((n) => n.read_at === null)
-    expect(count).toBe(stillUnread.length)
+    // The mention is read, so nothing stays unread: the mentioning message
+    // counts as chat (card badge source), excluded from the header.
+    expect(stillUnread).toHaveLength(0)
+    expect(count).toBe(0)
   })
 
   it('a single read stays while mark_all_read empties the center', async () => {

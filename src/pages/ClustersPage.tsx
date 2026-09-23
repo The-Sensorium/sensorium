@@ -6,6 +6,7 @@ import { CLUSTER_SIZE } from '../lib/constants'
 import { MATCHING_MODES } from '../lib/modes'
 import { usePublicClusterCounts } from '../features/discovery'
 import { useMyQueueStatus, useMyClusters } from '../features/matching'
+import { useUnreadChatCounts } from '../features/notifications'
 import { MemberClusterCard } from '../components/ClusterCard'
 
 export function ClustersPage() {
@@ -13,6 +14,8 @@ export function ClustersPage() {
   const clusters = useMyClusters()
   const counts = usePublicClusterCounts()
   const status = useMyQueueStatus()
+  const unread = useUnreadChatCounts((clusters.data ?? []).length > 0)
+  const unreadByCluster = unread.data ?? new Map<string, number>()
   const countByMode = new Map((counts.data ?? []).map((r) => [r.mode, r.cluster_count]))
 
   return (
@@ -41,7 +44,11 @@ export function ClustersPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {(clusters.data ?? []).map((item) => (
-              <MemberClusterCard key={item.cluster.id} item={item} />
+              <MemberClusterCard
+                key={item.cluster.id}
+                item={item}
+                unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
+              />
             ))}
           </div>
         )}
