@@ -158,8 +158,36 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "appeals_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appeals_decided_by_fkey"
             columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appeals_original_action_id_fkey"
+            columns: ["original_action_id"]
+            isOneToOne: false
+            referencedRelation: "moderation_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appeals_original_report_id_fkey"
+            columns: ["original_report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appeals_second_review_requested_by_fkey"
+            columns: ["second_review_requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -260,6 +288,44 @@ export type Database = {
             columns: ["initiated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cluster_daily_stats: {
+        Row: {
+          active_members: number
+          calls_day: number
+          cluster_id: string
+          day: string
+          matching_mode: Database["public"]["Enums"]["matching_mode"]
+          messages_day: number
+          posts_day: number
+        }
+        Insert: {
+          active_members?: number
+          calls_day?: number
+          cluster_id: string
+          day: string
+          matching_mode: Database["public"]["Enums"]["matching_mode"]
+          messages_day?: number
+          posts_day?: number
+        }
+        Update: {
+          active_members?: number
+          calls_day?: number
+          cluster_id?: string
+          day?: string
+          matching_mode?: Database["public"]["Enums"]["matching_mode"]
+          messages_day?: number
+          posts_day?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cluster_daily_stats_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
             referencedColumns: ["id"]
           },
         ]
@@ -690,6 +756,33 @@ export type Database = {
           },
         ]
       }
+      mode_daily_stats: {
+        Row: {
+          clusters_formed: number
+          day: string
+          mode: Database["public"]["Enums"]["matching_mode"]
+          oldest_wait_hours: number
+          queue_depth: number
+          queue_joins: number
+        }
+        Insert: {
+          clusters_formed?: number
+          day: string
+          mode: Database["public"]["Enums"]["matching_mode"]
+          oldest_wait_hours?: number
+          queue_depth?: number
+          queue_joins?: number
+        }
+        Update: {
+          clusters_formed?: number
+          day?: string
+          mode?: Database["public"]["Enums"]["matching_mode"]
+          oldest_wait_hours?: number
+          queue_depth?: number
+          queue_joins?: number
+        }
+        Relationships: []
+      }
       moderation_action_templates: {
         Row: {
           active: boolean
@@ -783,6 +876,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "moderation_actions_appeal_id_fkey"
+            columns: ["appeal_id"]
+            isOneToOne: false
+            referencedRelation: "appeals"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "moderation_actions_comment_id_fkey"
             columns: ["comment_id"]
             isOneToOne: false
@@ -801,13 +901,6 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "moderation_actions_appeal_id_fkey"
-            columns: ["appeal_id"]
-            isOneToOne: false
-            referencedRelation: "appeals"
             referencedColumns: ["id"]
           },
           {
@@ -1440,6 +1533,32 @@ export type Database = {
           },
         ]
       }
+      rate_limit_events: {
+        Row: {
+          action: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rate_limit_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replacement_rounds: {
         Row: {
           attempts: number
@@ -1602,6 +1721,13 @@ export type Database = {
             columns: ["comment_id"]
             isOneToOne: false
             referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_escalated_by_fkey"
+            columns: ["escalated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1939,6 +2065,14 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      add_appeal_note: {
+        Args: { p_appeal_id: string; p_note: string }
+        Returns: undefined
+      }
+      add_moderation_case_note: {
+        Args: { p_note: string; p_report_id: string }
+        Returns: string
+      }
       advance_round_on_invitation_void: {
         Args: { p_cluster_id: string; p_user_id: string }
         Returns: undefined
@@ -1970,9 +2104,35 @@ export type Database = {
         }
         Returns: undefined
       }
+      assert_valid_policy_code: {
+        Args: { p_policy_code: string }
+        Returns: undefined
+      }
+      assign_appeal: {
+        Args: { p_appeal_id: string; p_assignee: string; p_reason: string }
+        Returns: undefined
+      }
+      assign_moderation_case: {
+        Args: { p_assignee: string; p_reason: string; p_report_id: string }
+        Returns: undefined
+      }
       can_manage_roles: { Args: { p_user_id?: string }; Returns: boolean }
       can_moderate: { Args: { p_user_id?: string }; Returns: boolean }
       check_intro_deadlines: { Args: never; Returns: undefined }
+      check_rate_limit: {
+        Args: { p_action: string; p_limit: number; p_window: string }
+        Returns: undefined
+      }
+      check_rate_limit_for: {
+        Args: {
+          p_action: string
+          p_limit: number
+          p_user_id: string
+          p_window: string
+        }
+        Returns: undefined
+      }
+      claim_appeal: { Args: { p_appeal_id: string }; Returns: undefined }
       claim_moderation_report: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -2054,10 +2214,19 @@ export type Database = {
         Returns: undefined
       }
       delete_message: { Args: { p_message_id: string }; Returns: string }
+      delete_moderation_case_note: {
+        Args: { p_note_id: string }
+        Returns: undefined
+      }
       delete_my_account: { Args: never; Returns: undefined }
       delete_post: { Args: { p_post_id: string }; Returns: undefined }
       delete_post_comment: {
         Args: { p_comment_id: string }
+        Returns: undefined
+      }
+      detect_moderation_sla_breaches: { Args: never; Returns: number }
+      edit_moderation_case_note: {
+        Args: { p_note: string; p_note_id: string }
         Returns: undefined
       }
       edit_post: {
@@ -2074,6 +2243,11 @@ export type Database = {
         }
         Returns: undefined
       }
+      escalate_moderation_case: {
+        Args: { p_reason: string; p_report_id: string }
+        Returns: undefined
+      }
+      escape_like_pattern: { Args: { p_input: string }; Returns: string }
       expire_invitations: { Args: never; Returns: undefined }
       fn_candidate_eligible: {
         Args: {
@@ -2083,6 +2257,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      fn_cooldown_interval: {
+        Args: { p_mode: Database["public"]["Enums"]["matching_mode"] }
+        Returns: string
       }
       fn_mode_label: {
         Args: {
@@ -2114,6 +2292,25 @@ export type Database = {
           summary: string
         }[]
       }
+      get_admin_appeal: {
+        Args: { p_appeal_id: string }
+        Returns: {
+          appealed_expires_at: string
+          appealed_reason: string
+          appealed_status: Database["public"]["Enums"]["account_status"]
+          created_at: string
+          current_account_status: Database["public"]["Enums"]["account_status"]
+          current_restriction_expires_at: string
+          current_restriction_reason: string
+          decided_at: string
+          details: string
+          display_name: string
+          id: string
+          response: string
+          status: Database["public"]["Enums"]["appeal_status"]
+          user_id: string
+        }[]
+      }
       get_admin_appeal_v2: {
         Args: { p_appeal_id: string }
         Returns: {
@@ -2142,45 +2339,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_admin_appeal: {
-        Args: { p_appeal_id: string }
-        Returns: {
-          appealed_expires_at: string
-          appealed_reason: string
-          appealed_status: Database["public"]["Enums"]["account_status"]
-          created_at: string
-          current_account_status: Database["public"]["Enums"]["account_status"]
-          current_restriction_expires_at: string
-          current_restriction_reason: string
-          decided_at: string
-          details: string
-          display_name: string
-          id: string
-          response: string
-          status: Database["public"]["Enums"]["appeal_status"]
-          user_id: string
-        }[]
-      }
-      get_moderation_audit_v2: {
-        Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
-        Returns: {
-          action: Database["public"]["Enums"]["moderation_action_type"]
-          actor_display_name: string
-          actor_id: string
-          appeal_id: string
-          comment_id: string
-          created_at: string
-          id: string
-          message_id: string
-          metadata: Json
-          policy_code: string
-          post_id: string
-          reason: string
-          report_id: string
-          target_display_name: string
-          target_user_id: string
-        }[]
-      }
       get_admin_ops_health: {
         Args: never
         Returns: {
@@ -2199,6 +2357,20 @@ export type Database = {
           reports_breached_open: number
         }[]
       }
+      get_call_token_context: {
+        Args: { p_call_id: string; p_user_id: string }
+        Returns: {
+          call_expires_at: string
+          call_found: boolean
+          call_status: string
+          cluster_id: string
+          cluster_status: string
+          display_name: string
+          is_active: boolean
+          is_member: boolean
+          is_participant: boolean
+        }[]
+      }
       get_candidate_profiles: {
         Args: { p_round_id: string }
         Returns: {
@@ -2213,8 +2385,8 @@ export type Database = {
           active_members: number
           cluster_id: string
           last_message_day: string
-          mode: Database["public"]["Enums"]["matching_mode"]
           messages_30d: number
+          mode: Database["public"]["Enums"]["matching_mode"]
           name: string
         }[]
       }
@@ -2277,8 +2449,8 @@ export type Database = {
           active_clusters: number
           avg_clusters_per_user: number
           daily_active_clusters: number
-          data_through_day: string | null
-          last_rollup_at: string | null
+          data_through_day: string
+          last_rollup_at: string
           messages_30d: number
           total_clusters: number
         }[]
@@ -2315,6 +2487,26 @@ export type Database = {
           target_user_id: string
         }[]
       }
+      get_moderation_audit_v2: {
+        Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
+        Returns: {
+          action: Database["public"]["Enums"]["moderation_action_type"]
+          actor_display_name: string
+          actor_id: string
+          appeal_id: string
+          comment_id: string
+          created_at: string
+          id: string
+          message_id: string
+          metadata: Json
+          policy_code: string
+          post_id: string
+          reason: string
+          report_id: string
+          target_display_name: string
+          target_user_id: string
+        }[]
+      }
       get_moderation_case_timeline: {
         Args: { p_report_id: string }
         Returns: {
@@ -2331,35 +2523,35 @@ export type Database = {
       get_moderation_case_v2: {
         Args: { p_report_id: string }
         Returns: {
-          assigned_to: string | null
-          assigned_to_display_name: string | null
-          cluster_id: string | null
+          assigned_to: string
+          assigned_to_display_name: string
+          cluster_id: string
           cluster_name: string
-          comment: Json | null
-          comment_id: string | null
+          comment: Json
+          comment_id: string
           created_at: string
-          details: string | null
-          due_at: string | null
-          escalated_at: string | null
-          escalated_by: string | null
-          escalation_reason: string | null
-          evidence: Json | null
+          details: string
+          due_at: string
+          escalated_at: string
+          escalated_by: string
+          escalation_reason: string
+          evidence: Json
           id: string
           last_activity_at: string
-          message_id: string | null
-          post: Json | null
-          post_id: string | null
+          message_id: string
+          post: Json
+          post_id: string
           prior_reports: number
           priority_score: number
           reason: Database["public"]["Enums"]["report_reason"]
-          reporter: Json | null
-          resolution_note: string | null
-          reviewed_by: string | null
+          reporter: Json
+          resolution_note: string
+          reviewed_by: string
           severity: Database["public"]["Enums"]["moderation_severity"]
           status: Database["public"]["Enums"]["report_status"]
-          target: Json | null
+          target: Json
           target_kind: string
-          target_user_id: string | null
+          target_user_id: string
           updated_at: string
         }[]
       }
@@ -2399,63 +2591,28 @@ export type Database = {
       get_moderation_queue_v2: {
         Args: { p_cursor?: Json; p_filters?: Json; p_limit?: number }
         Returns: {
-          assigned_to: string | null
-          assigned_to_display_name: string | null
+          assigned_to: string
+          assigned_to_display_name: string
           cluster_id: string
           cluster_name: string
-          comment_id: string | null
+          comment_id: string
           created_at: string
-          due_at: string | null
+          due_at: string
           duplicate_open_reports: number
           id: string
           last_activity_at: string
-          message_id: string | null
-          post_id: string | null
+          message_id: string
+          post_id: string
           prior_target_reports: number
           priority_score: number
           reason: Database["public"]["Enums"]["report_reason"]
-          reporter_display_name: string | null
+          reporter_display_name: string
           severity: Database["public"]["Enums"]["moderation_severity"]
           snippet: string
           status: Database["public"]["Enums"]["report_status"]
-          target_display_name: string | null
+          target_display_name: string
           target_kind: string
-          target_user_id: string | null
-        }[]
-      }
-      get_staff_account_detail: {
-        Args: { p_user_id: string }
-        Returns: {
-          account_created_at: string
-          account_status: Database["public"]["Enums"]["account_status"]
-          appeals_count: number
-          cluster_names: string[]
-          display_name: string
-          email: string
-          enforcement_count: number
-          open_reports_against: number
-          reports_filed: number
-          restriction_expires_at: string
-          restriction_reason: string
-          roles: string[]
-          total_reports_against: number
-          user_id: string
-        }[]
-      }
-      get_staff_moderation_summary: {
-        Args: never
-        Returns: {
-          actioned_7d_count: number
-          appeals_submitted_count: number
-          assigned_to_me_count: number
-          breached_open_count: number
-          dismissed_7d_count: number
-          oldest_pending_at: string
-          pending_count: number
-          reports_by_reason: Json
-          reviewing_count: number
-          unassigned_open_count: number
-          urgent_open_count: number
+          target_user_id: string
         }[]
       }
       get_moderation_report: {
@@ -2656,11 +2813,53 @@ export type Database = {
           signal_id: string
         }[]
       }
+      get_staff_account_detail: {
+        Args: { p_user_id: string }
+        Returns: {
+          account_created_at: string
+          account_status: Database["public"]["Enums"]["account_status"]
+          appeals_count: number
+          cluster_names: string[]
+          display_name: string
+          email: string
+          enforcement_count: number
+          open_reports_against: number
+          reports_filed: number
+          restriction_expires_at: string
+          restriction_reason: string
+          roles: string[]
+          total_reports_against: number
+          user_id: string
+        }[]
+      }
+      get_staff_moderation_summary: {
+        Args: never
+        Returns: {
+          actioned_7d_count: number
+          appeals_submitted_count: number
+          assigned_to_me_count: number
+          breached_open_count: number
+          dismissed_7d_count: number
+          oldest_pending_at: string
+          pending_count: number
+          reports_by_reason: Json
+          reviewing_count: number
+          unassigned_open_count: number
+          urgent_open_count: number
+        }[]
+      }
       get_staff_unread_counts: {
         Args: never
         Returns: {
           appeals: number
           reports: number
+        }[]
+      }
+      get_unread_chat_counts: {
+        Args: never
+        Returns: {
+          cluster_id: string
+          unread_count: number
         }[]
       }
       get_unread_notification_count: { Args: never; Returns: number }
@@ -2708,21 +2907,13 @@ export type Database = {
       }
       is_mentioned_everyone: { Args: { p_content: string }; Returns: boolean }
       issue_warning: {
-        Args: { p_policy_code?: string; p_reason: string; p_report_id?: string; p_user_id: string }
+        Args: {
+          p_policy_code?: string
+          p_reason: string
+          p_report_id?: string
+          p_user_id: string
+        }
         Returns: undefined
-      }
-      list_moderation_policies: {
-        Args: never
-        Returns: {
-          category_code: string
-          category_title: string
-          default_severity: Database["public"]["Enums"]["moderation_severity"]
-          internal_guidance: string
-          recommended_action: string
-          template_code: string
-          template_title: string
-          user_notice: string
-        }[]
       }
       join_call: { Args: { p_call_id: string }; Returns: string }
       join_queue: {
@@ -2739,6 +2930,10 @@ export type Database = {
       leave_cluster: { Args: { p_cluster_id: string }; Returns: undefined }
       leave_queue: {
         Args: { p_mode: Database["public"]["Enums"]["matching_mode"] }
+        Returns: undefined
+      }
+      lift_account_restriction: {
+        Args: { p_reason: string; p_user_id: string }
         Returns: undefined
       }
       lift_expired_suspensions: { Args: never; Returns: undefined }
@@ -2776,6 +2971,19 @@ export type Database = {
           snippet: string
           status: Database["public"]["Enums"]["appeal_status"]
           user_id: string
+        }[]
+      }
+      list_moderation_policies: {
+        Args: never
+        Returns: {
+          category_code: string
+          category_title: string
+          default_severity: Database["public"]["Enums"]["moderation_severity"]
+          internal_guidance: string
+          recommended_action: string
+          template_code: string
+          template_title: string
+          user_notice: string
         }[]
       }
       list_platform_roles: {
@@ -2818,10 +3026,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      lift_account_restriction: {
-        Args: { p_reason: string; p_user_id: string }
-        Returns: undefined
-      }
       mark_all_read: { Args: never; Returns: undefined }
       mark_cluster_read: { Args: { p_cluster_id: string }; Returns: undefined }
       mark_outbound_email: {
@@ -2842,6 +3046,18 @@ export type Database = {
           p_queue_key: string
         }
         Returns: undefined
+      }
+      moderation_priority_for_severity: {
+        Args: { p_severity: Database["public"]["Enums"]["moderation_severity"] }
+        Returns: number
+      }
+      moderation_severity_for_reason: {
+        Args: { p_reason: Database["public"]["Enums"]["report_reason"] }
+        Returns: Database["public"]["Enums"]["moderation_severity"]
+      }
+      moderation_sla_for_severity: {
+        Args: { p_severity: Database["public"]["Enums"]["moderation_severity"] }
+        Returns: string
       }
       notification_allowed: {
         Args: {
@@ -2876,8 +3092,13 @@ export type Database = {
         Args: { p_expo_push_token: string }
         Returns: undefined
       }
+      release_appeal: { Args: { p_appeal_id: string }; Returns: undefined }
       release_moderation_report: {
         Args: { p_report_id: string }
+        Returns: undefined
+      }
+      reopen_report_as_reviewing: {
+        Args: { p_note?: string; p_report_id: string }
         Returns: undefined
       }
       reply_signal: {
@@ -2912,6 +3133,10 @@ export type Database = {
         }
         Returns: string
       }
+      request_appeal_second_review: {
+        Args: { p_appeal_id: string }
+        Returns: undefined
+      }
       resolve_moderation_report: {
         Args: {
           p_action?: Json
@@ -2941,6 +3166,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      rollup_daily_metrics: { Args: { p_day?: string }; Returns: undefined }
       search_accounts: {
         Args: { p_query: string }
         Returns: {
@@ -2967,6 +3193,14 @@ export type Database = {
           p_reply_to_id?: string
         }
         Returns: string
+      }
+      set_moderation_case_severity: {
+        Args: {
+          p_reason: string
+          p_report_id: string
+          p_severity: Database["public"]["Enums"]["moderation_severity"]
+        }
+        Returns: undefined
       }
       set_signal_status: {
         Args: {
@@ -3047,6 +3281,16 @@ export type Database = {
         | "post_restored"
         | "post_comment_hidden"
         | "post_comment_restored"
+        | "note_added"
+        | "case_assigned"
+        | "case_escalated"
+        | "severity_changed"
+        | "appeal_claimed"
+        | "appeal_released"
+        | "appeal_assigned"
+        | "appeal_note_added"
+        | "appeal_second_review_requested"
+      moderation_severity: "low" | "medium" | "high" | "urgent"
       notification_type:
         | "message"
         | "mention"
@@ -3081,7 +3325,6 @@ export type Database = {
         | "inviting"
         | "filled"
         | "closed"
-      moderation_severity: "low" | "medium" | "high" | "urgent"
       report_reason:
         | "harassment"
         | "hate_speech"

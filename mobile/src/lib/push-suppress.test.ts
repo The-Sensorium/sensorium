@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getSuppressedPushCluster,
+  pushClusterId,
   setSuppressedPushCluster,
   shouldSuppressPushBanner,
 } from './push-suppress'
@@ -20,6 +21,19 @@ describe('shouldSuppressPushBanner', () => {
   it('ignores malformed cluster ids', () => {
     expect(shouldSuppressPushBanner({ clusterId: '' }, 'c1')).toBe(false)
     expect(shouldSuppressPushBanner({ clusterId: 42 }, 'c1')).toBe(false)
+  })
+})
+
+describe('pushClusterId', () => {
+  it('returns the cluster id when present', () => {
+    expect(pushClusterId({ clusterId: 'c1' })).toBe('c1')
+  })
+
+  it('returns null for missing or malformed ids', () => {
+    expect(pushClusterId({})).toBeNull()
+    expect(pushClusterId(null)).toBeNull()
+    expect(pushClusterId({ clusterId: '' })).toBeNull()
+    expect(pushClusterId({ clusterId: 42 })).toBeNull()
   })
 })
 

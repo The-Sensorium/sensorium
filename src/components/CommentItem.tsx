@@ -177,7 +177,7 @@ export function CommentItem({
             type="button"
             onClick={() => void handleDelete()}
             disabled={del.isPending}
-            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
           >
             {del.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             {del.isPending ? 'Deleting…' : 'Delete'}

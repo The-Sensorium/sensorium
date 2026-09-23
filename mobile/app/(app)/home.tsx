@@ -26,6 +26,7 @@ import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 import { MemberClusterCard } from '../../src/components/ClusterCard'
+import { useUnreadChatCounts } from '../../src/features/notifications'
 import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
 import { PostCard } from '../../src/components/PostCard'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
@@ -66,10 +67,14 @@ export default function HomeScreen() {
   const acceptInvite = useAcceptInvitation()
   const declineInvite = useDeclineInvitation()
   const queryClient = useQueryClient()
+  const clusterIds = useMemo(() => (clusters.data ?? []).map((c) => c.cluster.id), [clusters.data])
+  const unread = useUnreadChatCounts(clusterIds.length > 0)
+  const unreadByCluster = unread.data ?? new Map<string, number>()
   const pull = usePullToRefresh([
     () => clusters.refetch(),
     () => invitations.refetch(),
     () => formed.refetch(),
+    () => unread.refetch(),
     () => queryClient.refetchQueries({ queryKey: ['recent-posts'] }),
     () => queryClient.refetchQueries({ queryKey: ['my-mutes'] }),
     () => queryClient.refetchQueries({ queryKey: ['post-likes'] }),
@@ -87,7 +92,6 @@ export default function HomeScreen() {
     }
   }, [auth.state, profile.isLoading, profile.data])
 
-  const clusterIds = useMemo(() => (clusters.data ?? []).map((c) => c.cluster.id), [clusters.data])
   const clusterNameById = useMemo(
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
@@ -296,7 +300,11 @@ export default function HomeScreen() {
               </Link>
             </View>
             {(clusters.data ?? []).map((item) => (
-              <MemberClusterCard key={item.cluster.id} item={item} />
+              <MemberClusterCard
+                key={item.cluster.id}
+                item={item}
+                unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
+              />
             ))}
             <RecentFromClusters clusterIds={clusterIds} clusterNameById={clusterNameById} />
           </View>

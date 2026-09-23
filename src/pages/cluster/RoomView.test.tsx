@@ -532,6 +532,32 @@ describe('RoomView timeline', () => {
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
+  it('asks for confirmation before deleting a message', async () => {
+    hooks.messages.data = [msg({ id: 'm1', author_id: 'u1', content: 'my message' })]
+    renderRoom()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete message?' })
+    expect(hooks.deleteMessage.mutateAsync).not.toHaveBeenCalled()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }))
+    expect(hooks.deleteMessage.mutateAsync).toHaveBeenCalledWith('m1')
+  })
+
+  it('cancels the message delete confirmation without deleting', async () => {
+    hooks.messages.data = [msg({ id: 'm1', author_id: 'u1', content: 'my message' })]
+    renderRoom()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Message actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete message?' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(hooks.deleteMessage.mutateAsync).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: 'Delete message?' })).not.toBeInTheDocument()
+  })
+
   it('shows the empty seen state when no one has read the message', async () => {
     hooks.messages.data = [
       msg({ id: 'm1', author_id: 'u1', content: 'my message', created_at: '2026-01-01T10:00:00Z' }),
@@ -624,5 +650,36 @@ describe('RoomView calls', () => {
     rerender(makeUi())
 
     expect(screen.getByTestId('call-overlay-stub')).toHaveTextContent('call-1')
+  })
+})
+
+describe('RoomView read marker', () => {
+  it('marks the room read on open and adds no extra write on leave', () => {
+    hooks.messages.data = [msg({ id: 'm1', content: 'one' })]
+    const { unmount } = renderRoom()
+
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+    expect(hooks.markRead.mutate).toHaveBeenCalledWith('c1')
+
+    unmount()
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+  })
+
+  it('flushes a pending trailing mark when leaving the room', () => {
+    hooks.messages.data = [msg({ id: 'm1', content: 'one' })]
+    const { unmount, rerender } = renderRoom()
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+
+    // A message streams in inside the throttle window: the trailing mark is
+    // scheduled but has not fired.
+    hooks.messages.data = [...hooks.messages.data, msg({ id: 'm2', content: 'two' })]
+    rerender(makeUi())
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(1)
+
+    // Leaving before the window elapses fires the pending mark instead of
+    // dropping it, so the home card shows no stale unread.
+    unmount()
+    expect(hooks.markRead.mutate).toHaveBeenCalledTimes(2)
+    expect(hooks.markRead.mutate).toHaveBeenLastCalledWith('c1')
   })
 })

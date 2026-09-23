@@ -43,6 +43,7 @@ import {
   useStartCall,
 } from '../../../../src/features/cluster-calls'
 import { useMarkClusterRead } from '../../../../src/features/notifications'
+import { clearClusterPushNotifications } from '../../../../src/lib/push'
 import { getSuppressedPushCluster, setSuppressedPushCluster } from '../../../../src/lib/push-suppress'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
@@ -59,6 +60,8 @@ import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalMod
 import { TypingBubble } from '../../../../src/components/room/TypingBubble'
 import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows'
 import { ReportModal } from '../../../../src/components/ReportModal'
+import { Modal } from '../../../../src/components/Modal'
+import { PrimaryButton } from '../../../../src/components/ui'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
@@ -89,6 +92,7 @@ export default function RoomScreen() {
   useFocusEffect(
     useCallback(() => {
       setSuppressedPushCluster(clusterId || null)
+      if (clusterId) void clearClusterPushNotifications(clusterId)
       return () => {
         if (getSuppressedPushCluster() === (clusterId || null)) setSuppressedPushCluster(null)
       }
@@ -134,6 +138,8 @@ export default function RoomScreen() {
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [infoFor, setInfoFor] = useState<string | null>(null)
   const [reportFor, setReportFor] = useState<Message | null>(null)
+  const [deleteFor, setDeleteFor] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
@@ -329,22 +335,48 @@ export default function RoomScreen() {
 
   const markReadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastMarkAt = useRef(0)
+  const pendingMarkRef = useRef(false)
+  const markRoomRead = markRead.mutate
+  const clearMarkTimer = useCallback(() => {
+    if (markReadTimer.current) {
+      clearTimeout(markReadTimer.current)
+      markReadTimer.current = null
+    }
+  }, [])
+  const fireMark = useCallback(
+    (id: string) => {
+      lastMarkAt.current = Date.now()
+      pendingMarkRef.current = false
+      markRoomRead(id)
+    },
+    [markRoomRead],
+  )
   useEffect(() => {
     if (!focused || !pinned || !clusterId || auth.state !== 'signedIn') return
     if (Date.now() - lastMarkAt.current >= 5_000) {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      clearMarkTimer()
+      fireMark(clusterId)
       return
     }
-    if (markReadTimer.current) clearTimeout(markReadTimer.current)
+    clearMarkTimer()
+    pendingMarkRef.current = true
     markReadTimer.current = setTimeout(() => {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      markReadTimer.current = null
+      fireMark(clusterId)
     }, 5_000)
     return () => {
-      if (markReadTimer.current) clearTimeout(markReadTimer.current)
+      clearMarkTimer()
     }
-  }, [focused, pinned, clusterId, messages.data, markRead, auth.state])
+  }, [focused, pinned, clusterId, messages.data, markRead, auth.state, fireMark, clearMarkTimer])
+
+  // Leaving the screen fires a pending trailing mark instead of dropping it:
+  // pinned means the new messages were on screen, so they count as read.
+  // Scrolled-up readers keep their unread, which the room clears on return.
+  const flushPendingMark = useCallback(() => {
+    if (!pendingMarkRef.current || !pinnedRef.current || !clusterId || auth.state !== 'signedIn') return
+    clearMarkTimer()
+    fireMark(clusterId)
+  }, [clusterId, auth.state, fireMark, clearMarkTimer])
 
   // One AppState subscription for both directions: flush the read marker
   // when backgrounded while pinned (never when scrolled up reading history),
@@ -356,9 +388,8 @@ export default function RoomScreen() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
         if (!pinned || auth.state !== 'signedIn') return
-        if (markReadTimer.current) clearTimeout(markReadTimer.current)
-        lastMarkAt.current = Date.now()
-        markRead.mutate(clusterId)
+        clearMarkTimer()
+        fireMark(clusterId)
       } else if (state === 'active') {
         const key = ['cluster-messages', clusterId]
         if (queryClient.getQueryState(key)?.status === 'error') {
@@ -367,13 +398,16 @@ export default function RoomScreen() {
       }
     })
     return () => sub.remove()
-  }, [focused, pinned, clusterId, markRead, queryClient, auth.state])
+  }, [focused, pinned, clusterId, markRead, queryClient, auth.state, fireMark, clearMarkTimer])
 
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
-      return () => setFocused(false)
-    }, []),
+      return () => {
+        flushPendingMark()
+        setFocused(false)
+      }
+    }, [flushPendingMark]),
   )
 
   const typingMembers = [...typing]
@@ -445,11 +479,12 @@ export default function RoomScreen() {
 
   async function remove(messageId: string) {
     setMenuFor(null)
-    setError(null)
+    setDeleteError(null)
     try {
       await deleteMessage.mutateAsync(messageId)
+      setDeleteFor(null)
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not delete your message.'))
+      setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
 
@@ -879,7 +914,11 @@ export default function RoomScreen() {
                     onToggleMenu={() => setMenuFor(menuFor === m.id ? null : m.id)}
                     onShowInfo={showInfo}
                     onEdit={startEdit}
-                    onDelete={(messageId) => void remove(messageId)}
+                    onDelete={(messageId) => {
+                      setMenuFor(null)
+                      setDeleteError(null)
+                      setDeleteFor(messageId)
+                    }}
                     onReply={startReply}
                     onReport={startReport}
                     onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
@@ -974,6 +1013,34 @@ export default function RoomScreen() {
             messageId={reportFor.id}
           />
         ) : null}
+
+        <Modal open={deleteFor !== null} onClose={() => { if (!deleteMessage.isPending) { setDeleteFor(null); setDeleteError(null) } }} title="Delete message?">
+          <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
+            This removes your message from the cluster chat. This action can&apos;t be undone.
+          </Text>
+          {deleteError ? (
+            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
+          ) : null}
+          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+            <Pressable
+              onPress={() => {
+                setDeleteFor(null)
+                setDeleteError(null)
+              }}
+              disabled={deleteMessage.isPending}
+              hitSlop={8}
+              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: deleteMessage.isPending ? 0.6 : 1 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+            </Pressable>
+            <PrimaryButton
+              title="Delete"
+              loadingTitle="Deleting…"
+              loading={deleteMessage.isPending}
+              onPress={() => deleteFor && void remove(deleteFor)}
+            />
+          </View>
+        </Modal>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )

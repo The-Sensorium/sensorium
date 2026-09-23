@@ -84,83 +84,81 @@ export default function MembersScreen() {
         list.map((member) => {
           const onlineNow = isOnline(member.id)
           return (
-            <Link
+            <View
               key={member.id}
-              href={{ pathname: '/profile/[userId]', params: { userId: member.id, cluster: clusterId } }}
-              asChild
+              style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 16, marginBottom: 12 }}
             >
-              <Pressable
-                style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 16, marginBottom: 12 }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ position: 'relative' }}>
-                    <Avatar name={member.display_name} src={member.avatar_url} size={44} />
-                    {onlineNow ? (
-                      <View
-                        style={{
-                          position: 'absolute',
-                          bottom: -2,
-                          right: -2,
-                          width: 14,
-                          height: 14,
-                          borderRadius: 7,
-                          borderWidth: 2,
-                          borderColor: t.surface,
-                          backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
-                        }}
-                      />
-                    ) : null}
-                    <Text style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
-                      {onlineNow ? 'Online' : 'Offline'}
-                    </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                <Link
+                  href={{ pathname: '/profile/[userId]', params: { userId: member.id, cluster: clusterId } }}
+                  asChild
+                >
+                  <Pressable style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ position: 'relative' }}>
+                      <Avatar name={member.display_name} src={member.avatar_url} size={44} />
+                      {onlineNow ? (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            right: -2,
+                            width: 14,
+                            height: 14,
+                            borderRadius: 7,
+                            borderWidth: 2,
+                            borderColor: t.surface,
+                            backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
+                          }}
+                        />
+                      ) : null}
+                      <Text style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
+                        {onlineNow ? 'Online' : 'Offline'}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+                        {member.display_name}
+                      </Text>
+                      {member.pronouns ? (
+                        <View style={{ marginTop: 4, alignSelf: 'flex-start' }}>
+                          <PronounBadge pronouns={member.pronouns} />
+                        </View>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                </Link>
+                {member.id !== userId ? (
+                  <View style={{ flexShrink: 0 }}>
+                    <MuteButton targetUserId={member.id} targetName={member.display_name} />
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
-                      {member.display_name}
-                    </Text>
-                    {member.pronouns ? (
-                      <View style={{ marginTop: 4, alignSelf: 'flex-start' }}>
-                        <PronounBadge pronouns={member.pronouns} />
+                ) : null}
+              </View>
+                {member.country_code || member.birth_year ? (
+                  <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                    {member.country_code ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <MapPin size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                          {countryName(member.country_code)}
+                        </Text>
                       </View>
                     ) : null}
-                    <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                      {member.country_code ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <MapPin size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                            {countryName(member.country_code)}
-                          </Text>
-                        </View>
-                      ) : null}
-                      {member.birth_year ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Cake size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                            {member.birth_year}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
-                </View>
-                {member.current_status || member.id !== userId ? (
-                  <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    <View style={{ flex: 1, flexShrink: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      {member.current_status ? (
-                        <Text style={{ flex: 1, flexShrink: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1} ellipsizeMode="tail">
-                          “{member.current_status}”
+                    {member.birth_year ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Cake size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                          {member.birth_year}
                         </Text>
-                      ) : null}
-                    </View>
-                    {member.id !== userId ? (
-                      <View style={{ flexShrink: 0 }}>
-                        <MuteButton targetUserId={member.id} targetName={member.display_name} />
                       </View>
                     ) : null}
                   </View>
                 ) : null}
-              </Pressable>
-            </Link>
+                {member.current_status ? (
+                  <Text style={{ marginTop: 8, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1} ellipsizeMode="tail">
+                    “{member.current_status}”
+                  </Text>
+                ) : null}
+            </View>
           )
         })
       )}

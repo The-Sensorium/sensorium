@@ -11,12 +11,15 @@ import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, Screen } from '../../src/components/ui'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { MemberClusterCard } from '../../src/components/ClusterCard'
+import { useUnreadChatCounts } from '../../src/features/notifications'
 
 export default function ClustersScreen() {
   const t = useTheme()
   const clusters = useMyClusters()
   const counts = usePublicClusterCounts()
   const status = useMyQueueStatus()
+  const unread = useUnreadChatCounts((clusters.data ?? []).length > 0)
+  const unreadByCluster = unread.data ?? new Map<string, number>()
   const countByMode = new Map((counts.data ?? []).map((r) => [r.mode, r.cluster_count]))
   const pull = usePullToRefresh([
     () => clusters.refetch(),
@@ -48,7 +51,13 @@ export default function ClustersScreen() {
           </View>
         </Card>
       ) : (
-        (clusters.data ?? []).map((item) => <MemberClusterCard key={item.cluster.id} item={item} />)
+        (clusters.data ?? []).map((item) => (
+          <MemberClusterCard
+            key={item.cluster.id}
+            item={item}
+            unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
+          />
+        ))
       )}
 
       <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginTop: 24, marginBottom: 12 }}>

@@ -198,10 +198,11 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
         },
         (payload) => {
           patchMessageInsert(queryClient, clusterId, payload.new as Message)
-          // Plain chat writes no notification row (synthesized at read time),
-          // so a new message must also bump the badge + list. Scoped here on
-          // purpose: only viewers of this cluster (RLS + cluster_id filter)
-          // refetch, instead of every client DB-wide.
+          // Plain chat writes no notification row and is excluded from the
+          // badge; per-cluster unread lives in get_unread_chat_counts, so a
+          // new message must also bump the notification queries. Scoped here
+          // on purpose: only viewers of this cluster (RLS + cluster_id
+          // filter) refetch, instead of every client DB-wide.
           void queryClient.invalidateQueries({ queryKey: ['notifications'] })
         },
       )

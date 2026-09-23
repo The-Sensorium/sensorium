@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, Loader2 } from 'lucide-react'
@@ -48,6 +48,7 @@ import { TypingBubble } from './room/TypingBubble'
 import { CallBanner } from './room/CallBanner'
 import { CallOverlay } from './room/CallOverlay'
 import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
+import { Modal } from '../../components/Modal'
 import { SignalRow } from './room/SignalRow'
 import { VoteRow } from './room/VoteRow'
 import { ReportModal } from '../../components/ReportModal'
@@ -109,6 +110,8 @@ export function RoomView() {
   const [pickerFor, setPickerFor] = useState<string | null>(null)
   const [infoFor, setInfoFor] = useState<string | null>(null)
   const [reportFor, setReportFor] = useState<Message | null>(null)
+  const [deleteFor, setDeleteFor] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
@@ -393,38 +396,70 @@ export function RoomView() {
   // member is pinned to the newest messages (on open, on scroll-to-bottom,
   // and as messages stream in). Leading edge marks immediately; a trailing
   // timer collapses a burst into one write per window instead of one write
-  // per message batch. Switching tab away flushes immediately so unread
-  // clears even if the room unmounts unseen.
+  // per message batch. Switching tab away flushes immediately, and leaving
+  // the room flushes a pending trailing mark, so unread clears even if the
+  // room unmounts unseen.
   const markReadTimer = useRef<number | null>(null)
   const lastMarkAt = useRef(0)
+  const pendingMarkRef = useRef(false)
+  const clearMarkTimer = useCallback(() => {
+    if (markReadTimer.current) {
+      window.clearTimeout(markReadTimer.current)
+      markReadTimer.current = null
+    }
+  }, [])
+  const markRoomRead = markRead.mutate
+  const fireMark = useCallback(
+    (id: string) => {
+      lastMarkAt.current = Date.now()
+      pendingMarkRef.current = false
+      markRoomRead(id)
+    },
+    [markRoomRead],
+  )
   useEffect(() => {
     if (!pinned || !clusterId) return
     if (Date.now() - lastMarkAt.current >= 5_000) {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      clearMarkTimer()
+      fireMark(clusterId)
       return
     }
-    if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
+    clearMarkTimer()
+    pendingMarkRef.current = true
     markReadTimer.current = window.setTimeout(() => {
-      lastMarkAt.current = Date.now()
-      markRead.mutate(clusterId)
+      markReadTimer.current = null
+      fireMark(clusterId)
     }, 5_000)
     return () => {
-      if (markReadTimer.current) window.clearTimeout(markReadTimer.current)
+      clearMarkTimer()
     }
-  }, [pinned, clusterId, messages.data, markRead])
+  }, [pinned, clusterId, messages.data, markRead, fireMark, clearMarkTimer])
+
+  // Leaving the room fires a pending trailing mark instead of dropping it:
+  // pinned means the new messages were on screen, so they count as read.
+  // The cleanup also runs when the callback identity changes on cluster
+  // switch, flushing the previous room. Scrolled-up readers keep their
+  // unread, which the room clears on return.
+  const flushPendingMark = useCallback(() => {
+    if (!pendingMarkRef.current || !pinnedRef.current || !clusterId) return
+    clearMarkTimer()
+    fireMark(clusterId)
+  }, [clusterId, fireMark, clearMarkTimer])
+  useEffect(() => () => {
+    flushPendingMark()
+  }, [flushPendingMark])
 
   useEffect(() => {
     if (!pinned || !clusterId) return
     function flushOnHide() {
       if (document.visibilityState === 'hidden') {
-        lastMarkAt.current = Date.now()
-        markRead.mutate(clusterId)
+        clearMarkTimer()
+        fireMark(clusterId)
       }
     }
     document.addEventListener('visibilitychange', flushOnHide)
     return () => document.removeEventListener('visibilitychange', flushOnHide)
-  }, [pinned, clusterId, markRead])
+  }, [pinned, clusterId, fireMark, clearMarkTimer])
 
   // Close the message action menu and reaction picker on outside click / Escape.
   useEffect(() => {
@@ -526,11 +561,12 @@ export function RoomView() {
 
   async function remove(messageId: string) {
     setMenuFor(null)
-    setError(null)
+    setDeleteError(null)
     try {
       await deleteMessage.mutateAsync(messageId)
+      setDeleteFor(null)
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not delete your message.'))
+      setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
 
@@ -807,7 +843,11 @@ export function RoomView() {
                       onTogglePicker={() => setPickerFor(pickerFor === m.id ? null : m.id)}
                       onShowInfo={showInfo}
                       onEdit={startEdit}
-                      onDelete={(messageId) => void remove(messageId)}
+                      onDelete={(messageId) => {
+                        setMenuFor(null)
+                        setDeleteError(null)
+                        setDeleteFor(messageId)
+                      }}
                       onReply={startReply}
                       onReport={startReport}
                       onToggleReaction={(messageId, emoji) =>
@@ -951,6 +991,48 @@ export function RoomView() {
           messageId={reportFor.id}
         />
       )}
+
+      <Modal
+        open={deleteFor !== null}
+        onClose={() => {
+          if (!deleteMessage.isPending) {
+            setDeleteFor(null)
+            setDeleteError(null)
+          }
+        }}
+        title="Delete message?"
+      >
+        <p className="mt-3 text-sm text-on-surface-variant">
+          This removes your message from the cluster chat. This action can&apos;t be undone.
+        </p>
+        {deleteError && (
+          <p role="alert" className="mt-3 text-sm text-error">
+            {deleteError}
+          </p>
+        )}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteFor(null)
+              setDeleteError(null)
+            }}
+            disabled={deleteMessage.isPending}
+            className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => deleteFor && void remove(deleteFor)}
+            disabled={deleteMessage.isPending}
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            {deleteMessage.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {deleteMessage.isPending ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </Modal>
 
       {inCall && activeCall.data && (
         <CallOverlay

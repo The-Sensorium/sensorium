@@ -19,6 +19,7 @@ import {
   useNotificationPrefs,
   useNotificationsChannel,
   useStaffUnreadCounts,
+  useUnreadChatCounts,
   useUpsertNotificationPrefs,
   useUnreadCount,
 } from './notifications'
@@ -166,6 +167,27 @@ describe('hooks', () => {
     await waitFor(() => expect(result.current.data).toBe(4))
   })
 
+  it('useUnreadChatCounts fetches per-cluster counts via get_unread_chat_counts', async () => {
+    mockResult.value = {
+      data: [
+        { cluster_id: 'c1', unread_count: 3 },
+        { cluster_id: 'c2', unread_count: 1 },
+      ],
+      error: null,
+    }
+    const { result } = renderHook(() => useUnreadChatCounts(), { wrapper })
+    await waitFor(() => expect(result.current.data?.get('c1')).toBe(3))
+    expect(result.current.data?.get('c2')).toBe(1)
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('get_unread_chat_counts')
+  })
+
+  it('useUnreadChatCounts is disabled while signed out', async () => {
+    useAuthMock.mockReturnValue({ state: 'signedOut' } as never)
+    const { result } = renderHook(() => useUnreadChatCounts(), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+    expect(requireSupabaseMock).not.toHaveBeenCalled()
+  })
+
   it('useNotificationPrefs is disabled while signed out', () => {
     useAuthMock.mockReturnValue({ state: 'signedOut' } as never)
     const { result } = renderHook(() => useNotificationPrefs(), { wrapper })
@@ -191,6 +213,14 @@ describe('hooks', () => {
     expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('mark_all_read')
   })
 
+  it('useMarkAllNotificationsRead also refreshes per-cluster chat counts', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useMarkAllNotificationsRead(), { wrapper })
+    result.current.mutate()
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread-chat'] })
+  })
+
   it('useMarkClusterRead advances the cluster read marker via RPC', async () => {
     const spy = vi.spyOn(queryClient, 'invalidateQueries')
     const { result } = renderHook(() => useMarkClusterRead(), { wrapper })
@@ -201,6 +231,14 @@ describe('hooks', () => {
     })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
+  })
+
+  it('useMarkClusterRead also refreshes per-cluster chat counts', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useMarkClusterRead(), { wrapper })
+    result.current.mutate('c1')
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread-chat'] })
   })
 
   it('useUpsertNotificationPrefs upserts with a conflict target', async () => {
@@ -299,7 +337,7 @@ describe('useNotificationsChannel', () => {
     })
   })
 
-  it('bumps badge and list on message INSERT (plain chat writes no row)', async () => {
+  it('bumps only the chat counts on message INSERT (plain chat writes no row, badge excludes chat)', async () => {
     const channelMock = {
       on: vi.fn(() => channelMock),
       subscribe: vi.fn(() => ({})),
@@ -320,9 +358,10 @@ describe('useNotificationsChannel', () => {
     expect((messageCall![1] as { event?: string }).event).toBe('INSERT')
     ;(messageCall![2] as () => void)()
     await waitFor(() => {
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
-      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread-chat'] })
     })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
   })
 
   it('ignores our own sends (they cannot change our unread)', async () => {
@@ -346,6 +385,7 @@ describe('useNotificationsChannel', () => {
     ;(messageCall![2] as (payload: unknown) => void)({ new: { author_id: 'u1' } })
     expect(spy).not.toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
     expect(spy).not.toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['notifications', 'unread-chat'] })
   })
 
   it('bumps invitations on invitation INSERT', async () => {

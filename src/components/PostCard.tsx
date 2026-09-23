@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Check, Copy, Flag, Heart, Loader2, MessageSquare, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
@@ -59,6 +59,34 @@ export function PostCard({
   const edit = useEditPost(clusterId)
   const del = useDeletePost(clusterId)
   const navigate = useNavigate()
+
+  const hasMedia = Boolean(post.image_url || post.gif_url)
+  const bodyRef = useRef<HTMLParagraphElement>(null)
+  const [bodyOverflows, setBodyOverflows] = useState(false)
+
+  useEffect(() => {
+    if (!compact || hasMedia || !post.content) {
+      setBodyOverflows(false)
+      return
+    }
+    const el = bodyRef.current
+    if (!el) {
+      setBodyOverflows(false)
+      return
+    }
+    const update = () => setBodyOverflows(el.scrollHeight > el.clientHeight + 1)
+    update()
+    window.addEventListener('resize', update)
+    if (typeof ResizeObserver === 'undefined') {
+      return () => window.removeEventListener('resize', update)
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => {
+      window.removeEventListener('resize', update)
+      observer.disconnect()
+    }
+  }, [compact, hasMedia, post.content, post.id])
 
   function handleCardClick(e: MouseEvent) {
     const el = e.target as HTMLElement
@@ -159,11 +187,12 @@ export function PostCard({
             {post.title}
           </h3>
         )}
-        {post.content && (
+        {post.content && !(compact && hasMedia) && (
           <p
+            ref={bodyRef}
             className={cn(
               'mt-2 whitespace-pre-wrap text-sm leading-6 text-on-surface',
-              compact && 'line-clamp-2',
+              compact && 'line-clamp-5',
             )}
           >
             {post.content}
@@ -171,6 +200,15 @@ export function PostCard({
         )}
         <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />
       </Link>
+      {compact && !hasMedia && bodyOverflows && (
+        <button
+          type="button"
+          onClick={() => void navigate(`/posts/${post.id}`)}
+          className="mt-1 inline-flex min-h-[44px] items-center self-start px-1 text-sm font-semibold text-primary transition-colors hover:underline"
+        >
+          Read more
+        </button>
+      )}
 
       <div className="mt-3 flex items-center gap-4">
         <button

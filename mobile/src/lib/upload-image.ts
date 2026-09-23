@@ -35,12 +35,26 @@ export async function maybeResize(
   maxDimension: number,
 ): Promise<{ uri: string; mime: string }> {
   if (mime === 'image/gif') return { uri, mime }
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return { uri, mime }
+  }
   if (Math.max(width, height) <= maxDimension) return { uri, mime }
-  const out = await manipulateAsync(uri, [{ resize: { width: maxDimension } }], {
-    compress: 0.85,
-    format: SaveFormat.WEBP,
-  })
-  return { uri: out.uri, mime: 'image/webp' }
+  try {
+    const action = width >= height ? { resize: { width: maxDimension } } : { resize: { height: maxDimension } }
+    const out = await manipulateAsync(uri, [action], {
+      compress: 0.85,
+      format: SaveFormat.WEBP,
+    })
+    if (!out?.uri) return { uri, mime }
+    if (typeof out.width === 'number' && typeof out.height === 'number') {
+      if (!Number.isFinite(out.width) || !Number.isFinite(out.height) || out.width <= 0 || out.height <= 0) {
+        return { uri, mime }
+      }
+    }
+    return { uri: out.uri, mime: 'image/webp' }
+  } catch {
+    return { uri, mime }
+  }
 }
 
 async function localFileUri(uri: string): Promise<string> {
