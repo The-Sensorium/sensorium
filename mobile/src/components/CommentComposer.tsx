@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'reac
 import * as ImagePicker from 'expo-image-picker'
 import { CornerUpLeft, ImagePlay, ImagePlus, Send, X } from 'lucide-react-native'
 import { Avatar } from './Avatar'
+import { CollapsibleChrome } from './CollapsibleChrome'
 import { GifPicker } from './room/GifPicker'
 import {
   useCreateComment,
@@ -139,131 +140,184 @@ export function CommentComposer({
   }
 
   const hasContent = Boolean(draft.trim() || image || gif)
+  const sendDisabled = !hasContent || create.isPending
+  const gifActive = Boolean(gif) || gifOpen
+  // While typing, the avatar and media buttons hide so the text gets the
+  // full width; Send stays visible outside the input container.
+  // Whitespace alone keeps the chrome: hiding for a lone space would serve
+  // nothing since send stays disabled until there is real content.
+  const isTyping = draft.trim().length > 0
+
+  function handleDraftChange(value: string) {
+    setDraft(value)
+    // The GIF toggle hides while typing, so a stranded open picker must not
+    // linger above the composer without its trigger visible.
+    if (value.trim().length > 0) setGifOpen(false)
+  }
 
   return (
-    <View style={{ flexDirection: 'row', gap: 12 }}>
-      <Avatar name={selfAvatar.display_name} src={selfAvatar.avatar_url} size={32} />
-      <View style={{ flex: 1 }}>
-        {replyTo ? (
-          <View style={{ marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.surfaceLowest, borderRadius: radii.md, paddingHorizontal: 12, paddingVertical: 8 }}>
-            <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            <Text style={{ flex: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
-              Replying to <Text style={{ fontWeight: '600', color: t.onSurface }}>{replyTo.authorName}</Text>
+    <View>
+      {replyTo ? (
+        <View style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.surfaceLowest, borderRadius: radii.md, paddingHorizontal: 12, paddingVertical: 4 }}>
+          <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          <Text style={{ flex: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
+            Replying to <Text style={{ fontWeight: '600', color: t.onSurface }}>{replyTo.authorName}</Text>
+          </Text>
+          <Pressable
+            accessibilityLabel="Cancel reply"
+            onPress={onCancelReply}
+            hitSlop={14}
+            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
+        </View>
+      ) : null}
+      {image || gif ? (
+        <View style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {image?.uri ? (
+            <Image source={{ uri: image.uri }} style={{ width: 48, height: 48, borderRadius: radii.md }} />
+          ) : null}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
+            {image ? (
+              <ImagePlus size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            ) : (
+              <ImagePlay size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            )}
+            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+              {image ? 'Image attached' : gif?.title || 'GIF'}
             </Text>
-            <Pressable
-              accessibilityLabel="Cancel reply"
-              onPress={onCancelReply}
-              hitSlop={14}
-              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            </Pressable>
           </View>
-        ) : null}
-        <TextInput
-          ref={inputRef}
-          value={draft}
-          onChangeText={setDraft}
-          maxLength={COMMENT_CONTENT_MAX}
-          multiline
-          numberOfLines={2}
-          placeholder="Add a comment…"
-          placeholderTextColor={t.onSurfaceVariant}
-          accessibilityLabel="Add a comment"
+          <Pressable
+            accessibilityLabel="Remove media"
+            onPress={() => {
+              setImage(null)
+              setGif(null)
+            }}
+            hitSlop={14}
+            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
+        </View>
+      ) : null}
+      {gifOpen ? (
+        <View style={{ marginBottom: 8 }}>
+          <GifPicker
+            pending={create.isPending}
+            onSelect={(g) => {
+              setGif(g)
+              setImage(null)
+              setGifOpen(false)
+            }}
+          />
+        </View>
+      ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View
           style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            // Same input surface as the cluster chat composer in both modes.
             backgroundColor: t.surfaceLowest,
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.md,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            fontSize: 16,
-            lineHeight: 24,
-            minHeight: 64,
-            textAlignVertical: 'top',
-            color: t.onSurface,
+            paddingLeft: 6,
+            paddingRight: 4,
+            paddingVertical: 4,
           }}
-        />
-        {image || gif ? (
-          <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {image?.uri ? (
-              <Image source={{ uri: image.uri }} style={{ width: 48, height: 48, borderRadius: radii.md }} />
-            ) : null}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
-              {image ? (
-                <ImagePlus size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              ) : (
-                <ImagePlay size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              )}
-              <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                {image ? 'Image attached' : gif?.title || 'GIF'}
-              </Text>
-            </View>
+        >
+          <CollapsibleChrome shown={!isTyping} width={32}>
+            <Avatar name={selfAvatar.display_name} src={selfAvatar.avatar_url} size={32} />
+          </CollapsibleChrome>
+          <TextInput
+            ref={inputRef}
+            value={draft}
+            onChangeText={handleDraftChange}
+            maxLength={COMMENT_CONTENT_MAX}
+            multiline
+            // No numberOfLines: on Android it pins the field to an exact line
+            // count, which would stop the composer growing with wrapped text.
+            placeholder="Add a comment..."
+            placeholderTextColor={t.onSurfaceVariant}
+            accessibilityLabel="Add a comment"
+            style={{
+              flex: 1,
+              paddingHorizontal: 8,
+              paddingVertical: 10,
+              fontSize: 16,
+              lineHeight: 22,
+              maxHeight: 110,
+              textAlignVertical: 'center',
+              color: t.onSurface,
+            }}
+          />
+          <CollapsibleChrome shown={!isTyping} width={44}>
             <Pressable
-              accessibilityLabel="Remove media"
-              onPress={() => {
-                setImage(null)
-                setGif(null)
-              }}
-              hitSlop={14}
-              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+              accessibilityLabel="Attach image"
+              accessibilityRole="button"
+              onPress={() => void handlePickImage()}
+              hitSlop={8}
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             >
-              <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <ImagePlus size={22} color={image ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
-          </View>
-        ) : null}
-        {error ? <Text style={{ marginTop: 4, fontSize: 12, color: t.error }}>{error}</Text> : null}
-        {gifOpen ? (
-          <View style={{ marginTop: 8 }}>
-            <GifPicker
-              pending={create.isPending}
-              onSelect={(g) => {
-                setGif(g)
-                setImage(null)
-                setGifOpen(false)
-              }}
-            />
-          </View>
-        ) : null}
-        <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Pressable
-            accessibilityLabel="Attach image"
-            onPress={() => void handlePickImage()}
-            hitSlop={4}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
-          >
-            <ImagePlus size={16} color={image ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: image ? t.primary : t.onSurfaceVariant }}>
-              Image
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel="Add a GIF"
-            onPress={() => setGifOpen((o) => !o)}
-            hitSlop={4}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48 }}
-          >
-            <ImagePlay size={16} color={gif ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: gif ? t.primary : t.onSurfaceVariant }}>
-              GIF
-            </Text>
-          </Pressable>
-          <Pressable
-            disabled={!hasContent || create.isPending}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !hasContent || create.isPending }}
-            onPress={() => void handleComment()}
-            style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, opacity: !hasContent || create.isPending ? 0.6 : 1 }}
-          >
-            {create.isPending ? (
-              <ActivityIndicator size="small" color={t.onPrimary} />
-            ) : (
-              <Send size={16} color={t.onPrimary} strokeWidth={1.5} />
-            )}
-            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>Comment</Text>
-          </Pressable>
+          </CollapsibleChrome>
+          <CollapsibleChrome shown={!isTyping} width={44}>
+            <Pressable
+              accessibilityLabel="Add a GIF"
+              accessibilityRole="button"
+              onPress={() => setGifOpen((o) => !o)}
+              hitSlop={8}
+              style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <View
+                style={{
+                  borderWidth: 1.5,
+                  borderColor: gifActive ? t.primary : t.onSurfaceVariant,
+                  borderRadius: 6,
+                  paddingHorizontal: 5,
+                  paddingVertical: 3,
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '800', color: gifActive ? t.primary : t.onSurfaceVariant }}>
+                  GIF
+                </Text>
+              </View>
+            </Pressable>
+          </CollapsibleChrome>
         </View>
+        <Pressable
+          disabled={sendDisabled}
+          accessibilityRole="button"
+          accessibilityLabel="Send comment"
+          accessibilityState={{ disabled: sendDisabled }}
+          onPress={() => void handleComment()}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: t.primary,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: sendDisabled ? 0.4 : 1,
+          }}
+        >
+          {create.isPending ? (
+            <ActivityIndicator size="small" color={t.onPrimary} />
+          ) : (
+            <Send size={20} color={t.onPrimary} strokeWidth={1.5} />
+          )}
+        </Pressable>
       </View>
+      {error ? (
+        <Text accessibilityRole="alert" style={{ marginTop: 4, fontSize: 12, color: t.error }}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   )
 }
