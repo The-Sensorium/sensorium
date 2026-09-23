@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, Loader2, LogOut, Save, ShieldCheck, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, BellRing, ChevronDown, ChevronRight, ImageMinus, ImagePlus, Loader2, LogOut, Save, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -11,6 +11,8 @@ import { useMyClusters } from '../features/matching'
 import { useUpdateProfile } from '../features/cluster'
 import { deleteAvatarObject } from '../features/avatars'
 import { useDeleteAccount, useMyMutes } from '../features/moderation'
+import { hasCapability, useMyAccess } from '../features/access'
+import { useMfaStatus } from '../features/staff-mfa'
 import {
   PREF_LABELS,
   PREF_TOGGLES,
@@ -221,6 +223,7 @@ export function SettingsPage() {
 
       <section aria-label="Account" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
         <h2 className="font-display text-lg font-semibold text-on-surface">Account</h2>
+        <MfaRow />
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <button
             type="button"
@@ -260,6 +263,40 @@ export function SettingsPage() {
         avatarUrl={profile.data?.avatar_url ?? null}
       />
     </div>
+  )
+}
+
+function MfaRow() {
+  const access = useMyAccess()
+  const staff = hasCapability(access.data, 'can_moderate')
+  const mfa = useMfaStatus(access.data != null)
+  const enrolled = (mfa.data?.verifiedTotpCount ?? 0) > 0
+
+  // Staff-only surface: plain members get no upsell, but anyone already
+  // enrolled keeps the row to manage or remove their factors.
+  if (!staff && !enrolled) return null
+
+  const detail = mfa.isLoading
+    ? 'Checking…'
+    : mfa.isError || mfa.data == null
+      ? 'Manage'
+      : enrolled
+        ? `${mfa.data.verifiedTotpCount} authenticator connected`
+        : 'Not set up';
+
+  return (
+    <Link
+      to="/mfa-setup"
+      data-e2e="settings-mfa-link"
+      className="mt-4 flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-surface-container"
+    >
+      <ShieldCheck className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.5} aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-on-surface">Two-step verification</span>
+        <span className="block truncate text-xs text-on-surface-variant">{detail}</span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
+    </Link>
   )
 }
 

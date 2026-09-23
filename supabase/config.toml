@@ -310,9 +310,11 @@ auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
+# Enabled for local dev so staff TOTP enrollment works with `supabase start`.
+# Staging/production enable TOTP in the dashboard per docs/archive/STAFF_MFA_PLAN.md.
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]

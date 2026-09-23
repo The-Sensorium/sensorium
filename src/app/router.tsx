@@ -66,6 +66,8 @@ const VerifyEmailPage = lazy(() => import('../pages/auth/VerifyEmailPage').then(
 const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage = lazy(() => import('../pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })))
 const MobileChallengePage = lazy(() => import('../pages/auth/MobileChallengePage').then((m) => ({ default: m.MobileChallengePage })))
+const MfaSetupPage = lazy(() => import('../pages/MfaSetupPage').then((m) => ({ default: m.MfaSetupPage })))
+const MfaVerifyPage = lazy(() => import('../pages/MfaVerifyPage').then((m) => ({ default: m.MfaVerifyPage })))
 
 function PageFallback() {
   return (
@@ -127,6 +129,27 @@ export function AppRouter() {
           />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          {/* Staff two-step setup/verify share the public auth chrome (logo, theme toggle). */}
+          <Route
+            path="/mfa-setup"
+            element={
+              <RequireAuth>
+                <RequireActiveAccount>
+                  <MfaSetupPage />
+                </RequireActiveAccount>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/mfa-verify"
+            element={
+              <RequireAuth>
+                <RequireActiveAccount>
+                  <MfaVerifyPage />
+                </RequireActiveAccount>
+              </RequireAuth>
+            }
+          />
         </Route>
 
         {/* Authenticated */}
