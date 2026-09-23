@@ -21,6 +21,10 @@ async function login(page: Page) {
 }
 
 test.describe('settings (seeded)', () => {
+  // The tests share Diya's single account (including a global sign-out), so
+  // they must not run concurrently.
+  test.describe.configure({ mode: 'serial' })
+
   test('redirects a signed-out visitor to the login page', async ({ page }) => {
     await page.goto('/settings')
     await expect(page).toHaveURL(/\/auth\/login/)

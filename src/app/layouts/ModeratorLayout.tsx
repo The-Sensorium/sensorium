@@ -7,6 +7,8 @@ import { ThemeToggle } from '../../components/theme-toggle'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
 import { RoutePending } from '../../components/RoutePending'
 import { StaffMobileNav, StaffNavigation, type StaffNavItem } from '../../components/StaffNavigation'
+import { StaffMfaBanner } from '../../components/StaffMfaBanner'
+import { useMyAccess } from '../../features/access'
 import { useNotificationsChannel } from '../../features/notifications'
 
 const navItems: readonly StaffNavItem[] = [
@@ -18,6 +20,7 @@ const navItems: readonly StaffNavItem[] = [
 export function ModeratorLayout() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
+  const access = useMyAccess()
   useNotificationsChannel(userId)
 
   return (
@@ -36,6 +39,7 @@ export function ModeratorLayout() {
         </div>
       </header>
       <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-6 overscroll-contain sm:px-6 md:pb-8">
+        {access.data ? <StaffMfaBanner access={access.data} /> : null}
         <Suspense fallback={<RoutePending />}>
           <Outlet />
         </Suspense>
