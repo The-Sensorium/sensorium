@@ -84,7 +84,14 @@ export function MessageItem({
             <Avatar name="Member" src={null} size={28} />
           )}
         </View>
-        <View style={{ maxWidth: '78%', alignItems: mine ? 'flex-end' : 'flex-start' }}>
+        <View
+          style={{
+            maxWidth: isEditing ? '100%' : '78%',
+            flex: isEditing ? 1 : 0,
+            alignSelf: isEditing ? 'stretch' : 'auto',
+            alignItems: mine ? 'flex-end' : 'flex-start',
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
             <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
               {mine ? 'You' : (author?.display_name ?? 'Member')}
@@ -127,6 +134,7 @@ export function MessageItem({
               borderBottomLeftRadius: mine ? 16 : 4,
               paddingHorizontal: 16,
               paddingVertical: 10,
+              alignSelf: isEditing ? 'stretch' : 'auto',
             }}
           >
             {!isEditing && message.reply_to_id ? (
@@ -153,7 +161,7 @@ export function MessageItem({
               </View>
             ) : null}
             {isEditing ? (
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, minWidth: 240 }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
                 <TextInput
                   accessibilityLabel="Edit message"
                   value={editDraft}

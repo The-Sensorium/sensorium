@@ -48,6 +48,7 @@ import { TypingBubble } from './room/TypingBubble'
 import { CallBanner } from './room/CallBanner'
 import { CallOverlay } from './room/CallOverlay'
 import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
+import { Modal } from '../../components/Modal'
 import { SignalRow } from './room/SignalRow'
 import { VoteRow } from './room/VoteRow'
 import { ReportModal } from '../../components/ReportModal'
@@ -109,6 +110,8 @@ export function RoomView() {
   const [pickerFor, setPickerFor] = useState<string | null>(null)
   const [infoFor, setInfoFor] = useState<string | null>(null)
   const [reportFor, setReportFor] = useState<Message | null>(null)
+  const [deleteFor, setDeleteFor] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [signalOpen, setSignalOpen] = useState(false)
   const [signalPrompt, setSignalPrompt] = useState('')
@@ -526,11 +529,12 @@ export function RoomView() {
 
   async function remove(messageId: string) {
     setMenuFor(null)
-    setError(null)
+    setDeleteError(null)
     try {
       await deleteMessage.mutateAsync(messageId)
+      setDeleteFor(null)
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not delete your message.'))
+      setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
 
@@ -807,7 +811,11 @@ export function RoomView() {
                       onTogglePicker={() => setPickerFor(pickerFor === m.id ? null : m.id)}
                       onShowInfo={showInfo}
                       onEdit={startEdit}
-                      onDelete={(messageId) => void remove(messageId)}
+                      onDelete={(messageId) => {
+                        setMenuFor(null)
+                        setDeleteError(null)
+                        setDeleteFor(messageId)
+                      }}
                       onReply={startReply}
                       onReport={startReport}
                       onToggleReaction={(messageId, emoji) =>
@@ -951,6 +959,48 @@ export function RoomView() {
           messageId={reportFor.id}
         />
       )}
+
+      <Modal
+        open={deleteFor !== null}
+        onClose={() => {
+          if (!deleteMessage.isPending) {
+            setDeleteFor(null)
+            setDeleteError(null)
+          }
+        }}
+        title="Delete message?"
+      >
+        <p className="mt-3 text-sm text-on-surface-variant">
+          This removes your message from the cluster chat. This action can&apos;t be undone.
+        </p>
+        {deleteError && (
+          <p role="alert" className="mt-3 text-sm text-error">
+            {deleteError}
+          </p>
+        )}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setDeleteFor(null)
+              setDeleteError(null)
+            }}
+            disabled={deleteMessage.isPending}
+            className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => deleteFor && void remove(deleteFor)}
+            disabled={deleteMessage.isPending}
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            {deleteMessage.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {deleteMessage.isPending ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </Modal>
 
       {inCall && activeCall.data && (
         <CallOverlay

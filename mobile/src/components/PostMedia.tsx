@@ -36,7 +36,7 @@ export function PostMedia({
             borderRadius: radii.xl,
             backgroundColor: t.surfaceContainer,
           }}
-          resizeMode={compact ? 'cover' : 'contain'}
+          resizeMode="contain"
         />
       </Pressable>
       <ZoomableImage

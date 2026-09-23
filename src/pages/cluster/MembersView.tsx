@@ -62,67 +62,65 @@ export function MembersView() {
             return (
               <li key={member.id}>
                 <div className="h-full rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-shadow hover:shadow-lift">
-                  <Link
-                    to={`/profile/${member.id}?cluster=${clusterId}`}
-                    className="block"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="relative shrink-0">
-                        <Avatar
-                          name={member.display_name}
-                          src={member.avatar_url}
-                          className="h-11 w-11"
-                        />
-                        {onlineNow ? (
-                          <span
-                            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
-                            aria-hidden
+                  <div className="flex items-start gap-3">
+                    <Link
+                      to={`/profile/${member.id}?cluster=${clusterId}`}
+                      className="block min-w-0 flex-1"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative shrink-0">
+                          <Avatar
+                            name={member.display_name}
+                            src={member.avatar_url}
+                            className="h-11 w-11"
                           />
-                        ) : null}
-                        <span className="sr-only">{onlineNow ? 'Online' : 'Offline'}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-on-surface">
-                          {member.display_name}
-                        </p>
-                        {member.pronouns && (
-                          <div className="mt-1">
-                            <PronounBadge pronouns={member.pronouns} />
-                          </div>
-                        )}
-                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 truncate text-xs text-on-surface-variant">
-                          {member.country_code && (
-                            <span className="inline-flex items-center gap-1">
-                              <MapPin className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
-                              {countryName(member.country_code)}
-                            </span>
+                          {onlineNow ? (
+                            <span
+                              className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
+                              aria-hidden
+                            />
+                          ) : null}
+                          <span className="sr-only">{onlineNow ? 'Online' : 'Offline'}</span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-on-surface">
+                            {member.display_name}
+                          </p>
+                          {member.pronouns && (
+                            <div className="mt-1">
+                              <PronounBadge pronouns={member.pronouns} />
+                            </div>
                           )}
-                          {member.birth_year && (
-                            <span className="inline-flex items-center gap-1">
-                              <Cake className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
-                              {member.birth_year}
-                            </span>
-                          )}
-                        </p>
+                        </div>
                       </div>
-                    </div>
-                  </Link>
-                  {(member.current_status || member.id !== userId) && (
-                    <div className="mt-3 flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 flex-1 items-center gap-2">
-                        {member.current_status ? (
-                          <span className="min-w-0 flex-1 truncate text-xs text-on-surface-variant">
-                            “{member.current_status}”
-                          </span>
-                        ) : null}
-                      </div>
-                      {member.id !== userId && (
-                        <span className="shrink-0">
-                          <MuteButton targetUserId={member.id} targetName={member.display_name} />
+                    </Link>
+                    {member.id !== userId && (
+                      <span className="shrink-0">
+                        <MuteButton targetUserId={member.id} targetName={member.display_name} />
+                      </span>
+                    )}
+                  </div>
+                  {(member.country_code || member.birth_year) && (
+                    <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 truncate text-xs text-on-surface-variant">
+                      {member.country_code && (
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
+                          {countryName(member.country_code)}
                         </span>
                       )}
-                    </div>
+                      {member.birth_year && (
+                        <span className="inline-flex items-center gap-1">
+                          <Cake className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
+                          {member.birth_year}
+                        </span>
+                      )}
+                    </p>
                   )}
+                  {member.current_status ? (
+                    <span className="mt-2 block truncate text-xs text-on-surface-variant">
+                      “{member.current_status}”
+                    </span>
+                  ) : null}
                 </div>
               </li>
             )
