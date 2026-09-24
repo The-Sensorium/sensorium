@@ -13,6 +13,7 @@ import { deleteAvatarObject } from '../features/avatars'
 import { useDeleteAccount, useMyMutes } from '../features/moderation'
 import { hasCapability, useMyAccess } from '../features/access'
 import { useMfaStatus } from '../features/staff-mfa'
+import { isMobileDevice } from '../lib/device'
 import {
   PREF_LABELS,
   PREF_TOGGLES,
@@ -273,7 +274,9 @@ function MfaRow() {
   const enrolled = (mfa.data?.verifiedTotpCount ?? 0) > 0
 
   // Staff-only surface: plain members get no upsell, but anyone already
-  // enrolled keeps the row to manage or remove their factors.
+  // enrolled keeps the row to manage or remove their factors. Staff tools
+  // are desktop-only, so mobile browsers never see the row.
+  if (isMobileDevice()) return null
   if (!staff && !enrolled) return null
 
   const detail = mfa.isLoading
