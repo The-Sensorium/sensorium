@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Modal, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { Link, type Href } from 'expo-router'
 import { Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react-native'
-import { radii } from '../lib/theme-tokens'
+import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
 export type ClusterSection = 'room' | 'members' | 'signals' | 'votes' | 'settings'
@@ -38,65 +38,70 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
   const [open, setOpen] = useState(false)
 
   return (
-    <>
+    // In-screen popover anchored to the trigger (not a native Modal): a modal
+    // is a separate native overlay, so its fade-out keeps playing over the
+    // destination screen after a section tap. An in-screen popover is part of
+    // the screen and unmounts with it, so navigation shows no lingering menu.
+    <View>
       <Pressable
         accessibilityLabel="Cluster sections"
         accessibilityRole="button"
-        onPress={() => setOpen(true)}
+        onPress={() => setOpen((o) => !o)}
         hitSlop={8}
         style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
       >
         <Menu size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
       </Pressable>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable onPress={() => setOpen(false)} style={{ flex: 1 }}>
-          <View
-            style={{
-              position: 'absolute',
-              top: 64,
-              right: 16,
-              width: 208,
-              backgroundColor: t.surfaceLowest,
-              borderRadius: radii.xl,
-              padding: 8,
-              gap: 2,
-            }}
-          >
-            {SECTIONS.map((s) => {
-              const isActive = s.key === active
-              const Icon = s.icon
-              return (
-                <Link key={s.key} href={s.href(clusterId)} asChild>
-                  <Pressable
-                    onPress={() => setOpen(false)}
+      {open ? (
+        <View
+          style={{
+            position: 'absolute',
+            top: 56,
+            right: 0,
+            width: 208,
+            backgroundColor: t.surfaceLowest,
+            borderRadius: radii.xl,
+            padding: 8,
+            gap: 2,
+            zIndex: 10,
+            ...shadowShape,
+            shadowColor: t.shadowColor,
+          }}
+        >
+          {SECTIONS.map((s) => {
+            const isActive = s.key === active
+            const Icon = s.icon
+            return (
+              <Link key={s.key} href={s.href(clusterId)} asChild>
+                <Pressable
+                  onPress={() => setOpen(false)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    borderRadius: radii.md,
+                    paddingHorizontal: 12,
+                    paddingVertical: 12,
+                    minHeight: 48,
+                    backgroundColor: isActive || pressed ? t.surfaceContainer : 'transparent',
+                  })}
+                >
+                  <Icon size={16} color={isActive ? t.primary : t.onSurface} strokeWidth={1.5} />
+                  <Text
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 10,
-                      borderRadius: radii.md,
-                      paddingHorizontal: 12,
-                      paddingVertical: 12,
-                      minHeight: 48,
-                      backgroundColor: isActive ? t.surfaceContainer : 'transparent',
+                      fontSize: 14,
+                      fontWeight: isActive ? '600' : '400',
+                      color: isActive ? t.primary : t.onSurface,
                     }}
                   >
-                    <Icon size={16} color={isActive ? t.primary : t.onSurface} strokeWidth={1.5} />
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: isActive ? '600' : '400',
-                        color: isActive ? t.primary : t.onSurface,
-                      }}
-                    >
-                      {s.label}
-                    </Text>
-                  </Pressable>
-                </Link>
-              )
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-    </>
+                    {s.label}
+                  </Text>
+                </Pressable>
+              </Link>
+            )
+          })}
+        </View>
+      ) : null}
+    </View>
   )
 }
