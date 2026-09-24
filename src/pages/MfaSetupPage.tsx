@@ -95,6 +95,19 @@ export function MfaSetupPage() {
           <div className="mt-6 flex justify-center" role="status" aria-label="Loading">
             <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
           </div>
+        ) : status.isError ? (
+          <div className="mt-6 space-y-4 text-center">
+            <p className="text-sm leading-6 text-on-surface-variant">
+              Couldn’t check your authenticators. Setup is unavailable until this loads.
+            </p>
+            <button
+              type="button"
+              onClick={() => void status.refetch()}
+              className="rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            >
+              Try Again
+            </button>
+          </div>
         ) : (
           <div className="mt-6 space-y-4">
             {done && (

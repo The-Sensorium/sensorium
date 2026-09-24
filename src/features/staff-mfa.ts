@@ -55,7 +55,17 @@ export interface TotpEnrollment {
 /** Starts TOTP enrollment. Caller shows qrCode/secret, then confirms with a code. */
 export async function enrollTotp(): Promise<TotpEnrollment> {
   const supabase = requireSupabase()
-  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' })
+  // GoTrue requires a unique friendly name per factor: without one every
+  // enrollment defaults to '' and the second one is rejected as a duplicate.
+  // Unverified factors live in `all`, not `totp` (verified only). Pick the
+  // smallest free number: counting breaks when abandoned factors are deleted.
+  const { data: existing, error: listError } = await supabase.auth.mfa.listFactors()
+  if (listError) throw listError
+  const taken = new Set((existing?.all ?? []).map((f) => f.friendly_name))
+  let n = 1
+  while (taken.has(`Authenticator ${n}`)) n += 1
+  const friendlyName = `Authenticator ${n}`
+  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName })
   if (error) throw error
   return {
     factorId: data.id,
@@ -74,6 +84,8 @@ function sleep(ms: number): Promise<void> {
  * delete asynchronously, so an immediate re-enroll can still conflict;
  * retry with backoff instead of surfacing the race to the user.
  */
+const DUPLICATE_FACTOR_RE = /already exists|must be unique|duplicate/i
+
 export async function enrollTotpFresh(): Promise<TotpEnrollment> {
   let lastError: unknown = null
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -81,7 +93,7 @@ export async function enrollTotpFresh(): Promise<TotpEnrollment> {
       return await enrollTotp()
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      if (!message.includes('already exists')) throw err
+      if (!DUPLICATE_FACTOR_RE.test(message)) throw err
       lastError = err
       await unenrollUnverifiedTotpFactors()
       await sleep(400 * (attempt + 1))
