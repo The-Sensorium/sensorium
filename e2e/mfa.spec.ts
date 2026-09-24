@@ -1,23 +1,66 @@
-import { createHmac } from 'node:crypto'
+import { createHmac, randomUUID } from 'node:crypto'
 import { test, expect, type Page } from '@playwright/test'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { readFileSync } from 'node:fs'
+import { SEED_CREDS_FILE } from './global-setup'
 
-// E2E for staff two-step verification against the seeded local Supabase stack,
-// using the deterministic demo account (see settings.spec.ts for the pattern).
-// Covers the regression where abandoning setup left an unverified factor that
-// blocked retrying with "already exists".
-const EMAIL = process.env.E2E_EMAIL ?? 'diya@demo.example'
-const PASSWORD = process.env.E2E_PASSWORD ?? 'sensor123'
+// E2E for staff two-step verification against the local Supabase stack. Each
+// test gets a throwaway staff user (created via the service role, deleted
+// afterwards): factor state is per-account, so sharing one demo account across
+// runs left residue that broke later runs. Fresh users start with zero
+// factors, which also makes every test hermetic and parallel-safe.
+interface StaffUser {
+  id: string
+  email: string
+  password: string
+}
 
-async function login(page: Page) {
+let admin: SupabaseClient
+const created: string[] = []
+
+test.beforeAll(async () => {
+  const creds = JSON.parse(readFileSync(SEED_CREDS_FILE, 'utf8'))
+  admin = createClient(creds.url, creds.serviceRole, { auth: { persistSession: false } })
+})
+
+test.afterEach(async () => {
+  while (created.length > 0) {
+    const id = created.pop()!
+    await admin.from('user_roles').delete().eq('user_id', id)
+    const { error } = await admin.auth.admin.deleteUser(id)
+    if (error && !error.message.includes('not found')) console.warn('cleanup failed:', error.message)
+  }
+})
+
+async function createStaffUser(): Promise<StaffUser> {
+  const email = `mfa-${Date.now()}-${randomUUID().slice(0, 8)}@e2e.test`
+  const password = `Mfa-e2e-${randomUUID().slice(0, 8)}`
+  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true })
+  if (error) throw error
+  const id = data.user!.id
+  created.push(id)
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({ display_name: 'MFA Tester', onboarding_completed_at: new Date().toISOString() })
+    .eq('id', id)
+  if (profileError) throw profileError
+  const { error: roleError } = await admin
+    .from('user_roles')
+    .insert({ user_id: id, role: 'moderator', granted_by: id, grant_reason: 'e2e mfa spec' })
+  if (roleError) throw roleError
+  return { id, email, password }
+}
+
+async function login(page: Page, email: string, password: string) {
   await page.goto('/home')
-  await page.getByLabel('Email').fill(EMAIL)
-  await page.getByLabel('Password', { exact: true }).fill(PASSWORD)
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Login' }).click()
   await expect(
     page.getByRole('navigation').or(page.getByRole('heading', { name: 'Choose a workspace' })),
   ).toBeVisible()
-  // Diya holds member+admin, so pin the member shell explicitly. Otherwise
-  // later navigations bounce through the role picker.
+  // Fresh staff hold member+moderator, so pin the member shell explicitly.
+  // Otherwise later navigations bounce through the role picker.
   if (await page.getByRole('heading', { name: 'Choose a workspace' }).isVisible()) {
     await page.getByRole('button', { name: /For your clusters/i }).click()
   }
@@ -50,29 +93,27 @@ async function startEnrollment(page: Page): Promise<string> {
   return ((await page.getByTestId('mfa-secret').textContent()) ?? '').trim()
 }
 
-async function confirmEnrollment(page: Page, secret: string) {
+async function confirmEnrollment(page: Page, secret: string, connectedText: string) {
   // The 30s window can roll over between computing and submitting; retry with
   // a fresh code. A failed attempt keeps the enrollment, so this is safe.
   for (let attempt = 0; attempt < 3; attempt++) {
+    // A slow prior attempt may have succeeded already (status refetch lags
+    // token swaps after verify): check before touching the form, and only
+    // wait for the success text so a stale alert can't short-circuit the wait.
+    if (await page.getByText(connectedText).isVisible()) return
     await page.getByTestId('mfa-code-input').fill(totp(secret))
     await page.getByTestId('mfa-confirm').click()
-    if (
-      await page
-        .getByText('1 authenticator connected.')
-        .waitFor({ timeout: 5000 })
-        .then(() => true)
-        .catch(() => false)
-    ) {
+    try {
+      await expect(page.getByText(connectedText)).toBeVisible({ timeout: 15_000 })
       return
+    } catch {
+      // Wrong code or still settling: retry with a fresh code.
     }
   }
   throw new Error('TOTP confirmation never succeeded')
 }
 
-test.describe('staff two-step verification (seeded)', () => {
-  // The tests share Diya's single factor list, so they must not run concurrently.
-  test.describe.configure({ mode: 'serial' })
-
+test.describe('staff two-step verification', () => {
   test('redirects a signed-out visitor to the login page', async ({ page }) => {
     await page.goto('/mfa-setup')
     await expect(page).toHaveURL(/\/auth\/login/)
@@ -81,7 +122,8 @@ test.describe('staff two-step verification (seeded)', () => {
   })
 
   test('links to setup from settings with live status', async ({ page }) => {
-    await login(page)
+    const user = await createStaffUser()
+    await login(page, user.email, user.password)
     await page.goto('/settings')
     const link = page.getByTestId('settings-mfa-link')
     await expect(link).toBeVisible()
@@ -92,7 +134,8 @@ test.describe('staff two-step verification (seeded)', () => {
   })
 
   test('abandoned setup retries cleanly, then enrolls and removes', async ({ page }) => {
-    await login(page)
+    const user = await createStaffUser()
+    await login(page, user.email, user.password)
 
     // Start setup, then abandon it for the dashboard: the classic path that
     // used to strand an unverified factor and fail the retry.
@@ -109,12 +152,80 @@ test.describe('staff two-step verification (seeded)', () => {
     const secret = await startEnrollment(page)
     await expect(page.getByRole('alert')).toHaveCount(0)
 
-    // Full cycle with a real code, then remove it so the seeded account stays clean.
-    await confirmEnrollment(page, secret)
+    // Full cycle with a real code.
+    await confirmEnrollment(page, secret, '1 authenticator connected.')
     await expect(page.getByText('1 authenticator connected.')).toBeVisible()
+
+    // A second enrollment must get a fresh secret even with a verified factor
+    // present (GoTrue requires unique factor names).
+    await page.getByRole('button', { name: 'Add another' }).click()
+    await expect(page.getByTestId('mfa-secret')).toBeVisible()
+    const secondSecret = ((await page.getByTestId('mfa-secret').textContent()) ?? '').trim()
+    expect(secondSecret.length).toBeGreaterThan(0)
+    await confirmEnrollment(page, secondSecret, '2 authenticator connected.')
+    await expect(page.getByText('2 authenticator connected.')).toBeVisible()
+    // Factors die with the throwaway user in afterEach; the remove dialog
+    // itself is covered by the cancel test below.
+  })
+
+  test('cancelling remove keeps the factor', async ({ page }) => {
+    const user = await createStaffUser()
+    await login(page, user.email, user.password)
+    await page.goto('/mfa-setup')
+    const secret = await startEnrollment(page)
+    await confirmEnrollment(page, secret, '1 authenticator connected.')
+    await expect(page.getByText('1 authenticator connected.')).toBeVisible()
+
     await page.getByRole('button', { name: 'Remove' }).click()
     await expect(page.getByRole('dialog', { name: 'Remove authenticator?' })).toBeVisible()
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await expect(page.getByText('1 authenticator connected.')).toBeVisible()
+
+    // Real removal for cleanup.
+    await page.getByRole('button', { name: 'Remove' }).click()
     await page.getByTestId('mfa-remove-confirm').click()
     await expect(page.getByRole('button', { name: 'Set up authenticator' })).toBeVisible()
+  })
+
+  test('fresh staff login verifies with a real code, wrong code first', async ({ page }) => {
+    const user = await createStaffUser()
+    await login(page, user.email, user.password)
+    await page.goto('/mfa-setup')
+    const secret = await startEnrollment(page)
+    await confirmEnrollment(page, secret, '1 authenticator connected.')
+    await expect(page.getByText('1 authenticator connected.')).toBeVisible()
+
+    // Fresh session drops to AAL1: entry must route to verify (desktop only;
+    // mobile forces the member shell with no MFA step).
+    await page.evaluate(() => {
+      localStorage.clear()
+      sessionStorage.clear()
+    })
+    await page.goto('/auth/login')
+    await page.getByLabel('Email').fill(user.email)
+    await page.getByLabel('Password', { exact: true }).fill(user.password)
+    await page.getByRole('button', { name: 'Login' }).click()
+    await expect(page).toHaveURL(/\/mfa-verify|\/home/)
+    if (await page.getByTestId('mfa-verify').isVisible()) {
+      await page.getByTestId('mfa-verify-input').fill('000000')
+      await page.getByTestId('mfa-verify-submit').click()
+      await expect(page.getByRole('alert')).toBeVisible()
+      await expect(page).toHaveURL(/\/mfa-verify/)
+
+      // The 30s window can roll over mid-submit; retry with a fresh code.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await page.getByTestId('mfa-verify-input').fill(totp(secret))
+        await page.getByTestId('mfa-verify-submit').click()
+        try {
+          await expect(page).toHaveURL(/\/select-role|\/home|\/admin|\/moderator/, { timeout: 10_000 })
+          break
+        } catch {
+          await expect(page).toHaveURL(/\/mfa-verify/)
+        }
+      }
+      await expect(page).toHaveURL(/\/select-role|\/home|\/admin|\/moderator/)
+    }
+
+    // Factors die with the throwaway user in afterEach.
   })
 })
