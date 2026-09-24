@@ -50,6 +50,7 @@ import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/Muted
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, lightHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { useClusterChannel, usePresence } from '../../../../src/features/realtime'
+import { useDismissKeyboardOnBlur } from '../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { type Gif } from '../../../../src/features/gifs'
@@ -89,6 +90,7 @@ export default function RoomScreen() {
   const authedClusterId = authed ? clusterId || null : null
 
   useClusterChannel(authedClusterId)
+  useDismissKeyboardOnBlur()
   useFocusEffect(
     useCallback(() => {
       setSuppressedPushCluster(clusterId || null)
@@ -164,6 +166,19 @@ export default function RoomScreen() {
     prevOldestIdRef.current = null
     setReplyTo(null)
     setDeclinedCalls(new Set())
+    // Same-route param change reuses the instance, so drop transient UI that
+    // would otherwise leak from the previous cluster.
+    setError(null)
+    setEditingId(null)
+    setEditDraft('')
+    setMenuFor(null)
+    setInfoFor(null)
+    setReportFor(null)
+    setDeleteFor(null)
+    setDeleteError(null)
+    setSignalOpen(false)
+    setSignalPrompt('')
+    setRevealed(new Set())
   }, [clusterId])
 
   const memberMap = useMemo(() => {
@@ -596,8 +611,10 @@ export default function RoomScreen() {
           <Pressable
             accessibilityLabel="Back"
             onPress={() => {
-              if (router.canGoBack()) router.back()
-              else router.replace('/(app)/clusters')
+              // Deterministic parent, not history: with backBehavior="history"
+              // a router.back() here could return to settings or signals if
+              // that was the previous stop. The room always exits home.
+              router.replace('/(app)/home')
             }}
             style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
           >
@@ -964,6 +981,7 @@ export default function RoomScreen() {
 
         <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}>
           <Composer
+            key={clusterId}
             members={parseMembers}
             selfId={userId}
             pending={send.isPending}

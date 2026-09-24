@@ -9,23 +9,29 @@ import { useTheme } from '../lib/use-theme'
 export function Modal({
   open,
   onClose,
+  onShow,
   title,
   children,
 }: {
   open: boolean
   onClose: () => void
+  onShow?: () => void
   title: string
   children: ReactNode
 }) {
   const t = useTheme()
   return (
-    <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable
-        onPress={onClose}
-        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 16 }}
-      >
+    <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose} onShow={onShow}>
+      {/* Backdrop and content are siblings: the backdrop Pressable closes on
+          out-of-dialog taps only, while content taps never reach it. A nested
+          Pressable would bubble content taps up to the backdrop close. */}
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 16 }}>
         <Pressable
-          onPress={() => {}}
+          accessibilityLabel="Close dialog"
+          onPress={onClose}
+          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+        />
+        <View
           style={{ backgroundColor: t.surface, borderRadius: radii.xl, padding: 24, maxHeight: '85%', width: '100%', maxWidth: 480, alignSelf: 'center' }}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
@@ -48,8 +54,8 @@ export function Modal({
               {children}
             </KeyboardAwareScrollView>
           </SafeAreaView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </RNModal>
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -19,6 +19,7 @@ import type { ReplyTarget } from '../../../src/components/comment-helpers'
 import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../../src/features/moderation'
 import { useTheme } from '../../../src/lib/use-theme'
+import { useDismissKeyboardOnBlur } from '../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
 
 export default function PostDetailScreen() {
@@ -43,6 +44,16 @@ export default function PostDetailScreen() {
   const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
+  useDismissKeyboardOnBlur()
+
+  // The footer height is measured into a shared value for the chat scroll
+  // view. Reset it on post change so the next post does not inherit the
+  // previous composer's height (reply chip, image preview, GIF picker).
+  useEffect(() => {
+    composerHeight.value = 0
+    setReplyTo(null)
+    setRevealed(false)
+  }, [postId, composerHeight])
 
   const memberById = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.id, m])),
@@ -88,6 +99,7 @@ export default function PostDetailScreen() {
       }}
       footer={
         <CommentComposer
+          key={p.id}
           clusterId={clusterId!}
           postId={p.id}
           comments={comments.data ?? []}

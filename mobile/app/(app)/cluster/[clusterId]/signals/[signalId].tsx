@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, MessageSquare } from 'lucide-react-native'
@@ -19,6 +19,7 @@ import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../
 import { dateTimeFormatter } from '../../../../../src/components/room/format'
 import { radii } from '../../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../../src/lib/use-theme'
+import { useDismissKeyboardOnBlur } from '../../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../../../../src/components/ui'
 
 const statusMeta: Record<SignalStatus, { label: string }> = {
@@ -47,6 +48,18 @@ export default function SignalDetailScreen() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   const [articleRevealed, setArticleRevealed] = useState(false)
+  useDismissKeyboardOnBlur()
+
+  // Same-route param change reuses the component instance, so reset
+  // transient reply state for the new signal instead of showing the old draft.
+  useEffect(() => {
+    setDraft('')
+    setError(null)
+    setStatusError(null)
+    setConfirmResolve(false)
+    setRevealed(new Set())
+    setArticleRevealed(false)
+  }, [clusterId, signalId])
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
@@ -286,13 +299,12 @@ export default function SignalDetailScreen() {
           onChangeText={setDraft}
           maxLength={2000}
           multiline
-          numberOfLines={3}
-            placeholder="Offer a hand or share a thought…"
-            placeholderTextColor={t.onSurfaceVariant}
-            style={{
-              backgroundColor: t.surfaceContainer,
-              borderWidth: 1,
-              borderColor: t.outlineVariant,
+          placeholder="Offer a hand or share a thought…"
+          placeholderTextColor={t.onSurfaceVariant}
+          style={{
+            backgroundColor: t.surfaceContainer,
+            borderWidth: 1,
+            borderColor: t.outlineVariant,
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 12,
