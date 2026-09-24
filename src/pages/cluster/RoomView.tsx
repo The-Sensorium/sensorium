@@ -175,12 +175,17 @@ export function RoomView() {
     // A deleted parent is hidden from the timeline, so its quote shouldn't
     // surface either - treat it like a missing target (fallback rendering).
     if (!target || target.deleted_at) return undefined
-    const authorName = memberMap.get(target.author_id)?.display_name ?? 'Member'
-    const preview = target.content?.startsWith('gif:')
+    // Blank values bypass the ?? fallbacks below and would render a textless
+    // quote box, which reads as a stuck empty area. The schema allows blank
+    // display names and whitespace-only content, so normalize them here.
+    const rawName = memberMap.get(target.author_id)?.display_name
+    const authorName = rawName && rawName.trim() ? rawName : 'Member'
+    const rawPreview = target.content?.startsWith('gif:')
       ? 'GIF'
       : target.image_url
         ? 'Image'
         : (target.content ?? '')
+    const preview = rawPreview.trim() ? rawPreview : 'message'
     return { authorName, preview }
   }
 

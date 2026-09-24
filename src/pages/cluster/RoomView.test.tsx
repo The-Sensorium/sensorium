@@ -440,6 +440,30 @@ describe('RoomView timeline', () => {
     expect(screen.getAllByText('the original')).toHaveLength(2)
   })
 
+  it('falls back when the quoted parent content is blank', () => {
+    hooks.messages.data = [
+      msg({ id: 'parent', content: '   ' }),
+      msg({ id: 'child', content: 'a reply', reply_to_id: 'parent' }),
+    ]
+    renderRoom()
+    expect(screen.getByText('a reply')).toBeInTheDocument()
+    expect(screen.getByText('message')).toBeInTheDocument()
+  })
+
+  it('falls back when the quoted parent author name is blank', () => {
+    hooks.members.data = [
+      { id: 'u1', display_name: 'Ally', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
+      { id: 'u2', display_name: '   ', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
+      { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
+    ]
+    hooks.messages.data = [
+      msg({ id: 'parent', content: 'the original' }),
+      msg({ id: 'child', content: 'a reply', reply_to_id: 'parent' }),
+    ]
+    renderRoom()
+    expect(screen.getByText('Member')).toBeInTheDocument()
+  })
+
   it('surfaces reaction failures', async () => {
     hooks.messages.data = [msg({ id: 'm1' })]
     hooks.toggleReaction = {
