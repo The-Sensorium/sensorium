@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   AppState,
@@ -6,14 +6,8 @@ import {
   Pressable,
   Text,
   View,
-  type ScrollViewProps,
 } from 'react-native'
-import {
-  KeyboardChatScrollView,
-  KeyboardStickyView,
-  type KeyboardChatScrollViewProps,
-} from 'react-native-keyboard-controller'
-import { useSharedValue } from 'react-native-reanimated'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -105,25 +99,6 @@ function replyPreview(
   return { authorName, preview }
 }
 
-// Scroll component for the inverted chat list, following the official
-// keyboard-controller chat guide: the list layout never changes on keyboard
-// events, the scroll range extends via contentInset instead (no layout resize,
-// no frame drops on complex layouts). iOS must not apply its own inset
-// adjustments or they fight the component's inset management.
-const ChatScrollView = forwardRef<
-  ComponentRef<typeof KeyboardChatScrollView>,
-  ScrollViewProps & KeyboardChatScrollViewProps
->(({ inverted, ...props }, ref) => (
-  <KeyboardChatScrollView
-    {...props}
-    ref={ref}
-    inverted={inverted}
-    automaticallyAdjustContentInsets={false}
-    contentInsetAdjustmentBehavior="never"
-  />
-))
-ChatScrollView.displayName = 'ChatScrollView'
-
 const EMPTY_REACTIONS: Reaction[] = []
 
 export default function RoomScreen() {
@@ -214,20 +189,6 @@ export default function RoomScreen() {
   const lastLenRef = useRef<number | null>(null)
   const listRef = useRef<FlatList<{ key: string; item: TimelineItem; showDay: boolean }> | null>(null)
 
-  // Growth delta of the sticky composer above its single-line baseline, fed
-  // to the chat scroll's extraContentPadding so the scroll range extends past
-  // a taller input (docs: growing multiline input). A delta, not the full
-  // height: on an inverted list a full-height inset renders as a permanent
-  // gap between the last message and the composer.
-  const composerHeight = useSharedValue(0)
-  const composerBaseHeight = useRef<number | null>(null)
-  const renderScrollComponent = useCallback(
-    (props: ScrollViewProps) => (
-      <ChatScrollView {...props} extraContentPadding={composerHeight} freeze={!focused} />
-    ),
-    [composerHeight, focused],
-  )
-
   useEffect(() => {
     lastLenRef.current = null
     pinnedRef.current = true
@@ -238,7 +199,6 @@ export default function RoomScreen() {
     prevOldestIdRef.current = null
     setReplyTo(null)
     setDeclinedCalls(new Set())
-    composerBaseHeight.current = null
   }, [clusterId])
 
   const memberMap = useMemo(() => {
@@ -695,11 +655,12 @@ export default function RoomScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
-      {/* Chat pattern per the keyboard-controller guide: the list layout never
-          resizes on keyboard events (KAV height/padding drops frames on
-          complex layouts). The scroll range extends via contentInset and the
-          composer sticks to the keyboard natively. */}
-      <View style={{ flex: 1 }}>
+      {/* Container-resize keyboard avoidance (Stream SDK approach): the whole
+          screen is a KeyboardAvoidingView that pads its bottom by the keyboard
+          height, so the composer footer rides up above the keyboard and the
+          inverted list keeps its scroll position with no inset/scrollTo
+          simulation. One native padding, no sticky translate to desync. */}
+      <KeyboardAvoidingView behavior="padding" enabled={focused} keyboardVerticalOffset={0} style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
             accessibilityLabel="Back"
@@ -896,7 +857,6 @@ export default function RoomScreen() {
               keyExtractor={(r) => r.key}
               inverted
               keyboardShouldPersistTaps="handled"
-              renderScrollComponent={renderScrollComponent}
               windowSize={11}
               maxToRenderPerBatch={10}
               updateCellsBatchingPeriod={50}
@@ -1067,26 +1027,10 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        {/* Sticky composer: frame-synced translate above the keyboard, no layout
-            resize. Disabled while another screen is focused so a background
-            room never reacts to its keyboard session. The room owns the
-            bottom inset itself (same as Screen): closed it holds the bar
-            above the gesture bar, open the padded edge hides behind the
-            keyboard so content lands flush. */}
-        <KeyboardStickyView
-          enabled={focused}
-          offset={{ closed: 0, opened: bottom }}
-          style={{ backgroundColor: t.background, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + bottom }}
-        >
-          <View
-            onLayout={(e) => {
-              const h = e.nativeEvent.layout.height
-              if (composerBaseHeight.current === null || h < composerBaseHeight.current) {
-                composerBaseHeight.current = h
-              }
-              composerHeight.value = Math.max(h - (composerBaseHeight.current ?? h), 0)
-            }}
-          >
+        {/* Composer footer: plain flex child, lifted by the KAV padding. Owns
+            the bottom inset (closed: holds above the gesture bar; open: the
+            padded edge hides behind the keyboard so content lands flush). */}
+        <View style={{ backgroundColor: t.background, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + bottom }}>
           <Composer
             members={parseMembers}
             selfId={userId}
@@ -1105,8 +1049,7 @@ export default function RoomScreen() {
             callActive={Boolean(activeCall.data)}
             onCancelReply={cancelReply}
           />
-          </View>
-        </KeyboardStickyView>
+        </View>
 
         <RaiseSignalModal
           open={signalOpen}
@@ -1166,7 +1109,7 @@ export default function RoomScreen() {
             />
           </View>
         </Modal>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

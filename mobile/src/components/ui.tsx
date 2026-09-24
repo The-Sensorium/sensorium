@@ -11,8 +11,7 @@ import {
 } from 'react-native'
 import { Eye, EyeOff } from 'lucide-react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { KeyboardAwareScrollView, KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
-import type { SharedValue } from 'react-native-reanimated'
+import { KeyboardAvoidingView, KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { Link, useIsFocused, type Href } from 'expo-router'
 import { radii, shadowShape, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -327,30 +326,25 @@ export function Screen({
   children,
   avoiding,
   footer,
-  stickyFooterHeight,
-  onStickyFooterLayout,
   onRefresh,
   refreshing,
 }: {
   children: ReactNode
   avoiding?: boolean
   footer?: ReactNode
-  stickyFooterHeight?: SharedValue<number>
-  onStickyFooterLayout?(height: number): void
   onRefresh?: () => void
   refreshing?: boolean
 }) {
   const t = useTheme()
   // Tab screens stay mounted after a visit, so every Screen with keyboard
   // components would otherwise react to every keyboard session app-wide.
-  // A background screen ignores the keyboard (sticky returns to its closed
-  // position, scroll freezing pauses inset shifts) and re-engages on focus.
+  // A background screen ignores the keyboard and re-engages on focus.
   const isFocused = useIsFocused()
   // Edge-to-edge production builds report a non-zero bottom inset (gesture
   // bar) while Expo Go's host activity reports zero, which is why a footer
   // padded by the parent SafeAreaView floats exactly inset-height too high
   // above the keyboard in prod only. Keep the bottom inset out of the parent
-  // and own it inside the sticky footer instead.
+  // and own it inside the footer instead.
   const { bottom } = useSafeAreaInsets()
   const refresh = onRefresh ? (
     <RefreshControl
@@ -361,20 +355,10 @@ export function Screen({
       progressBackgroundColor={t.surfaceContainer}
     />
   ) : undefined
-  // Instagram-style sticky footer: pinned above the keyboard with a native
-  // frame-synced translate (no layout resize), so the composer and its action
-  // row are never covered and never push the list around. The footer height is
-  // measured into stickyFooterHeight so the chat scroll view can extend its
-  // scroll range past the bar - list content never rests underneath it.
-  const stickyFooter = footer ? (
-    <KeyboardStickyView
-      enabled={isFocused}
-      onLayout={(e) => onStickyFooterLayout?.(e.nativeEvent.layout.height)}
-      // Closed: bottom padding holds the bar above the gesture bar. Open:
-      // the +bottom translate drops the padded bar's bottom edge behind the
-      // keyboard so its content lands flush on the keyboard with no strip
-      // of thread visible underneath.
-      offset={{ closed: 0, opened: bottom }}
+  // Footer in normal flow: the KAV padding lifts it above the keyboard with
+  // the whole container (no sticky translate, no scroll inset simulation).
+  const footerBar = footer ? (
+    <View
       style={{
         backgroundColor: t.background,
         paddingHorizontal: spacing.containerMargin,
@@ -383,26 +367,21 @@ export function Screen({
       }}
     >
       {footer}
-    </KeyboardStickyView>
+    </View>
   ) : null
   if (avoiding) {
-    // Screens with a sticky footer use the chat pattern: the scroll range
-    // extends via contentInset (no layout thrash) and content lifts only when
-    // the end is visible (ChatGPT behavior); a mid-list reply target the user
-    // is looking at is never shoved away, and bottom content always lifts
-    // clear of the floating bar. Nothing is ever rendered beneath the bar.
-    // Other screens keep the aware scroll view.
-    const scrollBody = stickyFooterHeight ? (
-      <KeyboardChatScrollView
-        extraContentPadding={stickyFooterHeight}
-        keyboardLiftBehavior="whenAtEnd"
-        freeze={!isFocused}
+    // Container-resize avoidance: the KAV pads its bottom by the keyboard
+    // height, so the scroll body shrinks and the footer rides up above the
+    // keyboard (Stream SDK pattern). The plain scroll view needs no keyboard
+    // instrumentation. Other screens keep the aware scroll view.
+    const scrollBody = footer ? (
+      <ScrollView
         contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={refresh}
       >
         {children}
-      </KeyboardChatScrollView>
+      </ScrollView>
     ) : (
       <KeyboardAwareScrollView
         enabled={isFocused}
@@ -415,9 +394,11 @@ export function Screen({
       </KeyboardAwareScrollView>
     )
     return (
-      <SafeAreaView edges={stickyFooter ? ['top', 'left', 'right'] : undefined} style={{ flex: 1, backgroundColor: t.background }}>
-        {scrollBody}
-        {stickyFooter}
+      <SafeAreaView edges={footerBar ? ['top', 'left', 'right'] : undefined} style={{ flex: 1, backgroundColor: t.background }}>
+        <KeyboardAvoidingView behavior="padding" enabled={isFocused} keyboardVerticalOffset={0} style={{ flex: 1 }}>
+          {scrollBody}
+          {footerBar}
+        </KeyboardAvoidingView>
       </SafeAreaView>
     )
   }

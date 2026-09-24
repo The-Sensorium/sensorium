@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { useSharedValue } from 'react-native-reanimated'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { useAuth } from '../../../src/auth-context'
@@ -40,7 +39,6 @@ export default function PostDetailScreen() {
   // Stable identity: the composer's missing-target effect depends on these,
   // so inline arrows would re-run it on every render (each keystroke).
   const clearReply = useCallback(() => setReplyTo(null), [])
-  const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
 
@@ -79,13 +77,6 @@ export default function PostDetailScreen() {
   return (
     <Screen
       avoiding
-      stickyFooterHeight={composerHeight}
-      onStickyFooterLayout={(h) => {
-        //Like AnimatedSplash's shared-value writes, this trips
-        // react(immutability): writing .value is Reanimated's documented API
-        // for feeding measured layout into extraContentPadding.
-        composerHeight.value = h
-      }}
       footer={
         <CommentComposer
           clusterId={clusterId!}
