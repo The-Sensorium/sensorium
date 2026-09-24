@@ -28,6 +28,12 @@
       "package": "online.thesensorium.app",
       "versionCode": 12,
       "googleServicesFile": "./google-services.json",
+      // Pan (not resize): react-native-keyboard-controller manages keyboard
+      // insets itself (its example app uses adjustPan). With resize the
+      // system shrinks the layout AND the library applies its own
+      // inset/translate on top, overshooting the sticky composer and
+      // flashing blank list space during keyboard transitions.
+      "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "NOTIFICATIONS",
         "ACCESS_FINE_LOCATION",
