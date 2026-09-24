@@ -54,6 +54,10 @@ export default function AppTabs() {
       // stack pushes, so the default 'firstRoute' back behavior drops users
       // on Home. 'history' walks the actual visit trail instead, so back
       // from a cluster room returns to the cluster list it came from.
+      // Expo Tabs does not expose unmountOnBlur, so freshness across ids is
+      // handled in the screens: composers are keyed by cluster/post/signal
+      // id, transient room and signal state resets on param change, sticky
+      // footer height resets per post, and keyboard is dismissed on blur.
       backBehavior="history"
       screenOptions={{
         headerShown: false,
@@ -62,7 +66,11 @@ export default function AppTabs() {
         tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.outlineVariant },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
         tabBarBadgeStyle: { backgroundColor: t.error, color: t.onError, fontSize: 11, fontWeight: '600', minWidth: 18, height: 18, borderRadius: 9, lineHeight: 16, textAlign: 'center' },
-        tabBarHideOnKeyboard: true,
+        // Sticky composers own keyboard positioning natively. Hiding the tab
+        // bar on every keyboard open would add a second moving boundary and
+        // fight the composer translate, so only chat screens hide the bar
+        // permanently via display: none below.
+        tabBarHideOnKeyboard: false,
       }}
     >
       <Tabs.Screen
@@ -104,18 +112,25 @@ export default function AppTabs() {
       <Tabs.Screen name="mode/[modeId]" options={{ href: null }} />
       <Tabs.Screen name="queue/[queueId]" options={{ href: null }} />
       <Tabs.Screen name="cluster-created" options={{ href: null }} />
-      <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ href: null }} />
-      <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null }} />
-      <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, animation: 'fade' }} />
+      <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      {/* No tab bar anywhere inside a cluster (room, members, signals,
+          votes, settings, call), same as post detail: a focused space with
+          its own back navigation and keyboard-glued composers. A tab bar
+          between the content and the screen bottom would fight the composer
+          translate and leave a floating strip on edge-to-edge Android.
+          No custom animation: the default tab switch avoids a
+          semi-transparent crossfade that flashes bordered cards. */}
+      <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen
         name="cluster/[clusterId]/call"
         options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }}
       />
-      <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, animation: 'fade' }} />
-      <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, animation: 'fade' }} />
-      <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null }} />
-      <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, animation: 'fade' }} />
-      <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, animation: 'fade' }} />
+      <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="profile/[userId]" options={{ href: null }} />
       {/* No tab bar on post detail (Instagram pattern): the sticky comment
           composer must sit directly above the keyboard. With a tab bar between

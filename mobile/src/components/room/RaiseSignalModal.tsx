@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { Modal } from '../Modal'
 import { radii } from '../../lib/theme-tokens'
@@ -24,16 +25,30 @@ export function RaiseSignalModal({
   onRaise(): void
 }) {
   const t = useTheme()
+  const inputRef = useRef<TextInput>(null)
   return (
-    <Modal open={open} onClose={onClose} title="Raise a signal">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Raise a signal"
+      // Focus after the modal mounts, not via autoFocus at render: focusing
+      // against a stale layout frame drops the keyboard open on Android.
+      // The delayed retry covers builds where the first request still loses
+      // the race against the mount animation.
+      onShow={() => {
+        inputRef.current?.focus()
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 120)
+      }}
+    >
       <View style={{ marginTop: 16, gap: 12 }}>
         <TextInput
+          ref={inputRef}
           value={prompt}
           onChangeText={onPromptChange}
           maxLength={MAX_SIGNAL_PROMPT}
           multiline
-          numberOfLines={4}
-          autoFocus
           placeholder="What do you need help with?"
           placeholderTextColor={t.onSurfaceVariant}
           style={{
