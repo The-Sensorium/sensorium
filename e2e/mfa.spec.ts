@@ -121,10 +121,18 @@ test.describe('staff two-step verification', () => {
     await expect(page).toHaveURL(/\/auth\/login/)
   })
 
-  test('links to setup from settings with live status', async ({ page }) => {
+  test('links to setup from settings with live status', async ({ page }, testInfo) => {
     const user = await createStaffUser()
     await login(page, user.email, user.password)
     await page.goto('/settings')
+    // Staff two-step is desktop-only: mobile browsers hide the row and
+    // bounce direct setup visits home.
+    if (testInfo.project.name === 'mobile-chromium') {
+      await expect(page.getByTestId('settings-mfa-link')).toHaveCount(0)
+      await page.goto('/mfa-setup')
+      await expect(page).toHaveURL(/\/home/)
+      return
+    }
     const link = page.getByTestId('settings-mfa-link')
     await expect(link).toBeVisible()
     await expect(link).toContainText(/Not set up|authenticator connected|Manage/)
@@ -133,9 +141,16 @@ test.describe('staff two-step verification', () => {
     await expect(page.getByTestId('mfa-setup')).toBeVisible()
   })
 
-  test('abandoned setup retries cleanly, then enrolls and removes', async ({ page }) => {
+  test('abandoned setup retries cleanly, then enrolls and removes', async ({ page }, testInfo) => {
     const user = await createStaffUser()
     await login(page, user.email, user.password)
+
+    // Desktop-only flow: mobile bounces setup home.
+    if (testInfo.project.name === 'mobile-chromium') {
+      await page.goto('/mfa-setup')
+      await expect(page).toHaveURL(/\/home/)
+      return
+    }
 
     // Start setup, then abandon it for the dashboard: the classic path that
     // used to strand an unverified factor and fail the retry.
@@ -168,9 +183,14 @@ test.describe('staff two-step verification', () => {
     // itself is covered by the cancel test below.
   })
 
-  test('cancelling remove keeps the factor', async ({ page }) => {
+  test('cancelling remove keeps the factor', async ({ page }, testInfo) => {
     const user = await createStaffUser()
     await login(page, user.email, user.password)
+    if (testInfo.project.name === 'mobile-chromium') {
+      await page.goto('/mfa-setup')
+      await expect(page).toHaveURL(/\/home/)
+      return
+    }
     await page.goto('/mfa-setup')
     const secret = await startEnrollment(page)
     await confirmEnrollment(page, secret, '1 authenticator connected.')
@@ -187,9 +207,17 @@ test.describe('staff two-step verification', () => {
     await expect(page.getByRole('button', { name: 'Set up authenticator' })).toBeVisible()
   })
 
-  test('fresh staff login verifies with a real code, wrong code first', async ({ page }) => {
+  test('fresh staff login verifies with a real code, wrong code first', async ({ page }, testInfo) => {
     const user = await createStaffUser()
     await login(page, user.email, user.password)
+    // Mobile has no setup UI: direct visits bounce home.
+    if (testInfo.project.name === 'mobile-chromium') {
+      await page.goto('/mfa-setup')
+      await expect(page).toHaveURL(/\/home/)
+      await page.goto('/mfa-verify')
+      await expect(page).toHaveURL(/\/home/)
+      return
+    }
     await page.goto('/mfa-setup')
     const secret = await startEnrollment(page)
     await confirmEnrollment(page, secret, '1 authenticator connected.')

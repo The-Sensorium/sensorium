@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { Loader2, ShieldCheck } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Modal } from '../components/Modal'
+import { isMobileDevice } from '../lib/device'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { toErrorMessage } from '../lib/error'
 import {
@@ -28,6 +29,10 @@ export function MfaSetupPage() {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null)
+
+  // Staff two-step setup is desktop-only: mobile browsers stay in the
+  // member shell with no enroll UI.
+  if (isMobileDevice()) return <Navigate to="/home" replace />
 
   async function refresh() {
     if (userId) await queryClient.invalidateQueries({ queryKey: mfaStatusKey(userId) })

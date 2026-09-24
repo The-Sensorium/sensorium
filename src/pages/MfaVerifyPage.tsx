@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { toErrorMessage } from '../lib/error'
 import { useAuth } from '../app/auth-context'
+import { isMobileDevice } from '../lib/device'
 import {
   formatMfaError,
   listVerifiedTotpFactorIds,
@@ -24,6 +25,9 @@ export function MfaVerifyPage() {
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // Mobile browsers skip the staff MFA step and stay in the member shell.
+  if (isMobileDevice()) return <Navigate to="/home" replace />
 
   if (status.isError) {
     return (
