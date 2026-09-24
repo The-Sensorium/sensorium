@@ -927,9 +927,8 @@ export default function RoomScreen() {
                     menuOpen={menuFor === m.id}
                     replyParent={(() => {
                       const parent = replyById.get(m.reply_to_id ?? '')
-                      const rp = parent && isMutedAuthor(mutedSet, parent.author_id) ? undefined : replyPreview(parent)
-                      if (m.reply_to_id) console.log('REPLY_QUOTE', JSON.stringify({ rid: m.reply_to_id, hasParent: !!parent, parentContent: parent?.content ?? null, parentImg: parent?.image_url ?? null, parentAuthor: parent?.author_id ?? null, rp }))
-                      return rp
+                      if (parent && isMutedAuthor(mutedSet, parent.author_id)) return undefined
+                      return replyPreview(parent)
                     })()}
                     onEditDraftChange={setEditDraft}
                     onSaveEdit={() => void saveEdit()}
