@@ -482,29 +482,42 @@ export default function RoomScreen() {
     .map((id) => memberMap.get(id))
     .filter((m): m is NonNullable<typeof m> => Boolean(m))
 
-  async function persistSend(content: string) {
-    if (!clusterId) return
-    await send.mutateAsync({ clusterId, content, replyToId: replyTo?.id ?? undefined })
-    setReplyTo(null)
-  }
-
-  async function persistSendImage(image: PickedImage, caption: string | null) {
-    if (!clusterId) return
-    const path = await uploadChatImage(clusterId, image.uri, image.mime, image.width, image.height)
-    try {
-      await send.mutateAsync({ clusterId, content: caption, imageUrl: path, replyToId: replyTo?.id ?? undefined })
+  const sendMutate = send.mutateAsync
+  const persistSend = useCallback(
+    async (content: string) => {
+      if (!clusterId) return
+      await sendMutate({ clusterId, content, replyToId: replyTo?.id ?? undefined })
       setReplyTo(null)
-    } catch (e) {
-      await deleteChatImage(path).catch(() => {})
-      throw e
-    }
-  }
+    },
+    [clusterId, replyTo, sendMutate, setReplyTo],
+  )
 
-  async function persistSendGif(gif: Gif) {
-    if (!clusterId) return
-    await send.mutateAsync({ clusterId, content: `gif:${gif.url}`, replyToId: replyTo?.id ?? undefined })
-    setReplyTo(null)
-  }
+  const persistSendImage = useCallback(
+    async (image: PickedImage, caption: string | null) => {
+      if (!clusterId) return
+      const path = await uploadChatImage(clusterId, image.uri, image.mime, image.width, image.height)
+      try {
+        await sendMutate({ clusterId, content: caption, imageUrl: path, replyToId: replyTo?.id ?? undefined })
+        setReplyTo(null)
+      } catch (e) {
+        await deleteChatImage(path).catch(() => {})
+        throw e
+      }
+    },
+    [clusterId, replyTo, sendMutate, setReplyTo],
+  )
+
+  const persistSendGif = useCallback(
+    async (gif: Gif) => {
+      if (!clusterId) return
+      await sendMutate({ clusterId, content: `gif:${gif.url}`, replyToId: replyTo?.id ?? undefined })
+      setReplyTo(null)
+    },
+    [clusterId, replyTo, sendMutate, setReplyTo],
+  )
+
+  const openSignal = useCallback(() => setSignalOpen(true), [setSignalOpen])
+  const cancelReply = useCallback(() => setReplyTo(null), [setReplyTo])
 
   const handleToggleReaction = useCallback(
     async (messageId: string, emoji: string) => {
@@ -604,34 +617,43 @@ export default function RoomScreen() {
     }
   }
 
-  function openCall(callId: string) {
-    router.push({ pathname: '/cluster/[clusterId]/call', params: { clusterId, callId } })
-  }
+  const openCall = useCallback(
+    (callId: string) => {
+      router.push({ pathname: '/cluster/[clusterId]/call', params: { clusterId, callId } })
+    },
+    [clusterId],
+  )
 
-  async function handleStartCall() {
+  const startCallMutate = startCall.mutateAsync
+  const joinCallMutate = joinCall.mutateAsync
+  const handleStartCall = useCallback(async () => {
     if (!clusterId) return
     setError(null)
     try {
-      const callId = await startCall.mutateAsync()
+      const callId = await startCallMutate()
       successHaptic()
       openCall(callId)
     } catch (e) {
       errorHaptic()
       setError(toErrorMessage(e, 'Could not start the call. Try again.'))
     }
-  }
+  }, [clusterId, startCallMutate, openCall, setError])
 
-  async function handleJoinCall(callId: string) {
-    setError(null)
-    try {
-      await joinCall.mutateAsync(callId)
-      successHaptic()
-      openCall(callId)
-    } catch (e) {
-      errorHaptic()
-      setError(toErrorMessage(e, 'Could not join the call. Try again.'))
-    }
-  }
+  const handleJoinCall = useCallback(
+    async (callId: string) => {
+      setError(null)
+      try {
+        await joinCallMutate(callId)
+        successHaptic()
+        openCall(callId)
+      } catch (e) {
+        errorHaptic()
+        setError(toErrorMessage(e, 'Could not join the call. Try again.'))
+      }
+    },
+    [joinCallMutate, openCall, setError],
+  )
+  const startCallFromComposer = useCallback(() => void handleStartCall(), [handleStartCall])
 
   const scrollToLatest = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true })
@@ -1072,10 +1094,10 @@ export default function RoomScreen() {
             onSend={persistSend}
             onSendImage={persistSendImage}
             onSendGif={persistSendGif}
-            onOpenSignal={() => setSignalOpen(true)}
-            onStartCall={() => void handleStartCall()}
+            onOpenSignal={openSignal}
+            onStartCall={startCallFromComposer}
             callActive={Boolean(activeCall.data)}
-            onCancelReply={() => setReplyTo(null)}
+            onCancelReply={cancelReply}
           />
           </View>
         </KeyboardStickyView>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { CornerUpLeft, ImagePlus, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react-native'
@@ -30,7 +30,7 @@ export interface PickedImage {
 
 type MentionOption = { key: string; kind: 'everyone' } | { key: string; kind: 'member'; member: MentionMember }
 
-export function Composer({
+export const Composer = memo(function Composer({
   members,
   selfId,
   pending,
@@ -476,7 +476,7 @@ export function Composer({
       </View>
     </View>
   )
-}
+})
 
 function MenuRow({
   label,
