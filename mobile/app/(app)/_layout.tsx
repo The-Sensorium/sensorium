@@ -106,11 +106,10 @@ export default function AppTabs() {
       <Tabs.Screen name="cluster-created" options={{ href: null }} />
       <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ href: null }} />
       <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null }} />
-      {/* No tab bar in the room (same Instagram pattern as post detail and
-          the call screen): the keyboard-glued composer must sit directly
-          above the keyboard, and a tab bar showing/hiding underneath it is a
-          second layout actor that desyncs the sticky translate. */}
-      <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }} />
+      {/* Room keeps the tab bar but disables its hide-on-keyboard animation:
+          the KAV pads the container by the keyboard height, so the tab bar
+          staying put (under the keyboard) keeps one static layout actor. */}
+      <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, animation: 'fade', tabBarHideOnKeyboard: false }} />
       <Tabs.Screen
         name="cluster/[clusterId]/call"
         options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }}

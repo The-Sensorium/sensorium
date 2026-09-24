@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
@@ -104,8 +104,6 @@ const EMPTY_REACTIONS: Reaction[] = []
 export default function RoomScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
-  // No tab bar on this screen: the sticky footer owns the bottom inset.
-  const { bottom } = useSafeAreaInsets()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -1027,10 +1025,9 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        {/* Composer footer: plain flex child, lifted by the KAV padding. Owns
-            the bottom inset (closed: holds above the gesture bar; open: the
-            padded edge hides behind the keyboard so content lands flush). */}
-        <View style={{ backgroundColor: t.background, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + bottom }}>
+        {/* Composer footer: plain flex child, lifted by the KAV padding. The tab
+            bar owns the bottom inset below it. */}
+        <View style={{ backgroundColor: t.background, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}>
           <Composer
             members={parseMembers}
             selfId={userId}
