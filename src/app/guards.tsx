@@ -13,6 +13,7 @@ import {
   type SessionRole,
 } from '../features/access'
 import { useSessionRole } from './session-role-context'
+import { needsMfaVerify, useMfaStatus } from '../features/staff-mfa'
 import { isMobileDevice } from '../lib/device'
 import { BrandMark } from '../components/BrandMark'
 function SetupNotice() {
@@ -174,6 +175,8 @@ export function SessionRoleEntry() {
 function SessionRoleResolver({ access }: { access: MyAccessRow }) {
   const { setRole } = useSessionRole()
   const mobile = isMobileDevice()
+  const staff = hasCapability(access, 'can_moderate')
+  const mfa = useMfaStatus(staff && !mobile)
 
   const available = activeSessionRoles(access)
   const single = available.length === 1
@@ -184,6 +187,14 @@ function SessionRoleResolver({ access }: { access: MyAccessRow }) {
   }, [available, setRole, single, mobile])
 
   if (mobile) return <Navigate to="/home" replace />
+  // Voluntary-phase staff nudge (not enforcement: direct shell links stay
+  // open until the AAL2 DB migration lands). Staff with an enrolled
+  // authenticator finish the AAL2 step before entering. Wait for the MFA
+  // status first: routing before it resolves would let a fresh AAL1 session
+  // slip past unverified. Fail closed on error like the access guards above.
+  if (staff && mfa.isLoading) return <LoadingScreen />
+  if (staff && mfa.isError) return <AccessErrorScreen onRetry={() => void mfa.refetch()} />
+  if (staff && needsMfaVerify(mfa.data)) return <Navigate to="/mfa-verify" replace />
   if (!single) return <Navigate to="/select-role" replace />
   return <Navigate to={sessionRoleShell(available[0])} replace />
 }

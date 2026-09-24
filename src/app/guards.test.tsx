@@ -8,6 +8,7 @@ import { useAuth } from './auth-context'
 import { useProfile } from '../lib/use-profile'
 import { useSessionRole } from './session-role-context'
 import { useMyAccess } from '../features/access'
+import { useMfaStatus } from '../features/staff-mfa'
 
 const authStates = {
   unconfigured: { state: 'unconfigured' as const },
@@ -135,6 +136,14 @@ vi.mock('../features/access', async (importOriginal) => {
   return { ...actual, useMyAccess: vi.fn(() => accessStates.member) }
 })
 
+vi.mock('../features/staff-mfa', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../features/staff-mfa')>()
+  return {
+    ...actual,
+    useMfaStatus: vi.fn(() => ({ data: null, isLoading: false, isError: false, refetch: vi.fn() })),
+  }
+})
+
 vi.mock('../components/BrandMark', () => ({ BrandMark: () => null }))
 
 vi.mock('./session-role-context', async (importOriginal) => {
@@ -163,6 +172,7 @@ function renderGuarded(ui: ReactElement, initialPath = '/') {
         <Route path="/restricted" element={<div>restricted page</div>} />
         <Route path="/moderator" element={<div>moderator shell</div>} />
         <Route path="/admin" element={<div>admin shell</div>} />
+        <Route path="/mfa-verify" element={<div>mfa verify page</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -363,6 +373,12 @@ describe('RequireSessionRole', () => {
 describe('SessionRoleEntry', () => {
   beforeEach(() => {
     vi.mocked(useMyAccess).mockReturnValue(accessStates.member)
+    vi.mocked(useMfaStatus).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never)
   })
 
   it('routes a single-role account straight to its shell', () => {
@@ -380,6 +396,57 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMyAccess).mockReturnValue(accessStates.suspended)
     renderGuarded(<SessionRoleEntry />)
     expect(screen.getByText('restricted page')).toBeInTheDocument()
+  })
+
+  it('sends staff with a pending second factor to verification', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    vi.mocked(useMfaStatus).mockReturnValue({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2', verifiedTotpCount: 1, verifiedTotpIds: ['f1'] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never)
+    renderGuarded(<SessionRoleEntry />)
+    expect(screen.getByText('mfa verify page')).toBeInTheDocument()
+  })
+
+  it('waits for the MFA status before routing staff', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    vi.mocked(useMfaStatus).mockReturnValue({
+      data: null,
+      isLoading: true,
+      isError: false,
+      refetch: vi.fn(),
+    } as never)
+    renderGuarded(<SessionRoleEntry />)
+    expect(screen.queryByText('mfa verify page')).not.toBeInTheDocument()
+    expect(screen.queryByText('role picker')).not.toBeInTheDocument()
+  })
+
+  it('fails closed when the MFA status errors for staff', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    vi.mocked(useMfaStatus).mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: true,
+      refetch: vi.fn(),
+    } as never)
+    renderGuarded(<SessionRoleEntry />)
+    expect(screen.getByText('Couldn’t load your account')).toBeInTheDocument()
+    expect(screen.queryByText('mfa verify page')).not.toBeInTheDocument()
+    expect(screen.queryByText('role picker')).not.toBeInTheDocument()
+  })
+
+  it('does not block members with a pending second factor', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.member)
+    vi.mocked(useMfaStatus).mockReturnValue({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2', verifiedTotpCount: 1, verifiedTotpIds: ['f1'] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never)
+    renderGuarded(<SessionRoleEntry />)
+    expect(screen.getByText('home page')).toBeInTheDocument()
   })
 })
 

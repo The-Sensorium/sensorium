@@ -296,13 +296,26 @@ describe('report workflow enforcement', () => {
   })
 
   it('the last active admin cannot be revoked', async () => {
-    const adm = await administrator('rb-last')
-    const { error } = await adm.client.rpc('revoke_platform_role', {
-      p_user_id: adm.id,
-      p_role: 'admin',
-      p_reason: 'attempt',
-    })
-    expect(error?.message).toContain('last_admin_required')
+    // Count-sensitive: seed:demo grants standing admins (Diya), which would
+    // make the test admin not-last. Park them, then restore afterwards so the
+    // seeded state is untouched.
+    const { data: parked } = await admin
+      .from('user_roles')
+      .select('*')
+      .eq('role', 'admin')
+      .is('revoked_at', null)
+    await admin.from('user_roles').delete().eq('role', 'admin').is('revoked_at', null)
+    try {
+      const adm = await administrator('rb-last')
+      const { error } = await adm.client.rpc('revoke_platform_role', {
+        p_user_id: adm.id,
+        p_role: 'admin',
+        p_reason: 'attempt',
+      })
+      expect(error?.message).toContain('last_admin_required')
+    } finally {
+      if (parked?.length) await admin.from('user_roles').insert(parked)
+    }
   })
 
   it('a moderator cannot resolve a report they did not claim', async () => {

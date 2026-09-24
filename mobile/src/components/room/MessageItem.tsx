@@ -142,6 +142,7 @@ export function MessageItem({
                 style={{
                   marginBottom: 6,
                   flexDirection: 'row',
+                  alignItems: 'flex-start',
                   gap: 6,
                   backgroundColor: t.surface,
                   borderRadius: radii.md,
@@ -150,7 +151,7 @@ export function MessageItem({
                 }}
               >
                 <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                <View style={{ flex: 1 }}>
+                <View style={{ flexShrink: 1, flexGrow: 0 }}>
                   <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
                     {replyParent?.authorName ?? 'Member'}
                   </Text>

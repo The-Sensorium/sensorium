@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
@@ -50,6 +50,7 @@ import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/Muted
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, lightHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { useClusterChannel, usePresence } from '../../../../src/features/realtime'
+import { useDismissKeyboardOnBlur } from '../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { type Gif } from '../../../../src/features/gifs'
@@ -79,6 +80,7 @@ function dayKey(iso: string) {
 export default function RoomScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
+  const { bottom } = useSafeAreaInsets()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -89,6 +91,7 @@ export default function RoomScreen() {
   const authedClusterId = authed ? clusterId || null : null
 
   useClusterChannel(authedClusterId)
+  useDismissKeyboardOnBlur()
   useFocusEffect(
     useCallback(() => {
       setSuppressedPushCluster(clusterId || null)
@@ -164,6 +167,19 @@ export default function RoomScreen() {
     prevOldestIdRef.current = null
     setReplyTo(null)
     setDeclinedCalls(new Set())
+    // Same-route param change reuses the instance, so drop transient UI that
+    // would otherwise leak from the previous cluster.
+    setError(null)
+    setEditingId(null)
+    setEditDraft('')
+    setMenuFor(null)
+    setInfoFor(null)
+    setReportFor(null)
+    setDeleteFor(null)
+    setDeleteError(null)
+    setSignalOpen(false)
+    setSignalPrompt('')
+    setRevealed(new Set())
   }, [clusterId])
 
   const memberMap = useMemo(() => {
@@ -207,12 +223,17 @@ export default function RoomScreen() {
       | undefined,
   ): { authorName: string; preview: string } | undefined {
     if (!target || target.deleted_at) return undefined
-    const authorName = memberMap.get(target.author_id)?.display_name ?? 'Member'
-    const preview = target.content?.startsWith('gif:')
+    // Blank values bypass the ?? fallbacks in the quote box and would render
+    // a textless white area. The schema allows blank display names and
+    // whitespace-only content, so normalize them to the missing-target text.
+    const rawName = memberMap.get(target.author_id)?.display_name
+    const authorName = rawName && rawName.trim() ? rawName : 'Member'
+    const rawPreview = target.content?.startsWith('gif:')
       ? 'GIF'
       : target.image_url
         ? 'Image'
         : (target.content ?? '')
+    const preview = rawPreview.trim() ? rawPreview : 'message'
     return { authorName, preview }
   }
 
@@ -596,8 +617,10 @@ export default function RoomScreen() {
           <Pressable
             accessibilityLabel="Back"
             onPress={() => {
-              if (router.canGoBack()) router.back()
-              else router.replace('/(app)/clusters')
+              // Deterministic parent, not history: with backBehavior="history"
+              // a router.back() here could return to settings or signals if
+              // that was the previous stop. The room always exits home.
+              router.replace('/(app)/home')
             }}
             style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
           >
@@ -962,8 +985,16 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}>
+        <View
+          style={{
+            backgroundColor: t.background,
+            paddingHorizontal: 12,
+            paddingTop: 8,
+            paddingBottom: 8 + bottom,
+          }}
+        >
           <Composer
+            key={clusterId}
             members={parseMembers}
             selfId={userId}
             pending={send.isPending}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
-import { Link, type Href } from 'expo-router'
+import { router, type Href } from 'expo-router'
 import { Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react-native'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -48,7 +48,7 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
       >
         <Menu size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
       </Pressable>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
         <Pressable onPress={() => setOpen(false)} style={{ flex: 1 }}>
           <View
             style={{
@@ -66,9 +66,16 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
               const isActive = s.key === active
               const Icon = s.icon
               return (
-                <Link key={s.key} href={s.href(clusterId)} asChild>
-                  <Pressable
-                    onPress={() => setOpen(false)}
+                <Pressable
+                  key={s.key}
+                  // Close the menu before navigating: with retained tab
+                  // routes a navigation could complete while open=true
+                  // survived on the next screen. Tapping the active section
+                  // just closes the menu.
+                  onPress={() => {
+                    setOpen(false)
+                    if (!isActive) router.push(s.href(clusterId))
+                  }}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -91,7 +98,6 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
                       {s.label}
                     </Text>
                   </Pressable>
-                </Link>
               )
             })}
           </View>

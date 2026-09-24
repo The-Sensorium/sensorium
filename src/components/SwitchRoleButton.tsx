@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { createPortal, flushSync } from 'react-dom'
 import { BriefcaseBusiness, Check, ChevronDown, LogOut, Shield, ShieldCheck, User } from 'lucide-react'
 import { useSessionRole } from '../app/session-role-context'
+import { isMobileDevice } from '../lib/device'
 import {
   activeSessionRoles,
   SESSION_ROLE_DESCRIPTIONS,
@@ -56,6 +57,7 @@ export function SwitchRoleButton() {
   }, [open])
 
   if (access.isLoading || access.isError || !access.data) return null
+  if (isMobileDevice()) return null
   if (available.length < 2) return null
   const currentRole = role ?? available[0]
 
