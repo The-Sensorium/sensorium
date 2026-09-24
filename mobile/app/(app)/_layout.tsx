@@ -108,20 +108,17 @@ export default function AppTabs() {
       <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null }} />
       {/* Room keeps the tab bar but disables its hide-on-keyboard animation:
           the KAV pads the container by the keyboard height, so the tab bar
-          staying put (under the keyboard) keeps one static layout actor.
-          Section screens (room, members, signals, votes, settings) switch
-          instantly: they share an identical header, so a cross-fade paints
-          both headers at once and flashes the menu area. */}
-      <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, animation: 'none', tabBarHideOnKeyboard: false }} />
+          staying put (under the keyboard) keeps one static layout actor. */}
+      <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, animation: 'fade', tabBarHideOnKeyboard: false }} />
       <Tabs.Screen
         name="cluster/[clusterId]/call"
         options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }}
       />
-      <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, animation: 'none' }} />
-      <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, animation: 'none' }} />
+      <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, animation: 'fade' }} />
+      <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null }} />
-      <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, animation: 'none' }} />
-      <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, animation: 'none' }} />
+      <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, animation: 'fade' }} />
+      <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, animation: 'fade' }} />
       <Tabs.Screen name="profile/[userId]" options={{ href: null }} />
       {/* No tab bar on post detail (Instagram pattern): the sticky comment
           composer must sit directly above the keyboard. With a tab bar between
