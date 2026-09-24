@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
@@ -80,6 +80,7 @@ function dayKey(iso: string) {
 export default function RoomScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
+  const { bottom } = useSafeAreaInsets()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -984,7 +985,14 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}>
+        <View
+          style={{
+            backgroundColor: t.background,
+            paddingHorizontal: 12,
+            paddingTop: 8,
+            paddingBottom: 8 + bottom,
+          }}
+        >
           <Composer
             key={clusterId}
             members={parseMembers}
