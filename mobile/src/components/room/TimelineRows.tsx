@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Link } from 'expo-router'
 import { Megaphone, Scale } from 'lucide-react-native'
@@ -16,7 +17,7 @@ const SIGNAL_STATUS: Record<SignalStatus, { label: string; colorKey: 'primary' |
   resolved: { label: 'Resolved', colorKey: 'onSurfaceVariant' },
 }
 
-export function SignalRow({
+export const SignalRow = memo(function SignalRow({
   signal,
   author,
   isMine,
@@ -76,7 +77,7 @@ export function SignalRow({
       </Link>
     </View>
   )
-}
+})
 
 const VOTE_TYPE_LABEL: Record<Vote['type'], string> = {
   replace_member: 'Replace a member',
@@ -84,7 +85,7 @@ const VOTE_TYPE_LABEL: Record<Vote['type'], string> = {
   select_candidate: 'Choose a new member',
 }
 
-export function VoteRow({
+export const VoteRow = memo(function VoteRow({
   vote,
   initiator,
   target,
@@ -143,4 +144,4 @@ export function VoteRow({
       </Link>
     </View>
   )
-}
+})

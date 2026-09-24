@@ -44,5 +44,6 @@ export function useAvatarUrl(stored: string | null | undefined) {
     },
     staleTime: AVATAR_STALE_MS,
     refetchInterval: AVATAR_STALE_MS,
+    refetchIntervalInBackground: false,
   })
 }

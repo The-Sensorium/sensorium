@@ -654,6 +654,7 @@ export function usePostImageUrl(path: string | null) {
     },
     staleTime: POST_IMAGE_STALE_MS,
     refetchInterval: POST_IMAGE_STALE_MS,
+    refetchIntervalInBackground: false,
   })
 }
 

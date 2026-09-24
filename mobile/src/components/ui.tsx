@@ -13,7 +13,7 @@ import { Eye, EyeOff } from 'lucide-react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView, KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
 import type { SharedValue } from 'react-native-reanimated'
-import { Link, type Href } from 'expo-router'
+import { Link, useIsFocused, type Href } from 'expo-router'
 import { radii, shadowShape, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { BrandMark } from './BrandMark'
@@ -341,6 +341,11 @@ export function Screen({
   refreshing?: boolean
 }) {
   const t = useTheme()
+  // Tab screens stay mounted after a visit, so every Screen with keyboard
+  // components would otherwise react to every keyboard session app-wide.
+  // A background screen ignores the keyboard (sticky returns to its closed
+  // position, scroll freezing pauses inset shifts) and re-engages on focus.
+  const isFocused = useIsFocused()
   // Edge-to-edge production builds report a non-zero bottom inset (gesture
   // bar) while Expo Go's host activity reports zero, which is why a footer
   // padded by the parent SafeAreaView floats exactly inset-height too high
@@ -363,6 +368,7 @@ export function Screen({
   // scroll range past the bar - list content never rests underneath it.
   const stickyFooter = footer ? (
     <KeyboardStickyView
+      enabled={isFocused}
       onLayout={(e) => onStickyFooterLayout?.(e.nativeEvent.layout.height)}
       // Closed: bottom padding holds the bar above the gesture bar. Open:
       // the +bottom translate drops the padded bar's bottom edge behind the
@@ -390,6 +396,7 @@ export function Screen({
       <KeyboardChatScrollView
         extraContentPadding={stickyFooterHeight}
         keyboardLiftBehavior="whenAtEnd"
+        freeze={!isFocused}
         contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
         refreshControl={refresh}
@@ -398,6 +405,7 @@ export function Screen({
       </KeyboardChatScrollView>
     ) : (
       <KeyboardAwareScrollView
+        enabled={isFocused}
         bottomOffset={16}
         contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"

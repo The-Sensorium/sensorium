@@ -368,6 +368,7 @@ export function useChatImageUrl(path: string) {
     },
     staleTime: CHAT_IMAGE_STALE_MS,
     refetchInterval: CHAT_IMAGE_STALE_MS,
+    refetchIntervalInBackground: false,
   })
 }
 

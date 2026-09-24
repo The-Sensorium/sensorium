@@ -1,14 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type ComponentRef } from 'react'
 import {
   ActivityIndicator,
   AppState,
   FlatList,
-  Platform,
   Pressable,
   Text,
   View,
+  type ScrollViewProps,
 } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import {
+  KeyboardChatScrollView,
+  KeyboardStickyView,
+  type KeyboardChatScrollViewProps,
+} from 'react-native-keyboard-controller'
+import { useSharedValue } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -76,6 +81,51 @@ function dayKey(iso: string) {
   return iso.slice(0, 10)
 }
 
+type MemberInfo = { id: string; display_name: string; avatar_url: string | null }
+
+function replyPreview(
+  target:
+    | {
+        author_id: string
+        content: string | null
+        image_url: string | null
+        deleted_at: string | null
+      }
+    | null
+    | undefined,
+  memberMap: Map<string, MemberInfo>,
+): { authorName: string; preview: string } | undefined {
+  if (!target || target.deleted_at) return undefined
+  const authorName = memberMap.get(target.author_id)?.display_name ?? 'Member'
+  const preview = target.content?.startsWith('gif:')
+    ? 'GIF'
+    : target.image_url
+      ? 'Image'
+      : (target.content ?? '')
+  return { authorName, preview }
+}
+
+// Scroll component for the inverted chat list, following the official
+// keyboard-controller chat guide: the list layout never changes on keyboard
+// events, the scroll range extends via contentInset instead (no layout resize,
+// no frame drops on complex layouts). iOS must not apply its own inset
+// adjustments or they fight the component's inset management.
+const ChatScrollView = forwardRef<
+  ComponentRef<typeof KeyboardChatScrollView>,
+  ScrollViewProps & KeyboardChatScrollViewProps
+>(({ inverted, ...props }, ref) => (
+  <KeyboardChatScrollView
+    {...props}
+    ref={ref}
+    inverted={inverted}
+    automaticallyAdjustContentInsets={false}
+    contentInsetAdjustmentBehavior="never"
+  />
+))
+ChatScrollView.displayName = 'ChatScrollView'
+
+const EMPTY_REACTIONS: Reaction[] = []
+
 export default function RoomScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
@@ -103,6 +153,7 @@ export default function RoomScreen() {
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
   const reactions = useClusterReactions(authedClusterId)
   const loadEarlier = useLoadEarlierMessages(authedClusterId)
+  const loadEarlierMutate = loadEarlier.mutateAsync
   const queryClient = useQueryClient()
   const signals = useClusterSignals(authedClusterId)
   const signalReplies = useSignalReplies(authedClusterId, null)
@@ -112,6 +163,11 @@ export default function RoomScreen() {
   const toggleReaction = useToggleReaction(clusterId || null)
   const editMessage = useEditMessage(clusterId || null)
   const deleteMessage = useDeleteMessage(clusterId || null)
+  // Bound mutate fns are referentially stable across renders (the mutation
+  // result object is not), so callbacks below can depend on them directly.
+  const toggleReactionMutate = toggleReaction.mutateAsync
+  const editMessageMutate = editMessage.mutateAsync
+  const deleteMessageMutate = deleteMessage.mutateAsync
   const raise = useRaiseSignal(clusterId || null)
   const markRead = useMarkClusterRead()
   const myMutes = useMyMutes(authedClusterId !== null)
@@ -120,7 +176,6 @@ export default function RoomScreen() {
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
-  const { typing, signalTyping, resetTyping, online } = usePresence(clusterId || null)
   const roomClusterId = authedClusterId
   const activeCall = useActiveCall(roomClusterId)
   const callParticipants = useCallParticipants(activeCall.data?.id ?? null)
@@ -128,9 +183,6 @@ export default function RoomScreen() {
   const joinCall = useJoinCall(roomClusterId)
   const joinedCall = (callParticipants.data ?? []).some((p) => p.user_id === userId)
   const callPending = startCall.isPending || joinCall.isPending
-
-  const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -146,6 +198,12 @@ export default function RoomScreen() {
   const [pinned, setPinned] = useState(true)
   const [focused, setFocused] = useState(false)
   const [newCount, setNewCount] = useState(0)
+  // Presence (and its typing/online re-renders) only runs while this screen
+  // is focused: tab screens stay mounted, so a background room must not
+  // subscribe, animate, or re-render on other screens' keyboard sessions.
+  const { typing, signalTyping, resetTyping, online } = usePresence(focused ? clusterId || null : null)
+  const memberCount = (members.data ?? []).length
+  const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
   const [hasMore, setHasMore] = useState(false)
   const [declinedCalls, setDeclinedCalls] = useState<Set<string>>(new Set())
   const exhaustedRef = useRef(false)
@@ -153,6 +211,16 @@ export default function RoomScreen() {
   const pinnedRef = useRef(true)
   const lastLenRef = useRef<number | null>(null)
   const listRef = useRef<FlatList<{ key: string; item: TimelineItem; showDay: boolean }> | null>(null)
+
+  // Composer height feeds the chat scroll's extraContentPadding so the scroll
+  // range extends past the sticky input (same pattern as Screen).
+  const composerHeight = useSharedValue(0)
+  const renderScrollComponent = useCallback(
+    (props: ScrollViewProps) => (
+      <ChatScrollView {...props} extraContentPadding={composerHeight} freeze={!focused} />
+    ),
+    [composerHeight, focused],
+  )
 
   useEffect(() => {
     lastLenRef.current = null
@@ -167,7 +235,7 @@ export default function RoomScreen() {
   }, [clusterId])
 
   const memberMap = useMemo(() => {
-    const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
+    const map = new Map<string, MemberInfo>()
     for (const m of members.data ?? []) {
       map.set(m.id, { id: m.id, display_name: m.display_name, avatar_url: m.avatar_url })
     }
@@ -195,37 +263,32 @@ export default function RoomScreen() {
     return map
   }, [loadedById, replyTargets.data])
 
-  function replyPreview(
-    target:
-      | {
-          author_id: string
-          content: string | null
-          image_url: string | null
-          deleted_at: string | null
-        }
-      | null
-      | undefined,
-  ): { authorName: string; preview: string } | undefined {
-    if (!target || target.deleted_at) return undefined
-    const authorName = memberMap.get(target.author_id)?.display_name ?? 'Member'
-    const preview = target.content?.startsWith('gif:')
-      ? 'GIF'
-      : target.image_url
-        ? 'Image'
-        : (target.content ?? '')
-    return { authorName, preview }
-  }
+  const replyParentMap = useMemo(() => {
+    const referenced = new Set<string>()
+    for (const m of messages.data ?? []) {
+      if (m.reply_to_id) referenced.add(m.reply_to_id)
+    }
+    const map = new Map<string, { authorName: string; preview: string }>()
+    if (referenced.size === 0) return map
+    for (const [id, parent] of replyById) {
+      if (!referenced.has(id)) continue
+      if (!parent || isMutedAuthor(mutedSet, parent.author_id)) continue
+      const info = replyPreview(parent, memberMap)
+      if (info) map.set(id, info)
+    }
+    return map
+  }, [messages.data, replyById, mutedSet, memberMap])
 
-  function startReply(m: Message) {
+  const startReply = useCallback((m: Message) => {
     setMenuFor(null)
     setReplyTo(m)
-  }
+  }, [setMenuFor, setReplyTo])
 
-  const replyParentInfo = (() => {
+  const replyParentInfo = useMemo(() => {
     if (!replyTo) return null
-    const info = replyPreview(replyTo)
+    const info = replyPreview(replyTo, memberMap)
     return info ? { id: replyTo.id, ...info } : null
-  })()
+  }, [replyTo, memberMap])
 
   const parseMembers = useMemo<MentionMember[]>(() => {
     return (members.data ?? []).map((m) => ({
@@ -438,61 +501,80 @@ export default function RoomScreen() {
     setReplyTo(null)
   }
 
-  async function handleToggleReaction(messageId: string, emoji: string) {
-    setError(null)
-    try {
-      await toggleReaction.mutateAsync({ messageId, emoji })
-      lightHaptic()
-    } catch (e) {
-      errorHaptic()
-      setError(toErrorMessage(e, 'Could not react to that message.'))
-    }
-  }
+  const handleToggleReaction = useCallback(
+    async (messageId: string, emoji: string) => {
+      setError(null)
+      try {
+        await toggleReactionMutate({ messageId, emoji })
+        lightHaptic()
+      } catch (e) {
+        errorHaptic()
+        setError(toErrorMessage(e, 'Could not react to that message.'))
+      }
+    },
+    [toggleReactionMutate, setError],
+  )
 
-  function startEdit(m: { id: string; content: string | null }) {
+  const startEdit = useCallback((m: { id: string; content: string | null }) => {
     setMenuFor(null)
     setEditingId(m.id)
     setEditDraft(m.content ?? '')
-  }
+  }, [setMenuFor, setEditingId, setEditDraft])
 
-  function showInfo(m: Message) {
+  const showInfo = useCallback((m: Message) => {
     setMenuFor(null)
     setInfoFor(m.id)
-  }
+  }, [setMenuFor, setInfoFor])
 
-  function startReport(m: Message) {
+  const startReport = useCallback((m: Message) => {
     setMenuFor(null)
     setReportFor(m)
-  }
+  }, [setMenuFor, setReportFor])
 
-  async function saveEdit() {
+  const handleToggleMenu = useCallback((id: string) => {
+    setMenuFor((prev) => (prev === id ? null : id))
+  }, [setMenuFor])
+
+  const handleDeleteRequest = useCallback((messageId: string) => {
+    setMenuFor(null)
+    setDeleteError(null)
+    setDeleteFor(messageId)
+  }, [setMenuFor, setDeleteError, setDeleteFor])
+
+  const saveEdit = useCallback(async () => {
     const content = editDraft.trim()
     if (!content || !editingId) return
     setError(null)
     try {
-      await editMessage.mutateAsync({ messageId: editingId, content })
+      await editMessageMutate({ messageId: editingId, content })
       setEditingId(null)
     } catch (e) {
       setError(toErrorMessage(e, 'Could not edit your message.'))
     }
-  }
+  }, [editDraft, editingId, editMessageMutate, setError, setEditingId])
 
-  async function remove(messageId: string) {
-    setMenuFor(null)
-    setDeleteError(null)
-    try {
-      await deleteMessage.mutateAsync(messageId)
-      setDeleteFor(null)
-    } catch (e) {
-      setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
-    }
-  }
+  const cancelEdit = useCallback(() => setEditingId(null), [setEditingId])
 
-  async function handleLoadEarlier() {
+  const remove = useCallback(
+    async (messageId: string) => {
+      setMenuFor(null)
+      setDeleteError(null)
+      try {
+        await deleteMessageMutate(messageId)
+        setDeleteFor(null)
+      } catch (e) {
+        setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
+      }
+    },
+    [deleteMessageMutate, setMenuFor, setDeleteError, setDeleteFor],
+  )
+
+  const messageCount = messages.data?.length ?? 0
+  const handleLoadEarlier = useCallback(async () => {
     setError(null)
     try {
-      const result = await loadEarlier.mutateAsync()
-      lastLenRef.current = (messages.data?.length ?? 0) + result.added
+      const result = await loadEarlierMutate()
+      lastLenRef.current = messageCount + result.added
       if (!result.hasMore) {
         exhaustedRef.current = true
         setHasMore(false)
@@ -500,7 +582,7 @@ export default function RoomScreen() {
     } catch (e) {
       setError(toErrorMessage(e, 'Could not load earlier messages.'))
     }
-  }
+  }, [loadEarlierMutate, messageCount, setError, setHasMore])
 
   async function handleRaise() {
     const prompt = signalPrompt.trim()
@@ -546,12 +628,12 @@ export default function RoomScreen() {
     }
   }
 
-  function scrollToLatest() {
+  const scrollToLatest = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true })
     pinnedRef.current = true
     setPinned(true)
     setNewCount(0)
-  }
+  }, [setPinned, setNewCount])
 
   // Clusters open at formation: every active member enters the room directly.
   // Introductions are an optional in-cluster checklist and never gate access.
@@ -584,14 +666,11 @@ export default function RoomScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
-      {/* Controller KeyboardAvoidingView (not RN's, whose JS-driven animation
-          snaps on Android where keyboardWillShow never fires). Same layout
-          semantics, frame-synced natively on both platforms. */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={0}
-      >
+      {/* Chat pattern per the keyboard-controller guide: the list layout never
+          resizes on keyboard events (KAV height/padding drops frames on
+          complex layouts). The scroll range extends via contentInset and the
+          composer sticks to the keyboard natively. */}
+      <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
             accessibilityLabel="Back"
@@ -788,6 +867,11 @@ export default function RoomScreen() {
               keyExtractor={(r) => r.key}
               inverted
               keyboardShouldPersistTaps="handled"
+              renderScrollComponent={renderScrollComponent}
+              windowSize={11}
+              maxToRenderPerBatch={10}
+              updateCellsBatchingPeriod={50}
+              initialNumToRender={12}
               contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
               onScroll={(e) => {
                 const nearBottom = e.nativeEvent.contentOffset.y < 96
@@ -895,7 +979,7 @@ export default function RoomScreen() {
                     mine={m.author_id === userId}
                     author={memberMap.get(m.author_id)}
                     clusterId={clusterId}
-                    reactions={reactionsByMessage.get(m.id) ?? []}
+                    reactions={reactionsByMessage.get(m.id) ?? EMPTY_REACTIONS}
                     myReactionKeys={myReactionKeys}
                     members={parseMembers}
                     showDay={showDay}
@@ -903,25 +987,17 @@ export default function RoomScreen() {
                     editDraft={editDraft}
                     editPending={editMessage.isPending}
                     menuOpen={menuFor === m.id}
-                    replyParent={(() => {
-                      const parent = replyById.get(m.reply_to_id ?? '')
-                      if (parent && isMutedAuthor(mutedSet, parent.author_id)) return undefined
-                      return replyPreview(parent)
-                    })()}
+                    replyParent={replyParentMap.get(m.reply_to_id ?? '')}
                     onEditDraftChange={setEditDraft}
-                    onSaveEdit={() => void saveEdit()}
-                    onCancelEdit={() => setEditingId(null)}
-                    onToggleMenu={() => setMenuFor(menuFor === m.id ? null : m.id)}
+                    onSaveEdit={saveEdit}
+                    onCancelEdit={cancelEdit}
+                    onToggleMenu={handleToggleMenu}
                     onShowInfo={showInfo}
                     onEdit={startEdit}
-                    onDelete={(messageId) => {
-                      setMenuFor(null)
-                      setDeleteError(null)
-                      setDeleteFor(messageId)
-                    }}
+                    onDelete={handleDeleteRequest}
                     onReply={startReply}
                     onReport={startReport}
-                    onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
+                    onToggleReaction={handleToggleReaction}
                     />
                   </View>
                 )
@@ -962,7 +1038,18 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        <View style={{ paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}>
+        {/* Sticky composer: frame-synced translate above the keyboard, no layout
+            resize. Disabled while another screen is focused so a background
+            room never reacts to its keyboard session. */}
+        <KeyboardStickyView
+          enabled={focused}
+          style={{ backgroundColor: t.background, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}
+        >
+          <View
+            onLayout={(e) => {
+              composerHeight.value = e.nativeEvent.layout.height
+            }}
+          >
           <Composer
             members={parseMembers}
             selfId={userId}
@@ -981,7 +1068,8 @@ export default function RoomScreen() {
             callActive={Boolean(activeCall.data)}
             onCancelReply={() => setReplyTo(null)}
           />
-        </View>
+          </View>
+        </KeyboardStickyView>
 
         <RaiseSignalModal
           open={signalOpen}
@@ -1041,7 +1129,7 @@ export default function RoomScreen() {
             />
           </View>
         </Modal>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   )
 }

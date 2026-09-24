@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { CornerUpLeft, Send, ShieldOff, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
@@ -13,7 +14,7 @@ import { useTheme } from '../../lib/use-theme'
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
 
-export function MessageItem({
+export const MessageItem = memo(function MessageItem({
   message,
   mine,
   author,
@@ -54,7 +55,7 @@ export function MessageItem({
   onEditDraftChange(value: string): void
   onSaveEdit(): void
   onCancelEdit(): void
-  onToggleMenu(): void
+  onToggleMenu(messageId: string): void
   onShowInfo(message: Message): void
   onEdit(message: Message): void
   onDelete(messageId: string): void
@@ -66,6 +67,7 @@ export function MessageItem({
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
   const gifUrl = message.content?.startsWith('gif:') ? message.content.slice(4) : null
+  const toggleMenu = () => onToggleMenu(message.id)
 
   return (
     <View>
@@ -101,7 +103,7 @@ export function MessageItem({
             </Text>
             <Pressable
               accessibilityLabel="Message actions"
-              onPress={onToggleMenu}
+              onPress={toggleMenu}
               hitSlop={12}
               style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
             >
@@ -114,7 +116,7 @@ export function MessageItem({
             mine={mine}
             myReactionKeys={myReactionKeys}
             messageId={message.id}
-            onClose={onToggleMenu}
+            onClose={toggleMenu}
             onToggleReaction={onToggleReaction}
             onReply={() => onReply(message)}
             onInfo={() => onShowInfo(message)}
@@ -125,7 +127,7 @@ export function MessageItem({
 
           <Pressable
             accessibilityLabel={isEditing ? undefined : 'Message options'}
-            onLongPress={isEditing ? undefined : onToggleMenu}
+            onLongPress={isEditing ? undefined : toggleMenu}
             delayLongPress={350}
             style={{
               backgroundColor: isEditing ? t.surfaceLowest : t.surfaceContainer,
@@ -211,7 +213,7 @@ export function MessageItem({
                   <MessageImage
                     path={message.image_url}
                     alt="Shared image"
-                    onLongPress={isEditing ? undefined : onToggleMenu}
+                    onLongPress={isEditing ? undefined : toggleMenu}
                   />
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -228,7 +230,7 @@ export function MessageItem({
                 ) : null}
               </>
             ) : gifUrl ? (
-              <MessageGif src={gifUrl} onLongPress={isEditing ? undefined : onToggleMenu} />
+              <MessageGif src={gifUrl} onLongPress={isEditing ? undefined : toggleMenu} />
             ) : (
               <MentionText content={message.content ?? ''} members={members} />
             )}
@@ -271,4 +273,4 @@ export function MessageItem({
       </View>
     </View>
   )
-}
+})
