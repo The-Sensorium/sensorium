@@ -212,9 +212,13 @@ export default function RoomScreen() {
   const lastLenRef = useRef<number | null>(null)
   const listRef = useRef<FlatList<{ key: string; item: TimelineItem; showDay: boolean }> | null>(null)
 
-  // Composer height feeds the chat scroll's extraContentPadding so the scroll
-  // range extends past the sticky input (same pattern as Screen).
+  // Growth delta of the sticky composer above its single-line baseline, fed
+  // to the chat scroll's extraContentPadding so the scroll range extends past
+  // a taller input (docs: growing multiline input). A delta, not the full
+  // height: on an inverted list a full-height inset renders as a permanent
+  // gap between the last message and the composer.
   const composerHeight = useSharedValue(0)
+  const composerBaseHeight = useRef<number | null>(null)
   const renderScrollComponent = useCallback(
     (props: ScrollViewProps) => (
       <ChatScrollView {...props} extraContentPadding={composerHeight} freeze={!focused} />
@@ -232,6 +236,7 @@ export default function RoomScreen() {
     prevOldestIdRef.current = null
     setReplyTo(null)
     setDeclinedCalls(new Set())
+    composerBaseHeight.current = null
   }, [clusterId])
 
   const memberMap = useMemo(() => {
@@ -1047,7 +1052,11 @@ export default function RoomScreen() {
         >
           <View
             onLayout={(e) => {
-              composerHeight.value = e.nativeEvent.layout.height
+              const h = e.nativeEvent.layout.height
+              if (composerBaseHeight.current === null || h < composerBaseHeight.current) {
+                composerBaseHeight.current = h
+              }
+              composerHeight.value = Math.max(h - (composerBaseHeight.current ?? h), 0)
             }}
           >
           <Composer
