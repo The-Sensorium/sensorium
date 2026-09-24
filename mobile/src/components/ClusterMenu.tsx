@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { Link, type Href } from 'expo-router'
+import { router, type Href } from 'expo-router'
 import { Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react-native'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -71,33 +71,38 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
           {SECTIONS.map((s) => {
             const isActive = s.key === active
             const Icon = s.icon
+            // Plain Pressable, not Link asChild: expo-router's Slot flattens
+            // child style arrays and silently drops function styles, which
+            // would strip this row's layout. Navigate via router instead.
             return (
-              <Link key={s.key} href={s.href(clusterId)} asChild>
-                <Pressable
-                  onPress={() => setOpen(false)}
-                  style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    borderRadius: radii.md,
-                    paddingHorizontal: 12,
-                    paddingVertical: 12,
-                    minHeight: 48,
-                    backgroundColor: isActive || pressed ? t.surfaceContainer : 'transparent',
-                  })}
+              <Pressable
+                key={s.key}
+                onPress={() => {
+                  setOpen(false)
+                  router.push(s.href(clusterId))
+                }}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  borderRadius: radii.md,
+                  paddingHorizontal: 12,
+                  paddingVertical: 12,
+                  minHeight: 48,
+                  backgroundColor: isActive || pressed ? t.surfaceContainer : 'transparent',
+                })}
+              >
+                <Icon size={16} color={isActive ? t.primary : t.onSurface} strokeWidth={1.5} />
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: isActive ? '600' : '400',
+                    color: isActive ? t.primary : t.onSurface,
+                  }}
                 >
-                  <Icon size={16} color={isActive ? t.primary : t.onSurface} strokeWidth={1.5} />
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: isActive ? '600' : '400',
-                      color: isActive ? t.primary : t.onSurface,
-                    }}
-                  >
-                    {s.label}
-                  </Text>
-                </Pressable>
-              </Link>
+                  {s.label}
+                </Text>
+              </Pressable>
             )
           })}
         </View>
