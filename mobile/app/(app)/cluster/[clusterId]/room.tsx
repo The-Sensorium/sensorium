@@ -14,7 +14,7 @@ import {
   type KeyboardChatScrollViewProps,
 } from 'react-native-keyboard-controller'
 import { useSharedValue } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
@@ -129,6 +129,8 @@ const EMPTY_REACTIONS: Reaction[] = []
 export default function RoomScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
+  // No tab bar on this screen: the sticky footer owns the bottom inset.
+  const { bottom } = useSafeAreaInsets()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -1067,10 +1069,14 @@ export default function RoomScreen() {
 
         {/* Sticky composer: frame-synced translate above the keyboard, no layout
             resize. Disabled while another screen is focused so a background
-            room never reacts to its keyboard session. */}
+            room never reacts to its keyboard session. The room owns the
+            bottom inset itself (same as Screen): closed it holds the bar
+            above the gesture bar, open the padded edge hides behind the
+            keyboard so content lands flush. */}
         <KeyboardStickyView
           enabled={focused}
-          style={{ backgroundColor: t.background, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 }}
+          offset={{ closed: 0, opened: bottom }}
+          style={{ backgroundColor: t.background, paddingHorizontal: 12, paddingTop: 8, paddingBottom: 8 + bottom }}
         >
           <View
             onLayout={(e) => {
