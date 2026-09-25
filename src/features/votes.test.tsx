@@ -141,6 +141,7 @@ describe('votes', () => {
   })
 
   it('useVoteOn calls vote_on with the chosen response', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
     const { result } = renderHook(() => useVoteOn('c1'), { wrapper })
     result.current.mutate({ voteId: 'v1', choice: 'yes' })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -148,6 +149,8 @@ describe('votes', () => {
       p_vote_id: 'v1',
       p_choice: 'yes',
     })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-votes', 'c1'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['vote-counts', 'c1'] })
   })
 
   it('useAcceptInvitation invalidates invitation, cluster, and matching queries', async () => {

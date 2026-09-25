@@ -2176,6 +2176,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      close_single_vote: {
+        Args: { p_early?: boolean; p_vote_id: string }
+        Returns: boolean
+      }
       cluster_unlocked: { Args: { p_cluster_id: string }; Returns: boolean }
       create_invitation: { Args: { p_round_id: string }; Returns: undefined }
       create_post: {
@@ -2885,6 +2889,10 @@ export type Database = {
           p_role: Database["public"]["Enums"]["platform_role"]
           p_user_id: string
         }
+        Returns: boolean
+      }
+      has_verified_totp_factor: {
+        Args: { p_user_id: string }
         Returns: boolean
       }
       hide_message: {

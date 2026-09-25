@@ -305,6 +305,7 @@ Reasons may include:
 
 Voting remains hidden until completed.
 Results are revealed after voting closes.
+A vote with a decisive majority closes right away instead of waiting for the timer; undecided votes wait for the timer.
 
 Resolved: per-user **mute** shipped as the personal safeguard alongside the vote system (see [Muting and blocking](#muting-and-blocking)). Individual blocking/removal still does not exist; a harassed member can mute the offender immediately while the cluster decides on replacement.
 

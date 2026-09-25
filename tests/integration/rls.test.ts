@@ -242,13 +242,15 @@ describe('RLS denial matrix', () => {
     const a = await member('rls-v-a')
     const b = await member('rls-v-b')
     const c = await member('rls-v-c')
+    const d = await member('rls-v-d')
     const clusterId = await createCluster(admin, {
-      memberIds: [a.id, b.id, c.id],
+      memberIds: [a.id, b.id, c.id, d.id],
       status: 'active',
     })
     clusterIds.push(clusterId)
 
-    // a starts a replacement vote against b; b and c cast yes.
+    // a starts a replacement vote against b; b and c cast yes. Four members
+    // need quorum 3, so two yes votes stay open (early close must not fire).
     const { data: voteId, error: startErr } = await a.client.rpc('start_replace_vote', {
       p_cluster_id: clusterId,
       p_target_member_id: b.id,
