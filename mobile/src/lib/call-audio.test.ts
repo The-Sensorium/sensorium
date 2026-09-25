@@ -73,6 +73,10 @@ describe('hasExternalAudioOutputLive', () => {
   it('resolves null on iOS where devices are not reported', async () => {
     await expect(hasExternalAudioOutputLive('ios')).resolves.toBeNull()
   })
+
+  it('resolves null on Android when the native module cannot load', async () => {
+    await expect(hasExternalAudioOutputLive('android')).resolves.toBeNull()
+  })
 })
 
 describe('setSpeakerEnabled', () => {

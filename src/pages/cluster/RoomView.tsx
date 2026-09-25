@@ -47,6 +47,7 @@ import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { TypingBubble } from './room/TypingBubble'
 import { CallBanner } from './room/CallBanner'
 import { CallOverlay } from './room/CallOverlay'
+import { PreJoinDialog } from './room/PreJoinDialog'
 import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
 import { Modal } from '../../components/Modal'
 import { SignalRow } from './room/SignalRow'
@@ -92,6 +93,11 @@ export function RoomView() {
   const joinCall = useJoinCall(roomClusterId)
   const leaveCall = useLeaveCall(roomClusterId)
   const [inCall, setInCall] = useState(false)
+  // Audio-first join choices shared with the call overlay. The pre-join
+  // dialog edits them; returning to a live call reuses the last choices.
+  const [micOnJoin, setMicOnJoin] = useState(true)
+  const [cameraOnJoin, setCameraOnJoin] = useState(false)
+  const [preJoin, setPreJoin] = useState<{ kind: 'start' } | { kind: 'join'; callId: string } | null>(null)
   const joinedCall = (callParticipants.data ?? []).some((p) => p.user_id === userId)
   const callPending = startCall.isPending || joinCall.isPending
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
@@ -274,6 +280,7 @@ export function RoomView() {
     prevOldestIdRef.current = null
     setReplyTo(null)
     setInCall(false)
+    setPreJoin(null)
   }, [clusterId])
 
   // The room is a fixed-height band with its own scroll container, so the
@@ -641,23 +648,32 @@ export function RoomView() {
     }
   }
 
-  async function handleStartCall() {
-    setError(null)
-    try {
-      await startCall.mutateAsync()
-      setInCall(true)
-    } catch (e) {
-      setError(toErrorMessage(e, 'Could not start the call. Try again.'))
-    }
+  function handleStartCall() {
+    setPreJoin({ kind: 'start' })
   }
 
-  async function handleJoinCall(callId: string) {
+  function handleJoinCall(callId: string) {
+    setPreJoin({ kind: 'join', callId })
+  }
+
+  async function handleConfirmPreJoin() {
+    const request = preJoin
+    if (!request) return
     setError(null)
     try {
-      await joinCall.mutateAsync(callId)
+      if (request.kind === 'start') {
+        await startCall.mutateAsync()
+      } else {
+        // The live call may have turned over while the dialog was open; join
+        // whatever is live now, falling back to the dialog's call so its RPC
+        // reports a clean ended error instead of joining nothing.
+        const targetId = activeCall.data?.id ?? request.callId
+        await joinCall.mutateAsync(targetId)
+      }
+      setPreJoin(null)
       setInCall(true)
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not join the call. Try again.'))
+      setError(toErrorMessage(e, request.kind === 'start' ? 'Could not start the call. Try again.' : 'Could not join the call. Try again.'))
     }
   }
 
@@ -976,6 +992,22 @@ export function RoomView() {
         onRaise={() => void handleRaise()}
       />
 
+      <PreJoinDialog
+        open={preJoin !== null}
+        mic={micOnJoin}
+        camera={cameraOnJoin}
+        pending={callPending}
+        onMicChange={setMicOnJoin}
+        onCameraChange={setCameraOnJoin}
+        onJoin={() => void handleConfirmPreJoin()}
+        // The in-flight join keeps the dialog (and its Cancel, X, backdrop,
+        // and Escape paths, which all route through here) locked until the
+        // mutation settles, so dismissing mid-join cannot orphan the result.
+        onClose={() => {
+          if (!callPending) setPreJoin(null)
+        }}
+      />
+
       <MessageInfoModal
         open={infoFor !== null}
         onClose={() => setInfoFor(null)}
@@ -1042,7 +1074,8 @@ export function RoomView() {
       {inCall && activeCall.data && (
         <CallOverlay
           callId={activeCall.data.id}
-          videoOnJoin
+          micOnJoin={micOnJoin}
+          videoOnJoin={cameraOnJoin}
           startedAt={activeCall.data.created_at}
           expiresAt={activeCall.data.expires_at}
           onHangUp={() => void handleHangUp(activeCall.data!.id)}

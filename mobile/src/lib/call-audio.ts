@@ -7,6 +7,11 @@
  * speaker toggle, behind the AudioSession API bundled with
  * `@livekit/react-native`.
  *
+ * The native audio device module requires LiveKitReactNative.setup() in
+ * Application.onCreate, wired through the LiveKit Expo config plugin in
+ * app.json. Every AudioSession call below assumes that setup is present in
+ * the installed build.
+ *
  * The pure helpers take an explicit platform string so they stay testable in
  * the node vitest env without importing react-native. The live wrappers
  * dynamic-import the native module so Expo Go (where it is absent) never
