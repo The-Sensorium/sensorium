@@ -7,7 +7,7 @@ import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
 import {
   usePost,
-  useClusterPostLikes,
+  usePostLikes,
   usePostComments,
   useTogglePostLike,
 } from '../../features/posts'
@@ -26,11 +26,14 @@ export function PostDetailPage() {
 
   const post = usePost(postId)
   const clusterId = post.data?.cluster_id ?? null
-  const members = useClusterMembers(clusterId)
-  const likes = useClusterPostLikes(clusterId)
+  // Likes and comments key off the route param so they start in parallel
+  // with the post fetch. Members still wait for post.data.cluster_id;
+  // comment rows filter by post_id so clusterId is key context only.
+  const likes = usePostLikes(postId)
   const comments = usePostComments(clusterId, postId)
+  const members = useClusterMembers(clusterId)
   const toggle = useTogglePostLike(clusterId)
-  const myMutes = useMyMutes(clusterId != null)
+  const myMutes = useMyMutes()
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState(false)
 
@@ -58,8 +61,6 @@ export function PostDetailPage() {
   }
 
   const p = post.data
-  // The likes cache is keyed by cluster and may hold other posts' likes
-  // loaded from the feed, so scope the count to this post.
   const postLikes = (likes.data ?? []).filter((l) => l.post_id === p.id)
   const likeInfo = {
     count: postLikes.length,

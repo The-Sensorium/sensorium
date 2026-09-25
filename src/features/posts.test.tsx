@@ -431,7 +431,8 @@ describe('posts', () => {
       p_gif_url: undefined,
       p_parent_comment_id: undefined,
     })
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments', 'c1'] })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments'] })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments', 'single', 'p1'] })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['comment-likes', 'c1'] })
   })
 
@@ -457,7 +458,7 @@ describe('posts', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const c = requireSupabaseMock.mock.results[0].value
     expect(c.rpc).toHaveBeenCalledWith('delete_post_comment', { p_comment_id: 'x1' })
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments', 'c1'] })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments'] })
   })
 
   it('useReportPost calls report_post and invalidates reports', async () => {
