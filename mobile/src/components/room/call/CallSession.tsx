@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { LiveKitRoom } from '@livekit/react-native'
+import { setupCallAudioSession, teardownCallAudioSession } from '../../../lib/call-audio'
 import { CallChatSheet } from './CallChatSheet'
 import { CallControls } from './CallControls'
 import { CallGrid } from './CallGrid'
@@ -37,12 +38,25 @@ export function CallSession({
 }: CallSessionProps) {
   const [chatOpen, setChatOpen] = useState(false)
   const [unread, setUnread] = useState(0)
+  const [audioReady, setAudioReady] = useState(false)
+
+  // Route call audio to the loudspeaker (headsets keep precedence, including
+  // devices connected mid-call) before the room connects: AudioSession
+  // configuration only applies when set prior to connecting, and the room
+  // gates on it below. Best-effort: the setup never rejects, so joining is
+  // delayed by milliseconds, never blocked.
+  useEffect(() => {
+    void setupCallAudioSession().finally(() => setAudioReady(true))
+    return () => {
+      void teardownCallAudioSession()
+    }
+  }, [])
 
   return (
     <LiveKitRoom
       serverUrl={serverUrl}
       token={token}
-      connect
+      connect={audioReady}
       audio={micOn}
       video={cameraOn}
       onDisconnected={onDisconnected}
