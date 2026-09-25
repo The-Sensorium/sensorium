@@ -119,14 +119,8 @@ describe('governance and replacement', () => {
     })
     expect(error).toBeNull()
 
-    // Close the vote window so the cron-equivalent can process it.
-    const { error: closeErr } = await admin
-      .from('votes')
-      .update({ closes_at: new Date(Date.now() - 1000).toISOString() })
-      .eq('id', voteId)
-    expect(closeErr).toBeNull()
-
-    // Quorum for 5 active members is 3 yes; cast 3 yes + 1 no.
+    // Quorum for 5 active members is 3 yes. Early close fires on the third
+    // yes, so the vote is already closed before any expiry handling.
     for (const m of [initiator, members[2], members[3]]) {
       const { error: ve } = await m.client.rpc('vote_on', {
         p_vote_id: voteId,
@@ -134,11 +128,21 @@ describe('governance and replacement', () => {
       })
       expect(ve).toBeNull()
     }
-    const { error: noErr } = await members[4].client.rpc('vote_on', {
+
+    const { data: earlyVote } = await admin
+      .from('votes')
+      .select('status, result')
+      .eq('id', voteId)
+      .single()
+    expect(earlyVote?.status).toBe('closed')
+    expect(earlyVote?.result?.outcome).toBe('passed')
+
+    // A late vote after the decisive majority is rejected.
+    const { error: lateErr } = await members[4].client.rpc('vote_on', {
       p_vote_id: voteId,
       p_choice: 'no',
     })
-    expect(noErr).toBeNull()
+    expect(lateErr?.message).toContain('vote_not_available')
 
     const { error: procErr } = await initiator.client.rpc('close_expired_votes')
     expect(procErr).toBeNull()
@@ -231,6 +235,182 @@ describe('governance and replacement', () => {
       .eq('id', clusterId)
       .single()
     expect(cluster?.name).toBe('Renamed Cluster')
+  })
+
+  it('vote_on closes a name vote immediately on a yes majority without expiry', async () => {
+    const { clusterId, members } = await clusterOf(5)
+    const { data: voteId } = await members[0].client.rpc('start_name_vote', {
+      p_cluster_id: clusterId,
+      p_name: 'Early Cluster',
+    })
+
+    await members[0].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+    await members[1].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+
+    let { data: vote } = await admin
+      .from('votes')
+      .select('status, result')
+      .eq('id', voteId)
+      .single()
+    expect(vote?.status).toBe('open')
+
+    const { error } = await members[2].client.rpc('vote_on', {
+      p_vote_id: voteId,
+      p_choice: 'yes',
+    })
+    expect(error).toBeNull()
+
+    vote = (
+      await admin.from('votes').select('status, result').eq('id', voteId).single()
+    ).data
+    expect(vote?.status).toBe('closed')
+    expect(vote?.result?.outcome).toBe('passed')
+    expect(vote?.result?.yes).toBe(3)
+
+    const { data: cluster } = await admin
+      .from('clusters')
+      .select('name')
+      .eq('id', clusterId)
+      .single()
+    expect(cluster?.name).toBe('Early Cluster')
+  })
+
+  it('vote_on closes immediately as failed on a no majority', async () => {
+    const { clusterId, members } = await clusterOf(5)
+    const { data: voteId } = await members[0].client.rpc('start_name_vote', {
+      p_cluster_id: clusterId,
+      p_name: 'Nope Cluster',
+    })
+
+    for (const m of [members[0], members[1], members[2]]) {
+      const { error } = await m.client.rpc('vote_on', {
+        p_vote_id: voteId,
+        p_choice: 'no',
+      })
+      expect(error).toBeNull()
+    }
+
+    const { data: vote } = await admin
+      .from('votes')
+      .select('status, result')
+      .eq('id', voteId)
+      .single()
+    expect(vote?.status).toBe('closed')
+    expect(vote?.result?.outcome).toBe('failed')
+
+    const { data: cluster } = await admin
+      .from('clusters')
+      .select('name')
+      .eq('id', clusterId)
+      .single()
+    expect(cluster?.name).not.toBe('Nope Cluster')
+  })
+
+  it('vote_on leaves an undecided vote open below quorum', async () => {
+    const { clusterId, members } = await clusterOf(5)
+    const { data: voteId } = await members[0].client.rpc('start_name_vote', {
+      p_cluster_id: clusterId,
+      p_name: 'Later Cluster',
+    })
+
+    await members[0].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+    await members[1].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'no' })
+
+    const { data: vote } = await admin
+      .from('votes')
+      .select('status')
+      .eq('id', voteId)
+      .single()
+    expect(vote?.status).toBe('open')
+  })
+
+  it('vote_on closes a fully-voted tie as failed', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const { data: voteId } = await members[0].client.rpc('start_name_vote', {
+      p_cluster_id: clusterId,
+      p_name: 'Tied Cluster',
+    })
+
+    await members[0].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+    await members[1].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+    await members[2].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'no' })
+
+    let { data: vote } = await admin
+      .from('votes')
+      .select('status, result')
+      .eq('id', voteId)
+      .single()
+    expect(vote?.status).toBe('open')
+
+    await members[3].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'no' })
+
+    vote = (
+      await admin.from('votes').select('status, result').eq('id', voteId).single()
+    ).data
+    expect(vote?.status).toBe('closed')
+    expect(vote?.result?.outcome).toBe('failed')
+  })
+
+  it('a changed vote recounts without closing early', async () => {
+    const { clusterId, members } = await clusterOf(5)
+    const { data: voteId } = await members[0].client.rpc('start_name_vote', {
+      p_cluster_id: clusterId,
+      p_name: 'Flip Cluster',
+    })
+
+    await members[0].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+    await members[1].client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+    const { error: flipErr } = await members[1].client.rpc('vote_on', {
+      p_vote_id: voteId,
+      p_choice: 'no',
+    })
+    expect(flipErr).toBeNull()
+
+    const { data: vote } = await admin
+      .from('votes')
+      .select('status')
+      .eq('id', voteId)
+      .single()
+    expect(vote?.status).toBe('open')
+
+    const { data: counts } = await members[0].client.rpc('get_vote_counts', {
+      p_cluster_id: clusterId,
+    })
+    expect(counts?.[0]?.cast_count).toBe(2)
+  })
+
+  it('early close fans out vote_result once and a second close is a no-op', async () => {
+    const { clusterId, members } = await clusterOf(5)
+    const { data: voteId } = await members[0].client.rpc('start_name_vote', {
+      p_cluster_id: clusterId,
+      p_name: 'Once Cluster',
+    })
+
+    for (const m of [members[0], members[1], members[2]]) {
+      await m.client.rpc('vote_on', { p_vote_id: voteId, p_choice: 'yes' })
+    }
+
+    const countNotes = async () => {
+      const { data } = await admin
+        .from('notifications')
+        .select('id')
+        .eq('cluster_id', clusterId)
+        .eq('type', 'vote_result')
+      return data?.length ?? 0
+    }
+    const before = await countNotes()
+    expect(before).toBe(5)
+
+    await members[3].client.rpc('close_expired_votes')
+    expect(await countNotes()).toBe(before)
+
+    const { data: vote } = await admin
+      .from('votes')
+      .select('status, result')
+      .eq('id', voteId)
+      .single()
+    expect(vote?.status).toBe('closed')
+    expect(vote?.result?.outcome).toBe('passed')
   })
 
   it('leave_cluster marks the leaver, applies a cooldown, and starts a replacement', async () => {
@@ -492,11 +672,14 @@ describe('governance and replacement', () => {
 
   it('get_vote_counts returns cast counts plus the caller’s own choice', async () => {
     const { clusterId, members } = await clusterOf(3)
-    const [initiator, target, voter] = [members[0], members[1], members[2]]
+    const [initiator, nonVoter, voter] = [members[0], members[1], members[2]]
 
-    const { data: voteId, error } = await initiator.client.rpc('start_replace_vote', {
+    // A name vote keeps every member active after the early close, so the
+    // non-voter can still read counts (a passing replace vote would remove
+    // its target and hide counts from them via the membership guard).
+    const { data: voteId, error } = await initiator.client.rpc('start_name_vote', {
       p_cluster_id: clusterId,
-      p_target_member_id: target.id,
+      p_name: 'Counted Cluster',
     })
     expect(error).toBeNull()
 
@@ -518,12 +701,12 @@ describe('governance and replacement', () => {
     expect(counts[0].my_choice).toBe('yes')
 
     // A member who has not voted sees the count but no choice.
-    const { data: targetCounts } = await target.client.rpc('get_vote_counts', {
+    const { data: nonVoterCounts } = await nonVoter.client.rpc('get_vote_counts', {
       p_cluster_id: clusterId,
     })
-    expect(targetCounts).toHaveLength(1)
-    expect(targetCounts[0].cast_count).toBe(2)
-    expect(targetCounts[0].my_choice).toBeNull()
+    expect(nonVoterCounts).toHaveLength(1)
+    expect(nonVoterCounts[0].cast_count).toBe(2)
+    expect(nonVoterCounts[0].my_choice).toBeNull()
 
     const outsider = await createUser(admin, 'g-vc-out')
     userIds.push(outsider.id)

@@ -3,11 +3,15 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import {
+  CALL_TOKEN_RATE_LIMITED,
   CALL_WARNING_SECONDS,
+  useActiveCall,
   useCall,
+  useCallParticipants,
   useCallToken,
   useLeaveCall,
 } from '../../../../src/features/cluster-calls'
+import { useAuth } from '../../../../src/auth-context'
 import { PreJoin, type PreJoinChoices } from '../../../../src/components/room/call/PreJoin'
 import { isLiveKitAvailable } from '../../../../src/lib/livekit'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -38,33 +42,47 @@ function TitleBar() {
 
 export default function CallScreen() {
   const t = useTheme()
-  const { clusterId = '', callId = '' } = useLocalSearchParams<{ clusterId: string; callId: string }>()
+  const { clusterId = '', callId = '' } = useLocalSearchParams<{
+    clusterId: string
+    callId: string
+  }>()
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
   const liveKitReady = isLiveKitAvailable()
   const tokenQuery = useCallToken(callId || null, liveKitReady)
   const leaveCall = useLeaveCall(clusterId || null)
   const call = useCall(callId || null)
+  const activeCall = useActiveCall(clusterId || null)
+  const participants = useCallParticipants(callId || null)
   const leftRef = useRef(false)
+  const focusedRef = useRef(true)
+  const rateLimited =
+    tokenQuery.error instanceof Error && tokenQuery.error.message === CALL_TOKEN_RATE_LIMITED
 
-  // The cluster routes live in a tab navigator, whose default back behavior
-  // sends `goBack` to the first tab (Home) rather than the room the call was
-  // opened from. Navigate to the room explicitly so leaving a call lands where
-  // the user started.
+  // The call screen is a tab route, and React Navigation tabs have no REPLACE
+  // event: expo-router maps router.replace to JUMP_TO, which leaves this
+  // route in the history trail (expo/expo#36385), so a later Android back
+  // press resurfaces its PreJoin for a call that already ended. router.back
+  // instead pops the visit trail (backBehavior="history" on the tab
+  // navigator), removing this route, so Back can never return to it.
+  // Exits are one-shot: without the guard a repeated trigger (StrictMode
+  // double effects, a settling query) would pop an extra screen.
+  const exitedRef = useRef(false)
   const exitToRoom = useCallback(() => {
-    if (!clusterId) {
-      router.back()
-      return
-    }
-    router.navigate({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
-  }, [clusterId])
+    if (exitedRef.current) return
+    exitedRef.current = true
+    router.back()
+  }, [])
 
-  // Single exit path: leave the call (best effort) and return to the room once.
-  // Both the hang-up control and a LiveKit disconnect route through here, so
-  // the guard stops a manual disconnect from navigating twice. Leaving does not
-  // end the call for others; the server ends it when the last participant leaves.
+  // Single exit path for leaving deliberately: hang-up control, LiveKit
+  // disconnect, and expiry route through here. Leaving does not end the call
+  // for others; the server ends it when the last participant leaves. The
+  // screen only navigates when focused: a disconnect that fires while
+  // minimized must release the seat without yanking navigation.
   const finishCall = useCallback(() => {
     if (leftRef.current) return
     leftRef.current = true
-    exitToRoom()
+    if (focusedRef.current) exitToRoom()
     void leaveCall.mutateAsync(callId).catch(() => {})
   }, [callId, exitToRoom, leaveCall])
 
@@ -79,6 +97,22 @@ export default function CallScreen() {
     setCameraOn(choices.camera)
     setJoined(true)
   }
+
+  // If the seat disappears under a live session (left from the room banner,
+  // or the call otherwise ended for us), drop local media instead of
+  // publishing into a call we are no longer in. The render gate unmounts the
+  // session silently (correct while minimized); the effect below additionally
+  // exits a focused screen to the room, where the banner Join path heals
+  // membership. Only acts on settled roster data: while a roster refetch is
+  // in flight the previous roster may briefly omit us (e.g. right after
+  // rejoining), which must not tear down the session.
+  const rosterSettled = participants.isSuccess && !participants.isFetching && userId !== null
+  const amParticipant = (participants.data ?? []).some((p) => p.user_id === userId)
+  const seatKept = !rosterSettled || amParticipant
+  useEffect(() => {
+    if (!joined || seatKept || !focusedRef.current) return
+    exitToRoom()
+  }, [joined, seatKept, exitToRoom])
 
   // Call clock: elapsed for the display, remaining against the server-side limit.
   const [now, setNow] = useState(() => Date.now())
@@ -108,9 +142,10 @@ export default function CallScreen() {
   }, [missingParams, exitToRoom])
 
   // Safety net: room.tsx inserts the participant row before navigating here, so
-  // if the screen is dismissed without finishCall (e.g. Android hardware back,
-  // or cancelling PreJoin), release it. Deferred a tick so a Fast Refresh
-  // remount doesn't spuriously leave.
+  // if the screen unmounts without finishCall, release the seat. Blur alone
+  // minimizes and must not release: navigating away keeps the LiveKit
+  // connection and the seat, and the room banner returns to the live call.
+  // Deferred a tick so a Fast Refresh remount doesn't spuriously leave.
   const mountedRef = useRef(false)
   const latestRef = useRef({ leaveCall, callId })
   useEffect(() => {
@@ -118,24 +153,60 @@ export default function CallScreen() {
   }, [leaveCall, callId])
 
   // The cluster tabs keep every screen mounted, so this screen is reused across
-  // calls. Reset on focus (fresh PreJoin, leave allowed) and release the seat on
-  // blur (hardware back / navigating away) without navigating again.
+  // calls. Back and tab switches minimize: the LiveKit connection and the
+  // server seat stay alive, and the room banner returns to the live call, so
+  // only a fresh call (or a return after an explicit hang-up) resets to
+  // PreJoin. A route that survives for an already-ended call (deep link)
+  // still exits straight to the room instead of offering a stale join.
+  // The single-call cache (useCall) is never invalidated, so a cached
+  // ringing/active status cannot be trusted here: liveness is revalidated
+  // with a fresh server read, and only a live call with this id keeps the
+  // screen. Failures keep the screen rather than trapping the user.
+  // Everything here keys off refs so call updates never re-fire this effect
+  // mid-call: re-running would reset the join state while connected.
+  const callStatusRef = useRef(call.data?.status)
+  const activeCallRef = useRef(activeCall)
+  const lastCallIdRef = useRef(callId)
+  useEffect(() => {
+    callStatusRef.current = call.data?.status
+    activeCallRef.current = activeCall
+  })
   useFocusEffect(
     useCallback(() => {
-      leftRef.current = false
-      setJoined(false)
-      return () => {
-        // Leaving the screen must drop the LiveKit connection however it was
-        // left (explicit hang-up, hardware back, or navigating away), otherwise
-        // the kept-mounted tab leaves the participant connected and other
-        // clients never see the tile disappear.
+      let cancelled = false
+      focusedRef.current = true
+      exitedRef.current = false
+      const freshStart = callId !== lastCallIdRef.current || leftRef.current
+      if (freshStart) {
+        // Fresh call on a reused screen, or returning after an explicit
+        // hang-up: reset to PreJoin with audio-first defaults. A fresh start
+        // must never bounce on a liveness refetch: start_call just seated us
+        // and the token/roster flows are the real guards.
+        lastCallIdRef.current = callId
+        leftRef.current = false
+        setMicOn(true)
+        setCameraOn(false)
         setJoined(false)
-        if (!leftRef.current) {
-          leftRef.current = true
-          void latestRef.current.leaveCall.mutateAsync(latestRef.current.callId).catch(() => {})
-        }
+      } else if (callStatusRef.current === 'ended') {
+        exitToRoom()
+        return
+      } else {
+        // Same route revisited (deep link, or a route that survived an ended
+        // call): the single-call cache is never invalidated, so revalidate
+        // liveness against the server and exit only if the cluster no longer
+        // has this call live.
+        void activeCallRef.current.refetch().then((result) => {
+          if (cancelled || !result.isSuccess) return
+          if (!result.data || result.data.id !== latestRef.current.callId) exitToRoom()
+        })
       }
-    }, []),
+      return () => {
+        cancelled = true
+        focusedRef.current = false
+        // Blur minimizes: media and seat stay alive. Release happens on
+        // hang-up, expiry, unmount, or a dead call, never on blur.
+      }
+    }, [callId, exitToRoom]),
   )
   useEffect(() => {
     mountedRef.current = true
@@ -195,7 +266,9 @@ export default function CallScreen() {
           <TitleBar />
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 }}>
             <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}>
-              Could not join the call. It may have ended. Try starting a new one.
+              {rateLimited
+                ? 'Joining too often. Wait a minute and try again.'
+                : 'Could not join the call. It may have ended. Try starting a new one.'}
             </Text>
             <Pressable
               accessibilityLabel="Close"
@@ -215,7 +288,7 @@ export default function CallScreen() {
             </Pressable>
           </View>
         </>
-      ) : !joined ? (
+      ) : !joined || !seatKept ? (
         <>
           <TitleBar />
           <PreJoin

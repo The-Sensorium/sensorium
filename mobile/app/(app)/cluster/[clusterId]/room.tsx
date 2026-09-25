@@ -40,6 +40,7 @@ import {
   useActiveCall,
   useCallParticipants,
   useJoinCall,
+  useLeaveCall,
   useStartCall,
 } from '../../../../src/features/cluster-calls'
 import { useMarkClusterRead } from '../../../../src/features/notifications'
@@ -129,8 +130,17 @@ export default function RoomScreen() {
   const callParticipants = useCallParticipants(activeCall.data?.id ?? null)
   const startCall = useStartCall(roomClusterId)
   const joinCall = useJoinCall(roomClusterId)
+  const leaveCall = useLeaveCall(roomClusterId)
   const joinedCall = (callParticipants.data ?? []).some((p) => p.user_id === userId)
-  const callPending = startCall.isPending || joinCall.isPending
+  const callPending = startCall.isPending || joinCall.isPending || leaveCall.isPending
+  // Start stays hidden while a leave is in flight (shared mutation state from
+  // the call screen's hang-up): starting in that window races the pending
+  // leave and start_call hands back the not-yet-ended old call.
+  const callActive = Boolean(activeCall.data) || leaveCall.isPending
+  // While the live-call query revalidates, its data may describe a call that
+  // just ended (e.g. right after hanging up). Acting on it pushes a dead
+  // route that bounces straight back, so the banner buttons lock until fresh.
+  const callRefreshing = activeCall.isFetching
 
   const memberCount = (members.data ?? []).length
   const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
@@ -150,7 +160,6 @@ export default function RoomScreen() {
   const [focused, setFocused] = useState(false)
   const [newCount, setNewCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
-  const [declinedCalls, setDeclinedCalls] = useState<Set<string>>(new Set())
   const exhaustedRef = useRef(false)
   const prevOldestIdRef = useRef<string | null>(null)
   const pinnedRef = useRef(true)
@@ -166,7 +175,6 @@ export default function RoomScreen() {
     setHasMore(false)
     prevOldestIdRef.current = null
     setReplyTo(null)
-    setDeclinedCalls(new Set())
     // Same-route param change reuses the instance, so drop transient UI that
     // would otherwise leak from the previous cluster.
     setError(null)
@@ -544,10 +552,12 @@ export default function RoomScreen() {
 
   async function handleStartCall() {
     if (!clusterId) return
+    if (leaveCall.isPending) return
     setError(null)
     try {
       const callId = await startCall.mutateAsync()
       successHaptic()
+      // Starters choose devices on the PreJoin sheet like everyone else.
       openCall(callId)
     } catch (e) {
       errorHaptic()
@@ -564,6 +574,17 @@ export default function RoomScreen() {
     } catch (e) {
       errorHaptic()
       setError(toErrorMessage(e, 'Could not join the call. Try again.'))
+    }
+  }
+
+  async function handleLeaveCall(callId: string) {
+    setError(null)
+    try {
+      await leaveCall.mutateAsync(callId)
+      successHaptic()
+    } catch (e) {
+      errorHaptic()
+      setError(toErrorMessage(e, 'Could not leave the call. Try again.'))
     }
   }
 
@@ -641,7 +662,7 @@ export default function RoomScreen() {
           <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
         </View>
 
-        {activeCall.data && !declinedCalls.has(activeCall.data.id) && (
+        {activeCall.data && (
           <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
             <View
               accessibilityLabel="Cluster call"
@@ -688,7 +709,7 @@ export default function RoomScreen() {
                     ? openCall(activeCall.data!.id)
                     : void handleJoinCall(activeCall.data!.id)
                 }
-                disabled={callPending}
+                disabled={callPending || callRefreshing}
                 style={{
                   backgroundColor: t.primary,
                   borderRadius: radii.pill,
@@ -696,23 +717,28 @@ export default function RoomScreen() {
                   paddingVertical: 12,
                   minHeight: 48,
                   justifyContent: 'center',
-                  opacity: callPending ? 0.6 : 1,
+                  opacity: callPending || callRefreshing ? 0.6 : 1,
                 }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
                   {joinedCall ? 'Open' : 'Join'}
                 </Text>
               </Pressable>
-              {!joinedCall ? (
+              {joinedCall ? (
                 <Pressable
-                  accessibilityLabel="Decline call"
-                  onPress={() =>
-                    setDeclinedCalls((prev) => new Set(prev).add(activeCall.data!.id))
-                  }
-                  style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
+                  accessibilityLabel="Leave call"
+                  onPress={() => void handleLeaveCall(activeCall.data!.id)}
+                  disabled={leaveCall.isPending || callRefreshing}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 12,
+                    minHeight: 48,
+                    justifyContent: 'center',
+                    opacity: leaveCall.isPending || callRefreshing ? 0.6 : 1,
+                  }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
-                    Decline
+                    Leave
                   </Text>
                 </Pressable>
               ) : null}
@@ -1009,7 +1035,7 @@ export default function RoomScreen() {
             onSendGif={persistSendGif}
             onOpenSignal={() => setSignalOpen(true)}
             onStartCall={() => void handleStartCall()}
-            callActive={Boolean(activeCall.data)}
+            callActive={callActive}
             onCancelReply={() => setReplyTo(null)}
           />
         </View>

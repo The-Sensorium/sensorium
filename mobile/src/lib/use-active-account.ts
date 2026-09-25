@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { router } from 'expo-router'
 import { useMyAccess } from '../features/access'
+import { goHome, goRestricted } from './auth-navigation'
 
 export function useActiveAccountGate(mode: 'member' | 'restricted') {
   const access = useMyAccess()
@@ -8,7 +8,7 @@ export function useActiveAccountGate(mode: 'member' | 'restricted') {
   useEffect(() => {
     if (access.isLoading || !access.data) return
     const active = access.data.account_status === 'active'
-    if (mode === 'member' && !active) router.replace('/restricted')
-    if (mode === 'restricted' && active) router.replace('/(app)/home')
+    if (mode === 'member' && !active) goRestricted()
+    if (mode === 'restricted' && active) goHome()
   }, [access.isLoading, access.data, mode])
 }

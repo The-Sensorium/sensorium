@@ -151,7 +151,7 @@ describe('VotesView', () => {
     expect(screen.getByText(/No one is waiting in line yet/)).toBeInTheDocument()
   })
 
-  it('shows quorum progress on a governance vote', () => {
+  it('shows vote progress on a governance vote', () => {
     hooks.useClusterVotes.mockReturnValue(
       queryStub([{ ...baseVote, id: 'v1', type: 'replace_member', target_member_id: 'm1' }]),
     )
@@ -159,10 +159,10 @@ describe('VotesView', () => {
       queryStub([{ vote_id: 'v1', cast_count: 1, my_choice: null }]),
     )
     renderPage()
-    expect(screen.getByText('1 of 2 votes needed.')).toBeInTheDocument()
+    expect(screen.getByText('1 of 2 votes cast.')).toBeInTheDocument()
   })
 
-  it('confirms quorum without implying an early close', () => {
+  it('keeps undecided quorum progress neutral instead of claiming quorum', () => {
     hooks.useClusterVotes.mockReturnValue(
       queryStub([{ ...baseVote, id: 'v1', type: 'change_name', name_suggestion: 'Aurora' }]),
     )
@@ -170,7 +170,8 @@ describe('VotesView', () => {
       queryStub([{ vote_id: 'v1', cast_count: 2, my_choice: 'yes' }]),
     )
     renderPage()
-    expect(screen.getByText('Quorum reached (2 of 2 votes).')).toBeInTheDocument()
+    expect(screen.getByText('2 of 2 votes cast.')).toBeInTheDocument()
+    expect(screen.queryByText(/Quorum reached/)).not.toBeInTheDocument()
   })
 
   it('shows the invitation banner with generic copy for a non-member invitee', () => {

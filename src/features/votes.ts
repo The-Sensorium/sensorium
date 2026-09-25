@@ -153,6 +153,7 @@ export function useVoteOn(clusterId: string | null) {
     },
     onSuccess: () => {
       if (clusterId) {
+        void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['vote-responses', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
       }

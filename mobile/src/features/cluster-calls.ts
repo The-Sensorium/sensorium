@@ -117,6 +117,12 @@ export function useJoinCall(clusterId: string | null) {
 export function useLeaveCall(clusterId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
+    // Shared mutation state across screens: the room must see a leave that the
+    // call screen is still performing so it cannot offer Start/Join until the
+    // previous call is fully dead. Without this, hang-up then an immediate
+    // start races: start_call returns the still-live old call, the call screen
+    // re-validates it as ended, and bounces the user back to the room.
+    mutationKey: ['leave-call', clusterId ?? 'none'],
     mutationFn: async (callId: string) => {
       const supabase = requireSupabase()
       const { error } = await supabase.rpc('leave_call', { p_call_id: callId })
@@ -131,6 +137,34 @@ export function useLeaveCall(clusterId: string | null) {
 export interface CallToken {
   token: string
   url: string
+}
+
+/** Thrown when the call-token mint hits its rate limit. */
+export const CALL_TOKEN_RATE_LIMITED = 'rate_limited'
+
+/**
+ * Maps an edge-function invoke failure to a thrown error, isolating the
+ * rate-limit case (HTTP 429) so callers can tell the user to wait instead of
+ * showing a generic join failure. The Supabase client surfaces HTTP failures
+ * as FunctionsHttpError, which carries the status on `context` (the
+ * Response), not on itself; plain-object shapes are accepted too.
+ */
+export function toCallTokenError(error: unknown): Error {
+  if (statusOf(error) === 429) return new Error(CALL_TOKEN_RATE_LIMITED)
+  if (error instanceof Error) return error
+  return new Error('No token')
+}
+
+function statusOf(error: unknown): number | null {
+  if (typeof error !== 'object' || error === null) return null
+  if ('status' in error && typeof error.status === 'number') return error.status
+  if ('context' in error) {
+    const context = error.context
+    if (typeof context === 'object' && context !== null && 'status' in context) {
+      return typeof context.status === 'number' ? context.status : null
+    }
+  }
+  return null
 }
 
 /**
@@ -149,7 +183,7 @@ export function useCallToken(callId: string | null, enabled = true) {
       const { data, error } = await supabase.functions.invoke<CallToken>(CALL_TOKEN_FUNCTION, {
         body: { call_id: callId },
       })
-      if (error) throw error
+      if (error) throw toCallTokenError(error)
       if (!data?.token || !data?.url) throw new Error('No token')
       return data
     },
