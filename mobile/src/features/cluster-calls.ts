@@ -117,6 +117,12 @@ export function useJoinCall(clusterId: string | null) {
 export function useLeaveCall(clusterId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({
+    // Shared mutation state across screens: the room must see a leave that the
+    // call screen is still performing so it cannot offer Start/Join until the
+    // previous call is fully dead. Without this, hang-up then an immediate
+    // start races: start_call returns the still-live old call, the call screen
+    // re-validates it as ended, and bounces the user back to the room.
+    mutationKey: ['leave-call', clusterId ?? 'none'],
     mutationFn: async (callId: string) => {
       const supabase = requireSupabase()
       const { error } = await supabase.rpc('leave_call', { p_call_id: callId })

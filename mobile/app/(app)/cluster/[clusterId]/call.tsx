@@ -42,10 +42,9 @@ function TitleBar() {
 
 export default function CallScreen() {
   const t = useTheme()
-  const { clusterId = '', callId = '', autoJoin = '' } = useLocalSearchParams<{
+  const { clusterId = '', callId = '' } = useLocalSearchParams<{
     clusterId: string
     callId: string
-    autoJoin?: string
   }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -98,18 +97,6 @@ export default function CallScreen() {
     setCameraOn(choices.camera)
     setJoined(true)
   }
-
-  // The starter chose to join by tapping Start: skip PreJoin and connect
-  // with audio-first defaults. Fires once per call id so StrictMode and
-  // remounts cannot double-join; joining another call still goes via PreJoin.
-  // The OS prompts for mic/camera on publish if not granted yet.
-  const autoJoinedRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (autoJoin === '1' && callId && autoJoinedRef.current !== callId) {
-      autoJoinedRef.current = callId
-      setJoined(true)
-    }
-  }, [autoJoin, callId])
 
   // If the seat disappears under a live session (left from the room banner,
   // or the call otherwise ended for us), drop local media instead of
@@ -189,9 +176,12 @@ export default function CallScreen() {
       let cancelled = false
       focusedRef.current = true
       exitedRef.current = false
-      if (callId !== lastCallIdRef.current || leftRef.current) {
+      const freshStart = callId !== lastCallIdRef.current || leftRef.current
+      if (freshStart) {
         // Fresh call on a reused screen, or returning after an explicit
-        // hang-up: reset to PreJoin with audio-first defaults.
+        // hang-up: reset to PreJoin with audio-first defaults. A fresh start
+        // must never bounce on a liveness refetch: start_call just seated us
+        // and the token/roster flows are the real guards.
         lastCallIdRef.current = callId
         leftRef.current = false
         setMicOn(true)
@@ -200,11 +190,16 @@ export default function CallScreen() {
       } else if (callStatusRef.current === 'ended') {
         exitToRoom()
         return
+      } else {
+        // Same route revisited (deep link, or a route that survived an ended
+        // call): the single-call cache is never invalidated, so revalidate
+        // liveness against the server and exit only if the cluster no longer
+        // has this call live.
+        void activeCallRef.current.refetch().then((result) => {
+          if (cancelled || !result.isSuccess) return
+          if (!result.data || result.data.id !== latestRef.current.callId) exitToRoom()
+        })
       }
-      void activeCallRef.current.refetch().then((result) => {
-        if (cancelled || !result.isSuccess) return
-        if (!result.data || result.data.id !== latestRef.current.callId) exitToRoom()
-      })
       return () => {
         cancelled = true
         focusedRef.current = false

@@ -133,6 +133,14 @@ export default function RoomScreen() {
   const leaveCall = useLeaveCall(roomClusterId)
   const joinedCall = (callParticipants.data ?? []).some((p) => p.user_id === userId)
   const callPending = startCall.isPending || joinCall.isPending || leaveCall.isPending
+  // Start stays hidden while a leave is in flight (shared mutation state from
+  // the call screen's hang-up): starting in that window races the pending
+  // leave and start_call hands back the not-yet-ended old call.
+  const callActive = Boolean(activeCall.data) || leaveCall.isPending
+  // While the live-call query revalidates, its data may describe a call that
+  // just ended (e.g. right after hanging up). Acting on it pushes a dead
+  // route that bounces straight back, so the banner buttons lock until fresh.
+  const callRefreshing = activeCall.isFetching
 
   const memberCount = (members.data ?? []).length
   const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
@@ -538,22 +546,19 @@ export default function RoomScreen() {
     }
   }
 
-  function openCall(callId: string, autoJoin = false) {
-    router.push({
-      pathname: '/cluster/[clusterId]/call',
-      params: autoJoin ? { clusterId, callId, autoJoin: '1' } : { clusterId, callId },
-    })
+  function openCall(callId: string) {
+    router.push({ pathname: '/cluster/[clusterId]/call', params: { clusterId, callId } })
   }
 
   async function handleStartCall() {
     if (!clusterId) return
+    if (leaveCall.isPending) return
     setError(null)
     try {
       const callId = await startCall.mutateAsync()
       successHaptic()
-      // The starter already chose to join: land directly in the call instead
-      // of stopping at PreJoin. Joining another call still goes via PreJoin.
-      openCall(callId, true)
+      // Starters choose devices on the PreJoin sheet like everyone else.
+      openCall(callId)
     } catch (e) {
       errorHaptic()
       setError(toErrorMessage(e, 'Could not start the call. Try again.'))
@@ -704,7 +709,7 @@ export default function RoomScreen() {
                     ? openCall(activeCall.data!.id)
                     : void handleJoinCall(activeCall.data!.id)
                 }
-                disabled={callPending}
+                disabled={callPending || callRefreshing}
                 style={{
                   backgroundColor: t.primary,
                   borderRadius: radii.pill,
@@ -712,7 +717,7 @@ export default function RoomScreen() {
                   paddingVertical: 12,
                   minHeight: 48,
                   justifyContent: 'center',
-                  opacity: callPending ? 0.6 : 1,
+                  opacity: callPending || callRefreshing ? 0.6 : 1,
                 }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
@@ -723,13 +728,13 @@ export default function RoomScreen() {
                 <Pressable
                   accessibilityLabel="Leave call"
                   onPress={() => void handleLeaveCall(activeCall.data!.id)}
-                  disabled={leaveCall.isPending}
+                  disabled={leaveCall.isPending || callRefreshing}
                   style={{
                     paddingHorizontal: 12,
                     paddingVertical: 12,
                     minHeight: 48,
                     justifyContent: 'center',
-                    opacity: leaveCall.isPending ? 0.6 : 1,
+                    opacity: leaveCall.isPending || callRefreshing ? 0.6 : 1,
                   }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
@@ -1030,7 +1035,7 @@ export default function RoomScreen() {
             onSendGif={persistSendGif}
             onOpenSignal={() => setSignalOpen(true)}
             onStartCall={() => void handleStartCall()}
-            callActive={Boolean(activeCall.data)}
+            callActive={callActive}
             onCancelReply={() => setReplyTo(null)}
           />
         </View>
