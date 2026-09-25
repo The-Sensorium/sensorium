@@ -6,7 +6,7 @@ import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import {
   useClusterVotes,
-  useClusterVoteResponses,
+  useVoteCounts,
   useReplacementRound,
   useStartReplaceVote,
   useStartNameVote,
@@ -22,6 +22,7 @@ import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
+import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../../src/components/ui'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
@@ -33,6 +34,10 @@ const VOTE_TYPE_LABEL: Record<GovernableVoteType, string> = {
   change_name: 'Rename cluster',
 }
 
+// Emerald yes-tally matching web (text-emerald-700/300); split by scheme so
+// 12px text holds contrast on both themes.
+const YES_TALLY = { light: '#047857', dark: '#6ee7b7' }
+
 export default function VotesScreen() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -40,7 +45,7 @@ export default function VotesScreen() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
   const votes = useClusterVotes(clusterId || null)
-  const responses = useClusterVoteResponses(clusterId || null)
+  const counts = useVoteCounts(clusterId || null)
   const round = useReplacementRound(clusterId || null)
   const members = useClusterMembers(clusterId || null)
 
@@ -55,7 +60,7 @@ export default function VotesScreen() {
   const [voteError, setVoteError] = useState<string | null>(null)
   const pull = usePullToRefresh([
     () => votes.refetch(),
-    () => responses.refetch(),
+    () => counts.refetch(),
     () => round.refetch(),
     () => members.refetch(),
   ])
@@ -73,18 +78,18 @@ export default function VotesScreen() {
 
   const myChoiceByVote = useMemo(() => {
     const map = new Map<string, string>()
-    for (const r of responses.data ?? []) {
-      if (r.user_id === userId) map.set(r.vote_id, r.choice)
+    for (const r of counts.data ?? []) {
+      if (r.my_choice) map.set(r.vote_id, r.my_choice)
     }
     return map
-  }, [responses.data, userId])
+  }, [counts.data])
 
   const quorum = Math.floor((members.data ?? []).length / 2) + 1
   const castCountByVote = useMemo(() => {
     const map = new Map<string, number>()
-    for (const r of responses.data ?? []) map.set(r.vote_id, (map.get(r.vote_id) ?? 0) + 1)
+    for (const r of counts.data ?? []) map.set(r.vote_id, r.cast_count)
     return map
-  }, [responses.data])
+  }, [counts.data])
 
   async function castVote(voteId: string, choice: string) {
     setVoteError(null)
@@ -123,7 +128,7 @@ export default function VotesScreen() {
     }
   }
 
-  if (votes.isLoading || responses.isLoading || members.isLoading) {
+  if (votes.isLoading || counts.isLoading || members.isLoading) {
     return (
       <Screen>
         <ClusterSectionHeader title="Votes" clusterId={clusterId} section="votes" />
@@ -217,7 +222,7 @@ export default function VotesScreen() {
               key={vote.id}
               vote={vote}
               memberById={memberById}
-              castCount={(responses.data ?? []).filter((r) => r.vote_id === vote.id).length}
+              castCount={castCountByVote.get(vote.id) ?? 0}
             />
           ))}
         </>
@@ -406,9 +411,7 @@ function ActiveVoteCard({
       </View>
 
       <Text style={{ marginTop: 8, fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
-        {castCount >= quorum
-          ? `Quorum reached (${castCount} of ${quorum} votes).`
-          : `${castCount} of ${quorum} votes needed.`}
+        {`${castCount} of ${quorum} votes cast.`}
       </Text>
       {myChoice ? (
         <Text style={{ marginTop: 16, fontSize: 14, fontWeight: '600', color: t.onSurface }}>
@@ -446,6 +449,8 @@ function PastVoteCard({
   castCount: number
 }) {
   const t = useTheme()
+  const scheme = useResolvedScheme()
+  const yesColor = scheme === 'dark' ? YES_TALLY.dark : YES_TALLY.light
   const result = parseVoteResult(vote.result)
   const passed = result?.outcome === 'passed'
   const target = vote.target_member_id ? memberById.get(vote.target_member_id) : null
@@ -466,13 +471,9 @@ function PastVoteCard({
               )}
             </Text>
           </View>
-          <View
-            style={{ backgroundColor: passed ? t.surfaceContainer : t.errorContainer, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4 }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: passed ? t.primary : t.error }}>
-              {passed ? 'Passed' : 'Failed'}
-            </Text>
-          </View>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: passed ? t.primary : t.error }}>
+            {passed ? 'Passed' : 'Failed'}
+          </Text>
         </View>
 
         <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
@@ -483,27 +484,18 @@ function PastVoteCard({
           {vote.type === 'change_name' && !passed && 'The cluster keeps its name.'}
         </Text>
 
-        <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <ThumbsUp size={14} color={t.primary} strokeWidth={2} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>{result?.yes ?? 0}</Text>
+        <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <ThumbsUp size={14} color={yesColor} strokeWidth={2} />
+            <Text style={{ fontSize: 12, fontWeight: '500', color: yesColor }}>{result?.yes ?? 0} yes</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <ThumbsDown size={14} color={t.error} strokeWidth={2} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>{result?.no ?? 0}</Text>
+            <Text style={{ fontSize: 12, fontWeight: '500', color: t.error }}>{result?.no ?? 0} no</Text>
           </View>
-          <StatPill text={`${result?.cast ?? castCount}/${result?.quorum ?? '-'} cast`} />
+          <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>{result?.cast ?? castCount}/{result?.quorum ?? '-'} cast</Text>
         </View>
       </View>
     </Card>
-  )
-}
-
-function StatPill({ text }: { text: string }) {
-  const t = useTheme()
-  return (
-    <View style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-      <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>{text}</Text>
-    </View>
   )
 }

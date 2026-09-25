@@ -374,9 +374,7 @@ function ActiveVoteCard({
 
       <div className="mt-4">
         <p className="text-xs font-medium text-on-surface-variant">
-          {castCount >= quorum
-            ? `Quorum reached (${castCount} of ${quorum} votes).`
-            : `${castCount} of ${quorum} votes needed.`}
+          {`${castCount} of ${quorum} votes cast.`}
         </p>
         {myChoice ? (
           <p className="mt-3 text-sm font-semibold text-on-surface">
@@ -437,10 +435,8 @@ function PastVoteCard({
         </div>
         <span
           className={cn(
-            'inline-flex shrink-0 items-center rounded-pill px-3 py-1 text-xs font-semibold',
-            passed
-              ? 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300'
-              : 'bg-error/10 text-error',
+            'shrink-0 text-xs font-semibold',
+            passed ? 'text-emerald-700 dark:text-emerald-300' : 'text-error',
           )}
         >
           {passed ? 'Passed' : 'Failed'}
@@ -455,16 +451,16 @@ function PastVoteCard({
         {vote.type === 'change_name' && !passed && 'The cluster keeps its name.'}
       </p>
 
-      <p className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-on-surface-variant">
-        <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-2.5 py-1 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
+      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium">
+        <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
           <ThumbsUp className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-          {result?.yes ?? 0}
+          {result?.yes ?? 0} yes
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-pill bg-error/10 px-2.5 py-1 text-error">
+        <span className="inline-flex items-center gap-1 text-error">
           <ThumbsDown className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-          {result?.no ?? 0}
+          {result?.no ?? 0} no
         </span>
-        <span className="inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1">
+        <span className="text-on-surface-variant">
           {result?.cast ?? castCount}/{result?.quorum ?? '-'} cast
         </span>
       </p>

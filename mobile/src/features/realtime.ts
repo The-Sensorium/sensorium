@@ -347,6 +347,7 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
             if (!cur || cur.some((v) => v.id === row.id)) return cur
             return [row, ...cur]
           })
+          void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
         },
       )
       .on(
@@ -362,6 +363,7 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           queryClient.setQueryData<Vote[]>(votesKey, (cur) =>
             cur ? cur.map((v) => (v.id === row.id ? row : v)) : cur,
           )
+          void queryClient.invalidateQueries({ queryKey: ['vote-counts', clusterId] })
         },
       )
       .on(
