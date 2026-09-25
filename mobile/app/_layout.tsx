@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react'
-import { DarkTheme, DefaultTheme, ThemeProvider, router, Stack, useSegments } from 'expo-router'
+import { DarkTheme, DefaultTheme, ThemeProvider, Stack, useSegments } from 'expo-router'
 import * as Linking from 'expo-linking'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
@@ -18,6 +18,7 @@ import { AppProviders } from '../src/app-providers'
 import { colors, darkColors } from '../src/lib/theme-tokens'
 import { useResolvedScheme } from '../src/lib/theme-choice'
 import { handleAuthCallback } from '../src/lib/deep-links'
+import { goHome, resetTo } from '../src/lib/auth-navigation'
 
 void SplashScreen.preventAutoHideAsync()
 
@@ -26,8 +27,8 @@ function useAuthDeepLinks() {
     async function consume(url: string) {
       try {
         const result = await handleAuthCallback(url)
-        if (result === 'recovery') router.replace('/(auth)/reset-password')
-        else if (result === 'session') router.replace('/(app)/home')
+        if (result === 'recovery') resetTo('/(auth)/reset-password')
+        else if (result === 'session') goHome()
       } catch (err) {
         console.warn('Auth link failed', err)
       }

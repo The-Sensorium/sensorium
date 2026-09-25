@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native'
-import { Link, router } from 'expo-router'
+import { Link } from 'expo-router'
+import { goLogin } from '../src/lib/auth-navigation'
 import { AlertOctagon, LogOut, MailWarning, ShieldAlert } from 'lucide-react-native'
 import { requireSupabase } from '../src/lib/supabase'
 import { useMyAppeal } from '../src/features/appeals'
@@ -51,7 +52,7 @@ export default function RestrictedScreen() {
       const { unregisterPushToken } = await import('../src/lib/push')
       await unregisterPushToken()
       await supabase.auth.signOut()
-      router.replace('/(auth)/login')
+      goLogin()
     } catch {
       setError('Could not sign out. Please try again.')
     }

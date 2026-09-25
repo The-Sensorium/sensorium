@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, LogOut, MonitorSmartphone, Moon, Save, ShieldCheck, Sun, Trash2, UserRound } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
+import { goLogin } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
 import { lightHaptic } from '../../src/lib/haptics'
@@ -425,7 +426,7 @@ function SignOutConfirmModal({ open, onClose }: { open: boolean; onClose: () => 
       await unregisterPushToken()
       await supabase.auth.signOut()
       queryClient.clear()
-      router.replace('/(auth)/login')
+      goLogin()
     } catch {
       setError('Could not sign out. Please try again.')
     } finally {
