@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { router } from 'expo-router'
+import { goHome, goLogin } from '../../src/lib/auth-navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../src/auth-context'
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
@@ -43,8 +43,8 @@ export default function OnboardingScreen() {
   const completed = !profile.isLoading && !!profile.data?.onboarding_completed_at
 
   useEffect(() => {
-    if (auth.state !== 'signedIn') router.replace('/(auth)/login')
-    else if (completed) router.replace('/(app)/home')
+    if (auth.state !== 'signedIn') goLogin()
+    else if (completed) goHome()
   }, [auth.state, completed])
 
   if (auth.state !== 'signedIn' || profile.isLoading || completed) {
@@ -140,7 +140,7 @@ export default function OnboardingScreen() {
       if (completeError) throw completeError
 
       await queryClient.invalidateQueries({ queryKey: profileKey(userId) })
-      router.replace('/(app)/home')
+      goHome()
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
       setSubmitting(false)

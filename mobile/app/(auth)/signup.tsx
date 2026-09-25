@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { View } from 'react-native'
 import { router } from 'expo-router'
+import { goHome } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
 import { useCaptchaChallenge } from '../../src/lib/use-captcha-challenge'
@@ -79,7 +80,7 @@ export default function SignupScreen() {
     setGoogleBusy(true)
     try {
       const outcome = await signInWithGoogle()
-      if (outcome === 'success') router.replace('/(app)/home')
+      if (outcome === 'success') goHome()
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { router, Tabs } from 'expo-router'
 import { Bell, Home, Newspaper, Settings, Users } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
+import { goLogin } from '../../src/lib/auth-navigation'
 import { useNotificationsChannel, useUnreadCount } from '../../src/features/notifications'
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { useTheme } from '../../src/lib/use-theme'
@@ -21,6 +22,9 @@ export default function AppTabs() {
   const t = useTheme()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
+  useEffect(() => {
+    if (auth.state === 'signedOut') goLogin()
+  }, [auth.state])
   useActiveAccountGate('member')
   useNotificationsChannel(userId)
   const unread = useUnreadCount()

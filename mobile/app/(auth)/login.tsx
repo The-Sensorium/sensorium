@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
-import { router } from 'expo-router'
+import { useAuth } from '../../src/auth-context'
+import { goHome } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
 import { useCaptchaChallenge } from '../../src/lib/use-captcha-challenge'
@@ -16,6 +17,11 @@ export default function LoginScreen() {
   const [submitting, setSubmitting] = useState(false)
   const [googleBusy, setGoogleBusy] = useState(false)
   const captcha = useCaptchaChallenge()
+  const auth = useAuth()
+
+  useEffect(() => {
+    if (auth.state === 'signedIn') goHome()
+  }, [auth.state])
 
   async function doSubmit(captchaToken: string | null) {
     setError(null)
@@ -28,7 +34,7 @@ export default function LoginScreen() {
           : { email: email.trim(), password },
       )
       if (error) throw error
-      router.replace('/(app)/home')
+      goHome()
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
@@ -64,7 +70,7 @@ export default function LoginScreen() {
     setGoogleBusy(true)
     try {
       const outcome = await signInWithGoogle()
-      if (outcome === 'success') router.replace('/(app)/home')
+      if (outcome === 'success') goHome()
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
     } finally {
