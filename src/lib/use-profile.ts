@@ -16,6 +16,13 @@ export function useProfile() {
   return useQuery({
     queryKey: profileKey(userId ?? 'signed-out'),
     enabled: userId !== null,
+    // Slow-moving row: keep warm across navigations so guard checks do not
+    // refetch on every page change. Focus/reconnect refetch keeps the UI
+    // responsive to external changes on return.
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     queryFn: async () => {
       if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()

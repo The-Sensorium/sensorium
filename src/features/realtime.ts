@@ -127,13 +127,14 @@ function patchPostComment(
   const clusterId = comment.cluster_id
   if (!clusterId) return
   // Feed reads ['post-comments', clusterId, 'all']; the detail page reads
-  // ['post-comments', clusterId, postId], so patch both to keep them in sync.
+  // ['post-comments', 'single', postId], so patch both to keep them in sync.
   const insert = (cur?: PostCommentRealtime[]) => {
     if (!cur || cur.some((c) => c.id === comment.id)) return cur
     return [...cur, comment].sort((a, b) => a.created_at.localeCompare(b.created_at))
   }
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], insert)
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, comment.post_id], insert)
+  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', 'single', comment.post_id], insert)
   void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
 }
 

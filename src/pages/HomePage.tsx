@@ -18,7 +18,7 @@ import {
 import {
   useRecentClusterPosts,
   usePostLikes,
-  usePostComments,
+  usePostCounts,
   useTogglePostLike,
   type Post,
 } from '../features/posts'
@@ -365,8 +365,13 @@ function RecentPostEngagement({
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const likes = usePostLikes(post.id)
-  const comments = usePostComments(post.cluster_id, post.id)
+  // Bounded counts RPC for both totals (deduped by cluster across cards);
+  // the likes rows are only needed for the liked-by-me flag.
+  const counts = usePostCounts(post.cluster_id)
   const toggle = useTogglePostLike(post.cluster_id)
+  const countRow = counts.data?.find((c) => c.post_id === post.id)
+  const likeCount = countRow?.likes_count ?? (likes.data ?? []).length
+  const commentCount = countRow?.comments_count ?? 0
 
   return (
     <div className="space-y-2">
@@ -379,9 +384,9 @@ function RecentPostEngagement({
         clusterName={clusterName}
         compact
         author={author}
-        likeCount={(likes.data ?? []).length}
+        likeCount={likeCount}
         likedByMe={(likes.data ?? []).some((l) => l.user_id === userId)}
-        commentCount={comments.data?.length ?? 0}
+        commentCount={commentCount}
         onLike={(id) => void toggle.mutateAsync(id)}
       />
     </div>

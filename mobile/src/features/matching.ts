@@ -62,6 +62,8 @@ export function useMyClusters(enabled = true) {
   return useQuery({
     queryKey: ['my-clusters', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
     queryFn: async () => {
       if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
@@ -95,6 +97,8 @@ export function useClusterMembers(clusterId: string | null, enabled = true) {
   return useQuery({
     queryKey: ['cluster-members', clusterId ?? 'none'],
     enabled: enabled && clusterId !== null,
+    staleTime: 2 * 60_000,
+    gcTime: 10 * 60_000,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()

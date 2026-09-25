@@ -292,13 +292,16 @@ export function useClusterPostComments(clusterId: string | null) {  return useQu
   })
 }
 
-/** Comments for a single post (detail page). */
+/** Comments for a single post (detail page). Keyed by post only so the query
+ * starts from the route param in parallel with the post fetch, and mutations
+ * invalidate one stable key regardless of when cluster_id resolves. */
 export function usePostComments(clusterId: string | null, postId: string | null) {
+  void clusterId
   return useQuery({
-    queryKey: ['post-comments', clusterId ?? 'none', postId ?? 'none'],
-    enabled: clusterId !== null && postId !== null,
+    queryKey: ['post-comments', 'single', postId ?? 'none'],
+    enabled: postId !== null,
     queryFn: async () => {
-      if (!clusterId || !postId) throw new Error('No cluster or post')
+      if (!postId) throw new Error('No post')
       const supabase = requireSupabase()
       const { data, error } = await supabase
         .from('post_comments')
@@ -420,7 +423,8 @@ export function useDeletePost(clusterId: string | null) {
         void queryClient.invalidateQueries({ queryKey: ['recent-posts'] })
         void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
-        void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId, 'all'] })
+        void queryClient.invalidateQueries({ queryKey: ['post-comments'] })
+        void queryClient.invalidateQueries({ queryKey: ['post-comments', 'single', postId] })
       }
     },
   })
@@ -502,12 +506,15 @@ export function useCreateComment(clusterId: string | null) {
       if (error) throw error
       return data as string
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       if (clusterId) {
-        void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-comments'] })
         void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
+      void queryClient.invalidateQueries({
+        queryKey: ['post-comments', 'single', variables.postId],
+      })
     },
   })
 }
@@ -524,8 +531,9 @@ export function useDeleteComment(clusterId: string | null) {
       if (clusterId) {
         // delete_post_comment removes the whole reply subtree; drop it from cache
         // too so the thread disappears immediately (and stays gone after refetch).
+        // Prefix key covers both the cluster list and per-post single keys.
         queryClient.setQueriesData<PostComment[]>(
-          { queryKey: ['post-comments', clusterId] },
+          { queryKey: ['post-comments'] },
           (cur) => {
             const base = cur ?? []
             const remove = new Set<string>([commentId])
@@ -542,7 +550,7 @@ export function useDeleteComment(clusterId: string | null) {
             return base.filter((c) => !remove.has(c.id))
           },
         )
-        void queryClient.invalidateQueries({ queryKey: ['post-comments', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['post-comments'] })
         void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
         void queryClient.invalidateQueries({ queryKey: ['comment-likes', clusterId] })
       }
