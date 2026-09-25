@@ -8,7 +8,9 @@ import { initialMockResult, makeSupabaseClient } from '../test/supabase-client'
 import {
   buildCallRoomName,
   CALL_TOKEN_FUNCTION,
+  CALL_TOKEN_RATE_LIMITED,
   MAX_CALL_PARTICIPANTS,
+  toCallTokenError,
   useActiveCall,
   useCallParticipants,
   useCallToken,
@@ -37,6 +39,22 @@ beforeEach(() => {
   requireSupabaseMock.mockReset()
   client = makeSupabaseClient(mockResult)
   requireSupabaseMock.mockReturnValue(client as never)
+})
+
+describe('toCallTokenError', () => {
+  it('maps HTTP 429 to the rate-limit error', () => {
+    expect(toCallTokenError({ message: 'slow down', context: { status: 429 } }).message).toBe(
+      CALL_TOKEN_RATE_LIMITED,
+    )
+    expect(toCallTokenError({ status: 429 }).message).toBe(CALL_TOKEN_RATE_LIMITED)
+  })
+
+  it('passes other errors through', () => {
+    const other = new Error('not_member')
+    expect(toCallTokenError(other)).toBe(other)
+    expect(toCallTokenError({ status: 403 }).message).toBe('No token')
+    expect(toCallTokenError(null).message).toBe('No token')
+  })
 })
 
 describe('buildCallRoomName', () => {
@@ -136,6 +154,15 @@ describe('useCallToken', () => {
     mockResult.value = { data: null, error: { message: 'not_member' } }
     const { result } = renderHook(() => useCallToken('call-1'), { wrapper })
     await waitFor(() => expect(result.current.isError).toBe(true))
+  })
+
+  it('throws a rate-limit error on HTTP 429', async () => {
+    mockResult.value = {
+      data: null,
+      error: { message: 'rate_limited', context: { status: 429 } },
+    }
+    const { result } = renderHook(() => useCallToken('call-1'), { wrapper })
+    await waitFor(() => expect(result.current.error?.message).toBe(CALL_TOKEN_RATE_LIMITED))
   })
 
   it('does not fetch without a call id', () => {

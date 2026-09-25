@@ -22,6 +22,10 @@ interface PreJoinProps {
  * permissions, and lets the caller choose devices before connecting. Calls are
  * audio-first on mobile, so the camera starts off. Denied permissions narrow
  * the join (audio-only / muted) instead of blocking it.
+ *
+ * The permission hooks start as null while the OS status loads. Null renders
+ * a calm loader, never the Continue screen, so mounting (or remounting) the
+ * sheet cannot flash the Continue content in and out.
  */
 export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: PreJoinProps) {
   const t = useTheme()
@@ -63,6 +67,22 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
   }
 
   if (!cameraResolved || !micResolved) {
+    if (cameraPermission === null || micPermission === null) {
+      return (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <ActivityIndicator color={t.primary} />
+          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>Preparing the call…</Text>
+          <Pressable
+            accessibilityLabel="Cancel"
+            onPress={onCancel}
+            hitSlop={8}
+            style={{ alignItems: 'center', paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
+          </Pressable>
+        </View>
+      )
+    }
     return (
       <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16 }}>
         <View style={{ gap: 8 }}>

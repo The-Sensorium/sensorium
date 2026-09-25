@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { LiveKitRoom, VideoConference } from '@livekit/components-react'
 import '@livekit/components-styles'
 import { Clock, Loader2, X } from 'lucide-react'
-import { CALL_WARNING_SECONDS, useCallToken } from '../../../features/cluster-calls'
+import { CALL_TOKEN_RATE_LIMITED, CALL_WARNING_SECONDS, useCallToken } from '../../../features/cluster-calls'
 import { cn } from '../../../lib/utils'
 import { formatCallDuration } from './format'
 
 interface CallOverlayProps {
   callId: string
+  micOnJoin: boolean
   videoOnJoin: boolean
   startedAt: string
   expiresAt: string
@@ -51,10 +52,12 @@ function useCallClock(startedAt: string, expiresAt: string, onExpired: () => voi
 // button, a dropped connection, or the duration limit) removes only this
 // participant via leave_call; the call stays live for everyone else and ends
 // when the last participant leaves.
-export function CallOverlay({ callId, videoOnJoin, startedAt, expiresAt, onHangUp }: CallOverlayProps) {
+export function CallOverlay({ callId, micOnJoin, videoOnJoin, startedAt, expiresAt, onHangUp }: CallOverlayProps) {
   const tokenQuery = useCallToken(callId, true)
   const { elapsed, remaining } = useCallClock(startedAt, expiresAt, onHangUp)
   const warning = remaining <= CALL_WARNING_SECONDS
+  const rateLimited =
+    tokenQuery.error instanceof Error && tokenQuery.error.message === CALL_TOKEN_RATE_LIMITED
 
   return (
     <div
@@ -96,7 +99,9 @@ export function CallOverlay({ callId, videoOnJoin, startedAt, expiresAt, onHangU
         ) : tokenQuery.isError || !tokenQuery.data ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="text-sm text-on-surface-variant">
-              Could not join the call. It may have ended. Try starting a new one.
+              {rateLimited
+                ? 'Joining too often. Wait a minute and try again.'
+                : 'Could not join the call. It may have ended. Try starting a new one.'}
             </p>
             <button
               type="button"
@@ -111,7 +116,7 @@ export function CallOverlay({ callId, videoOnJoin, startedAt, expiresAt, onHangU
             serverUrl={tokenQuery.data.url}
             token={tokenQuery.data.token}
             connect
-            audio
+            audio={micOnJoin}
             video={videoOnJoin}
             onDisconnected={onHangUp}
           >

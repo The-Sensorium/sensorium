@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { MemoryRouter, Route, Routes, createMemoryRouter, RouterProvider } from 'react-router'
 import { RoomView } from './RoomView'
 import type { Message } from '../../features/cluster'
 import type { Call, CallParticipant } from '../../features/cluster-calls'
@@ -123,8 +123,18 @@ vi.mock('../../features/cluster-calls', () => ({
   useLeaveCall: () => hooks.leaveCall,
 }))
 vi.mock('./room/CallOverlay', () => ({
-  CallOverlay: ({ callId }: { callId: string }) => (
-    <div data-testid="call-overlay-stub">{callId}</div>
+  CallOverlay: ({
+    callId,
+    micOnJoin,
+    videoOnJoin,
+  }: {
+    callId: string
+    micOnJoin: boolean
+    videoOnJoin: boolean
+  }) => (
+    <div data-testid="call-overlay-stub" data-mic={String(micOnJoin)} data-video={String(videoOnJoin)}>
+      {callId}
+    </div>
   ),
 }))
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: () => ({ data: undefined }) }))
@@ -631,11 +641,29 @@ function liveCall(): Call {
 }
 
 describe('RoomView calls', () => {
-  it('starts a call from the room actions menu when none is live', async () => {
+  it('opens a pre-join dialog before starting a call', async () => {
     renderRoom()
     await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+
+    // Audio-first defaults: mic on, camera off. Nothing starts yet.
+    const dialog = screen.getByRole('dialog', { name: 'Join the call' })
+    expect(within(dialog).getByRole('button', { name: 'Turn microphone off' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('button', { name: 'Turn camera on' })).toBeInTheDocument()
+    expect(hooks.startCall.mutateAsync).not.toHaveBeenCalled()
+
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Join call' }))
     expect(hooks.startCall.mutateAsync).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels the pre-join dialog without starting a call', async () => {
+    renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    expect(hooks.startCall.mutateAsync).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: 'Join the call' })).not.toBeInTheDocument()
   })
 
   it('shows the ringing banner with Join and hides Start a call while live', async () => {
@@ -648,6 +676,8 @@ describe('RoomView calls', () => {
     expect(within(banner).getByText('Bo started a call')).toBeInTheDocument()
 
     await userEvent.click(within(banner).getByRole('button', { name: 'Join' }))
+    const dialog = screen.getByRole('dialog', { name: 'Join the call' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Join call' }))
     expect(hooks.joinCall.mutateAsync).toHaveBeenCalledWith('call-1')
   })
 
@@ -667,13 +697,97 @@ describe('RoomView calls', () => {
     const { rerender } = renderRoom()
     await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Join call' }))
 
     // The mutation invalidates ['active-call'] but the cached row is still null
     // until the refetch resolves; simulate the row arriving on the next render.
     hooks.activeCall.data = liveCall()
     rerender(makeUi())
 
-    expect(screen.getByTestId('call-overlay-stub')).toHaveTextContent('call-1')
+    const overlay = screen.getByTestId('call-overlay-stub')
+    expect(overlay).toHaveTextContent('call-1')
+    expect(overlay).toHaveAttribute('data-mic', 'true')
+    expect(overlay).toHaveAttribute('data-video', 'false')
+  })
+
+  it('passes toggled pre-join choices into the overlay', async () => {
+    const { rerender } = renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Turn camera on' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Turn microphone off' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Join call' }))
+
+    hooks.activeCall.data = liveCall()
+    rerender(makeUi())
+
+    const overlay = screen.getByTestId('call-overlay-stub')
+    expect(overlay).toHaveAttribute('data-mic', 'false')
+    expect(overlay).toHaveAttribute('data-video', 'true')
+  })
+
+  it('joins the current live call if it turned over while pre-joining', async () => {
+    hooks.activeCall.data = liveCall()
+    const { rerender } = renderRoom()
+    const banner = screen.getByRole('region', { name: 'Cluster call' })
+    await userEvent.click(within(banner).getByRole('button', { name: 'Join' }))
+
+    hooks.activeCall.data = { ...liveCall(), id: 'call-2' }
+    rerender(makeUi())
+
+    const dialog = screen.getByRole('dialog', { name: 'Join the call' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Join call' }))
+    expect(hooks.joinCall.mutateAsync).toHaveBeenCalledWith('call-2')
+  })
+
+  it('ignores Escape while the start mutation is in flight', async () => {
+    let resolveStart!: (value: string) => void
+    hooks.startCall = {
+      mutateAsync: vi.fn().mockImplementation(
+        () =>
+          new Promise<string>((resolve) => {
+            resolveStart = resolve
+          }),
+      ),
+      isPending: false,
+    }
+    const { rerender } = renderRoom()
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Join call' }))
+
+    // Mutation in flight: Escape must not orphan the join.
+    hooks.startCall.isPending = true
+    rerender(makeUi())
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByRole('dialog', { name: 'Join the call' })).toBeInTheDocument()
+
+    resolveStart('call-1')
+    hooks.startCall.isPending = false
+    hooks.activeCall.data = liveCall()
+    rerender(makeUi())
+    expect(await screen.findByTestId('call-overlay-stub')).toHaveTextContent('call-1')
+  })
+
+  it('closes the pre-join dialog when switching clusters', async () => {
+    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const router = createMemoryRouter([{ path: '/cluster/:clusterId', element: <RoomView /> }], {
+      initialEntries: ['/cluster/c1'],
+    })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Room actions' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Start a call' }))
+    expect(screen.getByRole('dialog', { name: 'Join the call' })).toBeInTheDocument()
+
+    await router.navigate('/cluster/c2')
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Join the call' })).not.toBeInTheDocument(),
+    )
   })
 })
 

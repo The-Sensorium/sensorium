@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { useEffect, useState } from 'react'
+import { Platform, Pressable, Text, View } from 'react-native'
 import { useConnectionState, useLocalParticipant } from '@livekit/react-native'
 import { ConnectionState } from 'livekit-client'
-import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff } from 'lucide-react-native'
+import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff, Volume2, VolumeX } from 'lucide-react-native'
+import { hasExternalAudioOutputLive, setSpeakerEnabledLive } from '../../../lib/call-audio'
 import { useTheme } from '../../../lib/use-theme'
 import { useResolvedScheme } from '../../../lib/theme-choice'
 
@@ -15,7 +16,7 @@ interface CallControlsProps {
   onChatPress: () => void
 }
 
-/** Mic, camera, chat, and hang-up. */
+/** Mic, camera, speaker, chat, and hang-up. */
 export function CallControls({
   onHangUp,
   initialMicOn,
@@ -31,6 +32,20 @@ export function CallControls({
   const live = connection === ConnectionState.Connected
   const [micOn, setMicOn] = useState(initialMicOn)
   const [cameraOn, setCameraOn] = useState(initialCameraOn)
+  const [speakerOn, setSpeakerOn] = useState(true)
+
+  // Setup routes to the speaker unless an external device is connected, in
+  // which case the toggle starts off so it reflects the actual route. iOS
+  // cannot report external devices, so the toggle keeps its speaker default.
+  useEffect(() => {
+    let cancelled = false
+    void hasExternalAudioOutputLive(Platform.OS).then((external) => {
+      if (!cancelled && external) setSpeakerOn(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function toggleMic() {
     const next = !micOn
@@ -42,6 +57,13 @@ export function CallControls({
     const next = !cameraOn
     setCameraOn(next)
     await localParticipant.setCameraEnabled(next).catch(() => setCameraOn(!next))
+  }
+
+  async function toggleSpeaker() {
+    const next = !speakerOn
+    setSpeakerOn(next)
+    const applied = await setSpeakerEnabledLive(next, Platform.OS)
+    if (!applied) setSpeakerOn(!next)
   }
 
   const buttons = [
@@ -83,6 +105,27 @@ export function CallControls({
             {b.on ? b.onIcon : b.offIcon}
           </Pressable>
         ))}
+        <Pressable
+          accessibilityLabel={speakerOn ? 'Speaker off' : 'Speaker on'}
+          accessibilityState={{ selected: speakerOn }}
+          onPress={() => void toggleSpeaker()}
+          disabled={!live}
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: speakerOn ? t.primary : t.surfaceHighest,
+            opacity: live ? 1 : 0.6,
+          }}
+        >
+          {speakerOn ? (
+            <Volume2 size={20} color="#fff" strokeWidth={2} />
+          ) : (
+            <VolumeX size={20} color="#fff" strokeWidth={2} />
+          )}
+        </Pressable>
         <View style={{ position: 'relative' }}>
           <Pressable
             accessibilityLabel={chatOpen ? 'Close chat' : 'Open chat'}
