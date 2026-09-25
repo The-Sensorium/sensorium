@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { RequireAuth, RequireGuest, RequireOnboarded, RequireActiveAccount, RequireCapability, RequireRestricted, RequireSessionRole, SessionRoleEntry } from './guards'
+import { RequireAuth, RequireGuest, RequireOnboarded, RequireActiveAccount, RequireCapability, RequireRestricted, RequireSessionRole, RequireMemberShell, SessionRoleEntry } from './guards'
 import { useAuth } from './auth-context'
 import { useProfile } from '../lib/use-profile'
 import { useSessionRole } from './session-role-context'
@@ -479,6 +479,55 @@ describe('mobile member-only', () => {
     vi.mocked(useSessionRole).mockReturnValue({ role: 'member', setRole: vi.fn(), clearRole: vi.fn() })
     renderGuarded(<RequireSessionRole role="member">home</RequireSessionRole>)
     expect(screen.getByText('home')).toBeInTheDocument()
+  })
+})
+
+describe('RequireMemberShell', () => {
+  beforeEach(() => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.member)
+    vi.mocked(useProfile).mockReturnValue(profileStates.onboarded)
+    vi.mocked(useSessionRole).mockReturnValue({ role: 'member', setRole: vi.fn(), clearRole: vi.fn() })
+  })
+
+  it('renders children when access and profile resolve', () => {
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText('home')).toBeInTheDocument()
+  })
+
+  it('shows a single spinner while either query is loading', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.loading)
+    const { container } = renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(container.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.queryByText('home')).not.toBeInTheDocument()
+  })
+
+  it('redirects to onboarding when not completed', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.notOnboarded)
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText('onboarding page')).toBeInTheDocument()
+  })
+
+  it('redirects a suspended account to /restricted', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.suspended)
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText('restricted page')).toBeInTheDocument()
+  })
+
+  it('sends a multi-role account without onboarding to /onboarding first', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    vi.mocked(useProfile).mockReturnValue(profileStates.notOnboarded)
+    vi.mocked(useSessionRole).mockReturnValue({ role: null, setRole: vi.fn(), clearRole: vi.fn() })
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText('onboarding page')).toBeInTheDocument()
+  })
+
+  it('shows the profile error state with a retry button', async () => {
+    const user = userEvent.setup()
+    vi.mocked(useProfile).mockReturnValue(profileStates.error)
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText(/Couldn’t load your profile/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Try Again' }))
+    expect(profileStates.error.refetch).toHaveBeenCalled()
   })
 })
 

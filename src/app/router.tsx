@@ -10,11 +10,11 @@ import { AdminLayout } from './layouts/AdminLayout'
 import {
   RequireAuth,
   RequireGuest,
-  RequireOnboarded,
   RequireActiveAccount,
   RequireCapability,
   RequireRestricted,
   RequireSessionRole,
+  RequireMemberShell,
   SessionRoleEntry,
 } from './guards'
 import { LandingPage } from '../pages/LandingPage'
@@ -188,13 +188,9 @@ export function AppRouter() {
           {/* Member shell */}
           <Route
             element={
-              <RequireActiveAccount>
-                <RequireSessionRole role="member">
-                  <RequireOnboarded>
-                    <AppShell />
-                  </RequireOnboarded>
-                </RequireSessionRole>
-              </RequireActiveAccount>
+              <RequireMemberShell>
+                <AppShell />
+              </RequireMemberShell>
             }
           >
             <Route path="/home" element={<HomePage />} />

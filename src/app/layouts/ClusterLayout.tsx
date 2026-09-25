@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Loader2, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
+import { ArrowLeft, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { modeInfo } from '../../lib/modes'
 import { useCluster, useMyMembership } from '../../features/introductions'
@@ -47,15 +47,14 @@ export function ClusterLayout() {
     }
   }, [])
 
-  if (cluster.isLoading || membership.isLoading) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
-      </div>
-    )
-  }
+  // Header and tabs render from cache with skeletons; the Outlet below
+  // never waits for cluster or membership so tab switches stay instant.
+  // Child pages fetch their own data by clusterId.
+  const pending = cluster.isPending || membership.isPending
+  const unavailable =
+    !pending && (!cluster.data || !membership.data)
 
-  if (!cluster.data || !membership.data) {
+  if (unavailable) {
     return (
       <div className="mx-auto max-w-xl rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center text-sm text-on-surface-variant">
         This cluster isn’t available to you.
@@ -66,7 +65,7 @@ export function ClusterLayout() {
   // Clusters open at formation: every active member enters the room directly.
   // Introductions are an optional in-cluster checklist and never gate access.
 
-  const ModeIcon = modeInfo(cluster.data.matching_mode).icon
+  const ModeIcon = cluster.data ? modeInfo(cluster.data.matching_mode).icon : null
 
   return (
     <div
@@ -95,11 +94,21 @@ export function ClusterLayout() {
           </button>
           <div className="min-w-0 flex-1">
             <p className="hidden items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary sm:flex">
-              <ModeIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-              <span className="truncate">{cluster.data.mode_label}</span>
+              {ModeIcon && cluster.data ? (
+                <>
+                  <ModeIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                  <span className="truncate">{cluster.data.mode_label}</span>
+                </>
+              ) : (
+                <span className="h-3.5 w-24 animate-pulse rounded bg-surface-container" aria-hidden />
+              )}
             </p>
             <h1 className="truncate font-display text-lg font-semibold text-on-surface">
-              {cluster.data.name}
+              {cluster.data ? (
+                cluster.data.name
+              ) : (
+                <span className="inline-block h-5 w-40 animate-pulse rounded bg-surface-container" aria-hidden />
+              )}
             </h1>
           </div>
           {/* Mobile-only sections menu: the chat keeps the whole band to itself

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Navigate } from 'react-router'
 import { useAuth } from './auth-context'
 import { useProfile } from '../lib/use-profile'
@@ -133,13 +133,13 @@ function SessionRoleGate({ access, role, children }: { access: MyAccessRow; role
   const { role: current, setRole } = useSessionRole()
   const mobile = isMobileDevice()
 
-  const available = activeSessionRoles(access)
+  const available = useMemo(() => activeSessionRoles(access), [access])
   const autoResolve = current === null && available.length === 1 && available[0] === role
 
   // Adopt the single available role in an effect so we never mutate the
   // provider's state while a sibling component is rendering.
   useEffect(() => {
-    if (autoResolve) setRole(available[0])
+    if (autoResolve) setRole(available[0]!)
   }, [autoResolve, available, setRole])
 
   // Staff shells are desktop-only: mobile browsers always land in the member
@@ -178,12 +178,12 @@ function SessionRoleResolver({ access }: { access: MyAccessRow }) {
   const staff = hasCapability(access, 'can_moderate')
   const mfa = useMfaStatus(staff && !mobile)
 
-  const available = activeSessionRoles(access)
+  const available = useMemo(() => activeSessionRoles(access), [access])
   const single = available.length === 1
 
   useEffect(() => {
     if (mobile) setRole('member')
-    else if (single && available.length === 1) setRole(available[0])
+    else if (single && available.length === 1) setRole(available[0]!)
   }, [available, setRole, single, mobile])
 
   if (mobile) return <Navigate to="/home" replace />
@@ -210,6 +210,54 @@ export function RequireRestricted({ children }: { children: ReactNode }) {
   if (access.isError || !access.data) return <AccessErrorScreen onRetry={() => void access.refetch()} />
   if (access.data.account_status === 'active') return <Navigate to="/home" replace />
   return <>{children}</>
+}
+
+/**
+ * Combined member-shell gate. Calls access + profile in parallel so nested
+ * guards do not serialize get_my_access before the profiles read. Shows one
+ * loading state. Order is access -> onboarding -> member role gate. This
+ * differs from the old nesting (role gate before onboarding): a multi-role
+ * account that has not onboarded goes to /onboarding first, which is the
+ * intended path since role shells assume an onboarded profile.
+ */
+export function RequireMemberShell({ children }: { children: ReactNode }) {
+  const access = useMyAccess()
+  const profile = useProfile()
+
+  if (access.isLoading || profile.isLoading) return <LoadingScreen />
+  if (access.isError || !access.data)
+    return <AccessErrorScreen onRetry={() => void access.refetch()} />
+  if (access.data.account_status !== 'active') return <Navigate to="/restricted" replace />
+
+  if (!profile.isError && !profile.data) return <Navigate to="/onboarding" replace />
+  if (profile.isError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md rounded-2xl bg-surface-lowest p-8 text-center shadow-soft">
+          <h1 className="text-xl font-semibold text-on-surface">Couldn’t load your profile</h1>
+          <p className="mt-3 text-sm leading-6 text-on-surface-variant">
+            Something went wrong while checking your account. Please try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => profile.refetch()}
+            className="mt-6 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+  if (profile.data?.onboarding_completed_at == null) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  return (
+    <SessionRoleGate access={access.data} role="member">
+      {children}
+    </SessionRoleGate>
+  )
 }
 
 /**

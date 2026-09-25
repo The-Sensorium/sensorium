@@ -30,6 +30,14 @@ export function useMyAccess() {
   return useQuery({
     queryKey: accessKey(userId ?? 'signed-out'),
     enabled: userId !== null,
+    // Slow-moving row: keep warm across navigations so every guard does not
+    // refetch on each page change. Focus/reconnect refetch keeps revocation
+    // (suspend, ban, capability removal) responsive on return. The database
+    // remains the enforcement point; this only affects how fast the UI hides.
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_my_access')
