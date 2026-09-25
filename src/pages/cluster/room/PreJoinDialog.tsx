@@ -61,29 +61,44 @@ export function PreJoinDialog({
           Calls use your microphone and, if you turn it on, your camera. Your camera starts off.
         </p>
         {toggles.map((toggle) => (
-          <div
+          <button
             key={toggle.key}
-            className="flex items-center gap-3 rounded-xl bg-surface-container px-4 py-3"
+            type="button"
+            aria-label={toggle.pressedLabel}
+            aria-pressed={toggle.on}
+            data-e2e={toggle.testId}
+            onClick={() => toggle.onChange(!toggle.on)}
+            disabled={pending}
+            className={cn(
+              'flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors disabled:opacity-60',
+              toggle.on
+                ? 'border-primary bg-primary-container/15 hover:bg-primary-container/25'
+                : 'border-outline-variant/70 bg-surface-container hover:bg-surface-high',
+            )}
           >
-            <button
-              type="button"
-              aria-label={toggle.pressedLabel}
-              aria-pressed={toggle.on}
-              data-e2e={toggle.testId}
-              onClick={() => toggle.onChange(!toggle.on)}
-              disabled={pending}
+            <span
+              aria-hidden
               className={cn(
-                'grid h-12 w-12 shrink-0 place-items-center rounded-full transition-colors disabled:opacity-60',
+                'grid h-12 w-12 shrink-0 place-items-center rounded-full transition-colors',
                 toggle.on ? 'bg-primary' : 'bg-surface-highest',
               )}
             >
               {toggle.on ? toggle.onIcon : toggle.offIcon}
-            </button>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-on-surface">{toggle.label}</p>
-              <p className="text-xs text-on-surface-variant">{toggle.hint}</p>
-            </div>
-          </div>
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-on-surface">{toggle.label}</span>
+              <span className="block text-xs text-on-surface-variant">{toggle.hint}</span>
+            </span>
+            <span
+              aria-hidden
+              className={cn(
+                'shrink-0 rounded-pill px-3 py-1 text-xs font-semibold transition-colors',
+                toggle.on ? 'bg-primary text-on-primary' : 'bg-surface-highest text-on-surface-variant',
+              )}
+            >
+              {toggle.on ? 'On' : 'Off'}
+            </span>
+          </button>
         ))}
         <div className="flex items-center justify-end gap-2 pt-1">
           <button
