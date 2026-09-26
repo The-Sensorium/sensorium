@@ -82,6 +82,7 @@ const DEMO = {
   displayName: 'Diya Sharma',
   dob: '1996-07-12',
   countryCode: 'PT',
+  timezone: 'Europe/Lisbon',
   clusterName: 'Aurora',
   mode: 'exact_birthdate',
   modeLabel: 'Exact Birthdate',
@@ -97,7 +98,46 @@ const DEMO_MEMBER = {
   displayName: 'Rio Mendez',
   dob: '1994-03-19',
   countryCode: 'PT',
+  timezone: 'Europe/Lisbon',
   currentStatus: 'Thinking out loud',
+}
+
+// Representative IANA zone per seed country so the Members list shows varied
+// local times out of the box.
+const COUNTRY_TIMEZONES = {
+  PT: 'Europe/Lisbon',
+  MX: 'America/Mexico_City',
+  US: 'America/New_York',
+  JP: 'Asia/Tokyo',
+  DE: 'Europe/Berlin',
+  CA: 'America/Toronto',
+  FR: 'Europe/Paris',
+  IN: 'Asia/Kolkata',
+  BR: 'America/Sao_Paulo',
+  SG: 'Asia/Singapore',
+  CZ: 'Europe/Prague',
+  UA: 'Europe/Kyiv',
+  EG: 'Africa/Cairo',
+  TR: 'Europe/Istanbul',
+  IT: 'Europe/Rome',
+  PK: 'Asia/Karachi',
+  NO: 'Europe/Oslo',
+  KR: 'Asia/Seoul',
+  RU: 'Europe/Moscow',
+  SE: 'Europe/Stockholm',
+  NG: 'Africa/Lagos',
+  AR: 'America/Argentina/Buenos_Aires',
+  ES: 'Europe/Madrid',
+  IE: 'Europe/Dublin',
+  SA: 'Asia/Riyadh',
+  AT: 'Europe/Vienna',
+  PL: 'Europe/Warsaw',
+  DK: 'Europe/Copenhagen',
+  LB: 'Asia/Beirut',
+  AU: 'Australia/Sydney',
+  KZ: 'Asia/Almaty',
+  GH: 'Africa/Accra',
+  GB: 'Europe/London',
 }
 
 // A pool of secondary demo members, reused across clusters (matching modes are
@@ -302,7 +342,7 @@ const CLUSTERS = [
   },
 ]
 
-async function ensureUser(admin, email, { displayName, dob, countryCode, currentStatus }) {
+async function ensureUser(admin, email, { displayName, dob, countryCode, timezone, currentStatus }) {
   let user = (await admin.auth.admin.listUsers({ perPage: 200 })).data.users.find(
     (u) => u.email === email,
   )
@@ -332,6 +372,7 @@ async function ensureUser(admin, email, { displayName, dob, countryCode, current
   const patch = {
     display_name: displayName,
     country_code: countryCode,
+    timezone: timezone ?? null,
     current_status: currentStatus,
     ...(fresh || profile.data?.dob == null ? { dob } : {}),
   }
@@ -352,6 +393,7 @@ function personFor(slot) {
         displayName: PEOPLE[slot].name,
         dob: PEOPLE[slot].dob,
         countryCode: PEOPLE[slot].country,
+        timezone: COUNTRY_TIMEZONES[PEOPLE[slot].country] ?? null,
         currentStatus: PEOPLE[slot].status,
       }
 }

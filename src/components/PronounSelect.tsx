@@ -7,8 +7,10 @@ type PronounPreset = (typeof PRONOUN_PRESETS)[number]
 const PRONOUN_CUSTOM = '__custom__'
 type PronounMode = PronounPreset | '' | typeof PRONOUN_CUSTOM
 
+// Solid background (no opacity): Chrome paints the native option popup with
+// the select's own background, and a translucent one flattens to grey.
 const DEFAULT_FIELD =
-  'rounded-pill border border-outline-variant/60 bg-surface-container/50 px-4 py-2.5 text-on-surface focus:border-primary placeholder:text-on-surface-variant'
+  'rounded-pill border border-outline-variant/60 bg-surface-container px-4 py-2.5 text-on-surface focus:border-primary placeholder:text-on-surface-variant'
 
 function deriveMode(value: string): PronounMode {
   return PRONOUN_PRESETS.includes(value as PronounPreset)

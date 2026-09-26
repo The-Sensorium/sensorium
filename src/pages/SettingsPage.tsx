@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ChevronDown, ChevronRight, ImageMinus, ImagePlus, Loader2, LogOut, Save, ShieldCheck, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, BellRing, ChevronDown, ChevronRight, Clock, ImageMinus, ImagePlus, Loader2, LogOut, Save, ShieldCheck, Trash2, UserRound } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -21,6 +21,7 @@ import {
   useUpsertNotificationPrefs,
   type PrefToggle,
 } from '../features/notifications'
+import { timeZoneList } from '../lib/timezones'
 import { Avatar } from '../components/Avatar'
 import { MuteButton } from '../components/MuteButton'
 import { Modal } from '../components/Modal'
@@ -35,12 +36,20 @@ export function SettingsPage() {
   const [bio, setBio] = useState(profile.data?.bio ?? '')
   const [pronouns, setPronouns] = useState(profile.data?.pronouns ?? '')
   const [status, setStatus] = useState(profile.data?.current_status ?? '')
+  const [timezone, setTimezone] = useState(profile.data?.timezone ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [removeAvatarOpen, setRemoveAvatarOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const updateProfile = useUpdateProfile()
+  const zones = useMemo(() => timeZoneList(), [])
+
+  // Profile loads async; pick up the saved zone once it arrives so saving
+  // another field never wipes a value the user never touched.
+  useEffect(() => {
+    setTimezone(profile.data?.timezone ?? '')
+  }, [profile.data?.timezone])
 
   async function handleAvatar(file: File | undefined) {
     if (!file) return
@@ -206,6 +215,49 @@ export function SettingsPage() {
           <button
             type="submit"
             disabled={updateProfile.isPending || status.trim() === (profile.data?.current_status ?? '')}
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+          >
+            {updateProfile.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Save className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            )}
+            Save changes
+          </button>
+        </form>
+      </section>
+
+      <section aria-label="Local time" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+          <h2 className="font-display text-lg font-semibold text-on-surface">Local time</h2>
+        </div>
+        <p className="mt-1 text-sm text-on-surface-variant">
+          Shown on your member card in every cluster.
+        </p>
+        <form
+          className="mt-4 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void updateProfile.mutateAsync({ timezone: timezone || null })
+          }}
+        >
+          <select
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            aria-label="Timezone"
+            className="w-full appearance-none rounded-pill border border-outline-variant/60 bg-surface-container px-4 py-2.5 text-base leading-6 text-on-surface focus:border-primary focus:outline-none sm:text-sm"
+          >
+            <option value="">Not set</option>
+            {zones.map((tz) => (
+              <option key={tz} value={tz}>
+                {tz}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={updateProfile.isPending || (timezone || '') === (profile.data?.timezone ?? '')}
             className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
           >
             {updateProfile.isPending ? (

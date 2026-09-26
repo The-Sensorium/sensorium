@@ -8,7 +8,6 @@ import {
   Flag,
   Heart,
   Loader2,
-  MapPin,
   MessageSquare,
   Sparkles,
   Target,
@@ -27,6 +26,8 @@ import {
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
+import { CountryFlag } from '../components/CountryFlag'
+import { MemberLocalTime } from '../components/MemberLocalTime'
 import { PronounBadge } from '../components/PronounBadge'
 import { ReportModal } from '../components/ReportModal'
 import { MuteButton } from '../components/MuteButton'
@@ -149,25 +150,30 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                 </h1>
                 {member.pronouns && <PronounBadge pronouns={member.pronouns} />}
               </div>
-              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
-                {member.country_code && (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                    {countryName(member.country_code)}
-                  </span>
-                )}
-                {member.country_code && member.birth_year && (
-                  <span className="text-outline-variant" aria-hidden>
-                    ·
-                  </span>
-                )}
-                {member.birth_year && (
+              {(member.country_code || member.timezone) && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
+                  {member.country_code && (
+                    <span className="inline-flex items-center gap-1">
+                      <CountryFlag code={member.country_code} />
+                      {countryName(member.country_code)}
+                    </span>
+                  )}
+                  {member.country_code && member.timezone && (
+                    <span className="text-outline-variant" aria-hidden>
+                      ·
+                    </span>
+                  )}
+                  {member.timezone ? <MemberLocalTime timeZone={member.timezone} /> : null}
+                </p>
+              )}
+              {member.birth_year && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
                   <span className="inline-flex items-center gap-1">
                     <Cake className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
                     Born {member.birth_year}
                   </span>
-                )}
-              </p>
+                </p>
+              )}
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {onlineNow ? (
                   <AvailabilityBadge value={member.availability} />

@@ -35,6 +35,7 @@ export function StepReview({ draft }: Props) {
           value={age !== null ? `${draft.dob} (age ${age})` : draft.dob}
         />
         <Row label="Country" value={countryName(draft.countryCode)} />
+        <Row label="Timezone" value={draft.timezone} />
         {draft.bio.trim() && <Row label="Bio" value={draft.bio.trim()} />}
         <Row
           label="Matching modes"

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Link, router, useLocalSearchParams } from 'expo-router'
-import { ArrowLeft, Briefcase, Cake, Flag, Heart, MapPin, Sparkles, Target, Telescope, Users } from 'lucide-react-native'
+import { ArrowLeft, Briefcase, Cake, Flag, Heart, Sparkles, Target, Telescope, Users } from 'lucide-react-native'
 import { useClusterMembers, useMyClusters } from '../../../src/features/matching'
 import { usePresence } from '../../../src/features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../../../src/features/cluster'
@@ -14,6 +14,8 @@ import {
 import { useAuth } from '../../../src/auth-context'
 import { Avatar } from '../../../src/components/Avatar'
 import { AvailabilityBadge } from '../../../src/components/AvailabilityBadge'
+import { CountryFlag } from '../../../src/components/CountryFlag'
+import { MemberLocalTime } from '../../../src/components/MemberLocalTime'
 import { PronounBadge } from '../../../src/components/PronounBadge'
 import { ReportModal } from '../../../src/components/ReportModal'
 import { PostCard } from '../../../src/components/PostCard'
@@ -109,24 +111,29 @@ export default function ProfileScreen() {
               </Text>
               {member.pronouns ? <PronounBadge pronouns={member.pronouns} /> : null}
             </View>
-            <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              {member.country_code ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                  <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
-                    {countryName(member.country_code)}
-                  </Text>
-                </View>
-              ) : null}
-              {member.birth_year ? (
+            {member.country_code || member.timezone ? (
+              <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                {member.country_code ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <CountryFlag code={member.country_code} />
+                    <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+                      {countryName(member.country_code)}
+                    </Text>
+                  </View>
+                ) : null}
+                {member.timezone ? <MemberLocalTime timeZone={member.timezone} fontSize={14} /> : null}
+              </View>
+            ) : null}
+            {member.birth_year ? (
+              <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Cake size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
                   <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
                     Born {member.birth_year}
                   </Text>
                 </View>
-              ) : null}
-            </View>
+              </View>
+            ) : null}
             <View style={{ marginTop: 6, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
               {onlineNow ? (
                 <AvailabilityBadge value={member.availability} />

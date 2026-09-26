@@ -15,6 +15,7 @@ import {
   validateStep,
   type OnboardingDraft,
 } from '../../src/lib/onboarding-draft'
+import { defaultTimeZone } from '../../src/lib/timezones'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { PrimaryButton, SecondaryButton } from '../../src/components/ui'
@@ -36,7 +37,10 @@ export default function OnboardingScreen() {
   const queryClient = useQueryClient()
 
   const [step, setStep] = useState(1)
-  const [draft, setDraft] = useState<OnboardingDraft>(EMPTY_DRAFT)
+  const [draft, setDraft] = useState<OnboardingDraft>(() => ({
+    ...EMPTY_DRAFT,
+    timezone: defaultTimeZone() ?? '',
+  }))
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -107,6 +111,7 @@ export default function OnboardingScreen() {
           pronouns: draft.pronouns.trim() || null,
           dob: draft.dob,
           country_code: draft.countryCode,
+          timezone: draft.timezone || null,
           bio: draft.bio.trim() || null,
           avatar_url: draft.avatarUrl,
           latitude: draft.coordinates?.lat ?? null,
