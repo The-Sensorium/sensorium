@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { parseMentions, type MentionMember } from '../../../features/mentions'
+import { LinkifiedText } from '../../../components/LinkifiedText'
 
 /** Renders message content, turning `@DisplayName` mentions into profile links and `@everyone` into a plain chip. */
 export function MentionText({
@@ -16,7 +17,7 @@ export function MentionText({
     <span>
       {parts.map((part, i) =>
         part.type === 'text' ? (
-          <span key={i}>{part.value}</span>
+          <LinkifiedText key={i} text={part.value} />
         ) : part.type === 'everyone' ? (
           <span key={i}>
             {part.prefix}

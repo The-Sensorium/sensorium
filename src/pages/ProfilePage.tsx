@@ -28,6 +28,7 @@ import { AvailabilityBadge } from '../components/AvailabilityBadge'
 import { CountryFlag } from '../components/CountryFlag'
 import { MemberLocalTime } from '../components/MemberLocalTime'
 import { PronounBadge } from '../components/PronounBadge'
+import { LinkifiedText } from '../components/LinkifiedText'
 import { ReportModal } from '../components/ReportModal'
 import { MuteButton } from '../components/MuteButton'
 import { countryName } from '../lib/countries'
@@ -202,7 +203,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                   Status
                 </p>
                 <p className="mt-1 text-xs italic text-on-surface-variant">
-                  "{member.current_status}"
+                  "<LinkifiedText text={member.current_status} />"
                 </p>
               </div>
             )}
@@ -212,7 +213,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                   About
                 </p>
                 <p className={cn('mt-1 text-left text-sm leading-5 text-on-surface', !bioExpanded && 'line-clamp-3')}>
-                  {member.bio}
+                  <LinkifiedText text={member.bio} />
                 </p>
                 {member.bio.length > 180 && (
                   <button
@@ -322,7 +323,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-primary">{prompt}</p>
-                    <p className="mt-0.5 text-sm leading-5 text-on-surface-variant">{a.answer}</p>
+                    <p className="mt-0.5 text-sm leading-5 text-on-surface-variant"><LinkifiedText text={a.answer} /></p>
                   </div>
                 </li>
               )

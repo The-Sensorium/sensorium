@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native'
 import { CornerUpLeft, Flag, Heart, MessageSquare, Trash2 } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { Avatar } from './Avatar'
+import { LinkifiedText } from './LinkifiedText'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
@@ -71,7 +72,7 @@ export function CommentItem({
             {repliedToName ? (
               <Text style={{ fontWeight: '600', color: t.primary }}>@{repliedToName} </Text>
             ) : null}
-            {comment.content}
+            <LinkifiedText text={comment.content} fontSize={14} lineHeight={20} />
           </Text>
         ) : null}
         <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />

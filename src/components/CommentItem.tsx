@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { CornerUpLeft, Flag, Heart, Loader2, MessageSquare, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
+import { LinkifiedText } from './LinkifiedText'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
@@ -78,7 +79,7 @@ export function CommentItem({
             {repliedToName && (
               <span className="mr-1 font-semibold text-primary">@{repliedToName}</span>
             )}
-            <span className="text-on-surface">{comment.content}</span>
+            <span className="text-on-surface"><LinkifiedText text={comment.content} /></span>
           </p>
         )}
         <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
