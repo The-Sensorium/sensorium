@@ -135,6 +135,10 @@ export function RoomView() {
     scrollTop: number
     scrollHeight: number
   } | null>(null)
+  const [jumpHighlightId, setJumpHighlightId] = useState<string | null>(null)
+  const [pendingJumpId, setPendingJumpId] = useState<string | null>(null)
+  const jumpInFlight = useRef(false)
+  const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const memberMap = useMemo(() => {
     const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
@@ -281,6 +285,13 @@ export function RoomView() {
     setReplyTo(null)
     setInCall(false)
     setPreJoin(null)
+    setJumpHighlightId(null)
+    setPendingJumpId(null)
+    jumpInFlight.current = false
+    if (jumpTimer.current) {
+      clearTimeout(jumpTimer.current)
+      jumpTimer.current = null
+    }
   }, [clusterId])
 
   // The room is a fixed-height band with its own scroll container, so the
@@ -584,7 +595,7 @@ export function RoomView() {
 
   // Prepend an earlier page. The length watch treats this as a non-event so the
   // older messages don't count toward the "new messages" badge.
-  async function handleLoadEarlier() {
+  async function handleLoadEarlier(): Promise<{ added: number; hasMore: boolean } | null> {
     setError(null)
     // Record which surface is scrollable and its offset *before* the merge, so
     // we can re-anchor on the message the user is reading after content grows
@@ -610,9 +621,11 @@ export function RoomView() {
         exhaustedRef.current = true
         setHasMore(false)
       }
+      return result
     } catch (e) {
       setError(toErrorMessage(e, 'Could not load earlier messages.'))
       anchorRef.current = null
+      return null
     }
   }
 
@@ -634,6 +647,89 @@ export function RoomView() {
       window.scrollTo(0, anchor.scrollTop + delta)
     }
   }, [messages.data])
+
+  function flashJumpHighlight(messageId: string) {
+    setJumpHighlightId(messageId)
+    if (jumpTimer.current) clearTimeout(jumpTimer.current)
+    jumpTimer.current = setTimeout(() => {
+      jumpTimer.current = null
+      setJumpHighlightId(null)
+    }, 1600)
+  }
+
+  function scrollMessageIntoView(messageId: string) {
+    // A jump leaves the bottom: the new-message pill and the read marker
+    // follow the user's actual position from here via the scroll handlers.
+    pinnedRef.current = false
+    setPinned(false)
+    // jsdom (tests) has no matchMedia; default to smooth there.
+    const reduceMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document
+      .getElementById(`message-${messageId}`)
+      ?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
+    flashJumpHighlight(messageId)
+  }
+
+  async function pageBackToParent(parentId: string, key: ['cluster-messages', string]) {
+    // The parent is older than the loaded window. Page backwards (bounded)
+    // until it renders; the pendingJumpId effect below scrolls once it does.
+    // handleLoadEarlier anchors the scroll position, so the view stays put
+    // while history loads above it.
+    try {
+      for (let i = 0; i < 5; i++) {
+        const msgs = queryClient.getQueryData<Message[]>(key) ?? []
+        if (msgs.some((m) => m.id === parentId && !m.deleted_at)) return
+        const result = await handleLoadEarlier()
+        if (!result) {
+          // Load failed; handleLoadEarlier already surfaced it. Just release.
+          setPendingJumpId((cur) => (cur === parentId ? null : cur))
+          return
+        }
+        if (!result.hasMore || result.added === 0) break
+      }
+      setPendingJumpId((cur) => (cur === parentId ? null : cur))
+      setError('Could not find that message. It may be very old.')
+    } catch {
+      setPendingJumpId((cur) => (cur === parentId ? null : cur))
+      setError('Could not load earlier messages.')
+    }
+  }
+
+  function handleJumpToReply(parentId: string) {
+    if (jumpInFlight.current) return
+    if (timeline.some((it) => it.kind === 'message' && it.data.id === parentId)) {
+      scrollMessageIntoView(parentId)
+      return
+    }
+    // Outside the loaded window: only page back for a parent we know exists
+    // (a rendered preview). Anything else is deleted or unavailable.
+    if (loadEarlier.isPending) {
+      setError('That message is still loading. Try again in a moment.')
+      return
+    }
+    const known = replyById.get(parentId)
+    if (!known || known.deleted_at || !clusterId) {
+      setError('That message is no longer available.')
+      return
+    }
+    jumpInFlight.current = true
+    setError(null)
+    setPendingJumpId(parentId)
+    void pageBackToParent(parentId, ['cluster-messages', clusterId]).finally(() => {
+      jumpInFlight.current = false
+    })
+  }
+
+  // A jump whose parent paged in afterwards: scroll once it renders.
+  useEffect(() => {
+    if (!pendingJumpId) return
+    if (!timeline.some((it) => it.kind === 'message' && it.data.id === pendingJumpId)) return
+    const target = pendingJumpId
+    setPendingJumpId(null)
+    scrollMessageIntoView(target)
+  }, [timeline, pendingJumpId])
 
   async function handleRaise() {
     const prompt = signalPrompt.trim()
@@ -844,11 +940,13 @@ export function RoomView() {
                       editPending={editMessage.isPending}
                       menuOpen={menuFor === m.id}
                       pickerOpen={pickerFor === m.id}
+                      highlighted={jumpHighlightId === m.id}
                       replyParent={(() => {
                         const parent = replyById.get(m.reply_to_id ?? '')
                         if (parent && isMutedAuthor(mutedSet, parent.author_id)) return undefined
                         return replyPreview(parent)
                       })()}
+                      onJumpToReply={handleJumpToReply}
                       mutedBanner={
                         muted ? (
                           <MutedHideBar
