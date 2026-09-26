@@ -11,7 +11,7 @@ export interface AvailabilityMeta {
 export const AVAILABILITY: AvailabilityMeta[] = [
   {
     value: 'available',
-    label: 'Available',
+    label: 'Online',
     dotClass: 'bg-emerald-500 dark:bg-emerald-400',
   },
   {

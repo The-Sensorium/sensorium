@@ -340,7 +340,7 @@ export function MetricsPage() {
                   <th scope="col" className="px-4 py-2.5 text-left font-medium">
                     <span className="inline-flex items-center gap-1">
                       Cohort
-                      <InfoTip label="What is a cohort?" text="Clusters grouped by formation age. The 7-day row covers clusters formed at least 7 days ago, and so on." />
+                      <InfoTip label="What is a cohort?" text="A cohort is a group of clusters formed around the same time. The 7-day row covers clusters formed at least 7 days ago, and so on." />
                     </span>
                   </th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium tabular-nums">Formed</th>
@@ -353,7 +353,7 @@ export function MetricsPage() {
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">
                     <span className="inline-flex items-center justify-end gap-1">
                       Rate
-                      <InfoTip label="What is the retention rate?" text="Retained share of the cohort. The 90-day rate is the primary success metric." align="right" />
+                      <InfoTip label="What is the retention rate?" text="Share of the cohort still retained. The 90-day rate is the headline success metric." align="right" />
                     </span>
                   </th>
                 </tr>
@@ -390,11 +390,6 @@ export function MetricsPage() {
             </table>
           </div>
         )}
-        <p className="mt-3 text-xs leading-5 text-on-surface-variant">
-          Retained means still active with at least 6 members and a message in the last 30
-          days. The 90-day cohort is the primary success metric; 7-day and 30-day cohorts
-          are interim proxies until 90 days of history exist.
-        </p>
       </SectionCard>
 
       <SectionCard
@@ -422,7 +417,7 @@ export function MetricsPage() {
                   <th scope="col" className="px-4 py-2.5 text-right font-medium">
                     <span className="inline-flex items-center justify-end gap-1">
                       Joins
-                      <InfoTip label="What does joins count?" text="Queue join events, not unique users. Leaving and rejoining counts again. Counted since deploy." />
+                      <InfoTip label="What does joins count?" text="Queue join events, not unique users. Leaving and rejoining counts again." />
                     </span>
                   </th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium tabular-nums">
@@ -434,7 +429,7 @@ export function MetricsPage() {
                   <th scope="col" className="px-4 py-2.5 text-right font-medium tabular-nums">
                     <span className="inline-flex items-center justify-end gap-1">
                       Longest wait
-                      <InfoTip label="What is longest wait?" text="Longest time any current waiter has spent queued, over the last 30 days. Growing waits mean the mode is stalling." align="right" />
+                      <InfoTip label="What is longest wait?" text="The longest anyone has waited in this mode's queues over the last 30 days. Growing waits mean the mode is stalling." align="right" />
                     </span>
                   </th>
                   <th scope="col" className="px-4 py-2.5 text-right font-medium tabular-nums">
@@ -500,10 +495,6 @@ export function MetricsPage() {
             </table>
           </div>
         )}
-        <p className="mt-3 text-xs leading-5 text-on-surface-variant">
-          Joins are join events, not unique users: leaving and rejoining counts again.
-          Join counts start at deploy; depth and wait history ramp from the first rollup.
-        </p>
       </SectionCard>
 
       <SectionCard

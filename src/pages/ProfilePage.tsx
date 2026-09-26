@@ -18,7 +18,7 @@ import { useClusterMembers, useMyClusters } from '../features/matching'
 import { usePresence } from '../features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import {
-  usePostCounts,
+  usePostCountsForClusters,
   usePostImageUrl,
   useUserPosts,
 } from '../features/posts'
@@ -91,7 +91,11 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const [bioExpanded, setBioExpanded] = useState(false)
   useEffect(() => setBioExpanded(false), [userId, clusterId])
   const userPosts = useUserPosts(userId)
-  const counts = usePostCounts(clusterId)
+  const postClusterIds = useMemo(
+    () => [...new Set((userPosts.data ?? []).map((p) => p.cluster_id))],
+    [userPosts.data],
+  )
+  const counts = usePostCountsForClusters(postClusterIds)
 
   const likesByPost = useMemo(() => {
     const byPost = new Map<string, number>()
@@ -203,7 +207,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                   Status
                 </p>
                 <p className="mt-1 text-xs italic text-on-surface-variant">
-                  "<LinkifiedText text={member.current_status} />"
+                  <LinkifiedText text={member.current_status} />
                 </p>
               </div>
             )}
@@ -236,8 +240,11 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
         {cluster && (
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-outline-variant/40 pt-3 text-xs text-on-surface-variant">
             <span className="font-semibold uppercase tracking-wide text-primary">Cluster</span>
-            <span className="font-medium text-on-surface">{cluster.cluster.name}</span>
-            <span className="inline-flex items-center gap-1">
+            <span className="font-semibold text-on-surface">{cluster.cluster.name}</span>
+            <span className="text-outline-variant" aria-hidden>
+              ·
+            </span>
+            <span className="inline-flex items-center gap-1 text-on-surface-variant/80">
               <Users className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
               {cluster.memberCount} / 8 members
             </span>
@@ -245,7 +252,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
         )}
 
         {!isSelf && (
-          <div className="mt-3 flex flex-col gap-2 border-t border-outline-variant/40 pt-3 md:mt-4 md:flex-row md:items-center md:pt-4">
+          <div className="mt-3 flex flex-col gap-2 border-t border-outline-variant/40 pt-3 md:flex-row md:items-center">
             <Link
               to={`/cluster/${clusterId}`}
               className={cn(
@@ -269,10 +276,10 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
         )}
 
         {isSelf && (
-          <div className="mt-3 flex flex-col gap-2 border-t border-outline-variant/40 pt-3 md:mt-4 md:flex-row md:items-center md:pt-4">
+          <div className="mt-3 border-t border-outline-variant/40 pt-3">
             <Link
               to="/settings"
-              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto"
+              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
             >
               Edit profile
             </Link>
@@ -305,7 +312,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             {isSelf && (
               <Link
                 to={`/cluster/${clusterId}/introductions`}
-                className="mt-2 inline-flex min-h-[44px] items-center rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
               >
                 Complete your introductions
               </Link>

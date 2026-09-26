@@ -5,7 +5,7 @@ import { AvailabilityBadge } from './AvailabilityBadge'
 describe('AvailabilityBadge', () => {
   it('renders the label for a known availability', () => {
     render(<AvailabilityBadge value="available" />)
-    expect(screen.getByText('Available', { selector: 'span:not(.sr-only)' })).toBeInTheDocument()
+    expect(screen.getByText('Online', { selector: 'span:not(.sr-only)' })).toBeInTheDocument()
   })
 
   it('keeps a visually hidden label for screen readers when showLabel is false', () => {
