@@ -22,14 +22,18 @@ import {
   useLoadEarlierPosts,
   usePost,
   usePostComments,
+  usePostCommentsForPosts,
   usePostCounts,
+  usePostCountsForClusters,
   usePostLikes,
+  usePostLikesForPosts,
   useRecentClusterPosts,
   usePostImageUrl,
   useReportComment,
   useReportPost,
   useToggleCommentLike,
   useTogglePostLike,
+  useTogglePostLikeForPost,
   useUserPosts,
   type Post,
 } from './posts'
@@ -202,6 +206,115 @@ describe('posts', () => {
   it('usePostCounts is disabled without a cluster', async () => {
     const { result } = renderHook(() => usePostCounts(null), { wrapper })
     expect(result.current.fetchStatus).toBe('idle')
+  })
+
+  it('usePostCountsForClusters merges counts across clusters', async () => {
+    requireSupabaseMock.mockReturnValue({
+      rpc: vi.fn((fn: string, args: { p_cluster_id: string }) =>
+        Promise.resolve({
+          data:
+            args.p_cluster_id === 'c1'
+              ? [{ post_id: 'p1', likes_count: 1, comments_count: 2 }]
+              : [{ post_id: 'p2', likes_count: 3, comments_count: 0 }],
+          error: null,
+        }),
+      ),
+    } as never)
+    const { result } = renderHook(() => usePostCountsForClusters(['c1', 'c2']), { wrapper })
+    await waitFor(() =>
+      expect(result.current.data).toEqual([
+        { post_id: 'p1', likes_count: 1, comments_count: 2 },
+        { post_id: 'p2', likes_count: 3, comments_count: 0 },
+      ]),
+    )
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.rpc).toHaveBeenCalledWith('get_post_counts', { p_cluster_id: 'c1' })
+    expect(c.rpc).toHaveBeenCalledWith('get_post_counts', { p_cluster_id: 'c2' })
+  })
+
+  it('usePostCountsForClusters dedupes clusters and stays idle when empty', async () => {
+    requireSupabaseMock.mockReturnValue({
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    } as never)
+    const { result } = renderHook(() => usePostCountsForClusters(['c1', 'c1']), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual([]))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.rpc).toHaveBeenCalledTimes(1)
+    const { result: idle } = renderHook(() => usePostCountsForClusters([]), { wrapper })
+    expect(idle.current.fetchStatus).toBe('idle')
+  })
+
+  it('usePostLikesForPosts queries exactly the given posts', async () => {
+    mockResult.value = { data: [{ post_id: 'p1', user_id: 'u2' }], error: null }
+    const { result } = renderHook(() => usePostLikesForPosts(['p1', 'p2']), { wrapper })
+    await waitFor(() => expect(result.current.data).toEqual([{ post_id: 'p1', user_id: 'u2' }]))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.from).toHaveBeenCalledWith('post_likes')
+    expect(c.from('post_likes').in).toHaveBeenCalledWith('post_id', ['p1', 'p2'])
+  })
+
+  it('usePostLikesForPosts stays idle without posts', async () => {
+    const { result } = renderHook(() => usePostLikesForPosts([]), { wrapper })
+    expect(result.current.fetchStatus).toBe('idle')
+  })
+
+  it('usePostCommentsForPosts queries exactly the given posts', async () => {
+    mockResult.value = { data: [{ id: 'x1', post_id: 'p2', created_at: 'T1' }], error: null }
+    const { result } = renderHook(() => usePostCommentsForPosts(['p1', 'p2']), { wrapper })
+    await waitFor(() =>
+      expect(result.current.data).toEqual([{ id: 'x1', post_id: 'p2', created_at: 'T1' }]),
+    )
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.from).toHaveBeenCalledWith('post_comments')
+    expect(c.from('post_comments').in).toHaveBeenCalledWith('post_id', ['p1', 'p2'])
+  })
+
+  it('useTogglePostLikeForPost routes the toggle to the post’s cluster', async () => {
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useTogglePostLikeForPost(), { wrapper })
+    result.current.mutate({ postId: 'p1', clusterId: 'c2' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.rpc).toHaveBeenCalledWith('toggle_post_like', { p_post_id: 'p1' })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-likes', 'c2'] })
+  })
+
+  it('useTogglePostLikeForPost revalidates only matching post-counts many caches', async () => {
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    queryClient.setQueryData(['post-counts', 'many', 'c1,c2'], [])
+    queryClient.setQueryData(['post-counts', 'many', 'c9'], [])
+    const { result } = renderHook(() => useTogglePostLikeForPost(), { wrapper })
+    result.current.mutate({ postId: 'p1', clusterId: 'c2' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-counts', 'many', 'c1,c2'] })
+    expect(invalidate).not.toHaveBeenCalledWith({ queryKey: ['post-counts', 'many', 'c9'] })
+  })
+
+  it('useTogglePostLikeForPost patches only matching many-caches optimistically', async () => {
+    const pending = new Promise<never>(() => {})
+    requireSupabaseMock.mockReturnValue({ rpc: vi.fn(() => pending) } as never)
+    queryClient.setQueryData(['post-likes', 'many', 'p1,p2'], [
+      { post_id: 'p1', user_id: 'u2', cluster_id: 'c2', liked_at: 'T0' },
+    ])
+    queryClient.setQueryData(['post-likes', 'many', 'p9'], [
+      { post_id: 'p9', user_id: 'u2', cluster_id: 'c9', liked_at: 'T0' },
+    ])
+    const { result } = renderHook(() => useTogglePostLikeForPost(), { wrapper })
+    result.current.mutate({ postId: 'p1', clusterId: 'c2' })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const matching = queryClient.getQueryData<{ post_id: string; user_id: string }[]>([
+      'post-likes',
+      'many',
+      'p1,p2',
+    ])
+    expect(matching).toEqual(
+      expect.arrayContaining([expect.objectContaining({ post_id: 'p1', user_id: 'u1' })]),
+    )
+    expect(queryClient.getQueryData(['post-likes', 'many', 'p9'])).toEqual([
+      { post_id: 'p9', user_id: 'u2', cluster_id: 'c9', liked_at: 'T0' },
+    ])
   })
 
   it('useClusterCommentLikes queries the whole cluster in one filtered read', async () => {

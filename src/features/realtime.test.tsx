@@ -172,6 +172,28 @@ describe('useClusterChannel', () => {
     expect(queryClient.getQueryData(['post-likes', 'single', 'p1'])).toEqual([])
   })
 
+  it('routes a post-like INSERT to matching many caches and counts', () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    queryClient.setQueryData(['post-likes', 'c1'], [])
+    queryClient.setQueryData(['post-likes', 'many', 'p1,p2'], [])
+    queryClient.setQueryData(['post-likes', 'many', 'p9'], [{ post_id: 'p9', user_id: 'u2' }])
+    queryClient.setQueryData(['post-counts', 'many', 'c1,c2'], [])
+    queryClient.setQueryData(['post-counts', 'many', 'c9'], [])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_likes', 'INSERT')
+    act(() => {
+      handler?.({ new: { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' } } as never)
+    })
+    expect(queryClient.getQueryData(['post-likes', 'many', 'p1,p2'])).toEqual([
+      { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' },
+    ])
+    expect(queryClient.getQueryData(['post-likes', 'many', 'p9'])).toEqual([
+      { post_id: 'p9', user_id: 'u2' },
+    ])
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['post-counts', 'many', 'c1,c2'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['post-counts', 'many', 'c9'] })
+  })
+
   it('routes a signal-reply INSERT to the all and per-signal caches', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
     queryClient.setQueryData(['signal-replies', 'c1', 'all'], [])
@@ -196,6 +218,19 @@ describe('useClusterChannel', () => {
     })
     expect(queryClient.getQueryData(['post-comments', 'c1', 'all'])).toEqual([comment])
     expect(queryClient.getQueryData(['post-comments', 'c1', 'p1'])).toEqual([comment])
+  })
+
+  it('routes a post-comment INSERT to matching many caches', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    queryClient.setQueryData(['post-comments', 'many', 'p1,p2', 'all'], [])
+    queryClient.setQueryData(['post-comments', 'many', 'p9', 'all'], [])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_comments', 'INSERT')
+    const comment = { id: 'm1', post_id: 'p1', cluster_id: 'c1', created_at: '2026-01-02T00:00:00Z' }
+    act(() => {
+      handler?.({ new: comment } as never)
+    })
+    expect(queryClient.getQueryData(['post-comments', 'many', 'p1,p2', 'all'])).toEqual([comment])
+    expect(queryClient.getQueryData(['post-comments', 'many', 'p9', 'all'])).toEqual([])
   })
 
   it('routes a comment-like INSERT to its cluster cache without a lookup', () => {

@@ -198,6 +198,27 @@ export function useClusterPostLikes(clusterId: string | null) {
   })
 }
 
+/** Likes rows for exactly the given posts (profile pages list posts from every
+ * visible cluster while useClusterPostLikes covers one). One PK-backed
+ * post_id IN read instead of whole-cluster row fetches; RLS scopes it. */
+export function usePostLikesForPosts(postIds: string[]) {
+  const ids = [...new Set(postIds.filter(Boolean))].sort()
+  const key = ids.join(',')
+  return useQuery({
+    queryKey: ['post-likes', 'many', key],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase
+        .from('post_likes')
+        .select('post_id,user_id')
+        .in('post_id', ids)
+      if (error) throw error
+      return (data ?? []) as PostLike[]
+    },
+  })
+}
+
 /** Likes on a single post, keyed by post. The Home preview mounts one card
  * per post (possibly sharing a cluster); the feed/detail/profile pages use
  * the id-set-keyed useClusterPostLikes above. */
@@ -292,6 +313,29 @@ export function useClusterPostComments(clusterId: string | null) {  return useQu
   })
 }
 
+/** Comments for exactly the given posts (profile pages list posts from every
+ * visible cluster). One index-backed post_id IN read; same RLS visibility as
+ * the single-cluster query. */
+export function usePostCommentsForPosts(postIds: string[]) {
+  const ids = [...new Set(postIds.filter(Boolean))].sort()
+  const key = ids.join(',')
+  return useQuery({
+    queryKey: ['post-comments', 'many', key, 'all'],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const { data, error } = await supabase
+        .from('post_comments')
+        .select('*')
+        .in('post_id', ids)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+      if (error) throw error
+      return ((data ?? []) as PostComment[]).sort(byOldest)
+    },
+  })
+}
+
 /** Comments for a single post (detail page). Keyed by post only so the query
  * starts from the route param in parallel with the post fetch, and mutations
  * invalidate one stable key regardless of when cluster_id resolves. */
@@ -316,6 +360,32 @@ export function usePostComments(clusterId: string | null, postId: string | null)
 }
 
 export type PostCount = { post_id: string; likes_count: number; comments_count: number }
+
+/** Per-post engagement counts across several clusters. Profile pages list posts
+ * from every visible cluster while usePostCounts covers one, so a single-cluster
+ * lookup silently renders zeros for posts from other clusters. One
+ * get_post_counts RPC per distinct cluster (fanned out in parallel), merged by
+ * post_id. */
+export function usePostCountsForClusters(clusterIds: string[]) {
+  const ids = [...new Set(clusterIds.filter(Boolean))].sort()
+  const key = ids.join(',')
+  return useQuery({
+    queryKey: ['post-counts', 'many', key],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const supabase = requireSupabase()
+      const pages = await Promise.all(
+        ids.map((id) => supabase.rpc('get_post_counts', { p_cluster_id: id })),
+      )
+      const merged = new Map<string, PostCount>()
+      for (const { data, error } of pages) {
+        if (error) throw error
+        for (const row of (data ?? []) as PostCount[]) merged.set(row.post_id, row)
+      }
+      return [...merged.values()]
+    },
+  })
+}
 
 /** Per-post engagement counts (bounded GROUP BY; RLS: active members of an
  * unlocked cluster). Feed/profile rank from this instead of downloading every
@@ -475,6 +545,82 @@ export function useTogglePostLike(clusterId: string | null) {
         void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
       }
       void queryClient.invalidateQueries({ queryKey: ['post-likes', 'single', postId] })
+    },
+  })
+}
+
+/** Cluster-agnostic post-like toggle for screens showing posts from several
+ * clusters (e.g. member profiles). The RPC only needs the post, but the
+ * single-cluster optimistic cache is keyed by cluster, so each call carries
+ * the post's own clusterId to route that patch + invalidation, mirroring
+ * useTogglePostLike (which stays the single-cluster default). Post-scoped
+ * 'many' caches are matched by post id. */
+export function useTogglePostLikeForPost() {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const queryClient = useQueryClient()
+
+  const keySegmentIncludes = (key: readonly unknown[], value: string) =>
+    String(key[2] ?? '')
+      .split(',')
+      .includes(value)
+
+  return useMutation({
+    mutationFn: async ({ postId }: { postId: string; clusterId: string }) => {
+      const supabase = requireSupabase()
+      const { error } = await supabase.rpc('toggle_post_like', { p_post_id: postId })
+      if (error) throw error
+    },
+    onMutate: async ({ postId, clusterId }) => {
+      if (!userId) return
+      const singlePrefix = { queryKey: ['post-likes', clusterId] } as const
+      const manyPrefix = { queryKey: ['post-likes', 'many'] } as const
+      const prevMany = queryClient.getQueriesData<PostLike[]>(manyPrefix)
+      const matchingMany = prevMany.map(([key]) => key).filter((key) => keySegmentIncludes(key, postId))
+      await queryClient.cancelQueries(singlePrefix)
+      await Promise.all(matchingMany.map((key) => queryClient.cancelQueries({ queryKey: key })))
+      const toggleLike = (base: PostLike[]) => {
+        const liked = base.some((l) => l.post_id === postId && l.user_id === userId)
+        if (liked) return base.filter((l) => !(l.post_id === postId && l.user_id === userId))
+        return [...base, { post_id: postId, user_id: userId, cluster_id: clusterId, liked_at: new Date().toISOString() }]
+      }
+      const prevSingle = queryClient.getQueriesData<PostLike[]>(singlePrefix)
+      queryClient.setQueriesData<PostLike[]>(singlePrefix, (cur) => toggleLike(cur ?? []))
+      for (const key of matchingMany) {
+        queryClient.setQueryData<PostLike[]>(key, (cur) => toggleLike(cur ?? []))
+      }
+      const singleKey = ['post-likes', 'single', postId] as const
+      const prevPost = queryClient.getQueryData<PostLike[]>(singleKey)
+      queryClient.setQueryData<PostLike[]>(singleKey, (cur) => toggleLike(cur ?? []))
+      return { prevSingle, prevMany, prevPost }
+    },
+    onError: (_e, variables, ctx) => {
+      if (ctx?.prevSingle) {
+        for (const [key, data] of ctx.prevSingle) queryClient.setQueryData(key, data)
+      }
+      if (ctx?.prevMany) {
+        for (const [key, data] of ctx.prevMany) queryClient.setQueryData(key, data)
+      }
+      if (ctx) {
+        queryClient.setQueryData(['post-likes', 'single', variables.postId], ctx.prevPost)
+      }
+    },
+    onSettled: (_d, _e, { postId, clusterId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['post-likes', clusterId] })
+      void queryClient.invalidateQueries({ queryKey: ['post-likes', 'single', postId] })
+      void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
+      const manyLikes = queryClient.getQueriesData({ queryKey: ['post-likes', 'many'] })
+      for (const [key] of manyLikes) {
+        if (keySegmentIncludes(key, postId)) {
+          void queryClient.invalidateQueries({ queryKey: key })
+        }
+      }
+      const manyCounts = queryClient.getQueriesData({ queryKey: ['post-counts', 'many'] })
+      for (const [key] of manyCounts) {
+        if (keySegmentIncludes(key, clusterId)) {
+          void queryClient.invalidateQueries({ queryKey: key })
+        }
+      }
     },
   })
 }

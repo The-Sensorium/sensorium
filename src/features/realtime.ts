@@ -94,6 +94,39 @@ function patchSignalReply(queryClient: ReturnType<typeof useQueryClient>, reply:
 }
 
 /**
+ * Patch post-scoped 'many' caches (profile pages) whose key lists the given
+ * post id. Patch-only-existing, like the single-cluster handlers below.
+ */
+function patchManyByPost<T>(
+  queryClient: ReturnType<typeof useQueryClient>,
+  prefix: string,
+  postId: string,
+  apply: (cur?: T[]) => T[] | undefined,
+) {
+  for (const [key] of queryClient.getQueriesData<T[]>({ queryKey: [prefix, 'many'] })) {
+    if (String(key[2] ?? '').split(',').includes(postId)) {
+      queryClient.setQueryData<T[]>(key, apply)
+    }
+  }
+}
+
+/**
+ * Revalidate post-scoped 'many' count caches covering the given cluster.
+ * Counts keys list cluster ids, so they match on cluster, not post.
+ */
+function invalidateManyByCluster(
+  queryClient: ReturnType<typeof useQueryClient>,
+  prefix: string,
+  clusterId: string,
+) {
+  for (const [key] of queryClient.getQueriesData({ queryKey: [prefix, 'many'] })) {
+    if (String(key[2] ?? '').split(',').includes(clusterId)) {
+      void queryClient.invalidateQueries({ queryKey: key })
+    }
+  }
+}
+
+/**
  * Route a post-like INSERT/DELETE to its cluster caches (likes carry
  * cluster_id). Patches only caches that already exist. The Home
  * preview reads per-post ['post-likes', 'single', postId] caches, so patch those
@@ -116,7 +149,9 @@ function patchPostLike(
   }
   queryClient.setQueriesData<PostLikeRealtime[]>({ queryKey: ['post-likes', clusterId] }, apply)
   queryClient.setQueryData<PostLikeRealtime[]>(['post-likes', 'single', like.post_id], apply)
+  patchManyByPost<PostLikeRealtime>(queryClient, 'post-likes', like.post_id, apply)
   void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
+  invalidateManyByCluster(queryClient, 'post-counts', clusterId)
 }
 
 /** Route a post-comment INSERT to its cluster caches (comments carry cluster_id). */
@@ -135,7 +170,9 @@ function patchPostComment(
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], insert)
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, comment.post_id], insert)
   queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', 'single', comment.post_id], insert)
+  patchManyByPost<PostCommentRealtime>(queryClient, 'post-comments', comment.post_id, insert)
   void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
+  invalidateManyByCluster(queryClient, 'post-counts', clusterId)
 }
 
 /** Route a comment-like INSERT/DELETE to its cluster cache (likes carry cluster_id). */
