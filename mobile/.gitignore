@@ -2,6 +2,7 @@ node_modules/
 .expo/
 dist/
 dist-*/
+*.tsbuildinfo
 .env
 .env.local
 google-services.json

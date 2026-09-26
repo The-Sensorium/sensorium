@@ -3,12 +3,12 @@ import {
   ActivityIndicator,
   AppState,
   FlatList,
-  Platform,
   Pressable,
   Text,
   View,
+  type ScrollViewProps,
 } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import { KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -82,6 +82,18 @@ export default function RoomScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
   const { bottom } = useSafeAreaInsets()
+  // Sticky composer pattern: the composer rides a native frame-synced
+  // translate (no whole-screen resize). The footer is in-flow, so the flex
+  // layout already clears it - no extraContentPadding. (Post detail passes
+  // its full footer height, but that list is top-down; on this inverted
+  // list it would push short conversations up and leave a dead gap above
+  // the composer.)
+  const renderScrollComponent = useCallback(
+    (props: ScrollViewProps) => (
+      <KeyboardChatScrollView {...props} inverted keyboardLiftBehavior="whenAtEnd" />
+    ),
+    [],
+  )
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -626,14 +638,7 @@ export default function RoomScreen() {
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
-      {/* Controller KeyboardAvoidingView (not RN's, whose JS-driven animation
-          snaps on Android where keyboardWillShow never fires). Same layout
-          semantics, frame-synced natively on both platforms. */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={0}
-      >
+      <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
             accessibilityLabel="Back"
@@ -838,6 +843,7 @@ export default function RoomScreen() {
               inverted
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
+              renderScrollComponent={renderScrollComponent}
               onScroll={(e) => {
                 const nearBottom = e.nativeEvent.contentOffset.y < 96
                 pinnedRef.current = nearBottom
@@ -977,13 +983,6 @@ export default function RoomScreen() {
               }}
             />
           )}
-          {typingMembers.length > 0 ? (
-            <View style={{ paddingHorizontal: 16, paddingBottom: 4, gap: 4 }}>
-              {typingMembers.map((m) => (
-                <TypingBubble key={m.id} name={m.display_name} avatarUrl={m.avatar_url} userId={m.id} clusterId={clusterId} />
-              ))}
-            </View>
-          ) : null}
           {!pinned && newCount > 0 ? (
             <Pressable
               accessibilityLabel={`Jump to ${newCount} new messages`}
@@ -1011,7 +1010,8 @@ export default function RoomScreen() {
           ) : null}
         </View>
 
-        <View
+        <KeyboardStickyView
+          offset={{ closed: 0, opened: bottom }}
           style={{
             backgroundColor: t.background,
             paddingHorizontal: 12,
@@ -1019,6 +1019,13 @@ export default function RoomScreen() {
             paddingBottom: 8 + bottom,
           }}
         >
+          {typingMembers.length > 0 ? (
+            <View style={{ paddingHorizontal: 4, paddingBottom: 4, gap: 4 }}>
+              {typingMembers.map((m) => (
+                <TypingBubble key={m.id} name={m.display_name} avatarUrl={m.avatar_url} userId={m.id} clusterId={clusterId} />
+              ))}
+            </View>
+          ) : null}
           <Composer
             key={clusterId}
             members={parseMembers}
@@ -1038,7 +1045,7 @@ export default function RoomScreen() {
             callActive={callActive}
             onCancelReply={() => setReplyTo(null)}
           />
-        </View>
+        </KeyboardStickyView>
 
         <RaiseSignalModal
           open={signalOpen}
@@ -1098,7 +1105,7 @@ export default function RoomScreen() {
             />
           </View>
         </Modal>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   )
 }
