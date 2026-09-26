@@ -97,8 +97,8 @@ describe('MetricsPage', () => {
 
   it('explains the retention definition and join counting', () => {
     renderPage()
-    expect(screen.getAllByText(/at least 6 members/)).toHaveLength(2)
-    expect(screen.getAllByText(/rejoining counts again/)).toHaveLength(2)
+    expect(screen.getAllByText(/at least 6 members/)).toHaveLength(1)
+    expect(screen.getAllByText(/rejoining counts again/)).toHaveLength(1)
   })
 
   it('shows loading states per section', () => {

@@ -1,17 +1,19 @@
 import { Pressable, Text, View } from 'react-native'
 import { Link, useLocalSearchParams } from 'expo-router'
-import { Cake, MapPin, UserPlus } from 'lucide-react-native'
+import { Cake, UserPlus } from 'lucide-react-native'
 import { CLUSTER_SIZE } from '../../../../src/lib/constants'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useReplacementRound } from '../../../../src/features/votes'
 import { usePresence } from '../../../../src/features/realtime'
 import { Avatar } from '../../../../src/components/Avatar'
+import { CountryFlag } from '../../../../src/components/CountryFlag'
+import { MemberLocalTime } from '../../../../src/components/MemberLocalTime'
 import { MuteButton } from '../../../../src/components/MuteButton'
 import { PronounBadge } from '../../../../src/components/PronounBadge'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { countryName } from '../../../../src/lib/countries'
-import { radii } from '../../../../src/lib/theme-tokens'
+import { radii, shadowShape } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
@@ -86,45 +88,84 @@ export default function MembersScreen() {
           return (
             <View
               key={member.id}
-              style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 16, marginBottom: 12 }}
+              style={{
+                backgroundColor: t.surfaceLowest,
+                borderRadius: radii.xl,
+                padding: 16,
+                marginBottom: 12,
+                ...shadowShape,
+                shadowColor: t.shadowColor,
+              }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
                 <Link
                   href={{ pathname: '/profile/[userId]', params: { userId: member.id, cluster: clusterId } }}
                   asChild
                 >
-                  <Pressable style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <View style={{ position: 'relative' }}>
-                      <Avatar name={member.display_name} src={member.avatar_url} size={44} />
-                      {onlineNow ? (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            right: -2,
-                            width: 14,
-                            height: 14,
-                            borderRadius: 7,
-                            borderWidth: 2,
-                            borderColor: t.surface,
-                            backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
-                          }}
-                        />
-                      ) : null}
-                      <Text style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
-                        {onlineNow ? 'Online' : 'Offline'}
-                      </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${member.display_name}'s profile`}
+                    style={{ flex: 1 }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={{ position: 'relative' }}>
+                        <Avatar name={member.display_name} src={member.avatar_url} size={44} />
+                        {onlineNow ? (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              bottom: -2,
+                              right: -2,
+                              width: 14,
+                              height: 14,
+                              borderRadius: 7,
+                              borderWidth: 2,
+                              borderColor: t.surface,
+                              backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
+                            }}
+                          />
+                        ) : null}
+                        <Text style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
+                          {onlineNow ? 'Online' : 'Offline'}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+                          {member.display_name}
+                        </Text>
+                        {member.pronouns ? (
+                          <View style={{ marginTop: 4, alignSelf: 'flex-start' }}>
+                            <PronounBadge pronouns={member.pronouns} />
+                          </View>
+                        ) : null}
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
-                        {member.display_name}
+                    {member.country_code || member.birth_year || member.timezone ? (
+                      <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                        {member.country_code ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <CountryFlag code={member.country_code} />
+                            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                              {countryName(member.country_code)}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {member.birth_year ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Cake size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                              {member.birth_year}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {member.timezone ? <MemberLocalTime timeZone={member.timezone} /> : null}
+                      </View>
+                    ) : null}
+                    {member.current_status ? (
+                      <Text style={{ marginTop: 8, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1} ellipsizeMode="tail">
+                        “{member.current_status}”
                       </Text>
-                      {member.pronouns ? (
-                        <View style={{ marginTop: 4, alignSelf: 'flex-start' }}>
-                          <PronounBadge pronouns={member.pronouns} />
-                        </View>
-                      ) : null}
-                    </View>
+                    ) : null}
                   </Pressable>
                 </Link>
                 {member.id !== userId ? (
@@ -133,31 +174,6 @@ export default function MembersScreen() {
                   </View>
                 ) : null}
               </View>
-                {member.country_code || member.birth_year ? (
-                  <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-                    {member.country_code ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <MapPin size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                          {countryName(member.country_code)}
-                        </Text>
-                      </View>
-                    ) : null}
-                    {member.birth_year ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Cake size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                          {member.birth_year}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                ) : null}
-                {member.current_status ? (
-                  <Text style={{ marginTop: 8, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1} ellipsizeMode="tail">
-                    “{member.current_status}”
-                  </Text>
-                ) : null}
             </View>
           )
         })

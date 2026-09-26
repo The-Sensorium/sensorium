@@ -6,7 +6,7 @@ import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
 import { makeSupabaseClient, initialMockResult, type MockSupabaseResult } from '../test/supabase-client'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { useClusterChannel, usePresence } from './realtime'
+import { isOnlineNow, useClusterChannel, usePresence } from './realtime'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
 vi.mock('../app/auth-context', async (importOriginal) => {
@@ -172,6 +172,28 @@ describe('useClusterChannel', () => {
     expect(queryClient.getQueryData(['post-likes', 'single', 'p1'])).toEqual([])
   })
 
+  it('routes a post-like INSERT to matching many caches and counts', () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    queryClient.setQueryData(['post-likes', 'c1'], [])
+    queryClient.setQueryData(['post-likes', 'many', 'p1,p2'], [])
+    queryClient.setQueryData(['post-likes', 'many', 'p9'], [{ post_id: 'p9', user_id: 'u2' }])
+    queryClient.setQueryData(['post-counts', 'many', 'c1,c2'], [])
+    queryClient.setQueryData(['post-counts', 'many', 'c9'], [])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_likes', 'INSERT')
+    act(() => {
+      handler?.({ new: { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' } } as never)
+    })
+    expect(queryClient.getQueryData(['post-likes', 'many', 'p1,p2'])).toEqual([
+      { post_id: 'p1', user_id: 'u2', cluster_id: 'c1' },
+    ])
+    expect(queryClient.getQueryData(['post-likes', 'many', 'p9'])).toEqual([
+      { post_id: 'p9', user_id: 'u2' },
+    ])
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['post-counts', 'many', 'c1,c2'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['post-counts', 'many', 'c9'] })
+  })
+
   it('routes a signal-reply INSERT to the all and per-signal caches', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
     queryClient.setQueryData(['signal-replies', 'c1', 'all'], [])
@@ -196,6 +218,19 @@ describe('useClusterChannel', () => {
     })
     expect(queryClient.getQueryData(['post-comments', 'c1', 'all'])).toEqual([comment])
     expect(queryClient.getQueryData(['post-comments', 'c1', 'p1'])).toEqual([comment])
+  })
+
+  it('routes a post-comment INSERT to matching many caches', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    queryClient.setQueryData(['post-comments', 'many', 'p1,p2', 'all'], [])
+    queryClient.setQueryData(['post-comments', 'many', 'p9', 'all'], [])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_comments', 'INSERT')
+    const comment = { id: 'm1', post_id: 'p1', cluster_id: 'c1', created_at: '2026-01-02T00:00:00Z' }
+    act(() => {
+      handler?.({ new: comment } as never)
+    })
+    expect(queryClient.getQueryData(['post-comments', 'many', 'p1,p2', 'all'])).toEqual([comment])
+    expect(queryClient.getQueryData(['post-comments', 'many', 'p9', 'all'])).toEqual([])
   })
 
   it('routes a comment-like INSERT to its cluster cache without a lookup', () => {
@@ -292,10 +327,12 @@ describe('useClusterChannel', () => {
 describe('usePresence', () => {
   function presenceClient() {
     const track = vi.fn(() => Promise.resolve('ok'))
+    const untrack = vi.fn(() => Promise.resolve('ok'))
     const channel = {
       on: vi.fn(() => channel),
       subscribe: vi.fn(),
       track,
+      untrack,
       presenceState: vi.fn(() => ({})),
     }
     const client = {
@@ -401,5 +438,87 @@ describe('usePresence', () => {
     const { result } = renderHook(() => usePresence('c1'), { wrapper })
     expect(client.channel).not.toHaveBeenCalled()
     expect(result.current.online.size).toBe(0)
+  })
+
+  it('creates the channel with the user id as presence key', async () => {
+    const { client } = presenceClient()
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const { unmount } = renderHook(() => usePresence('c-key'), { wrapper })
+    expect(client.channel).toHaveBeenCalledWith('presence:c-key', {
+      config: { presence: { key: 'u1' } },
+    })
+    unmount()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('keeps separate channels per user so stale identity cannot leak', async () => {
+    const { client } = presenceClient()
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const channelMock = vi.mocked(client.channel)
+    const { unmount } = renderHook(() => usePresence('c-users'), { wrapper })
+    expect(channelMock).toHaveBeenCalledTimes(1)
+    useAuthMock.mockReturnValue({ state: 'signedIn', userId: 'u2', email: 'b@c.test' } as never)
+    const { unmount: unmount2 } = renderHook(() => usePresence('c-users'), { wrapper })
+    expect(channelMock).toHaveBeenCalledTimes(2)
+    expect(channelMock).toHaveBeenLastCalledWith('presence:c-users', {
+      config: { presence: { key: 'u2' } },
+    })
+    unmount()
+    unmount2()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('untracks on hidden tab and re-tracks on visible', async () => {
+    const { client, channel } = presenceClient() as unknown as {
+      client: SupabaseClient
+      channel: { track: ReturnType<typeof vi.fn>; untrack: ReturnType<typeof vi.fn> }
+    }
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+    const { unmount } = renderHook(() => usePresence('c-visibility'), { wrapper })
+    const untrack = channel.untrack
+    const track = channel.track
+    try {
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(untrack).toHaveBeenCalledTimes(1)
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(track).toHaveBeenCalledWith({ user_id: 'u1', typing: false })
+    } finally {
+      if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden)
+    }
+    unmount()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('untracks on pagehide so a closed tab leaves presence', async () => {
+    const { client, channel } = presenceClient() as unknown as {
+      client: SupabaseClient
+      channel: { track: ReturnType<typeof vi.fn>; untrack: ReturnType<typeof vi.fn> }
+    }
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const { unmount } = renderHook(() => usePresence('c-pagehide'), { wrapper })
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    expect(channel.untrack).toHaveBeenCalledTimes(1)
+    unmount()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('treats self as online by definition', () => {
+    expect(isOnlineNow(new Set(), 'u1', 'u1')).toBe(true)
+    expect(isOnlineNow(new Set(['u2']), 'u2', 'u1')).toBe(true)
+    expect(isOnlineNow(new Set(), 'u2', 'u1')).toBe(false)
+    expect(isOnlineNow(new Set(), 'u2', null)).toBe(false)
   })
 })

@@ -4,11 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { CalendarDays } from 'lucide-react-native'
 import { COUNTRIES, countryName } from '../../lib/countries'
+import { defaultTimeZone } from '../../lib/timezones'
 import { MIN_AGE, type OnboardingDraft } from '../../lib/onboarding-draft'
 import { radii, spacing } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { Field } from '../ui'
 import { PronounField } from '../PronounField'
+import { TimezonePicker } from '../TimezonePicker'
 
 function CountryField({ value, onChange }: { value: string; onChange: (code: string) => void }) {
   const t = useTheme()
@@ -146,6 +148,7 @@ export function StepProfile({
   patch: (updates: Partial<OnboardingDraft>) => void
 }) {
   const t = useTheme()
+  const detected = defaultTimeZone()
   const maxDob = new Date()
   maxDob.setFullYear(maxDob.getFullYear() - MIN_AGE)
   const maxDobStr = toISODate(maxDob)
@@ -173,6 +176,17 @@ export function StepProfile({
         Only your birth year is ever shown to cluster members.
       </Text>
       <CountryField value={draft.countryCode} onChange={(countryCode) => patch({ countryCode })} />
+      <View style={{ marginBottom: spacing.gutter }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}>
+          Timezone
+        </Text>
+        <TimezonePicker value={draft.timezone} onChange={(timezone) => patch({ timezone })} />
+        <Text style={{ fontSize: 12, color: t.onSurfaceVariant, marginTop: 6 }}>
+          {detected
+            ? `Detected ${detected} from your device. Cluster members see your local time.`
+            : 'Cluster members see your local time.'}
+        </Text>
+      </View>
     </View>
   )
 }

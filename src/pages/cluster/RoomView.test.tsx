@@ -113,7 +113,10 @@ vi.mock('../../features/moderation', () => ({
     { value: 'other', label: 'Other' },
   ],
 }))
-vi.mock('../../features/realtime', () => ({ usePresence: () => hooks.presence }))
+vi.mock('../../features/realtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../features/realtime')>()
+  return { ...actual, usePresence: () => hooks.presence }
+})
 vi.mock('../../features/cluster-calls', () => ({
   useActiveCall: () => hooks.activeCall,
   useCallParticipants: () => hooks.callParticipants,

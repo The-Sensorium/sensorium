@@ -4,6 +4,7 @@ import { Link, router } from 'expo-router'
 import { Heart, MessageSquare, MoreVertical } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { Avatar } from './Avatar'
+import { LinkifiedText } from './LinkifiedText'
 import { PostActionsSheet } from './PostActionsSheet'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
@@ -144,12 +145,9 @@ export function PostCard({
             </Text>
           ) : null}
           {post.content && !(compact && hasMedia) ? (
-            <Text
-              style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurface }}
-              numberOfLines={compact ? 5 : undefined}
-            >
-              {post.content}
-            </Text>
+            <View style={{ marginTop: 8 }}>
+              <LinkifiedText text={post.content} fontSize={14} lineHeight={22} numberOfLines={compact ? 5 : undefined} />
+            </View>
           ) : null}
           {compact && !hasMedia && post.content ? (
             <View style={{ height: 0, overflow: 'hidden' }} accessible={false} aria-hidden>

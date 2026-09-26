@@ -15,6 +15,7 @@ import { StepModes } from './step-modes'
 import { StepLocal } from './step-local'
 import { StepReview } from './step-review'
 import { EMPTY_DRAFT, validateStep, type OnboardingDraft } from './draft'
+import { defaultTimeZone } from '../../lib/timezones'
 
 const TOTAL_STEPS = 5
 
@@ -34,7 +35,10 @@ export function OnboardingPage() {
   const queryClient = useQueryClient()
 
   const [step, setStep] = useState(1)
-  const [draft, setDraft] = useState<OnboardingDraft>(EMPTY_DRAFT)
+  const [draft, setDraft] = useState<OnboardingDraft>(() => ({
+    ...EMPTY_DRAFT,
+    timezone: defaultTimeZone() ?? '',
+  }))
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -97,6 +101,7 @@ export function OnboardingPage() {
             pronouns: draft.pronouns.trim() || null,
             dob: draft.dob,
             country_code: draft.countryCode,
+            timezone: draft.timezone || null,
             bio: draft.bio.trim() || null,
             avatar_url: draft.avatarUrl,
             latitude: draft.coordinates?.lat ?? null,

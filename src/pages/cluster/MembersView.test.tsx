@@ -18,7 +18,10 @@ vi.mock('react-router', async (importOriginal) => {
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
 vi.mock('../../features/votes', () => ({ useReplacementRound: hooks.useReplacementRound }))
-vi.mock('../../features/realtime', () => ({ usePresence: hooks.usePresence }))
+vi.mock('../../features/realtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../features/realtime')>()
+  return { ...actual, usePresence: hooks.usePresence }
+})
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
 vi.mock('../../components/MuteButton', () => ({ MuteButton: () => null }))
 vi.mock('../../components/IntroChecklistBanner', () => ({ IntroChecklistBanner: () => null }))
@@ -32,6 +35,7 @@ const member = {
   current_status: 'Deep in a book',
   pronouns: 'they/them',
   availability: 'available',
+  timezone: 'America/New_York',
 }
 
 function renderPage() {
@@ -75,6 +79,23 @@ describe('MembersView', () => {
     expect(screen.getByText('1990')).toBeInTheDocument()
     expect(screen.getByText('they/them')).toBeInTheDocument()
     expect(screen.getByText('“Deep in a book”')).toBeInTheDocument()
+  })
+
+  it('renders a flag next to the country name', () => {
+    renderPage()
+    const country = screen.getByText('United States').closest('span')
+    expect(country?.querySelector('svg')).not.toBeNull()
+  })
+
+  it('renders the member local time when a timezone is set', () => {
+    renderPage()
+    expect(screen.getByText(/\d{1,2}:\d{2} (AM|PM)/)).toBeInTheDocument()
+  })
+
+  it('hides the local time when no timezone is set', () => {
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, timezone: null }]))
+    renderPage()
+    expect(screen.queryByText(/\d{1,2}:\d{2} (AM|PM)/)).not.toBeInTheDocument()
   })
 
   it('shows a presence dot on the avatar for online members', () => {

@@ -429,7 +429,7 @@ export function useMemberIntroAnswers(
 
 export function useIntroQuestionMap() {
   return useQuery({
-    queryKey: ['intro-questions'],
+    queryKey: ['intro-question-map'],
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_intro_questions')
@@ -447,6 +447,7 @@ export interface ProfilePatch {
   avatar_url?: string | null
   current_status?: string | null
   pronouns?: string | null
+  timezone?: string | null
   availability?: Database['public']['Enums']['availability']
 }
 

@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import { COUNTRIES } from '../../lib/countries'
+import { defaultTimeZone, timeZoneList } from '../../lib/timezones'
 import { PronounSelect } from '../../components/PronounSelect'
 import { MIN_AGE, type OnboardingDraft } from './draft'
 
@@ -14,6 +16,8 @@ function todayMinus18Years(): string {
 }
 
 export function StepProfile({ draft, patch }: Props) {
+  const detected = defaultTimeZone()
+  const zones = useMemo(() => timeZoneList(), [])
   return (
     <div className="space-y-5">
       <div>
@@ -73,6 +77,27 @@ export function StepProfile({ draft, patch }: Props) {
             </option>
           ))}
         </select>
+      </label>
+
+      <label className="block">
+        <span className="text-sm font-semibold text-on-surface">Timezone</span>
+        <select
+          value={draft.timezone}
+          onChange={(e) => patch({ timezone: e.target.value })}
+          className="mt-1.5 w-full appearance-none rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="">Select your timezone…</option>
+          {zones.map((tz) => (
+            <option key={tz} value={tz}>
+              {tz}
+            </option>
+          ))}
+        </select>
+        <span className="mt-1.5 block text-xs text-on-surface-variant">
+          {detected
+            ? `Detected ${detected} from your device. Cluster members see your local time.`
+            : 'Cluster members see your local time.'}
+        </span>
       </label>
     </div>
   )
