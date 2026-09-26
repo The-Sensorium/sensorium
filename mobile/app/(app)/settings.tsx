@@ -227,7 +227,7 @@ export default function SettingsScreen() {
             <TextInput
               value={status}
               onChangeText={setStatus}
-              maxLength={80}
+              maxLength={60}
               placeholder="e.g. Deep in a good book"
               placeholderTextColor={t.onSurfaceVariant}
               style={{

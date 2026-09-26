@@ -432,7 +432,7 @@ export function useMemberIntroAnswers(
 
 export function useIntroQuestionMap() {
   return useQuery({
-    queryKey: ['intro-questions'],
+    queryKey: ['intro-question-map'],
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_intro_questions')
