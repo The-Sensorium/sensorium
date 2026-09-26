@@ -3,6 +3,11 @@
   "private": true,
   "version": "0.0.4",
   "main": "expo-router/entry",
+  "expo": {
+    "install": {
+      "exclude": ["react-native-keyboard-controller"]
+    }
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
