@@ -132,7 +132,7 @@ describe('PostCard', () => {
     )
     expect(screen.getByText('Rio')).toBeInTheDocument()
     expect(screen.getByText('Aurora')).toBeInTheDocument()
-    expect(screen.getByText('Hello world')).toHaveClass('line-clamp-5')
+    expect(screen.getByText('Hello world').closest('p')).toHaveClass('line-clamp-5')
     expect(screen.getByTestId('post-media')).toHaveAttribute('data-compact', 'true')
     expect(screen.getByRole('link', { name: /Rio/ }).getAttribute('href')).toBe('/posts/p1')
   })
@@ -187,7 +187,7 @@ describe('PostCard', () => {
         />
       </MemoryRouter>,
     )
-    expect(screen.getByText('Short body')).toHaveClass('line-clamp-5')
+    expect(screen.getByText('Short body').closest('p')).toHaveClass('line-clamp-5')
     expect(screen.queryByRole('button', { name: 'Read more' })).not.toBeInTheDocument()
   })
 
@@ -211,7 +211,7 @@ describe('PostCard', () => {
         />
       </MemoryRouter>,
     )
-    const body = screen.getByText('A very long body that overflows')
+    const body = screen.getByText('A very long body that overflows').closest('p')!
     Object.defineProperty(body, 'scrollHeight', { value: 200, configurable: true })
     Object.defineProperty(body, 'clientHeight', { value: 120, configurable: true })
     fireEvent(window, new Event('resize'))

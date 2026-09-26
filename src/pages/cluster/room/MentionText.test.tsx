@@ -37,4 +37,15 @@ describe('MentionText', () => {
     expect(screen.getByText('@everyone').tagName).not.toBe('A')
     expect(screen.getByRole('link', { name: '@Casey' })).toBeInTheDocument()
   })
+
+  it('renders pasted urls as external links alongside mentions', () => {
+    setup('Hey @Casey see https://example.com/a')
+    expect(screen.getByRole('link', { name: '@Casey' })).toHaveAttribute(
+      'href',
+      '/profile/u3?cluster=c1',
+    )
+    const external = screen.getByRole('link', { name: 'https://example.com/a' })
+    expect(external).toHaveAttribute('href', 'https://example.com/a')
+    expect(external).toHaveAttribute('target', '_blank')
+  })
 })

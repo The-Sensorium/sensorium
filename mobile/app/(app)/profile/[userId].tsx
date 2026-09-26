@@ -18,6 +18,7 @@ import { CountryFlag } from '../../../src/components/CountryFlag'
 import { MemberLocalTime } from '../../../src/components/MemberLocalTime'
 import { PronounBadge } from '../../../src/components/PronounBadge'
 import { ReportModal } from '../../../src/components/ReportModal'
+import { LinkifiedText } from '../../../src/components/LinkifiedText'
 import { PostCard } from '../../../src/components/PostCard'
 import { MuteButton } from '../../../src/components/MuteButton'
 import { countryName } from '../../../src/lib/countries'
@@ -164,7 +165,7 @@ export default function ProfileScreen() {
                   accessibilityLabel={`Status: ${member.current_status}`}
                   style={{ marginTop: 4, fontSize: 12, fontStyle: 'italic', color: t.onSurfaceVariant, textAlign: 'left' }}
                 >
-                  &quot;{member.current_status}&quot;
+                  &quot;<LinkifiedText text={member.current_status} fontSize={12} lineHeight={16} color={t.onSurfaceVariant} italic />&quot;
                 </Text>
               </View>
             ) : null}
@@ -173,12 +174,14 @@ export default function ProfileScreen() {
                 <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
                   About
                 </Text>
-                <Text
-                  style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurface, textAlign: 'left' }}
-                  numberOfLines={bioExpanded ? undefined : 3}
-                >
-                  {member.bio}
-                </Text>
+                <View style={{ marginTop: 4, width: '100%' }}>
+                  <LinkifiedText
+                    text={member.bio}
+                    fontSize={14}
+                    lineHeight={20}
+                    numberOfLines={bioExpanded ? undefined : 3}
+                  />
+                </View>
                 {member.bio.length > 180 ? (
                   <Pressable
                     onPress={() => setBioExpanded((v) => !v)}
@@ -309,9 +312,9 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>{prompt}</Text>
-                  <Text style={{ marginTop: 2, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-                    {a.answer}
-                  </Text>
+                  <View style={{ marginTop: 2 }}>
+                    <LinkifiedText text={a.answer} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} />
+                  </View>
                 </View>
               </View>
             )

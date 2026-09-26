@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { Check, Copy, Flag, Heart, Loader2, MessageSquare, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
+import { LinkifiedText } from './LinkifiedText'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
@@ -195,7 +196,7 @@ export function PostCard({
               compact && 'line-clamp-5',
             )}
           >
-            {post.content}
+            <LinkifiedText text={post.content} />
           </p>
         )}
         <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />

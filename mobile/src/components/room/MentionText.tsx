@@ -1,5 +1,6 @@
 import { Text } from 'react-native'
 import { parseMentions, type MentionMember } from '../../features/mentions'
+import { LinkifiedText } from '../LinkifiedText'
 import { useTheme } from '../../lib/use-theme'
 
 export function MentionText({ content, members }: { content: string; members: MentionMember[] }) {
@@ -9,7 +10,7 @@ export function MentionText({ content, members }: { content: string; members: Me
     <Text style={{ fontSize: 14, lineHeight: 22, color: t.onSurface }}>
       {parts.map((part, i) =>
         part.type === 'text' ? (
-          <Text key={i}>{part.value}</Text>
+          <LinkifiedText key={i} text={part.value} fontSize={14} lineHeight={22} />
         ) : part.type === 'everyone' ? (
           // Broadcast chip: styled like a mention but never a profile link.
           <Text key={i}>
