@@ -36,14 +36,20 @@ describe('ageOnDate', () => {
 })
 
 describe('validateStep', () => {
-  it('step 1 requires a valid, adult birthdate, name and country', () => {
+  it('step 1 requires a valid, adult birthdate, name, country and timezone', () => {
     expect(validateStep(1, EMPTY_DRAFT)).toBe('Please enter your display name.')
 
     const adult = { ...EMPTY_DRAFT, displayName: 'Diya', dob: '1996-07-12' }
     expect(validateStep(1, adult)).toBe('Please select your country.')
 
-    const complete = { ...adult, countryCode: 'PT' }
+    const withCountry = { ...adult, countryCode: 'PT' }
+    expect(validateStep(1, withCountry)).toBe('Please select your timezone.')
+
+    const complete = { ...withCountry, timezone: 'Europe/Lisbon' }
     expect(validateStep(1, complete)).toBeNull()
+
+    const badZone = { ...withCountry, timezone: 'Not/AZone' }
+    expect(validateStep(1, badZone)).toBe('Please select your timezone.')
 
     const minor = { ...adult, dob: '2012-01-01' }
     expect(validateStep(1, minor)).toContain('18')

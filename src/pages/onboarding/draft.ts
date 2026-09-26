@@ -1,4 +1,5 @@
 import type { MatchingMode } from '../../lib/modes'
+import { isValidTimeZone } from '../../lib/timezones'
 
 export const LOCAL_RADII = [10, 50, 100] as const
 export type LocalRadius = (typeof LOCAL_RADII)[number]
@@ -8,6 +9,7 @@ export interface OnboardingDraft {
   pronouns: string
   dob: string
   countryCode: string
+  timezone: string
   photo: File | null
   avatarUrl: string | null
   bio: string
@@ -24,6 +26,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   pronouns: '',
   dob: '',
   countryCode: '',
+  timezone: '',
   photo: null,
   avatarUrl: null,
   bio: '',
@@ -65,6 +68,7 @@ export function validateStep(step: number, draft: OnboardingDraft): string | nul
       const age = ageOnDate(draft.dob)
       if (age < MIN_AGE) return 'You must be at least 18 to join Sensorium.'
       if (!draft.countryCode) return 'Please select your country.'
+      if (!draft.timezone || !isValidTimeZone(draft.timezone)) return 'Please select your timezone.'
       return null
     }
     case 2: {

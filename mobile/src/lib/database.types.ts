@@ -1341,6 +1341,7 @@ export type Database = {
           longitude: number | null
           onboarding_completed_at: string | null
           pronouns: string | null
+          timezone: string | null
           updated_at: string
         }
         Insert: {
@@ -1363,6 +1364,7 @@ export type Database = {
           longitude?: number | null
           onboarding_completed_at?: string | null
           pronouns?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
@@ -1385,6 +1387,7 @@ export type Database = {
           longitude?: number | null
           onboarding_completed_at?: string | null
           pronouns?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2436,6 +2439,7 @@ export type Database = {
           last_read_message_at: string
           onboarding_completed_at: string
           pronouns: string
+          timezone: string
         }[]
       }
       get_message_reads: {

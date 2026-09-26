@@ -4,7 +4,7 @@ import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
-import { AlertTriangle, BellRing, ChevronDown, ImageMinus, ImagePlus, LogOut, MonitorSmartphone, Moon, Save, ShieldCheck, Sun, Trash2, UserRound } from 'lucide-react-native'
+import { AlertTriangle, BellRing, ChevronDown, Clock, ImageMinus, ImagePlus, LogOut, MonitorSmartphone, Moon, Save, ShieldCheck, Sun, Trash2, UserRound } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
 import { goLogin } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
@@ -25,6 +25,7 @@ import { Avatar } from '../../src/components/Avatar'
 import { MuteButton } from '../../src/components/MuteButton'
 import { Modal } from '../../src/components/Modal'
 import { PronounField } from '../../src/components/PronounField'
+import { TimezonePicker } from '../../src/components/TimezonePicker'
 import { Field, PrimaryButton } from '../../src/components/ui'
 import { readImageBytes } from '../../src/lib/upload-image'
 import { useThemeChoice, type ThemeChoice } from '../../src/lib/theme-choice'
@@ -42,12 +43,19 @@ export default function SettingsScreen() {
   const [bio, setBio] = useState(profile.data?.bio ?? '')
   const [pronouns, setPronouns] = useState(profile.data?.pronouns ?? '')
   const [status, setStatus] = useState(profile.data?.current_status ?? '')
+  const [timezone, setTimezone] = useState(profile.data?.timezone ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [removeAvatarOpen, setRemoveAvatarOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const updateProfile = useUpdateProfile()
+
+  // Profile loads async; pick up the saved zone once it arrives so saving
+  // another field never wipes a value the user never touched.
+  useEffect(() => {
+    setTimezone(profile.data?.timezone ?? '')
+  }, [profile.data?.timezone])
 
   async function handleAvatar() {
     setAvatarError(null)
@@ -101,6 +109,7 @@ export default function SettingsScreen() {
     bio.trim() !== (profile.data?.bio ?? '') ||
     pronouns.trim() !== (profile.data?.pronouns ?? '')
   const statusDirty = status.trim() !== (profile.data?.current_status ?? '')
+  const timezoneDirty = (timezone || '') !== (profile.data?.timezone ?? '')
 
   return (
     <Screen avoiding>
@@ -240,6 +249,28 @@ export default function SettingsScreen() {
               disabled={!statusDirty}
               icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
               onPress={() => void updateProfile.mutateAsync({ current_status: status.trim() || null })}
+            />
+          </View>
+        </View>
+      </Card>
+
+      <Card>
+        <View style={{ marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Clock size={20} color={t.primary} strokeWidth={1.5} />
+            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Local time</Text>
+          </View>
+          <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
+            Shown on your member card in every cluster.
+          </Text>
+          <View style={{ marginTop: 16, gap: 12 }}>
+            <TimezonePicker value={timezone} onChange={setTimezone} placeholder="Not set" />
+            <PrimaryButton
+              title="Save changes"
+              loading={updateProfile.isPending}
+              disabled={!timezoneDirty}
+              icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
+              onPress={() => void updateProfile.mutateAsync({ timezone: timezone || null })}
             />
           </View>
         </View>

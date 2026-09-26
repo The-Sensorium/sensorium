@@ -1,12 +1,14 @@
 import { Pressable, Text, View } from 'react-native'
 import { Link, useLocalSearchParams } from 'expo-router'
-import { Cake, MapPin, UserPlus } from 'lucide-react-native'
+import { Cake, UserPlus } from 'lucide-react-native'
 import { CLUSTER_SIZE } from '../../../../src/lib/constants'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useReplacementRound } from '../../../../src/features/votes'
 import { usePresence } from '../../../../src/features/realtime'
 import { Avatar } from '../../../../src/components/Avatar'
+import { CountryFlag } from '../../../../src/components/CountryFlag'
+import { MemberLocalTime } from '../../../../src/components/MemberLocalTime'
 import { MuteButton } from '../../../../src/components/MuteButton'
 import { PronounBadge } from '../../../../src/components/PronounBadge'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
@@ -133,11 +135,11 @@ export default function MembersScreen() {
                   </View>
                 ) : null}
               </View>
-                {member.country_code || member.birth_year ? (
+                {member.country_code || member.birth_year || member.timezone ? (
                   <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
                     {member.country_code ? (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <MapPin size={12} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                        <CountryFlag code={member.country_code} />
                         <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
                           {countryName(member.country_code)}
                         </Text>
@@ -151,6 +153,7 @@ export default function MembersScreen() {
                         </Text>
                       </View>
                     ) : null}
+                    {member.timezone ? <MemberLocalTime timeZone={member.timezone} /> : null}
                   </View>
                 ) : null}
                 {member.current_status ? (

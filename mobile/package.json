@@ -48,6 +48,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-country-flag-icons": "^1.0.0",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-gesture-image-viewer": "^2.4.0",
     "react-native-keyboard-controller": "1.21.9",
