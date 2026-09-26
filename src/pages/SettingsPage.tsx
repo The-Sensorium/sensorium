@@ -206,7 +206,7 @@ export function SettingsPage() {
         >
           <input
             type="text"
-            maxLength={80}
+            maxLength={60}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             placeholder="e.g. Deep in a good book"

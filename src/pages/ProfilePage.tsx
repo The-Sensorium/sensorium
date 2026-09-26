@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import {
   ArrowLeft,
   Briefcase,
   Cake,
-  CalendarDays,
   Flag,
   Heart,
   Loader2,
@@ -88,6 +87,8 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const { online } = usePresence(clusterId)
   const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
+  const [bioExpanded, setBioExpanded] = useState(false)
+  useEffect(() => setBioExpanded(false), [userId, clusterId])
   const userPosts = useUserPosts(userId)
   const counts = usePostCounts(clusterId)
 
@@ -135,91 +136,112 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
 
       {/* ── Profile Header ─────────────────────────────────── */}
       <div className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft md:p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:gap-5">
-          {/* Left: profile info */}
-          <div className="flex flex-1 items-start gap-3 md:gap-4">
-            <Avatar
-              name={member.display_name}
-              src={member.avatar_url}
-              className="h-20 w-20 md:h-[88px] md:w-[88px]"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h1 className="truncate font-display text-xl font-semibold text-on-surface">
-                  {member.display_name}
-                </h1>
-                {member.pronouns && <PronounBadge pronouns={member.pronouns} />}
-              </div>
-              {(member.country_code || member.timezone) && (
-                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
-                  {member.country_code && (
-                    <span className="inline-flex items-center gap-1">
-                      <CountryFlag code={member.country_code} />
-                      {countryName(member.country_code)}
-                    </span>
-                  )}
-                  {member.country_code && member.timezone && (
-                    <span className="text-outline-variant" aria-hidden>
-                      ·
-                    </span>
-                  )}
-                  {member.timezone ? <MemberLocalTime timeZone={member.timezone} /> : null}
-                </p>
-              )}
-              {member.birth_year && (
-                <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
+        <div className="flex flex-1 items-start gap-3 md:gap-4">
+          <Avatar
+            name={member.display_name}
+            src={member.avatar_url}
+            className="h-20 w-20 md:h-[88px] md:w-[88px]"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <h1 className="truncate font-display text-xl font-semibold text-on-surface">
+                {member.display_name}
+              </h1>
+              {member.pronouns && <PronounBadge pronouns={member.pronouns} />}
+            </div>
+            {(member.country_code || member.timezone || member.birth_year) && (
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
+                {member.country_code && (
+                  <span className="inline-flex items-center gap-1">
+                    <CountryFlag code={member.country_code} />
+                    {countryName(member.country_code)}
+                  </span>
+                )}
+                {member.country_code && (member.timezone || member.birth_year) && (
+                  <span className="text-outline-variant" aria-hidden>
+                    ·
+                  </span>
+                )}
+                {member.timezone ? (
+                  <span>
+                    <span className="sr-only">Local time: </span>
+                    <MemberLocalTime timeZone={member.timezone} />
+                  </span>
+                ) : null}
+                {(member.country_code || member.timezone) && member.birth_year && (
+                  <span className="text-outline-variant" aria-hidden>
+                    ·
+                  </span>
+                )}
+                {member.birth_year && (
                   <span className="inline-flex items-center gap-1">
                     <Cake className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
                     Born {member.birth_year}
                   </span>
-                </p>
-              )}
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                {onlineNow ? (
-                  <AvailabilityBadge value={member.availability} />
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
-                    <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
-                    Offline
-                  </span>
                 )}
-                {member.current_status && (
-                  <span className="text-xs italic text-on-surface-variant">
-                    "{member.current_status}"
-                  </span>
-                )}
-              </div>
-              {member.bio && (
-                <p className="mt-1.5 text-sm leading-5 text-on-surface-variant">{member.bio}</p>
+              </p>
+            )}
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {onlineNow ? (
+                <AvailabilityBadge value={member.availability} />
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
+                  <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
+                  Offline
+                </span>
               )}
             </div>
           </div>
-
-          {/* Right: cluster context */}
-          {cluster && (
-            <div className="shrink-0 border-t border-outline-variant/40 pt-3 md:w-52 md:border-t-0 md:border-l md:pt-0 md:pl-5">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-primary">
-                Your cluster
-              </h2>
-              <p className="mt-1.5 text-sm font-medium text-on-surface">
-                {cluster.cluster.name}
-              </p>
-              <p className="mt-1 flex items-center gap-3 text-xs text-on-surface-variant">
-                <span className="inline-flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                  {cluster.memberCount} / 8 members
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                  {new Date(cluster.joinedAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </span>
-              </p>
-            </div>
-          )}
         </div>
+
+        {(member.current_status || member.bio) && (
+          <div className="mt-3 border-t border-outline-variant/40 pt-3 text-left">
+            {member.current_status && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Status
+                </p>
+                <p className="mt-1 text-xs italic text-on-surface-variant">
+                  "{member.current_status}"
+                </p>
+              </div>
+            )}
+            {member.bio && (
+              <div className={cn(member.current_status && 'mt-3')}>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  About
+                </p>
+                <p className={cn('mt-1 text-left text-sm leading-5 text-on-surface', !bioExpanded && 'line-clamp-3')}>
+                  {member.bio}
+                </p>
+                {member.bio.length > 180 && (
+                  <button
+                    type="button"
+                    onClick={() => setBioExpanded((v) => !v)}
+                    aria-expanded={bioExpanded}
+                    className="mt-1 min-h-[32px] text-xs font-semibold text-primary hover:underline"
+                  >
+                    {bioExpanded ? 'Show less' : 'Show more'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Cluster context as a subtle footer, not a side panel: the member
+            page is already reached from that cluster, so this stays out of
+            the way of bio and introductions (2026 progressive disclosure). */}
+        {cluster && (
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-outline-variant/40 pt-3 text-xs text-on-surface-variant">
+            <span className="font-semibold uppercase tracking-wide text-primary">Cluster</span>
+            <span className="font-medium text-on-surface">{cluster.cluster.name}</span>
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+              {cluster.memberCount} / 8 members
+            </span>
+          </p>
+        )}
 
         {!isSelf && (
           <div className="mt-3 flex flex-col gap-2 border-t border-outline-variant/40 pt-3 md:mt-4 md:flex-row md:items-center md:pt-4">
@@ -244,6 +266,17 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             </div>
           </div>
         )}
+
+        {isSelf && (
+          <div className="mt-3 flex flex-col gap-2 border-t border-outline-variant/40 pt-3 md:mt-4 md:flex-row md:items-center md:pt-4">
+            <Link
+              to="/settings"
+              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto"
+            >
+              Edit profile
+            </Link>
+          </div>
+        )}
       </div>
 
       <ReportModal
@@ -262,9 +295,21 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
         {introAnswers.isLoading ? (
           <p className="mt-2 text-sm text-on-surface-variant">Loading…</p>
         ) : answers.length === 0 ? (
-          <p className="mt-2 text-sm text-on-surface-variant">
-            {member.display_name} hasn't completed their introductions.
-          </p>
+          <div className="mt-2">
+            <p className="text-sm text-on-surface-variant">
+              {isSelf
+                ? 'You have not completed your introductions yet.'
+                : `${member.display_name} hasn't completed their introductions.`}
+            </p>
+            {isSelf && (
+              <Link
+                to={`/cluster/${clusterId}/introductions`}
+                className="mt-2 inline-flex min-h-[44px] items-center rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+              >
+                Complete your introductions
+              </Link>
+            )}
+          </div>
         ) : (
           <ul className="mt-3 divide-y divide-outline-variant/40">
             {answers.map((a) => {
