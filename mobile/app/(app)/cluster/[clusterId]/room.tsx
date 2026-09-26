@@ -177,6 +177,12 @@ export default function RoomScreen() {
   const pinnedRef = useRef(true)
   const lastLenRef = useRef<number | null>(null)
   const listRef = useRef<FlatList<{ key: string; item: TimelineItem; showDay: boolean }> | null>(null)
+  const [jumpHighlightId, setJumpHighlightId] = useState<string | null>(null)
+  const [pendingJumpId, setPendingJumpId] = useState<string | null>(null)
+  const jumpInFlight = useRef(false)
+  const jumpRetryCount = useRef(0)
+  const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const jumpRetryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     lastLenRef.current = null
@@ -200,6 +206,17 @@ export default function RoomScreen() {
     setSignalOpen(false)
     setSignalPrompt('')
     setRevealed(new Set())
+    setJumpHighlightId(null)
+    setPendingJumpId(null)
+    jumpInFlight.current = false
+    if (jumpTimer.current) {
+      clearTimeout(jumpTimer.current)
+      jumpTimer.current = null
+    }
+    if (jumpRetryTimer.current) {
+      clearTimeout(jumpRetryTimer.current)
+      jumpRetryTimer.current = null
+    }
   }, [clusterId])
 
   const memberMap = useMemo(() => {
@@ -260,6 +277,82 @@ export default function RoomScreen() {
   function startReply(m: Message) {
     setMenuFor(null)
     setReplyTo(m)
+  }
+
+  function flashJumpHighlight(messageId: string) {
+    setJumpHighlightId(messageId)
+    if (jumpTimer.current) clearTimeout(jumpTimer.current)
+    jumpTimer.current = setTimeout(() => {
+      jumpTimer.current = null
+      setJumpHighlightId(null)
+    }, 1600)
+  }
+
+  function scrollToRowIndex(index: number, messageId: string) {
+    // A stale scrollToIndexFailed retry must not hijack a newer jump.
+    if (jumpRetryTimer.current) {
+      clearTimeout(jumpRetryTimer.current)
+      jumpRetryTimer.current = null
+    }
+    // A jump leaves the bottom: the new-message pill and the read marker
+    // follow the user's actual position from here via onScroll.
+    pinnedRef.current = false
+    setPinned(false)
+    jumpRetryCount.current = 0
+    listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })
+    flashJumpHighlight(messageId)
+  }
+
+  async function pageBackToParent(parentId: string, key: ['cluster-messages', string]) {
+    // The parent is older than the loaded window. Page backwards (bounded)
+    // until it renders; the pendingJumpId effect below scrolls once it does.
+    try {
+      for (let i = 0; i < 5; i++) {
+        const msgs = queryClient.getQueryData<Message[]>(key) ?? []
+        if (msgs.some((m) => m.id === parentId && !m.deleted_at)) return
+        const result = await loadEarlier.mutateAsync()
+        // lastLenRef tracks list growth for the new-message effect; a history
+        // page must not read as fresh arrivals.
+        lastLenRef.current = (messages.data?.length ?? 0) + result.added
+        if (!result.hasMore) {
+          exhaustedRef.current = true
+          setHasMore(false)
+          break
+        }
+        if (result.added === 0) break
+      }
+      setPendingJumpId((cur) => (cur === parentId ? null : cur))
+      setError('Could not find that message. It may be very old.')
+    } catch (e) {
+      setPendingJumpId((cur) => (cur === parentId ? null : cur))
+      setError(toErrorMessage(e, 'Could not load earlier messages.'))
+    } finally {
+      jumpInFlight.current = false
+    }
+  }
+
+  function handleJumpToReply(parentId: string) {
+    if (jumpInFlight.current) return
+    const index = rows.findIndex((r) => r.key === parentId)
+    if (index !== -1) {
+      scrollToRowIndex(index, parentId)
+      return
+    }
+    // Outside the loaded window: only page back for a parent we know exists
+    // (a rendered preview). Anything else is deleted or unavailable.
+    if (loadEarlier.isPending) {
+      setError('That message is still loading. Try again in a moment.')
+      return
+    }
+    const known = replyById.get(parentId)
+    if (!known || known.deleted_at || !clusterId) {
+      setError('That message is no longer available.')
+      return
+    }
+    jumpInFlight.current = true
+    setError(null)
+    setPendingJumpId(parentId)
+    void pageBackToParent(parentId, ['cluster-messages', clusterId])
   }
 
   const replyParentInfo = (() => {
@@ -346,6 +439,16 @@ export default function RoomScreen() {
         .reverse(),
     [timeline],
   )
+
+  // A jump whose parent paged in afterwards: scroll once it renders.
+  useEffect(() => {
+    if (!pendingJumpId) return
+    const index = rows.findIndex((r) => r.key === pendingJumpId)
+    if (index === -1) return
+    setPendingJumpId(null)
+    jumpInFlight.current = false
+    scrollToRowIndex(index, pendingJumpId)
+  }, [rows, pendingJumpId])
 
   useEffect(() => {
     const len = rows.length
@@ -844,6 +947,19 @@ export default function RoomScreen() {
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
               renderScrollComponent={renderScrollComponent}
+              onScrollToIndexFailed={(info) => {
+                // Variable-height rows without getItemLayout: land near the
+                // target so it renders, then retry the exact jump once.
+                listRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true })
+                if (jumpRetryCount.current < 1) {
+                  jumpRetryCount.current += 1
+                  if (jumpRetryTimer.current) clearTimeout(jumpRetryTimer.current)
+                  jumpRetryTimer.current = setTimeout(() => {
+                    jumpRetryTimer.current = null
+                    listRef.current?.scrollToIndex({ index: info.index, animated: true, viewPosition: 0.5 })
+                  }, 350)
+                }
+              }}
               onScroll={(e) => {
                 const nearBottom = e.nativeEvent.contentOffset.y < 96
                 pinnedRef.current = nearBottom
@@ -958,11 +1074,13 @@ export default function RoomScreen() {
                     editDraft={editDraft}
                     editPending={editMessage.isPending}
                     menuOpen={menuFor === m.id}
+                    highlighted={jumpHighlightId === m.id}
                     replyParent={(() => {
                       const parent = replyById.get(m.reply_to_id ?? '')
                       if (parent && isMutedAuthor(mutedSet, parent.author_id)) return undefined
                       return replyPreview(parent)
                     })()}
+                    onPressReplyParent={handleJumpToReply}
                     onEditDraftChange={setEditDraft}
                     onSaveEdit={() => void saveEdit()}
                     onCancelEdit={() => setEditingId(null)}

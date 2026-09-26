@@ -477,6 +477,31 @@ describe('RoomView timeline', () => {
     expect(screen.getByText('Member')).toBeInTheDocument()
   })
 
+  it('jumps to the original message when the reply quote is clicked', async () => {
+    hooks.messages.data = [
+      msg({ id: 'parent', content: 'the original' }),
+      msg({ id: 'child', content: 'a reply', reply_to_id: 'parent' }),
+    ]
+    renderRoom()
+    const quote = screen.getByRole('button', { name: 'Go to replied message' })
+    vi.mocked(Element.prototype.scrollIntoView).mockClear()
+    await userEvent.click(quote)
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled()
+    const parentRow = document.getElementById('message-parent')
+    expect(parentRow).not.toBeNull()
+    expect(parentRow!.querySelector('.ring-primary')).not.toBeNull()
+  })
+
+  it('leaves the reply quote inert when the parent is deleted', async () => {
+    hooks.messages.data = [
+      msg({ id: 'parent', content: 'the original', deleted_at: '2026-01-01T09:00:00Z' }),
+      msg({ id: 'child', content: 'a reply', reply_to_id: 'parent' }),
+    ]
+    renderRoom()
+    expect(screen.queryByRole('button', { name: 'Go to replied message' })).not.toBeInTheDocument()
+    expect(screen.getByText('message')).toBeInTheDocument()
+  })
+
   it('surfaces reaction failures', async () => {
     hooks.messages.data = [msg({ id: 'm1' })]
     hooks.toggleReaction = {

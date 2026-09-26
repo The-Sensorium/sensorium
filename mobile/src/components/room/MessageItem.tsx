@@ -27,6 +27,8 @@ export function MessageItem({
   editPending,
   menuOpen,
   replyParent,
+  highlighted,
+  onPressReplyParent,
   onEditDraftChange,
   onSaveEdit,
   onCancelEdit,
@@ -51,6 +53,8 @@ export function MessageItem({
   editPending: boolean
   menuOpen: boolean
   replyParent: { authorName?: string; preview: string } | undefined
+  highlighted?: boolean
+  onPressReplyParent?(parentId: string): void
   onEditDraftChange(value: string): void
   onSaveEdit(): void
   onCancelEdit(): void
@@ -66,6 +70,11 @@ export function MessageItem({
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
   const gifUrl = message.content?.startsWith('gif:') ? message.content.slice(4) : null
+  // The quote jumps to the original message, but only when there is a real,
+  // visible parent to land on (deleted, muted-hidden, and unfetched parents
+  // render fallback text and stay inert).
+  const replyParentId = !isEditing ? (message.reply_to_id ?? null) : null
+  const jumpable = Boolean(replyParentId && replyParent && onPressReplyParent)
 
   return (
     <View>
@@ -137,8 +146,28 @@ export function MessageItem({
               alignSelf: isEditing ? 'stretch' : 'auto',
             }}
           >
-            {!isEditing && message.reply_to_id ? (
+            {highlighted && !isEditing ? (
               <View
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={{
+                  position: 'absolute',
+                  top: -2,
+                  left: -2,
+                  right: -2,
+                  bottom: -2,
+                  borderWidth: 2,
+                  borderColor: t.primary,
+                  borderRadius: 18,
+                }}
+              />
+            ) : null}
+            {!isEditing && message.reply_to_id ? (
+              <Pressable
+                accessibilityRole={jumpable ? 'button' : undefined}
+                accessibilityLabel={jumpable ? 'Go to replied message' : undefined}
+                onPress={jumpable ? () => onPressReplyParent!(replyParentId!) : undefined}
                 style={{
                   marginBottom: 6,
                   flexDirection: 'row',
@@ -159,7 +188,7 @@ export function MessageItem({
                     {replyParent?.preview ?? 'message'}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             ) : null}
             {isEditing ? (
               <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
