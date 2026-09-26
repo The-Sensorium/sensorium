@@ -37,7 +37,7 @@ import { useMarkClusterRead } from '../../features/notifications'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { rateLimitMessage, toErrorMessage } from '../../lib/error'
-import { usePresence } from '../../features/realtime'
+import { isOnlineNow, usePresence } from '../../features/realtime'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
 import { MessageItem } from './room/MessageItem'
@@ -107,7 +107,7 @@ export function RoomView() {
   const { typing, signalTyping, resetTyping, online } = usePresence(clusterId)
 
   const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
+  const onlineCount = (members.data ?? []).filter((m) => isOnlineNow(online, m.id, userId)).length
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -749,7 +749,7 @@ export function RoomView() {
                       className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
                       textClassName="text-xs"
                     />
-                    {online.has(m.id) || isMe ? (
+                    {isOnlineNow(online, m.id, userId) ? (
                       <span
                         className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
                         aria-hidden

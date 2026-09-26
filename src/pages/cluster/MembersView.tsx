@@ -5,7 +5,7 @@ import { CLUSTER_SIZE } from '../../lib/constants'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
 import { useReplacementRound } from '../../features/votes'
-import { usePresence } from '../../features/realtime'
+import { isOnlineNow, usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { CountryFlag } from '../../components/CountryFlag'
 import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
@@ -32,7 +32,7 @@ export function MembersView() {
   }
 
   const list = members.data ?? []
-  const isOnline = (id: string) => online.has(id) || id === userId
+  const isOnline = (id: string) => isOnlineNow(online, id, userId)
 
   return (
     <section aria-label="Members" className="space-y-4">

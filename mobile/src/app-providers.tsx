@@ -3,6 +3,7 @@ import { AppState } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { supabase } from './lib/supabase'
 import { clearPushBadge, refreshPushToken, registerPushToken } from './lib/push'
+import { setupQueryFocusManager, setupQueryOnlineManager } from './lib/query-online'
 import { isPermanentQueryError } from './lib/query-retry'
 import { AuthContext, type AuthStatus } from './auth-context'
 import { ThemeChoiceProvider } from './lib/theme-choice'
@@ -28,9 +29,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     ensureLiveKitGlobals()
+    const teardownOnline = setupQueryOnlineManager()
+    const teardownFocus = setupQueryFocusManager()
     if (!supabase) {
       setAuth({ state: 'unconfigured' })
-      return
+      return () => {
+        teardownOnline()
+        teardownFocus()
+      }
     }
     supabase.auth.getSession().then(({ data }) => {
       const s = data.session
@@ -50,7 +56,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
         void clearPushBadge()
       }
     })
-    return () => sub.subscription.unsubscribe()
+    return () => {
+      sub.subscription.unsubscribe()
+      teardownOnline()
+      teardownFocus()
+    }
   }, [])
 
   useEffect(() => {

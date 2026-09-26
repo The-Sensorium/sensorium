@@ -73,14 +73,23 @@ export function MuteButton({ targetUserId, targetName, fill }: { targetUserId: s
           borderWidth: 1,
           borderColor: t.outlineVariant,
           borderRadius: radii.pill,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          minHeight: 44,
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          minHeight: fill ? 48 : 44,
           opacity: pending ? 0.6 : 1,
         }}
       >
-        <Icon size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-        <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurfaceVariant }}>{label}</Text>
+        <Icon size={fill ? 16 : 14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+        <Text
+          style={{
+            fontSize: fill ? 16 : 14,
+            lineHeight: fill ? 24 : 20,
+            fontWeight: '600',
+            color: t.onSurfaceVariant,
+          }}
+        >
+          {label}
+        </Text>
       </Pressable>
       {error ? (
         <Text style={{ fontSize: 12, color: t.error }}>Couldn’t update. Try again.</Text>

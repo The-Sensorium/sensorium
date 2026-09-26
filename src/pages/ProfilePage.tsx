@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useClusterMembers, useMyClusters } from '../features/matching'
-import { usePresence } from '../features/realtime'
+import { isOnlineNow, usePresence } from '../features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import {
   usePostCountsForClusters,
@@ -86,7 +86,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const auth = useAuth()
   const isSelf = auth.state === 'signedIn' && auth.userId === userId
   const { online } = usePresence(clusterId)
-  const onlineNow = online.has(userId) || isSelf
+  const onlineNow = isOnlineNow(online, userId, auth.state === 'signedIn' ? auth.userId : null)
   const [reportOpen, setReportOpen] = useState(false)
   const [bioExpanded, setBioExpanded] = useState(false)
   useEffect(() => setBioExpanded(false), [userId, clusterId])
