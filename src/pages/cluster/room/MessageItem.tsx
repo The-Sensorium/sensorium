@@ -28,7 +28,9 @@ export function MessageItem({
   menuOpen,
   pickerOpen,
   replyParent,
+  highlighted,
   mutedBanner,
+  onJumpToReply,
   onEditDraftChange,
   onSaveEdit,
   onCancelEdit,
@@ -55,7 +57,9 @@ export function MessageItem({
   menuOpen: boolean
   pickerOpen: boolean
   replyParent: { authorName?: string; preview: string } | undefined
+  highlighted?: boolean
   mutedBanner?: ReactNode
+  onJumpToReply?(parentId: string): void
   onEditDraftChange(value: string): void
   onSaveEdit(): void
   onCancelEdit(): void
@@ -71,9 +75,14 @@ export function MessageItem({
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
   const gifUrl = message.content?.startsWith('gif:') ? message.content.slice(4) : null
+  // The quote jumps to the original message, but only when there is a real,
+  // visible parent to land on (deleted, muted-hidden, and unfetched parents
+  // render fallback text and stay inert).
+  const replyParentId = !isEditing ? (message.reply_to_id ?? null) : null
+  const jumpable = Boolean(replyParentId && replyParent && onJumpToReply)
 
   return (
-    <li>
+    <li id={`message-${message.id}`}>
       {showDay && <DayDivider iso={message.created_at} />}
       {mutedBanner}
       <div
@@ -192,26 +201,52 @@ export function MessageItem({
                     'rounded-2xl bg-surface-container px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-soft',
                     'whitespace-pre-wrap break-words',
                     mine ? 'rounded-br-md' : 'rounded-bl-md',
+                    highlighted && 'ring-2 ring-primary',
                   )
             }
           >
-            {!isEditing && message.reply_to_id && (
-              <div className="mb-1.5 flex items-start gap-1.5 rounded-xl bg-surface-container/50 px-2.5 py-1.5 text-xs leading-tight">
-                <CornerUpLeft
-                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-on-surface-variant"
-                  strokeWidth={1.5}
-                  aria-hidden
-                />
-                <div className="min-w-0">
-                  <span className="font-semibold text-on-surface-variant">
-                    {replyParent?.authorName ?? 'Member'}
-                  </span>{' '}
-                  <span className="text-on-surface-variant/80">
-                    {replyParent?.preview ?? 'message'}
-                  </span>
+            {!isEditing && message.reply_to_id ? (
+              jumpable ? (
+                <button
+                  type="button"
+                  aria-label="Go to replied message"
+                  onClick={() => {
+                    if (replyParentId && onJumpToReply) onJumpToReply(replyParentId)
+                  }}
+                  className="group mb-1.5 flex w-full cursor-pointer items-start gap-1.5 rounded-xl bg-surface-container/50 px-2.5 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-primary-container/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  <CornerUpLeft
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-on-surface-variant"
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-on-surface-variant group-hover:text-primary">
+                      {replyParent?.authorName ?? 'Member'}
+                    </span>{' '}
+                    <span className="text-on-surface-variant/80 group-hover:text-primary">
+                      {replyParent?.preview ?? 'message'}
+                    </span>
+                  </div>
+                </button>
+              ) : (
+                <div className="mb-1.5 flex items-start gap-1.5 rounded-xl bg-surface-container/50 px-2.5 py-1.5 text-xs leading-tight">
+                  <CornerUpLeft
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-on-surface-variant"
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />
+                  <div className="min-w-0">
+                    <span className="font-semibold text-on-surface-variant">
+                      {replyParent?.authorName ?? 'Member'}
+                    </span>{' '}
+                    <span className="text-on-surface-variant/80">
+                      {replyParent?.preview ?? 'message'}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            ) : null}
             {isEditing ? (
               <div className="flex items-end gap-2">
                 <textarea
