@@ -18,7 +18,10 @@ vi.mock('react-router', async (importOriginal) => {
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
 vi.mock('../../features/votes', () => ({ useReplacementRound: hooks.useReplacementRound }))
-vi.mock('../../features/realtime', () => ({ usePresence: hooks.usePresence }))
+vi.mock('../../features/realtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../features/realtime')>()
+  return { ...actual, usePresence: hooks.usePresence }
+})
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
 vi.mock('../../components/MuteButton', () => ({ MuteButton: () => null }))
 vi.mock('../../components/IntroChecklistBanner', () => ({ IntroChecklistBanner: () => null }))

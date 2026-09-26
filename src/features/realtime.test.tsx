@@ -6,7 +6,7 @@ import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
 import { makeSupabaseClient, initialMockResult, type MockSupabaseResult } from '../test/supabase-client'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { useClusterChannel, usePresence } from './realtime'
+import { isOnlineNow, useClusterChannel, usePresence } from './realtime'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
 vi.mock('../app/auth-context', async (importOriginal) => {
@@ -327,10 +327,12 @@ describe('useClusterChannel', () => {
 describe('usePresence', () => {
   function presenceClient() {
     const track = vi.fn(() => Promise.resolve('ok'))
+    const untrack = vi.fn(() => Promise.resolve('ok'))
     const channel = {
       on: vi.fn(() => channel),
       subscribe: vi.fn(),
       track,
+      untrack,
       presenceState: vi.fn(() => ({})),
     }
     const client = {
@@ -436,5 +438,87 @@ describe('usePresence', () => {
     const { result } = renderHook(() => usePresence('c1'), { wrapper })
     expect(client.channel).not.toHaveBeenCalled()
     expect(result.current.online.size).toBe(0)
+  })
+
+  it('creates the channel with the user id as presence key', async () => {
+    const { client } = presenceClient()
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const { unmount } = renderHook(() => usePresence('c-key'), { wrapper })
+    expect(client.channel).toHaveBeenCalledWith('presence:c-key', {
+      config: { presence: { key: 'u1' } },
+    })
+    unmount()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('keeps separate channels per user so stale identity cannot leak', async () => {
+    const { client } = presenceClient()
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const channelMock = vi.mocked(client.channel)
+    const { unmount } = renderHook(() => usePresence('c-users'), { wrapper })
+    expect(channelMock).toHaveBeenCalledTimes(1)
+    useAuthMock.mockReturnValue({ state: 'signedIn', userId: 'u2', email: 'b@c.test' } as never)
+    const { unmount: unmount2 } = renderHook(() => usePresence('c-users'), { wrapper })
+    expect(channelMock).toHaveBeenCalledTimes(2)
+    expect(channelMock).toHaveBeenLastCalledWith('presence:c-users', {
+      config: { presence: { key: 'u2' } },
+    })
+    unmount()
+    unmount2()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('untracks on hidden tab and re-tracks on visible', async () => {
+    const { client, channel } = presenceClient() as unknown as {
+      client: SupabaseClient
+      channel: { track: ReturnType<typeof vi.fn>; untrack: ReturnType<typeof vi.fn> }
+    }
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const originalHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
+    const { unmount } = renderHook(() => usePresence('c-visibility'), { wrapper })
+    const untrack = channel.untrack
+    const track = channel.track
+    try {
+      Object.defineProperty(document, 'hidden', { value: true, configurable: true })
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(untrack).toHaveBeenCalledTimes(1)
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true })
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+      })
+      expect(track).toHaveBeenCalledWith({ user_id: 'u1', typing: false })
+    } finally {
+      if (originalHidden) Object.defineProperty(document, 'hidden', originalHidden)
+    }
+    unmount()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('untracks on pagehide so a closed tab leaves presence', async () => {
+    const { client, channel } = presenceClient() as unknown as {
+      client: SupabaseClient
+      channel: { track: ReturnType<typeof vi.fn>; untrack: ReturnType<typeof vi.fn> }
+    }
+    requireSupabaseMock.mockReset()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const { unmount } = renderHook(() => usePresence('c-pagehide'), { wrapper })
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    expect(channel.untrack).toHaveBeenCalledTimes(1)
+    unmount()
+    await waitFor(() => expect(client.removeChannel).toHaveBeenCalled())
+  })
+
+  it('treats self as online by definition', () => {
+    expect(isOnlineNow(new Set(), 'u1', 'u1')).toBe(true)
+    expect(isOnlineNow(new Set(['u2']), 'u2', 'u1')).toBe(true)
+    expect(isOnlineNow(new Set(), 'u2', 'u1')).toBe(false)
+    expect(isOnlineNow(new Set(), 'u2', null)).toBe(false)
   })
 })

@@ -601,6 +601,13 @@ export interface ClusterPresence {
   typing: Set<string>
 }
 
+// Self is intentionally always shown online. The presence set only holds other
+// members, so callers must pass their own id through here instead of inlining
+// the comparison.
+export function isOnlineNow(online: Set<string>, memberId: string, selfId: string | null) {
+  return online.has(memberId) || memberId === selfId
+}
+
 interface PresenceEntry {
   channel: RealtimeChannel
   userId: string
@@ -609,13 +616,14 @@ interface PresenceEntry {
   broadcastTyping: boolean
   refresh: () => void
   listeners: Set<(state: ClusterPresence) => void>
+  teardownBackground?: () => void
 }
 
 /**
- * One presence channel per cluster is shared by every caller (the room composer,
- * the "who's here" band, the desktop rail, the members list). Without this, two
- * components subscribing to the same `presence:<clusterId>` channel make Supabase
- * throw "cannot add presence callbacks after subscribe()".
+ * One presence channel per cluster per user is shared by every caller (the room
+ * composer, the "who's here" band, the desktop rail, the members list). Without
+ * this, two components subscribing to the same `presence:<clusterId>` channel
+ * make Supabase throw "cannot add presence callbacks after subscribe()".
  */
 const presenceStore = new Map<string, PresenceEntry>()
 
@@ -640,10 +648,13 @@ export function usePresence(clusterId: string | null) {
   useEffect(() => {
     if (!clusterId || !userId) return
     const supabase = requireSupabase()
+    const storeKey = `${clusterId}:${userId}`
 
-    let entry = presenceStore.get(clusterId)
+    let entry = presenceStore.get(storeKey)
     if (!entry) {
-      const channel = supabase.channel(`presence:${clusterId}`)
+      const channel = supabase.channel(`presence:${clusterId}`, {
+        config: { presence: { key: userId } },
+      })
       entry = {
         channel,
         userId,
@@ -669,7 +680,7 @@ export function usePresence(clusterId: string | null) {
         for (const listener of entry!.listeners) listener(snap)
       }
       entry.refresh = refresh
-      presenceStore.set(clusterId, entry)
+      presenceStore.set(storeKey, entry)
 
       channel
         .on('presence', { event: 'sync' }, refresh)
@@ -680,6 +691,37 @@ export function usePresence(clusterId: string | null) {
             await channel.track({ user_id: entry!.userId, typing: entry!.broadcastTyping })
           }
         })
+
+      const goOffline = () => {
+        entry!.broadcastTyping = false
+        void entry!.channel.untrack()
+      }
+      const goOnline = () => {
+        if (document.hidden) return
+        void entry!.channel.track({ user_id: entry!.userId, typing: entry!.broadcastTyping })
+      }
+      const onVisibility = () => {
+        if (document.hidden) goOffline()
+        else goOnline()
+      }
+      const onPageHide = () => {
+        goOffline()
+      }
+      const onPageShow = () => {
+        goOnline()
+      }
+      document.addEventListener('visibilitychange', onVisibility)
+      window.addEventListener('offline', goOffline)
+      window.addEventListener('online', goOnline)
+      window.addEventListener('pagehide', onPageHide)
+      window.addEventListener('pageshow', onPageShow)
+      entry.teardownBackground = () => {
+        document.removeEventListener('visibilitychange', onVisibility)
+        window.removeEventListener('offline', goOffline)
+        window.removeEventListener('online', goOnline)
+        window.removeEventListener('pagehide', onPageHide)
+        window.removeEventListener('pageshow', onPageShow)
+      }
     }
 
     entryRef.current = entry
@@ -697,10 +739,11 @@ export function usePresence(clusterId: string | null) {
         // through join/leave/join, which can make the server drop later presence
         // tracks. A real unmount is unaffected (the timer fires a hair later).
         window.setTimeout(() => {
-          const current = presenceStore.get(clusterId)
+          const current = presenceStore.get(storeKey)
           if (current === entry && current.listeners.size === 0) {
+            current.teardownBackground?.()
             supabase.removeChannel(current.channel)
-            presenceStore.delete(clusterId)
+            presenceStore.delete(storeKey)
           }
         }, 0)
       }
