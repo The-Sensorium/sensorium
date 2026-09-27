@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import {
   ArrowLeft,
@@ -88,8 +88,6 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const { online } = usePresence(clusterId)
   const onlineNow = isOnlineNow(online, userId, auth.state === 'signedIn' ? auth.userId : null)
   const [reportOpen, setReportOpen] = useState(false)
-  const [bioExpanded, setBioExpanded] = useState(false)
-  useEffect(() => setBioExpanded(false), [userId, clusterId])
   const userPosts = useUserPosts(userId)
   const postClusterIds = useMemo(
     () => [...new Set((userPosts.data ?? []).map((p) => p.cluster_id))],
@@ -154,7 +152,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
               </h1>
               {member.pronouns && <PronounBadge pronouns={member.pronouns} />}
             </div>
-            {(member.country_code || member.timezone || member.birth_year) && (
+            {(member.country_code || member.timezone) && (
               <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
                 {member.country_code && (
                   <span className="inline-flex items-center gap-1">
@@ -162,7 +160,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                     {countryName(member.country_code)}
                   </span>
                 )}
-                {member.country_code && (member.timezone || member.birth_year) && (
+                {member.country_code && member.timezone && (
                   <span className="text-outline-variant" aria-hidden>
                     ·
                   </span>
@@ -173,17 +171,6 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                     <MemberLocalTime timeZone={member.timezone} />
                   </span>
                 ) : null}
-                {(member.country_code || member.timezone) && member.birth_year && (
-                  <span className="text-outline-variant" aria-hidden>
-                    ·
-                  </span>
-                )}
-                {member.birth_year && (
-                  <span className="inline-flex items-center gap-1">
-                    <Cake className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-                    Born {member.birth_year}
-                  </span>
-                )}
               </p>
             )}
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -199,93 +186,37 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
           </div>
         </div>
 
-        {(member.current_status || member.bio) && (
+        {member.current_status && (
           <div className="mt-3 border-t border-outline-variant/40 pt-3 text-left">
-            {member.current_status && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  Status
-                </p>
-                <p className="mt-1 text-xs italic text-on-surface-variant">
-                  <LinkifiedText text={member.current_status} />
-                </p>
-              </div>
-            )}
-            {member.bio && (
-              <div className={cn(member.current_status && 'mt-3')}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  About
-                </p>
-                <p className={cn('mt-1 text-left text-sm leading-5 text-on-surface', !bioExpanded && 'line-clamp-3')}>
-                  <LinkifiedText text={member.bio} />
-                </p>
-                {member.bio.length > 180 && (
-                  <button
-                    type="button"
-                    onClick={() => setBioExpanded((v) => !v)}
-                    aria-expanded={bioExpanded}
-                    className="mt-1 min-h-[32px] text-xs font-semibold text-primary hover:underline"
-                  >
-                    {bioExpanded ? 'Show less' : 'Show more'}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Cluster context as a subtle footer, not a side panel: the member
-            page is already reached from that cluster, so this stays out of
-            the way of bio and introductions (2026 progressive disclosure). */}
-        {cluster && (
-          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-0.5 border-t border-outline-variant/40 pt-3 text-xs text-on-surface-variant">
-            <span className="font-semibold uppercase tracking-wide text-primary">Cluster</span>
-            <span className="font-semibold text-on-surface">{cluster.cluster.name}</span>
-            <span className="text-outline-variant" aria-hidden>
-              ·
-            </span>
-            <span className="inline-flex items-center gap-1 text-on-surface-variant/80">
-              <Users className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
-              {cluster.memberCount} / 8 members
-            </span>
-          </p>
-        )}
-
-        {!isSelf && (
-          <div className="mt-3 flex flex-col gap-2 border-t border-outline-variant/40 pt-3 md:flex-row md:items-center">
-            <Link
-              to={`/cluster/${clusterId}`}
-              className={cn(
-                'flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto',
-              )}
-            >
-              Message {member.display_name}
-            </Link>
-            <div className="grid grid-cols-2 gap-2 md:ml-auto md:flex md:items-center">
-              <MuteButton targetUserId={member.id} targetName={member.display_name} fullWidth />
-              <button
-                type="button"
-                onClick={() => setReportOpen(true)}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container md:w-28"
-              >
-                <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                Report
-              </button>
-            </div>
-          </div>
-        )}
-
-        {isSelf && (
-          <div className="mt-3 border-t border-outline-variant/40 pt-3">
-            <Link
-              to="/settings"
-              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
-            >
-              Edit profile
-            </Link>
+            <p className="text-sm italic text-on-surface-variant">
+              <LinkifiedText text={member.current_status} />
+            </p>
           </div>
         )}
       </div>
+
+      {member.bio && (
+        <section
+          aria-label="About"
+          className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft"
+        >
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-primary">About</h2>
+          <div className="mt-2 flex gap-2">
+            <span aria-hidden className="text-2xl leading-none text-on-surface-variant/60">
+              “
+            </span>
+            <p className="flex-1 text-sm leading-5 text-on-surface">
+              <LinkifiedText text={member.bio} />
+            </p>
+            <span
+              aria-hidden
+              className="self-end text-2xl leading-none text-on-surface-variant/60"
+            >
+              ”
+            </span>
+          </div>
+        </section>
+      )}
 
       <ReportModal
         open={reportOpen}
@@ -336,6 +267,86 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
               )
             })}
           </ul>
+        )}
+      </section>
+
+      <section
+        aria-label="Details"
+        className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft md:p-5"
+      >
+        {member.birth_year && (
+          <div className="flex items-center gap-3">
+            <Cake
+              className="h-5 w-5 shrink-0 text-on-surface-variant"
+              strokeWidth={1.5}
+              aria-hidden
+            />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Born</p>
+                <p className="mt-0.5 text-sm text-on-surface-variant">{member.birth_year}</p>
+              </div>
+          </div>
+        )}
+
+        {cluster && (
+          <div
+            className={cn(
+              'flex items-center gap-3',
+              member.birth_year ? 'mt-3 border-t border-outline-variant/40 pt-3' : '',
+            )}
+          >
+            <Users
+              className="h-5 w-5 shrink-0 text-on-surface-variant"
+              strokeWidth={1.5}
+              aria-hidden
+            />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  Cluster
+                </p>
+                <p className="mt-0.5 text-sm text-on-surface-variant">
+                  {cluster.cluster.name}
+                </p>
+              </div>
+          </div>
+        )}
+
+        {!isSelf && (
+          <div
+            className={cn(
+              'flex flex-col gap-2 md:flex-row md:items-center',
+              member.birth_year || cluster ? 'mt-3' : '',
+            )}
+          >
+            <Link
+              to={`/cluster/${clusterId}`}
+              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto"
+            >
+              Message {member.display_name}
+            </Link>
+            <div className="grid grid-cols-2 gap-2 md:ml-auto md:flex md:items-center">
+              <MuteButton targetUserId={member.id} targetName={member.display_name} fullWidth />
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container md:w-28"
+              >
+                <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                Report
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isSelf && (
+          <div className={cn(member.birth_year || cluster ? 'mt-3' : '')}>
+            <Link
+              to="/settings"
+              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            >
+              Edit profile
+            </Link>
+          </div>
         )}
       </section>
 

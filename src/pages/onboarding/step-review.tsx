@@ -36,7 +36,7 @@ export function StepReview({ draft }: Props) {
         />
         <Row label="Country" value={countryName(draft.countryCode)} />
         <Row label="Timezone" value={draft.timezone} />
-        {draft.bio.trim() && <Row label="Bio" value={draft.bio.trim()} />}
+        {draft.bio.trim() && <Row label="About" value={draft.bio.trim()} />}
         <Row
           label="Matching modes"
           value={draft.selectedModes.map((m) => modeInfo(m).label).join(', ')}

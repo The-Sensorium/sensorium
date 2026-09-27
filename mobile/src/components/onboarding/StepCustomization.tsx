@@ -151,7 +151,7 @@ export function StepCustomization({
 
       <View style={{ marginTop: 16 }}>
         <Field
-          label="Bio"
+          label="About"
           value={draft.bio}
           onChangeText={(bio) => patch({ bio })}
           maxLength={500}

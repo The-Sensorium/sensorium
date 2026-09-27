@@ -160,7 +160,7 @@ export function SettingsPage() {
             <PronounSelect value={pronouns} onChange={setPronouns} />
           </div>
           <label className="block">
-            <span className="text-sm font-semibold text-on-surface">Bio</span>
+            <span className="text-sm font-semibold text-on-surface">About</span>
             <textarea
               value={bio}
               maxLength={500}

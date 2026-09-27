@@ -110,7 +110,7 @@ export function StepCustomization({ userId, draft, patch }: Props) {
       </div>
 
       <label className="block">
-        <span className="text-sm font-semibold text-on-surface">Bio</span>
+        <span className="text-sm font-semibold text-on-surface">About</span>
         <textarea
           value={draft.bio}
           onChange={(e) => patch({ bio: e.target.value })}

@@ -458,3 +458,29 @@ export function formatMemberTime(now: Date, tz: string): string {
     timeZone: tz,
   }).format(now)
 }
+
+export function getMemberHour(now: Date, tz: string): number | null {
+  if (!isValidTimeZone(tz)) return null
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      hour12: false,
+      timeZone: tz,
+    }).formatToParts(now)
+    const raw = parts.find((p) => p.type === 'hour')?.value
+    if (raw == null) return null
+    let hour = parseInt(raw, 10)
+    if (Number.isNaN(hour)) return null
+    if (hour === 24) hour = 0
+    if (hour < 0 || hour > 23) return null
+    return hour
+  } catch {
+    return null
+  }
+}
+
+export function isMemberDaytime(now: Date, tz: string): boolean | null {
+  const hour = getMemberHour(now, tz)
+  if (hour == null) return null
+  return hour >= 6 && hour < 20
+}

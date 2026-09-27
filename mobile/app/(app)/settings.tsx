@@ -177,7 +177,7 @@ export default function SettingsScreen() {
             />
             <PronounField value={pronouns} onChange={setPronouns} />
             <Field
-              label="Bio"
+              label="About"
               value={bio}
               onChangeText={setBio}
               maxLength={500}
