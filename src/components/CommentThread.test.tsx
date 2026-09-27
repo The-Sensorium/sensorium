@@ -51,7 +51,7 @@ function commentFixture(overrides: Partial<PostComment> = {}): PostComment {
   }
 }
 
-function setup(comments: PostComment[], highlightCommentId?: string, onDeepLinkHandled?: (id: string) => void) {
+function setup(comments: PostComment[], deepLinkCommentId?: string, onDeepLinkHandled?: (id: string) => void) {
   vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
   vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
   vi.mocked(useCreateComment).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never)
@@ -70,7 +70,7 @@ function setup(comments: PostComment[], highlightCommentId?: string, onDeepLinkH
       comments={comments}
       memberById={members as never}
       selfAvatar={{ display_name: 'Titan', avatar_url: null }}
-      highlightCommentId={highlightCommentId}
+      deepLinkCommentId={deepLinkCommentId}
       onDeepLinkHandled={onDeepLinkHandled}
     />,
   )
@@ -118,13 +118,14 @@ describe('CommentThread reply placement', () => {
 })
 
 describe('CommentThread deep link', () => {
-  it('anchors and highlights the linked comment', () => {
+  it('anchors and highlights only the linked comment body', () => {
     const top = commentFixture({ id: 'c1', content: 'top comment' })
     const reply = commentFixture({ id: 'c2', content: 'nested reply', parent_comment_id: 'c1' })
     setup([top, reply], 'c2')
     const row = document.getElementById('comment-c2')
     expect(row).not.toBeNull()
-    expect(row!.className).toContain('outline-primary')
+    expect(row!.className).not.toContain('outline-primary')
+    expect(row!.querySelector('.outline-primary')).not.toBeNull()
   })
 
   it('shows a fallback when the linked comment is missing', () => {
@@ -142,7 +143,7 @@ describe('CommentThread deep link', () => {
     const top = commentFixture({ id: 'c1', content: 'top comment' })
     const reply = commentFixture({ id: 'c2', content: 'nested reply', parent_comment_id: 'c1' })
     const view = setup([top, reply], 'c1')
-    expect(document.getElementById('comment-c1')!.className).toContain('outline-primary')
+    expect(document.getElementById('comment-c1')!.querySelector('.outline-primary')).not.toBeNull()
     view.rerender(
       <CommentThread
         clusterId="cl1"
@@ -155,9 +156,10 @@ describe('CommentThread deep link', () => {
           ]) as never
         }
         selfAvatar={{ display_name: 'Titan', avatar_url: null }}
-        highlightCommentId="c2"
+        deepLinkCommentId="c2"
       />,
     )
-    expect(document.getElementById('comment-c2')!.className).toContain('outline-primary')
+    expect(document.getElementById('comment-c1')!.querySelector('.outline-primary')).toBeNull()
+    expect(document.getElementById('comment-c2')!.querySelector('.outline-primary')).not.toBeNull()
   })
 })

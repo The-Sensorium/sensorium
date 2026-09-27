@@ -27,6 +27,7 @@ export default function PostDetailScreen() {
   const t = useTheme()
   const { postId = '', comment: deepLinkCommentId } = useLocalSearchParams<{ postId: string; comment?: string }>()
   const scrollRef = useRef<KeyboardAwareScrollViewRef>(null)
+  const contentRef = useRef<View>(null)
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
@@ -43,7 +44,7 @@ export default function PostDetailScreen() {
   // Notification deep link (?comment=) passes straight through to the
   // thread, which reports back once handled so the param is cleared. Each
   // new value (including a re-tap of the same comment) fires again.
-  const highlightCommentId = typeof deepLinkCommentId === 'string' ? deepLinkCommentId : null
+  const scrollToCommentId = typeof deepLinkCommentId === 'string' ? deepLinkCommentId : null
   const clearCommentParam = useCallback(() => {
     router.setParams({ comment: undefined })
   }, [])
@@ -123,58 +124,64 @@ export default function PostDetailScreen() {
         />
       }
     >
-      <Pressable
-        onPress={() => {
-          if (router.canGoBack()) router.back()
-          else router.replace('/(app)/posts')
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        hitSlop={12}
-        style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 12, minHeight: 48, paddingRight: 16, marginBottom: 12 }}
-      >
-        <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
-        <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>Back</Text>
-      </Pressable>
+      {/* Plain wrapper (unstyled, collapsable off) so the thread can measure
+          a deep-linked comment against the scroll content origin. Children
+          keep their own margins, so layout is unchanged. */}
+      <View ref={contentRef} collapsable={false}>
+        <Pressable
+          onPress={() => {
+            if (router.canGoBack()) router.back()
+            else router.replace('/(app)/posts')
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={12}
+          style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 12, minHeight: 48, paddingRight: 16, marginBottom: 12 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
 
-      {isMutedAuthor(mutedSet, p.author_id) && !revealed ? (
-        <MutedPlaceholder
-          name={memberById.get(p.author_id)?.display_name ?? 'Member'}
-          onToggle={() => setRevealed(true)}
-          kind="post"
-        />
-      ) : (
-        <View style={{ gap: 8 }}>
-          {isMutedAuthor(mutedSet, p.author_id) ? (
-            <MutedHideBar
-              name={memberById.get(p.author_id)?.display_name ?? 'Member'}
-              onToggle={() => setRevealed(false)}
-              kind="post"
-            />
-          ) : null}
-          <PostCard
-            post={p}
-            clusterId={clusterId!}
-            author={memberById.get(p.author_id)}
-            likeCount={likeInfo.count}
-            likedByMe={likeInfo.mine}
-            commentCount={comments.data?.length ?? 0}
-            onLike={(id) => void toggle.mutateAsync(id)}
-            onDeleted={() => router.back()}
+        {isMutedAuthor(mutedSet, p.author_id) && !revealed ? (
+          <MutedPlaceholder
+            name={memberById.get(p.author_id)?.display_name ?? 'Member'}
+            onToggle={() => setRevealed(true)}
+            kind="post"
           />
-        </View>
-      )}
+        ) : (
+          <View style={{ gap: 8 }}>
+            {isMutedAuthor(mutedSet, p.author_id) ? (
+              <MutedHideBar
+                name={memberById.get(p.author_id)?.display_name ?? 'Member'}
+                onToggle={() => setRevealed(false)}
+                kind="post"
+              />
+            ) : null}
+            <PostCard
+              post={p}
+              clusterId={clusterId!}
+              author={memberById.get(p.author_id)}
+              likeCount={likeInfo.count}
+              likedByMe={likeInfo.mine}
+              commentCount={comments.data?.length ?? 0}
+              onLike={(id) => void toggle.mutateAsync(id)}
+              onDeleted={() => router.back()}
+            />
+          </View>
+        )}
 
-      <CommentThread
-        clusterId={clusterId!}
-        comments={comments.data ?? []}
-        memberById={memberById}
-        onReply={setReplyTo}
-        highlightCommentId={highlightCommentId}
-        scrollRef={scrollRef}
-        onDeepLinkHandled={clearCommentParam}
-      />
-      <View style={{ height: 16 }} />
+        <CommentThread
+          clusterId={clusterId!}
+          comments={comments.data ?? []}
+          memberById={memberById}
+          onReply={setReplyTo}
+          deepLinkCommentId={scrollToCommentId}
+          scrollRef={scrollRef}
+          contentRef={contentRef}
+          onDeepLinkHandled={clearCommentParam}
+        />
+        <View style={{ height: 16 }} />
+      </View>
     </Screen>
   )
 }

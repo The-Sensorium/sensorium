@@ -64,10 +64,6 @@ export function CommentItem({
       style={{
         flexDirection: 'row',
         gap: 12,
-        borderWidth: highlighted ? 2 : 0,
-        borderColor: highlighted ? t.primary : 'transparent',
-        borderRadius: 12,
-        padding: highlighted ? 8 : 0,
       }}
     >
       <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={32} />
@@ -81,15 +77,29 @@ export function CommentItem({
             · {dateTimeFormatter.format(new Date(comment.created_at))}
           </Text>
         </View>
-        {comment.content ? (
-          <Text style={{ marginTop: 2, fontSize: 14, lineHeight: 20, color: t.onSurface }}>
-            {repliedToName ? (
-              <Text style={{ fontWeight: '600', color: t.primary }}>@{repliedToName} </Text>
+        {comment.content || comment.image_url || comment.gif_url ? (
+          // Highlight hugs only the comment body, not the author row or actions.
+          // Border and padding are always rendered (transparent when idle) so
+          // the ring flash never shifts surrounding layout.
+          <View
+            style={{
+              borderWidth: 2,
+              borderColor: highlighted ? t.primary : 'transparent',
+              borderRadius: 12,
+              padding: 8,
+            }}
+          >
+            {comment.content ? (
+              <Text style={{ marginTop: 2, fontSize: 14, lineHeight: 20, color: t.onSurface }}>
+                {repliedToName ? (
+                  <Text style={{ fontWeight: '600', color: t.primary }}>@{repliedToName} </Text>
+                ) : null}
+                <LinkifiedText text={comment.content} fontSize={14} lineHeight={20} />
+              </Text>
             ) : null}
-            <LinkifiedText text={comment.content} fontSize={14} lineHeight={20} />
-          </Text>
+            <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
+          </View>
         ) : null}
-        <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
         <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           {onLike ? (
             <Pressable

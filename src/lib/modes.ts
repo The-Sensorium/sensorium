@@ -25,8 +25,8 @@ export interface ModeInfo {
 export const MATCHING_MODES: ModeInfo[] = [
   { value: 'exact_birthdate', label: 'Exact Birthdate', detail: 'Born on the same day, month, and year', icon: Cake },
   { value: 'birth_year_month', label: 'Birth Year + Month', detail: 'Born in the same month and year', icon: CalendarDays },
-  { value: 'generation', label: 'Generation', detail: 'Born within the same 5 years', icon: Users },
   { value: 'birth_year', label: 'Birth Year', detail: 'Born in the same year, any month', icon: CalendarCheck },
+  { value: 'generation', label: 'Generation', detail: 'Born within the same 5 years', icon: Users },
   { value: 'local', label: 'Local', detail: 'Within a radius you choose', icon: MapPin },
   { value: 'open_mix', label: 'Open Mix', detail: 'First 8 in, no birth-date or location filter', icon: Shuffle },
 ]

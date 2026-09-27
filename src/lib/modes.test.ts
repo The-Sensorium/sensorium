@@ -6,8 +6,8 @@ describe('modes', () => {
     expect(MATCHING_MODES.map((m) => m.value)).toEqual([
       'exact_birthdate',
       'birth_year_month',
-      'generation',
       'birth_year',
+      'generation',
       'local',
       'open_mix',
     ])

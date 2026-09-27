@@ -24,7 +24,7 @@ export function PostDetailPage() {
   // Notification deep link (?comment=) passes straight through to the
   // thread, which reports back once handled so the param is cleared. Each
   // new value (including a re-tap of the same comment) fires again.
-  const highlightCommentId = searchParams.get('comment')
+  const deepLinkCommentId = searchParams.get('comment')
   const clearCommentParam = useCallback(() => {
     setSearchParams(
       (prev) => {
@@ -125,7 +125,7 @@ export function PostDetailPage() {
         postId={p.id}
         comments={comments.data ?? []}
         memberById={memberById}
-        highlightCommentId={highlightCommentId}
+        deepLinkCommentId={deepLinkCommentId}
         onDeepLinkHandled={clearCommentParam}
         selfAvatar={{
           display_name: memberById.get(userId!)?.display_name ?? 'Member',

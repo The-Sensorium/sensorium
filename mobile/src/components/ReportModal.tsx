@@ -176,6 +176,7 @@ export function ReportModal({
             title="Submit report"
             loading={submitting}
             disabled={!reason}
+            tone="error"
             onPress={() => void handleSubmit()}
           />
         </View>

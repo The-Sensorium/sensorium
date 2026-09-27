@@ -6,6 +6,8 @@ export type PushData = {
   kind?: string
   clusterId?: string
   postId?: string
+  commentId?: string
+  messageId?: string
   signalId?: string
   newMemberId?: string
 }
@@ -20,7 +22,12 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
   if (!data) return null
   if (data.kind === 'invitation_received') return '/(app)/home'
   if (data.kind === 'queue_update') return '/(app)/clusters'
-  if (data.postId) return { pathname: '/posts/[postId]', params: { postId: data.postId } }
+  if (data.postId) {
+    return {
+      pathname: '/posts/[postId]',
+      params: { postId: data.postId, ...(data.commentId ? { comment: data.commentId } : {}) },
+    }
+  }
   if (data.clusterId && data.signalId) {
     return {
       pathname: '/cluster/[clusterId]/signals/[signalId]',
@@ -45,7 +52,12 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
   if (data.clusterId && data.kind === 'signal_new') {
     return { pathname: '/cluster/[clusterId]/signals', params: { clusterId: data.clusterId } }
   }
-  if (data.clusterId) return { pathname: '/cluster/[clusterId]/room', params: { clusterId: data.clusterId } }
+  if (data.clusterId) {
+    return {
+      pathname: '/cluster/[clusterId]/room',
+      params: { clusterId: data.clusterId, ...(data.messageId ? { message: data.messageId } : {}) },
+    }
+  }
   return '/(app)/home'
 }
 
