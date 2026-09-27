@@ -73,12 +73,12 @@ Cluster formation is modular across multiple matching modes, each forming its ow
 | Birth Year + Month | Matched with people born in the same month and year |
 | Generation | Matched with people born within the same 5 years |
 | Birth Year | Matched with people born in the same year, any month |
-| Local | Matched with people within a user selected radius of their location |
+| Local | Matched with people within a user selected radius of their location. Radius is one of 10, 50, or 100 km. The queue key uses the located country (from reverse geocode), not profile country, so travelers match locals where they are |
 | Open Mix | First 8 people in line, no birth-date or location filter (onboarding bridge) |
 
 A user can be active in multiple clusters at once, each formed via a different mode. For example, someone could be in a Birth Year cluster and a Local cluster at the same time.
 
-Local mode constraint: a user may only have one active Local cluster at a time (one radius), not multiple overlapping radii. They cannot run a tight 10km cluster and a broader 100km cluster simultaneously.
+Local mode constraint: a user may only have one active Local cluster at a time (one radius), not multiple overlapping radii. They cannot run a tight 10km cluster and a broader 100km cluster simultaneously. Changing radius while queued migrates the queue entry to the new radius key.
 
 Open question: total cluster cap. Whether there's a maximum number of simultaneous clusters a user can belong to across all modes, or whether it's unlimited, is not yet decided. This affects onboarding UI, server load, and how spread thin a user's attention gets across clusters.
 
@@ -342,13 +342,14 @@ Leaving a cluster triggers a cooldown before joining another cluster of the same
 
 | Mode | Cooldown |
 |---|---|
-| Open Mix | 7 days |
-| All other modes | 30 days |
+| Open Mix | 3 days |
+| Local | 3 days |
+| All date modes | 7 days |
 
 Example:
-Leaving a Birth Year + Month cluster triggers a 30 day cooldown for that specific mode only. It does not affect other modes the user is in.
+Leaving a Birth Year + Month cluster triggers a 7 day cooldown for that specific mode only. It does not affect other modes the user is in.
 
-Open question: beta research flagged fear of being "stuck" as a top concern. Worth weighing whether 30 days is the right length, or whether it should be shorter, especially since the multi mode model already gives users other active clusters to fall back on.
+Open question: beta research flagged fear of being "stuck" as a top concern. The cooldown is now 7 days for date modes and 3 days for local and open_mix, down from 30 and 7.
 
 ---
 ## Cluster Naming
@@ -454,7 +455,10 @@ Violations may result in suspension or removal.
 ### Muting and blocking
 
 Individual **mute** is shipped: a member can mute another member, which hides that
-person's content (chat messages, posts, comments, signals) for the muter only. It
+person's content (chat messages, posts, comments, signals) for the muter only and
+suppresses new notification traffic from them (no inbox rows, no push, no email
+for mentions, reactions, post comments/replies, post likes, and plain-chat pushes;
+rows created before the mute stay visible). It
 is a personal safeguard; it does not remove anyone, change the 8-member
 governance model, or affect votes, replacement, or moderation. Muted content is
 collapsed rather than vanished, with an inline "Show" reveal. Muted users appear

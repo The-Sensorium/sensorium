@@ -1337,6 +1337,7 @@ export type Database = {
           id: string
           latitude: number | null
           local_area: string | null
+          local_country_code: string | null
           local_radius_km: number | null
           longitude: number | null
           onboarding_completed_at: string | null
@@ -1360,6 +1361,7 @@ export type Database = {
           id: string
           latitude?: number | null
           local_area?: string | null
+          local_country_code?: string | null
           local_radius_km?: number | null
           longitude?: number | null
           onboarding_completed_at?: string | null
@@ -1383,6 +1385,7 @@ export type Database = {
           id?: string
           latitude?: number | null
           local_area?: string | null
+          local_country_code?: string | null
           local_radius_km?: number | null
           longitude?: number | null
           onboarding_completed_at?: string | null

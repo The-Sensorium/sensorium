@@ -87,6 +87,8 @@ describe('push outbox fan-out', () => {
     expect(rows[0]!.channel).toBe('mentions')
     expect(rows[0]!.status).toBe('queued')
     expect(rows[0]!.data).toMatchObject({ v: 1, kind: 'mention', clusterId })
+    const { data: msgs } = await admin.from('messages').select('id').eq('cluster_id', clusterId)
+    expect(rows[0]!.data).toMatchObject({ messageId: msgs![0]!.id })
   })
 
   it('fans plain chat out as message push without a notification row', async () => {
@@ -104,6 +106,8 @@ describe('push outbox fan-out', () => {
     expect(rows[0]!.title).toContain('Plain Sender')
     expect(rows[0]!.body).toBe('hello plain')
     expect(rows[0]!.data).toMatchObject({ v: 1, kind: 'message', clusterId })
+    const { data: msgs } = await admin.from('messages').select('id').eq('cluster_id', clusterId)
+    expect(rows[0]!.data).toMatchObject({ messageId: msgs![0]!.id })
 
     // Plain chat stays out of the notifications table (ephemeral inbox entry only).
     const { data: stored } = await admin
@@ -115,6 +119,34 @@ describe('push outbox fan-out', () => {
 
     // The author gets nothing.
     expect((await outbox(admin)).filter((r) => r.user_id === a.id)).toHaveLength(0)
+  })
+
+  it('fans a post comment out with post and comment deep-link ids', async () => {
+    const a = await member('push-pc-a')
+    const b = await member('push-pc-b')
+    await withToken(a.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    const { data: postId, error: postErr } = await a.client.rpc('create_post', {
+      p_cluster_id: clusterId,
+      p_content: 'post body',
+      p_image_url: null,
+      p_gif_url: null,
+    })
+    expect(postErr).toBeNull()
+    const { data: commentId, error: commentErr } = await b.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'nice post',
+      p_image_url: null,
+      p_gif_url: null,
+      p_parent_comment_id: null,
+    })
+    expect(commentErr).toBeNull()
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === a.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.type).toBe('post_comment')
+    expect(rows[0]!.data).toMatchObject({ v: 1, postId, commentId, clusterId })
   })
 
   it('does not double-push mentioned members with a message push', async () => {

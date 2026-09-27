@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native'
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react-native'
-import { useMyQueueKeys, useLeaveQueue } from '../../../src/features/matching'
+import { useMyQueueKeys, useMyQueueStatus, useLeaveQueue } from '../../../src/features/matching'
 import { modeInfo, isMatchingMode } from '../../../src/lib/modes'
 import { toErrorMessage } from '../../../src/lib/error'
 import { radii } from '../../../src/lib/theme-tokens'
@@ -17,6 +17,7 @@ export default function QueueScreen() {
   const t = useTheme()
   const { queueId = '' } = useLocalSearchParams<{ queueId: string }>()
   const queues = useMyQueueKeys()
+  const status = useMyQueueStatus()
   const leave = useLeaveQueue()
   const [leaveError, setLeaveError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
@@ -81,7 +82,9 @@ export default function QueueScreen() {
   const info = modeInfo(current.mode)
   const Icon = info.icon
   const leaving = leave.isPending
-  const displayKey = current.mode === 'open_mix' ? 'Open pool' : current.queue_key
+  const statusLabel = status.data?.find((r) => r.mode === current.mode)?.label
+  const displayKey =
+    current.mode === 'open_mix' ? 'Open pool' : current.mode === 'local' && statusLabel ? statusLabel : current.queue_key
 
   async function goBack() {
     if (router.canGoBack()) router.back()

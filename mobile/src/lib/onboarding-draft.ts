@@ -4,6 +4,30 @@ import { isValidTimeZone } from './timezones'
 export const LOCAL_RADII = [10, 50, 100] as const
 export type LocalRadius = (typeof LOCAL_RADII)[number]
 
+export const LOCAL_RADIUS_LABELS: Record<LocalRadius, string> = {
+  10: 'City',
+  50: 'Commute',
+  100: 'Region',
+}
+
+/** Mirrors fn_queue_key for local: UPPER(country) + area slug + radius. */
+export function localQueueKey(
+  countryCode: string | null,
+  areaSlug: string,
+  radiusKm: number,
+): string {
+  return `${(countryCode ?? '').toUpperCase()}:${areaSlug}:${radiusKm}`
+}
+
+/** Turns a stored area slug back into a readable name (mirrors fn_mode_label). */
+export function humanizeAreaSlug(slug: string): string {
+  return slug
+    .split('-')
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
 export interface OnboardingDraft {
   displayName: string
   pronouns: string
@@ -19,6 +43,7 @@ export interface OnboardingDraft {
   coordinates: { lat: number; lng: number } | null
   localArea: string | null
   localLabel: string | null
+  localCountryCode: string | null
 }
 
 export const EMPTY_DRAFT: OnboardingDraft = {
@@ -36,6 +61,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   coordinates: null,
   localArea: null,
   localLabel: null,
+  localCountryCode: null,
 }
 
 export function isValidDate(value: string): boolean {

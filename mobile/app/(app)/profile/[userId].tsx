@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Link, router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Briefcase, Cake, Flag, Heart, Sparkles, Target, Telescope, Users } from 'lucide-react-native'
@@ -22,6 +22,7 @@ import { LinkifiedText } from '../../../src/components/LinkifiedText'
 import { PostCard } from '../../../src/components/PostCard'
 import { MuteButton } from '../../../src/components/MuteButton'
 import { countryName } from '../../../src/lib/countries'
+import { isValidTimeZone } from '../../../src/lib/timezones'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
@@ -42,8 +43,6 @@ export default function ProfileScreen() {
   const { online } = usePresence(clusterId || null)
   const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
-  const [bioExpanded, setBioExpanded] = useState(false)
-  useEffect(() => setBioExpanded(false), [userId, clusterId])
   const userPosts = useUserPosts(userId || null)
   const profilePostIds = useMemo(
     () => [...new Set((userPosts.data ?? []).map((p) => p.id))],
@@ -85,6 +84,7 @@ export default function ProfileScreen() {
 
   const member = (members.data ?? []).find((m) => m.id === userId)
   const clusterInfo = (myClusters.data ?? []).find((c) => c.cluster.id === clusterId)
+  const hasLocalTime = !!member?.timezone && isValidTimeZone(member.timezone)
 
   if (!member) {
     return (
@@ -118,30 +118,34 @@ export default function ProfileScreen() {
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Avatar name={member.display_name} src={member.avatar_url} size={72} />
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'left' }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
-                {member.display_name}
-              </Text>
-              {member.pronouns ? <PronounBadge pronouns={member.pronouns} /> : null}
-            </View>
-            {member.country_code || member.timezone ? (
-              <View style={{ marginTop: 2, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-                {member.country_code ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <CountryFlag code={member.country_code} />
-                    <Text style={{ fontSize: 13, lineHeight: 18, color: t.onSurfaceVariant, textAlign: 'left' }}>
-                      {countryName(member.country_code)}
-                    </Text>
-                  </View>
-                ) : null}
-                {member.timezone ? (
-                  <View accessibilityLabel="Member local time">
-                    <MemberLocalTime timeZone={member.timezone} fontSize={13} />
-                  </View>
-                ) : null}
+            <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'left' }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+              {member.display_name}
+            </Text>
+            {member.pronouns ? (
+              <View style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                <PronounBadge pronouns={member.pronouns} />
               </View>
             ) : null}
-            <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+            <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+              {member.country_code ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <CountryFlag code={member.country_code} />
+                  <Text style={{ fontSize: 13, lineHeight: 18, color: t.onSurfaceVariant, textAlign: 'left' }}>
+                    {countryName(member.country_code)}
+                  </Text>
+                </View>
+              ) : null}
+              {member.country_code && hasLocalTime ? (
+                <View style={{ width: 1, height: 16, backgroundColor: t.outlineVariant, opacity: 0.6 }} />
+              ) : null}
+              {hasLocalTime ? (
+                <View accessibilityLabel="Member local time">
+                  <MemberLocalTime timeZone={member.timezone} fontSize={13} />
+                </View>
+              ) : null}
+              {member.country_code || hasLocalTime ? (
+                <View style={{ width: 1, height: 16, backgroundColor: t.outlineVariant, opacity: 0.6 }} />
+              ) : null}
               {onlineNow ? (
                 <AvailabilityBadge value={member.availability} />
               ) : (
@@ -156,95 +160,30 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {member.current_status || member.bio ? (
+        {member.current_status ? (
           <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.surfaceContainer, alignItems: 'flex-start' }}>
-            {member.current_status ? (
-              <View style={{ alignItems: 'flex-start', width: '100%' }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-                  Status
-                </Text>
-                <View
-                  accessibilityLabel={`Status: ${member.current_status}`}
-                  style={{ marginTop: 4, width: '100%' }}
-                >
-                  <LinkifiedText text={member.current_status} fontSize={12} lineHeight={16} color={t.onSurfaceVariant} italic />
-                </View>
-              </View>
-            ) : null}
-            {member.bio ? (
-              <View style={{ marginTop: member.current_status ? 10 : 0, alignItems: 'flex-start', width: '100%' }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-                  About
-                </Text>
-                <View style={{ marginTop: 4, width: '100%' }}>
-                  <LinkifiedText
-                    text={member.bio}
-                    fontSize={14}
-                    lineHeight={20}
-                    numberOfLines={bioExpanded ? undefined : 3}
-                  />
-                </View>
-                {member.bio.length > 180 ? (
-                  <Pressable
-                    onPress={() => setBioExpanded((v) => !v)}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: bioExpanded }}
-                    hitSlop={8}
-                    style={{ paddingVertical: 8, minHeight: 32, justifyContent: 'center' }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: t.primary }}>
-                      {bioExpanded ? 'Show less' : 'Show more'}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        {member.birth_year ? (
-          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.surfaceContainer, alignItems: 'flex-start', width: '100%' }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-              Born
-            </Text>
-            <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Cake size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
-                {member.birth_year}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {clusterInfo ? (
-          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.surfaceContainer, alignItems: 'flex-start', width: '100%' }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-              Cluster
-            </Text>
-            <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface, textAlign: 'left' }}>
-                {clusterInfo.cluster.name}
-              </Text>
-              <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
-                · {clusterInfo.memberCount} / 8 members
-              </Text>
+            <View
+              accessibilityLabel={`Status: ${member.current_status}`}
+              style={{ width: '100%' }}
+            >
+              <LinkifiedText text={member.current_status} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} italic />
             </View>
           </View>
         ) : null}
 
         {!isSelf ? (
-          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: t.surfaceContainer, gap: 8 }}>
+          <View>
             <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId } }} asChild>
               <Pressable
                 accessibilityRole="button"
-                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
+                style={{ marginTop: 16, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
               >
                 <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
                   Message {member.display_name}
                 </Text>
               </Pressable>
             </Link>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
               <View style={{ flex: 1 }}>
                 <MuteButton targetUserId={member.id} targetName={member.display_name} fill />
               </View>
@@ -261,24 +200,76 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
           </View>
-        ) : null}
-
-        {isSelf ? (
-          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: t.surfaceContainer }}>
-            <Link href="/(app)/settings" asChild>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Edit profile"
-                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
-                  Edit profile
-                </Text>
-              </Pressable>
-            </Link>
-          </View>
-        ) : null}
+        ) : (
+          <Link href="/(app)/settings" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit profile"
+              style={{ marginTop: 16, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
+            >
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+                Edit profile
+              </Text>
+            </Pressable>
+          </Link>
+        )}
       </Card>
+
+      {member.birth_year || clusterInfo ? (
+        <Card>
+          <View style={{ flexDirection: 'row' }}>
+            {member.birth_year ? (
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Cake size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                    Born
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
+                    {member.birth_year}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+            {clusterInfo ? (
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, borderLeftWidth: member.birth_year ? 1 : 0, borderLeftColor: t.outlineVariant, paddingLeft: member.birth_year ? 16 : 0 }}>
+                <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                    Cluster
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }} numberOfLines={2}>
+                    {clusterInfo.cluster.name}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </Card>
+      ) : null}
+
+      {member.bio ? (
+        <Card>
+          <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+            About
+          </Text>
+          <View style={{ marginTop: 4, flexDirection: 'row', gap: 12 }}>
+            <Text accessible={false} style={{ fontSize: 48, lineHeight: 52, color: t.onSurfaceVariant, opacity: 0.6 }}>
+              “
+            </Text>
+            <View style={{ flex: 1, paddingVertical: 16 }}>
+              <LinkifiedText
+                text={member.bio}
+                fontSize={14}
+                lineHeight={20}
+              />
+            </View>
+            <Text accessible={false} style={{ fontSize: 48, lineHeight: 52, color: t.onSurfaceVariant, opacity: 0.6, alignSelf: 'flex-end' }}>
+              ”
+            </Text>
+          </View>
+        </Card>
+      ) : null}
 
       <ReportModal
         open={reportOpen}
@@ -298,7 +289,7 @@ export default function ProfileScreen() {
             <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
               {isSelf
                 ? 'You have not completed your introductions yet.'
-                : `${member.display_name} hasn&apos;t completed their introductions.`}
+                : `${member.display_name} hasn't completed their introductions.`}
             </Text>
             {isSelf ? (
               <Link
@@ -326,10 +317,10 @@ export default function ProfileScreen() {
                 <View
                   style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <Icon size={15} color={t.primary} strokeWidth={1.5} />
+                  <Icon size={20} color={t.primary} strokeWidth={1.5} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, lineHeight: 18, fontWeight: '600', color: t.primary }}>{prompt}</Text>
+                  <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.primary }}>{prompt}</Text>
                   <View style={{ marginTop: 2 }}>
                     <LinkifiedText text={a.answer} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} />
                   </View>

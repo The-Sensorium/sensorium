@@ -6,8 +6,8 @@ describe('modes', () => {
     expect(MATCHING_MODES.map((m) => m.value)).toEqual([
       'exact_birthdate',
       'birth_year_month',
-      'generation',
       'birth_year',
+      'generation',
       'local',
       'open_mix',
     ])
@@ -44,10 +44,10 @@ describe('modes', () => {
     expect(info.detail).toContain('First 8')
   })
 
-  it('cooldownDaysForMode is 7 for open_mix and 30 otherwise', () => {
-    expect(cooldownDaysForMode('open_mix')).toBe(7)
-    expect(cooldownDaysForMode('birth_year')).toBe(30)
-    expect(cooldownDaysForMode('generation')).toBe(30)
-    expect(cooldownDaysForMode('local')).toBe(30)
+  it('cooldownDaysForMode is 7 for date modes and 3 for local and open_mix', () => {
+    expect(cooldownDaysForMode('open_mix')).toBe(3)
+    expect(cooldownDaysForMode('local')).toBe(3)
+    expect(cooldownDaysForMode('birth_year')).toBe(7)
+    expect(cooldownDaysForMode('generation')).toBe(7)
   })
 })

@@ -1,3 +1,4 @@
+import type { RefObject } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { EyeOff } from 'lucide-react-native'
 import { radii } from '../lib/theme-tokens'
@@ -9,17 +10,24 @@ export function MutedPlaceholder({
   name,
   onToggle,
   kind = 'message',
+  highlighted,
+  innerRef,
 }: {
   name: string
   onToggle: () => void
   kind?: MutedKind
+  highlighted?: boolean
+  innerRef?: RefObject<View | null>
 }) {
   const t = useTheme()
   return (
     <View
+      ref={innerRef}
       style={{
         backgroundColor: t.surfaceContainer,
         borderRadius: radii.md,
+        borderWidth: highlighted ? 2 : 0,
+        borderColor: highlighted ? t.primary : 'transparent',
         paddingHorizontal: 16,
         paddingVertical: 12,
         marginVertical: 4,

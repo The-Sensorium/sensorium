@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { defaultTimeZone, formatMemberTime, isValidTimeZone, timeZoneList } from './timezones'
+import {
+  defaultTimeZone,
+  formatMemberTime,
+  getMemberHour,
+  isMemberDaytime,
+  isValidTimeZone,
+  timeZoneList,
+} from './timezones'
 
 describe('timezones', () => {
   it('accepts real IANA zones and rejects junk', () => {
@@ -28,5 +35,22 @@ describe('timezones', () => {
   it('detects a usable default zone or null', () => {
     const tz = defaultTimeZone()
     expect(tz === null || isValidTimeZone(tz)).toBe(true)
+  })
+
+  it('reads the member hour in the member zone', () => {
+    const now = new Date('2026-01-15T12:06:00Z')
+    expect(getMemberHour(now, 'America/New_York')).toBe(7)
+    expect(getMemberHour(now, 'Asia/Kolkata')).toBe(17)
+    expect(getMemberHour(now, 'Not/AZone')).toBe(null)
+  })
+
+  it('marks 6am to 8pm as daytime', () => {
+    expect(isMemberDaytime(new Date('2026-06-01T10:00:00Z'), 'UTC')).toBe(true)
+    expect(isMemberDaytime(new Date('2026-06-01T04:00:00Z'), 'UTC')).toBe(false)
+    expect(isMemberDaytime(new Date('2026-06-01T05:59:00Z'), 'UTC')).toBe(false)
+    expect(isMemberDaytime(new Date('2026-06-01T06:00:00Z'), 'UTC')).toBe(true)
+    expect(isMemberDaytime(new Date('2026-06-01T19:59:00Z'), 'UTC')).toBe(true)
+    expect(isMemberDaytime(new Date('2026-06-01T20:00:00Z'), 'UTC')).toBe(false)
+    expect(isMemberDaytime(new Date('2026-06-01T12:00:00Z'), 'Not/AZone')).toBe(null)
   })
 })
