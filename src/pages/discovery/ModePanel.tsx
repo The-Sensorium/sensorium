@@ -326,13 +326,12 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     if (auth.state !== 'signedIn' || next == null) return
     setDialogError(null)
     setJoining(true)
+    const prevRadius = profile.data?.local_radius_km ?? null
     try {
       const supabase = requireSupabase()
-      const wasQueued = status.data?.some((r) => r.mode === 'local' && r.joined) ?? false
-      if (wasQueued) {
-        const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
-        if (leaveErr) throw leaveErr
-      }
+      // join_queue validates first and re-keys the local queue itself, so no
+      // explicit leave: a failed join keeps the previous queue spot instead
+      // of stranding the user queue-less (e.g. under a mode cooldown).
       const { error: upErr } = await supabase
         .from('profiles')
         .update({ local_radius_km: next })
@@ -359,7 +358,14 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
       setPendingRadius(null)
       onDone?.()
     } catch (err) {
-      setDialogError(toErrorMessage(err, 'Couldn’t join this queue.'))
+      // Best-effort restore: the radius flip must not stick when the join failed.
+      try {
+        const supabase = requireSupabase()
+        await supabase.from('profiles').update({ local_radius_km: prevRadius }).eq('id', auth.userId)
+      } catch {
+        // Ignore restore failures; the next locate or join overwrites it.
+      }
+      setDialogError(joinQueueErrorMessage(err, 'local'))
     } finally {
       setJoining(false)
     }
