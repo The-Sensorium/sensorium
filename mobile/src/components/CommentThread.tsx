@@ -1,5 +1,6 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { ActivityIndicator, Text, View, findNodeHandle } from 'react-native'
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller'
 import { useAuth } from '../auth-context'
 import { CommentItem } from './CommentItem'
 import {
@@ -17,11 +18,17 @@ export function CommentThread({
   comments,
   memberById,
   onReply,
+  highlightCommentId,
+  scrollRef,
+  onDeepLinkHandled,
 }: {
   clusterId: string
   comments: PostComment[]
   memberById: Map<string, { id: string; display_name: string; avatar_url: string | null }>
   onReply(target: ReplyTarget): void
+  highlightCommentId?: string | null
+  scrollRef?: RefObject<KeyboardAwareScrollViewRef | null>
+  onDeepLinkHandled?: (commentId: string) => void
 }) {
   const t = useTheme()
   const auth = useAuth()
@@ -33,6 +40,69 @@ export function CommentThread({
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
+  const [highlightId, setHighlightId] = useState<string | null>(highlightCommentId ?? null)
+  const [deepLinkMissing, setDeepLinkMissing] = useState(false)
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const measureRaf = useRef<number | null>(null)
+  const targetRef = useRef<View>(null)
+
+  useEffect(() => {
+    if (highlightCommentId) setHighlightId(highlightCommentId)
+  }, [highlightCommentId])
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current)
+      if (measureRaf.current !== null) cancelAnimationFrame(measureRaf.current)
+    }
+  }, [])
+
+  // Notification deep link: scroll the target comment into view once loaded,
+  // then flash the shared highlight ring. Firing is driven by the
+  // highlightCommentId value itself; the parent clears it (via
+  // onDeepLinkHandled) after handling, so each new value fires exactly once
+  // even when this instance is reused across taps.
+  useEffect(() => {
+    if (!highlightCommentId || comments.length === 0) return
+    const target = comments.find((c) => c.id === highlightCommentId)
+    if (!target || target.deleted_at) {
+      setDeepLinkMissing(true)
+      setHighlightId(null)
+      onDeepLinkHandled?.(highlightCommentId)
+      return
+    }
+    // A muted-hidden target still renders its placeholder (now measurable
+    // via innerRef), so scroll and highlight it like any other target.
+    setDeepLinkMissing(false)
+    setHighlightId(highlightCommentId)
+    // Measure on the next frame so the native view exists, and only when
+    // the ref is usable. Measurement failure must never break the highlight
+    // or spam warnings, so skip silently in that case.
+    if (measureRaf.current !== null) cancelAnimationFrame(measureRaf.current)
+    measureRaf.current = requestAnimationFrame(() => {
+      try {
+        const scroller = scrollRef?.current ?? null
+        const target = targetRef.current
+        const node = scroller ? findNodeHandle(scroller) : null
+        if (!node || !target || typeof target.measureLayout !== 'function') return
+        target.measureLayout(
+          node,
+          (x, y) => {
+            scroller?.scrollTo({ y: Math.max(0, y - 120), animated: true })
+          },
+          () => {},
+        )
+      } catch {
+        // Ignore measurement failures; the highlight still shows.
+      }
+    })
+    if (highlightTimer.current) clearTimeout(highlightTimer.current)
+    highlightTimer.current = setTimeout(() => {
+      highlightTimer.current = null
+      setHighlightId(null)
+    }, 1600)
+    onDeepLinkHandled?.(highlightCommentId)
+  }, [highlightCommentId, comments, scrollRef, onDeepLinkHandled, mutedSet, revealed])
   const commentIds = comments.map((c) => c.id)
   const commentLikes = useClusterCommentLikes(clusterId)
   const toggleCommentLike = useToggleCommentLike(clusterId)
@@ -100,6 +170,11 @@ export function CommentThread({
       <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
         Comments ({comments.length})
       </Text>
+      {deepLinkMissing ? (
+        <Text style={{ marginTop: 8, fontSize: 12, color: t.onSurfaceVariant }}>
+          That comment is no longer available. Showing the post instead.
+        </Text>
+      ) : null}
 
       <View style={{ marginTop: 16, gap: 16 }}>
         {myMutes.isLoading ? (
@@ -117,6 +192,8 @@ export function CommentThread({
                       name={memberById.get(tc.author_id)?.display_name ?? 'Member'}
                       onToggle={() => toggleReveal(tc.id)}
                       kind="comment"
+                      highlighted={highlightId === tc.id}
+                      innerRef={highlightCommentId === tc.id ? targetRef : undefined}
                     />
                   ) : (
                     <View style={{ gap: 8 }}>
@@ -136,6 +213,8 @@ export function CommentThread({
                         likeCount={likesByComment.get(tc.id)?.count ?? 0}
                         likedByMe={likesByComment.get(tc.id)?.mine ?? false}
                         replyCount={thread.length}
+                        highlighted={highlightId === tc.id}
+                        innerRef={highlightCommentId === tc.id ? targetRef : undefined}
                       />
                     </View>
                   )}
@@ -150,6 +229,8 @@ export function CommentThread({
                                 name={memberById.get(r.author_id)?.display_name ?? 'Member'}
                                 onToggle={() => toggleReveal(r.id)}
                                 kind="comment"
+                                highlighted={highlightId === r.id}
+                                innerRef={highlightCommentId === r.id ? targetRef : undefined}
                               />
                             </Fragment>
                           )
@@ -172,6 +253,8 @@ export function CommentThread({
                               onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                               likeCount={likesByComment.get(r.id)?.count ?? 0}
                               likedByMe={likesByComment.get(r.id)?.mine ?? false}
+                              highlighted={highlightId === r.id}
+                              innerRef={highlightCommentId === r.id ? targetRef : undefined}
                             />
                           </View>
                         )
@@ -190,6 +273,8 @@ export function CommentThread({
                       name={memberById.get(c.author_id)?.display_name ?? 'Member'}
                       onToggle={() => toggleReveal(c.id)}
                       kind="comment"
+                      highlighted={highlightId === c.id}
+                      innerRef={highlightCommentId === c.id ? targetRef : undefined}
                     />
                   </View>
                 )
@@ -212,6 +297,8 @@ export function CommentThread({
                     onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                     likeCount={likesByComment.get(c.id)?.count ?? 0}
                     likedByMe={likesByComment.get(c.id)?.mine ?? false}
+                    highlighted={highlightId === c.id}
+                    innerRef={highlightCommentId === c.id ? targetRef : undefined}
                   />
                 </View>
               )

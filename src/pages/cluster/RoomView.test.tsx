@@ -257,6 +257,19 @@ function renderRoom() {
   return render(makeUi())
 }
 
+function renderRoomAt(entry: string) {
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[entry]}>
+        <Routes>
+          <Route path="/cluster/:clusterId" element={<RoomView />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
 function timeline() {
   return screen.getByRole('list', { name: 'Room timeline' })
 }
@@ -490,6 +503,40 @@ describe('RoomView timeline', () => {
     const parentRow = document.getElementById('message-parent')
     expect(parentRow).not.toBeNull()
     expect(parentRow!.querySelector('.ring-primary')).not.toBeNull()
+  })
+
+  it('jumps to the linked message on ?message= deep link', async () => {
+    hooks.messages.data = [
+      msg({ id: 'm1', content: 'first' }),
+      msg({ id: 'm2', content: 'second' }),
+    ]
+    vi.mocked(Element.prototype.scrollIntoView).mockClear()
+    renderRoomAt('/cluster/c1?message=m1')
+    await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled())
+    const row = document.getElementById('message-m1')
+    expect(row).not.toBeNull()
+    expect(row!.querySelector('.ring-primary')).not.toBeNull()
+  })
+
+  it('jumps to the muted placeholder when the linked message is muted-hidden', async () => {
+    hooks.messages.data = [msg({ id: 'm1', author_id: 'u2', content: 'first' })]
+    const prevMutes = hooks.myMutes
+    hooks.myMutes = {
+      data: [{ muted_user_id: 'u2' }],
+      isLoading: false,
+      isError: false,
+    }
+    try {
+      renderRoomAt('/cluster/c1?message=m1')
+      const placeholder = await screen.findByText(/Muted content from/)
+      expect(placeholder).toBeInTheDocument()
+      const anchor = document.getElementById('message-m1')
+      expect(anchor).not.toBeNull()
+      expect(anchor!.className).toContain('border-primary')
+      expect(screen.queryByText('That message is no longer available.')).not.toBeInTheDocument()
+    } finally {
+      hooks.myMutes = prevMutes
+    }
   })
 
   it('leaves the reply quote inert when the parent is deleted', async () => {

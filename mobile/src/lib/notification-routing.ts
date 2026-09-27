@@ -51,7 +51,9 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
 
 export function appPathToHref(to: string): Href | null {
   if (to.startsWith('/posts/')) {
-    return { pathname: '/posts/[postId]', params: { postId: to.slice('/posts/'.length) } }
+    const [postPart, query] = to.slice('/posts/'.length).split('?')
+    const comment = new URLSearchParams(query ?? '').get('comment') ?? undefined
+    return { pathname: '/posts/[postId]', params: { postId: postPart, ...(comment ? { comment } : {}) } }
   }
   if (to.startsWith('/profile/')) {
     const [userId, query] = to.slice('/profile/'.length).split('?')
@@ -60,7 +62,9 @@ export function appPathToHref(to: string): Href | null {
   }
   if (to.startsWith('/cluster/')) {
     const rest = to.slice('/cluster/'.length)
-    const [clusterId, ...tail] = rest.split('/')
+    const [clusterPart, query] = rest.split('?')
+    const message = new URLSearchParams(query ?? '').get('message') ?? undefined
+    const [clusterId, ...tail] = clusterPart.split('/')
     if (tail[0] === 'signals' && tail[1]) {
       return { pathname: '/cluster/[clusterId]/signals/[signalId]', params: { clusterId, signalId: tail[1] } }
     }
@@ -76,7 +80,7 @@ export function appPathToHref(to: string): Href | null {
     if (tail[0] === 'members') {
       return { pathname: '/cluster/[clusterId]/members', params: { clusterId } }
     }
-    return { pathname: '/cluster/[clusterId]/room', params: { clusterId } }
+    return { pathname: '/cluster/[clusterId]/room', params: { clusterId, ...(message ? { message } : {}) } }
   }
   if (to === '/home') return '/(app)/home'
   if (to === '/clusters') return '/(app)/clusters'

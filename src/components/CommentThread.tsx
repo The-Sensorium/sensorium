@@ -27,12 +27,16 @@ export function CommentThread({
   comments,
   memberById,
   selfAvatar,
+  highlightCommentId,
+  onDeepLinkHandled,
 }: {
   clusterId: string
   postId: string
   comments: PostComment[]
   memberById: Map<string, { id: string; display_name: string; avatar_url: string | null }>
   selfAvatar: { display_name: string; avatar_url: string | null }
+  highlightCommentId?: string | null
+  onDeepLinkHandled?: (commentId: string) => void
 }) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -113,6 +117,55 @@ export function CommentThread({
   const commentIds = comments.map((c) => c.id)
   const commentLikes = useClusterCommentLikes(clusterId)
   const toggleCommentLike = useToggleCommentLike(clusterId)
+  const [highlightId, setHighlightId] = useState<string | null>(highlightCommentId ?? null)
+  const [deepLinkMissing, setDeepLinkMissing] = useState(false)
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (highlightCommentId) setHighlightId(highlightCommentId)
+  }, [highlightCommentId])
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimer.current) clearTimeout(highlightTimer.current)
+    }
+  }, [])
+
+  // Notification deep link: scroll the target comment into view once the
+  // list loads, then flash the shared highlight ring. Firing is driven by
+  // the highlightCommentId value itself; the parent clears it (via
+  // onDeepLinkHandled) after handling, so each new value fires exactly once
+  // even when this instance is reused across taps.
+  useEffect(() => {
+    if (!highlightCommentId || comments.length === 0) return
+    const target = comments.find((c) => c.id === highlightCommentId)
+    if (!target || target.deleted_at) {
+      setDeepLinkMissing(true)
+      setHighlightId(null)
+      onDeepLinkHandled?.(highlightCommentId)
+      return
+    }
+    const el = document.getElementById(`comment-${highlightCommentId}`)
+    if (!el) {
+      // Muted-hidden or otherwise not rendered: do not reveal, just note it.
+      setDeepLinkMissing(true)
+      setHighlightId(null)
+      onDeepLinkHandled?.(highlightCommentId)
+      return
+    }
+    const reduceMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
+    setHighlightId(highlightCommentId)
+    setDeepLinkMissing(false)
+    if (highlightTimer.current) clearTimeout(highlightTimer.current)
+    highlightTimer.current = setTimeout(() => {
+      highlightTimer.current = null
+      setHighlightId(null)
+    }, 1600)
+    onDeepLinkHandled?.(highlightCommentId)
+  }, [highlightCommentId, comments, onDeepLinkHandled])
 
   // Comment likes are cached by cluster, not by comment set. When a new comment
   // arrives the ids grow but the query key doesn't, so refetch to pick up the
@@ -354,6 +407,11 @@ export function CommentThread({
       <h3 className="font-display text-sm font-semibold text-on-surface">
         Comments ({comments.length})
       </h3>
+      {deepLinkMissing && (
+        <p role="status" className="text-xs text-on-surface-variant">
+          That comment is no longer available. Showing the post instead.
+        </p>
+      )}
 
       {showTopComposer && renderComposer('top')}
 
@@ -371,6 +429,8 @@ export function CommentThread({
               <li key={tc.id} className="space-y-3">
                 {tcHidden ? (
                   <MutedPlaceholder
+                    id={`comment-${tc.id}`}
+                    highlighted={highlightId === tc.id}
                     name={memberById.get(tc.author_id)?.display_name ?? 'Member'}
                     onToggle={() => toggleReveal(tc.id)}
                     kind="comment"
@@ -385,6 +445,7 @@ export function CommentThread({
                     likeCount={likesByComment.get(tc.id)?.count ?? 0}
                     likedByMe={likesByComment.get(tc.id)?.mine ?? false}
                     replyCount={thread.length}
+                    highlighted={highlightId === tc.id}
                     mutedBanner={
                       tcMuted ? (
                         <MutedHideBar
@@ -409,6 +470,8 @@ export function CommentThread({
                           <Fragment key={r.id}>
                             <li>
                               <MutedPlaceholder
+                                id={`comment-${r.id}`}
+                                highlighted={highlightId === r.id}
                                 name={memberById.get(r.author_id)?.display_name ?? 'Member'}
                                 onToggle={() => toggleReveal(r.id)}
                                 kind="comment"
@@ -431,6 +494,7 @@ export function CommentThread({
                             onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                             likeCount={likesByComment.get(r.id)?.count ?? 0}
                             likedByMe={likesByComment.get(r.id)?.mine ?? false}
+                            highlighted={highlightId === r.id}
                             mutedBanner={
                               rMuted ? (
                                 <MutedHideBar
@@ -457,6 +521,8 @@ export function CommentThread({
               return (
                 <li key={c.id}>
                   <MutedPlaceholder
+                    id={`comment-${c.id}`}
+                    highlighted={highlightId === c.id}
                     name={memberById.get(c.author_id)?.display_name ?? 'Member'}
                     onToggle={() => toggleReveal(c.id)}
                     kind="comment"
@@ -476,6 +542,7 @@ export function CommentThread({
                   onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                   likeCount={likesByComment.get(c.id)?.count ?? 0}
                   likedByMe={likesByComment.get(c.id)?.mine ?? false}
+                  highlighted={highlightId === c.id}
                   mutedBanner={
                     cMuted ? (
                       <MutedHideBar

@@ -140,7 +140,13 @@ a time.
   your post") and, on a reply, the parent-comment author ("replied to your
   comment"); `toggle_post_like` notifies the post author. They are gated at
   read-time by `notification_allowed` via the `post_comment` / `post_like`
-  preference columns (0080).
+  preference columns (0080). Since 0162 the `post_comment` payload carries
+  `post_id` plus `comment_id` (the new comment row id); legacy rows carry
+  `post_id` only and clients fall back to the post top. Chat `mention` and
+  `reaction` payloads carry `message_id`. The center deep-links chat rows to
+  `/cluster/:id?message=<id>` and post comment rows to
+  `/posts/:postId?comment=<id>`; the room and post detail screens scroll the
+  target into view and flash the standard highlight.
 
 ### Cluster calls
 
@@ -224,6 +230,7 @@ Notifications tab.
 - **Per-cluster unread badge (0156)**: `get_unread_chat_counts()` returns one row per cluster with unread chat (watermark vs `messages`, prefs gated, `messages_unread_idx`); `get_my_notifications()` drops the synthesized `message` branch (stored rows only, mentions kept); `get_unread_notification_count()` counts stored unread only, so plain chat never badges the Notifications tab and lives on the cards. Cards (`MemberClusterCard` web + mobile) render the count via one `useUnreadChatCounts` call per list on the existing unread invalidation path.
 - **Call-token mint limit (0158)**: `get_call_token_context` allows 30 mints per user per 10 minutes (up from 10), so back-out-and-rejoin bursts and flaky-network retries no longer lock callers out with a generic join failure; clients map the 429 to a wait-and-retry message.
 - **Vote early close (0159)**: governance votes close inside `vote_on()` once decided (`yes >= quorum` passes, `no >= quorum` fails, full turnout applies the normal pass/fail rule) via a shared `close_single_vote()` helper also used by `close_expired_votes()`; undecided votes still wait for `closes_at`. Mobile votes screens read totals from `get_vote_counts()` instead of counting RLS-visible `vote_responses` rows, and Active cards show neutral `X of Y votes cast` copy.
+- **Notification deep links (0162)**: `create_post_comment` adds `comment_id` to both `post_comment` payloads (`post_id` plus the new row id). No RLS, prefs, badge, push, or email change; pre-migration rows fall back to post top.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 

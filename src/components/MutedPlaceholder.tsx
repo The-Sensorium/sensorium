@@ -4,13 +4,24 @@ export function MutedPlaceholder({
   name,
   onToggle,
   kind = 'message',
+  id,
+  highlighted,
 }: {
   name: string
   onToggle: () => void
   kind?: MutedKind
+  id?: string
+  highlighted?: boolean
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-outline-variant bg-surface-container/40 px-4 py-2.5 text-sm text-on-surface-variant">
+    <div
+      id={id}
+      className={
+        highlighted
+          ? 'rounded-xl border-2 border-primary bg-surface-container/40 px-4 py-2.5 text-sm text-on-surface-variant'
+          : 'rounded-xl border border-dashed border-outline-variant bg-surface-container/40 px-4 py-2.5 text-sm text-on-surface-variant'
+      }
+    >
       <span>
         {kind === 'post'
           ? `Muted post from ${name}.`

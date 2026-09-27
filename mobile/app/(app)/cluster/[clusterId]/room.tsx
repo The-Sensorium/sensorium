@@ -94,7 +94,7 @@ export default function RoomScreen() {
     ),
     [],
   )
-  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  const { clusterId = '', message: deepLinkMessageId } = useLocalSearchParams<{ clusterId: string; message?: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const authed = auth.state === 'signedIn'
@@ -440,6 +440,12 @@ export default function RoomScreen() {
     [timeline],
   )
 
+  // Ref mirror so the notification deep-link effect can page back without
+  // listing the per-render function in its deps (the consume-once ref guards
+  // re-runs).
+  const pageBackRef = useRef(pageBackToParent)
+  pageBackRef.current = pageBackToParent
+
   // A jump whose parent paged in afterwards: scroll once it renders.
   useEffect(() => {
     if (!pendingJumpId) return
@@ -449,6 +455,37 @@ export default function RoomScreen() {
     jumpInFlight.current = false
     scrollToRowIndex(index, pendingJumpId)
   }, [rows, pendingJumpId])
+
+  // Notification deep link (?message=): same scroll plus highlight as a reply
+  // jump, for any message. The param is consumed (cleared) on every run, so
+  // each new value fires exactly once even when the screen is reused across
+  // taps, and re-tapping the same notification works too.
+  useEffect(() => {
+    if (typeof deepLinkMessageId !== 'string' || !deepLinkMessageId || !clusterId || messages.isLoading) return
+    router.setParams({ message: undefined })
+    if (jumpInFlight.current) return
+    // Known but deleted: no point paging back for it. A muted-hidden target
+    // renders its placeholder in the row, so the normal scroll path below
+    // lands on it.
+    const known = replyById.get(deepLinkMessageId)
+    if (known && known.deleted_at) {
+      setError('That message is no longer available.')
+      return
+    }
+    const index = rows.findIndex((r) => r.key === deepLinkMessageId)
+    if (index !== -1) {
+      scrollToRowIndex(index, deepLinkMessageId)
+      return
+    }
+    if (loadEarlier.isPending) {
+      setError('That message is still loading. Try again in a moment.')
+      return
+    }
+    jumpInFlight.current = true
+    setError(null)
+    setPendingJumpId(deepLinkMessageId)
+    void pageBackRef.current(deepLinkMessageId, ['cluster-messages', clusterId])
+  }, [deepLinkMessageId, clusterId, messages.isLoading, rows, loadEarlier.isPending, replyById])
 
   useEffect(() => {
     const len = rows.length
@@ -1050,6 +1087,7 @@ export default function RoomScreen() {
                     <MutedPlaceholder
                       name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
                       onToggle={() => toggleReveal(m.id)}
+                      highlighted={jumpHighlightId === m.id}
                     />
                   )
                 }

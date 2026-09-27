@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
+import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller'
 import { useAuth } from '../../../src/auth-context'
 import { useClusterMembers } from '../../../src/features/matching'
 import {
@@ -24,7 +25,8 @@ import { Card, LoadingView, Screen } from '../../../src/components/ui'
 
 export default function PostDetailScreen() {
   const t = useTheme()
-  const { postId = '' } = useLocalSearchParams<{ postId: string }>()
+  const { postId = '', comment: deepLinkCommentId } = useLocalSearchParams<{ postId: string; comment?: string }>()
+  const scrollRef = useRef<KeyboardAwareScrollViewRef>(null)
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
@@ -38,6 +40,13 @@ export default function PostDetailScreen() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState(false)
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
+  // Notification deep link (?comment=) passes straight through to the
+  // thread, which reports back once handled so the param is cleared. Each
+  // new value (including a re-tap of the same comment) fires again.
+  const highlightCommentId = typeof deepLinkCommentId === 'string' ? deepLinkCommentId : null
+  const clearCommentParam = useCallback(() => {
+    router.setParams({ comment: undefined })
+  }, [])
   // Stable identity: the composer's missing-target effect depends on these,
   // so inline arrows would re-run it on every render (each keystroke).
   const clearReply = useCallback(() => setReplyTo(null), [])
@@ -90,6 +99,7 @@ export default function PostDetailScreen() {
   return (
     <Screen
       avoiding
+      scrollRef={scrollRef}
       stickyFooterHeight={composerHeight}
       onStickyFooterLayout={(h) => {
         //Like AnimatedSplash's shared-value writes, this trips
@@ -160,6 +170,9 @@ export default function PostDetailScreen() {
         comments={comments.data ?? []}
         memberById={memberById}
         onReply={setReplyTo}
+        highlightCommentId={highlightCommentId}
+        scrollRef={scrollRef}
+        onDeepLinkHandled={clearCommentParam}
       />
       <View style={{ height: 16 }} />
     </Screen>
