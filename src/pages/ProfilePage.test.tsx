@@ -106,12 +106,12 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Deep in a book')).toBeInTheDocument()
   })
 
-  it('orders sections as About, Introductions, Details', () => {
+  it('orders sections as Details, About, Introductions', () => {
     const { container } = renderPage()
     const labels = [...container.querySelectorAll('section[aria-label]')].map(
       (el) => el.getAttribute('aria-label'),
     )
-    expect(labels).toEqual(['About', 'Introductions', 'Details'])
+    expect(labels).toEqual(['Details', 'About', 'Introductions'])
   })
 
   it('renders the full bio with quote marks and no expand toggle', () => {
@@ -131,7 +131,7 @@ describe('ProfilePage', () => {
     expect(screen.queryByText('About')).not.toBeInTheDocument()
   })
 
-  it('shows birth year and cluster name in grey in the bottom Details card', () => {
+  it('shows birth year and cluster name side by side in the Details card', () => {
     renderPage()
     const details = screen.getByLabelText('Details')
     expect(within(details).getByText('1990')).toBeInTheDocument()
@@ -140,7 +140,25 @@ describe('ProfilePage', () => {
     expect(within(details).queryByText(/members/)).not.toBeInTheDocument()
   })
 
-  it('offers Message, Mute, and Report for another member', () => {
+  it('hides the time and its dividers when the timezone is invalid', () => {
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, timezone: 'Not/AZone' }]))
+    const { container } = renderPage()
+    expect(screen.getByText('United States')).toBeInTheDocument()
+    expect(screen.queryByText(/\d{1,2}:\d{2} (AM|PM)/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Local time:')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('span.w-px')).toHaveLength(1)
+  })
+
+  it('renders the Details card full width when only the cluster is present', () => {
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, birth_year: null }]))
+    renderPage()
+    const details = screen.getByLabelText('Details')
+    expect(within(details).queryByText('Born')).not.toBeInTheDocument()
+    expect(within(details).getByText('Aurora')).toBeInTheDocument()
+    expect(within(details).getByText('Aurora')).toHaveAttribute('title', 'Aurora')
+  })
+
+  it('offers Message, Mute, and Report below the header for another member', () => {
     renderPage()
     expect(screen.getByRole('link', { name: 'Message Amelia Chen' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /report/i })).toBeInTheDocument()

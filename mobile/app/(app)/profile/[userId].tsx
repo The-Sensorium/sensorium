@@ -22,6 +22,7 @@ import { LinkifiedText } from '../../../src/components/LinkifiedText'
 import { PostCard } from '../../../src/components/PostCard'
 import { MuteButton } from '../../../src/components/MuteButton'
 import { countryName } from '../../../src/lib/countries'
+import { isValidTimeZone } from '../../../src/lib/timezones'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
@@ -83,6 +84,7 @@ export default function ProfileScreen() {
 
   const member = (members.data ?? []).find((m) => m.id === userId)
   const clusterInfo = (myClusters.data ?? []).find((c) => c.cluster.id === clusterId)
+  const hasLocalTime = !!member?.timezone && isValidTimeZone(member.timezone)
 
   if (!member) {
     return (
@@ -116,30 +118,34 @@ export default function ProfileScreen() {
         <View style={{ flexDirection: 'row', gap: 12 }}>
           <Avatar name={member.display_name} src={member.avatar_url} size={72} />
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'left' }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
-                {member.display_name}
-              </Text>
-              {member.pronouns ? <PronounBadge pronouns={member.pronouns} /> : null}
-            </View>
-            {member.country_code || member.timezone ? (
-              <View style={{ marginTop: 2, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-                {member.country_code ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <CountryFlag code={member.country_code} />
-                    <Text style={{ fontSize: 13, lineHeight: 18, color: t.onSurfaceVariant, textAlign: 'left' }}>
-                      {countryName(member.country_code)}
-                    </Text>
-                  </View>
-                ) : null}
-                {member.timezone ? (
-                  <View accessibilityLabel="Member local time">
-                    <MemberLocalTime timeZone={member.timezone} fontSize={13} />
-                  </View>
-                ) : null}
+            <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'left' }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+              {member.display_name}
+            </Text>
+            {member.pronouns ? (
+              <View style={{ marginTop: 6, alignSelf: 'flex-start' }}>
+                <PronounBadge pronouns={member.pronouns} />
               </View>
             ) : null}
-            <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+            <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+              {member.country_code ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <CountryFlag code={member.country_code} />
+                  <Text style={{ fontSize: 13, lineHeight: 18, color: t.onSurfaceVariant, textAlign: 'left' }}>
+                    {countryName(member.country_code)}
+                  </Text>
+                </View>
+              ) : null}
+              {member.country_code && hasLocalTime ? (
+                <View style={{ width: 1, height: 16, backgroundColor: t.outlineVariant, opacity: 0.6 }} />
+              ) : null}
+              {hasLocalTime ? (
+                <View accessibilityLabel="Member local time">
+                  <MemberLocalTime timeZone={member.timezone} fontSize={13} />
+                </View>
+              ) : null}
+              {member.country_code || hasLocalTime ? (
+                <View style={{ width: 1, height: 16, backgroundColor: t.outlineVariant, opacity: 0.6 }} />
+              ) : null}
               {onlineNow ? (
                 <AvailabilityBadge value={member.availability} />
               ) : (
@@ -164,25 +170,101 @@ export default function ProfileScreen() {
             </View>
           </View>
         ) : null}
+
+        {!isSelf ? (
+          <View>
+            <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId } }} asChild>
+              <Pressable
+                accessibilityRole="button"
+                style={{ marginTop: 16, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+                  Message {member.display_name}
+                </Text>
+              </Pressable>
+            </Link>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+              <View style={{ flex: 1 }}>
+                <MuteButton targetUserId={member.id} targetName={member.display_name} fill />
+              </View>
+              <Pressable
+                onPress={() => setReportOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Report member"
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48 }}
+              >
+                <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
+                  Report
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <Link href="/(app)/settings" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit profile"
+              style={{ marginTop: 16, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
+            >
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+                Edit profile
+              </Text>
+            </Pressable>
+          </Link>
+        )}
       </Card>
+
+      {member.birth_year || clusterInfo ? (
+        <Card>
+          <View style={{ flexDirection: 'row' }}>
+            {member.birth_year ? (
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Cake size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                    Born
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
+                    {member.birth_year}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+            {clusterInfo ? (
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, borderLeftWidth: member.birth_year ? 1 : 0, borderLeftColor: t.outlineVariant, paddingLeft: member.birth_year ? 16 : 0 }}>
+                <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                    Cluster
+                  </Text>
+                  <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }} numberOfLines={2}>
+                    {clusterInfo.cluster.name}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </Card>
+      ) : null}
 
       {member.bio ? (
         <Card>
           <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
             About
           </Text>
-          <View style={{ marginTop: 8, flexDirection: 'row', gap: 8 }}>
-            <Text accessible={false} style={{ fontSize: 24, lineHeight: 28, color: t.onSurfaceVariant, opacity: 0.6 }}>
+          <View style={{ marginTop: 4, flexDirection: 'row', gap: 12 }}>
+            <Text accessible={false} style={{ fontSize: 48, lineHeight: 52, color: t.onSurfaceVariant, opacity: 0.6 }}>
               “
             </Text>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, paddingVertical: 16 }}>
               <LinkifiedText
                 text={member.bio}
                 fontSize={14}
                 lineHeight={20}
               />
             </View>
-            <Text accessible={false} style={{ fontSize: 24, lineHeight: 28, color: t.onSurfaceVariant, opacity: 0.6, alignSelf: 'flex-end' }}>
+            <Text accessible={false} style={{ fontSize: 48, lineHeight: 52, color: t.onSurfaceVariant, opacity: 0.6, alignSelf: 'flex-end' }}>
               ”
             </Text>
           </View>
@@ -235,7 +317,7 @@ export default function ProfileScreen() {
                 <View
                   style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <Icon size={15} color={t.primary} strokeWidth={1.5} />
+                  <Icon size={20} color={t.primary} strokeWidth={1.5} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.primary }}>{prompt}</Text>
@@ -247,83 +329,6 @@ export default function ProfileScreen() {
             )
           })
         )}
-      </Card>
-
-      <Card>
-        {member.birth_year ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' }}>
-            <Cake size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-                Born
-              </Text>
-              <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
-                {member.birth_year}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {clusterInfo ? (
-          <View style={{ marginTop: member.birth_year ? 10 : 0, paddingTop: member.birth_year ? 10 : 0, borderTopWidth: member.birth_year ? 1 : 0, borderTopColor: t.surfaceContainer, flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' }}>
-            <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-                Cluster
-              </Text>
-              <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
-                {clusterInfo.cluster.name}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {!isSelf ? (
-          <View style={{ marginTop: (member.birth_year || clusterInfo) ? 12 : 0, gap: 8 }}>
-            <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId } }} asChild>
-              <Pressable
-                accessibilityRole="button"
-                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
-                  Message {member.display_name}
-                </Text>
-              </Pressable>
-            </Link>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <MuteButton targetUserId={member.id} targetName={member.display_name} fill />
-              </View>
-              <Pressable
-                onPress={() => setReportOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Report member"
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48 }}
-              >
-                <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
-                  Report
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
-        {isSelf ? (
-          <View style={{ marginTop: (member.birth_year || clusterInfo) ? 12 : 0 }}>
-            <Link href="/(app)/settings" asChild>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Edit profile"
-                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
-                  Edit profile
-                </Text>
-              </Pressable>
-            </Link>
-          </View>
-        ) : null}
       </Card>
 
       {!userPosts.isLoading && (userPosts.data ?? []).length > 0 ? (
