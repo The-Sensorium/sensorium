@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { Volume2, VolumeX } from 'lucide-react-native'
+import { Bell, BellOff } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { useIsMuted, useMuteUser, useUnmuteUser } from '../features/moderation'
 import { radii } from '../lib/theme-tokens'
@@ -23,12 +23,12 @@ export function MuteButton({ targetUserId, targetName, fill }: { targetUserId: s
   if (selfId !== null && targetUserId === selfId) return null
 
   const label = muted ? 'Unmute' : 'Mute'
-  const Icon = muted ? Volume2 : VolumeX
+  const Icon = muted ? Bell : BellOff
   const error = mute.error ?? unmute.error
   const dialogUnmute = (confirmKind ?? (muted ? 'unmute' : 'mute')) === 'unmute'
   const dialogTitle = dialogUnmute ? `Unmute ${targetName}?` : `Mute ${targetName}?`
   const dialogLabel = dialogUnmute ? 'Unmute' : 'Mute'
-  const DialogIcon = dialogUnmute ? Volume2 : VolumeX
+  const DialogIcon = dialogUnmute ? Bell : BellOff
 
   function openConfirm() {
     setConfirmError(null)

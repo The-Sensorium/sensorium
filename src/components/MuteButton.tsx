@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader2, Volume2, VolumeX } from 'lucide-react'
+import { Bell, BellOff, Loader2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { useIsMuted, useMuteUser, useUnmuteUser } from '../features/moderation'
 import { Modal } from './Modal'
@@ -26,12 +26,12 @@ export function MuteButton({
   if (selfId !== null && targetUserId === selfId) return null
 
   const label = muted ? 'Unmute' : 'Mute'
-  const Icon = muted ? Volume2 : VolumeX
+  const Icon = muted ? Bell : BellOff
   const error = mute.error ?? unmute.error
   const dialogUnmute = (confirmKind ?? (muted ? 'unmute' : 'mute')) === 'unmute'
   const dialogTitle = dialogUnmute ? `Unmute ${targetName}?` : `Mute ${targetName}?`
   const dialogLabel = dialogUnmute ? 'Unmute' : 'Mute'
-  const DialogIcon = dialogUnmute ? Volume2 : VolumeX
+  const DialogIcon = dialogUnmute ? Bell : BellOff
 
   function openConfirm() {
     setConfirmError(null)
@@ -62,9 +62,7 @@ export function MuteButton({
   return (
     <span
       className={
-        fullWidth
-          ? 'flex w-full items-center gap-2 md:inline-flex md:w-auto'
-          : 'inline-flex items-center gap-2'
+        fullWidth ? 'flex w-full items-center gap-2' : 'inline-flex items-center gap-2'
       }
     >
       <button
@@ -75,7 +73,7 @@ export function MuteButton({
         aria-haspopup="dialog"
         className={
           fullWidth
-            ? 'inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60 md:w-28 md:flex-none'
+            ? 'inline-flex min-h-[44px] w-full flex-1 items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
             : 'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
         }
       >

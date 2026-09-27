@@ -32,6 +32,7 @@ import { LinkifiedText } from '../components/LinkifiedText'
 import { ReportModal } from '../components/ReportModal'
 import { MuteButton } from '../components/MuteButton'
 import { countryName } from '../lib/countries'
+import { isValidTimeZone } from '../lib/timezones'
 import { cn } from '../lib/utils'
 
 const INTRO_ICONS = [Briefcase, Heart, Target, Users, Telescope]
@@ -108,6 +109,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
 
   const member = (members.data ?? []).find((m) => m.id === userId)
   const cluster = (myClusters.data ?? []).find((c) => c.cluster.id === clusterId)
+  const hasLocalTime = !!member?.timezone && isValidTimeZone(member.timezone)
 
   if (members.isLoading || myClusters.isLoading) {
     return (
@@ -128,7 +130,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const answers = introAnswers.data ?? []
 
   return (
-    <div className="mx-auto max-w-2xl space-y-3 md:space-y-4">
+    <div className="mx-auto max-w-xl space-y-3 md:space-y-4">
       <Link
         to={`/cluster/${clusterId}/members`}
         className="inline-flex min-h-[44px] items-center gap-2 py-2 text-sm font-semibold text-primary hover:underline"
@@ -146,34 +148,33 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             className="h-20 w-20 md:h-[88px] md:w-[88px]"
           />
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <h1 className="truncate font-display text-xl font-semibold text-on-surface">
-                {member.display_name}
-              </h1>
-              {member.pronouns && <PronounBadge pronouns={member.pronouns} />}
-            </div>
-            {(member.country_code || member.timezone) && (
-              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-on-surface-variant">
-                {member.country_code && (
-                  <span className="inline-flex items-center gap-1">
-                    <CountryFlag code={member.country_code} />
-                    {countryName(member.country_code)}
-                  </span>
-                )}
-                {member.country_code && member.timezone && (
-                  <span className="text-outline-variant" aria-hidden>
-                    ·
-                  </span>
-                )}
-                {member.timezone ? (
-                  <span>
-                    <span className="sr-only">Local time: </span>
-                    <MemberLocalTime timeZone={member.timezone} />
-                  </span>
-                ) : null}
-              </p>
+            <h1 className="truncate font-display text-xl font-semibold text-on-surface">
+              {member.display_name}
+            </h1>
+            {member.pronouns && (
+              <div className="mt-1.5">
+                <PronounBadge pronouns={member.pronouns} />
+              </div>
             )}
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-surface-variant">
+              {member.country_code && (
+                <span className="inline-flex items-center gap-1">
+                  <CountryFlag code={member.country_code} />
+                  {countryName(member.country_code)}
+                </span>
+              )}
+              {member.country_code && hasLocalTime && (
+                <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
+              )}
+              {hasLocalTime ? (
+                <span>
+                  <span className="sr-only">Local time: </span>
+                  <MemberLocalTime timeZone={member.timezone} />
+                </span>
+              ) : null}
+              {(member.country_code || hasLocalTime) && (
+                <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
+              )}
               {onlineNow ? (
                 <AvailabilityBadge value={member.availability} />
               ) : (
@@ -182,7 +183,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                   Offline
                 </span>
               )}
-            </div>
+            </p>
           </div>
         </div>
 
@@ -193,7 +194,86 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             </p>
           </div>
         )}
+
+        {!isSelf ? (
+          <div>
+            <Link
+              to={`/cluster/${clusterId}`}
+              className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            >
+              Message {member.display_name}
+            </Link>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <MuteButton targetUserId={member.id} targetName={member.display_name} fullWidth />
+              <button
+                type="button"
+                onClick={() => setReportOpen(true)}
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
+              >
+                <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                Report
+              </button>
+            </div>
+          </div>
+        ) : (
+          <Link
+            to="/settings"
+            className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
+            Edit profile
+          </Link>
+        )}
       </div>
+
+      {(member.birth_year || cluster) && (
+        <section
+          aria-label="Details"
+          className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft md:p-5"
+        >
+          <div className={cn('grid', member.birth_year && cluster ? 'grid-cols-2' : 'grid-cols-1')}>
+            {member.birth_year ? (
+              <div className="flex items-center gap-3">
+                <Cake
+                  className="h-5 w-5 shrink-0 text-on-surface-variant"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    Born
+                  </p>
+                  <p className="mt-0.5 text-sm text-on-surface-variant">{member.birth_year}</p>
+                </div>
+              </div>
+            ) : null}
+            {cluster ? (
+              <div
+                className={cn(
+                  'flex items-center gap-3',
+                  member.birth_year ? 'border-l border-outline-variant/40 pl-4' : '',
+                )}
+              >
+                <Users
+                  className="h-5 w-5 shrink-0 text-on-surface-variant"
+                  strokeWidth={1.5}
+                  aria-hidden
+                />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    Cluster
+                  </p>
+                  <p
+                    title={cluster.cluster.name}
+                    className="mt-0.5 truncate text-sm text-on-surface-variant"
+                  >
+                    {cluster.cluster.name}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      )}
 
       {member.bio && (
         <section
@@ -201,16 +281,16 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
           className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft"
         >
           <h2 className="text-xs font-semibold uppercase tracking-wide text-primary">About</h2>
-          <div className="mt-2 flex gap-2">
-            <span aria-hidden className="text-2xl leading-none text-on-surface-variant/60">
+          <div className="mt-1 flex gap-3">
+            <span aria-hidden className="text-5xl leading-none text-on-surface-variant/60">
               “
             </span>
-            <p className="flex-1 text-sm leading-5 text-on-surface">
+            <p className="flex-1 py-4 text-sm leading-5 text-on-surface">
               <LinkifiedText text={member.bio} />
             </p>
             <span
               aria-hidden
-              className="self-end text-2xl leading-none text-on-surface-variant/60"
+              className="self-end text-5xl leading-none text-on-surface-variant/60"
             >
               ”
             </span>
@@ -257,7 +337,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
               return (
                 <li key={a.question_id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
                   <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
+                    <Icon className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-primary">{prompt}</p>
@@ -267,86 +347,6 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
               )
             })}
           </ul>
-        )}
-      </section>
-
-      <section
-        aria-label="Details"
-        className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft md:p-5"
-      >
-        {member.birth_year && (
-          <div className="flex items-center gap-3">
-            <Cake
-              className="h-5 w-5 shrink-0 text-on-surface-variant"
-              strokeWidth={1.5}
-              aria-hidden
-            />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Born</p>
-                <p className="mt-0.5 text-sm text-on-surface-variant">{member.birth_year}</p>
-              </div>
-          </div>
-        )}
-
-        {cluster && (
-          <div
-            className={cn(
-              'flex items-center gap-3',
-              member.birth_year ? 'mt-3 border-t border-outline-variant/40 pt-3' : '',
-            )}
-          >
-            <Users
-              className="h-5 w-5 shrink-0 text-on-surface-variant"
-              strokeWidth={1.5}
-              aria-hidden
-            />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                  Cluster
-                </p>
-                <p className="mt-0.5 text-sm text-on-surface-variant">
-                  {cluster.cluster.name}
-                </p>
-              </div>
-          </div>
-        )}
-
-        {!isSelf && (
-          <div
-            className={cn(
-              'flex flex-col gap-2 md:flex-row md:items-center',
-              member.birth_year || cluster ? 'mt-3' : '',
-            )}
-          >
-            <Link
-              to={`/cluster/${clusterId}`}
-              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container md:w-auto"
-            >
-              Message {member.display_name}
-            </Link>
-            <div className="grid grid-cols-2 gap-2 md:ml-auto md:flex md:items-center">
-              <MuteButton targetUserId={member.id} targetName={member.display_name} fullWidth />
-              <button
-                type="button"
-                onClick={() => setReportOpen(true)}
-                className="inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container md:w-28"
-              >
-                <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                Report
-              </button>
-            </div>
-          </div>
-        )}
-
-        {isSelf && (
-          <div className={cn(member.birth_year || cluster ? 'mt-3' : '')}>
-            <Link
-              to="/settings"
-              className="flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
-            >
-              Edit profile
-            </Link>
-          </div>
         )}
       </section>
 
