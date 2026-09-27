@@ -40,7 +40,7 @@ export function joinQueueErrorMessage(error: unknown, mode?: string): string {
     return 'You’re joining queues too quickly. Please wait a bit and try again.'
   }
   if (message.includes('cooldown')) {
-    const days = mode === 'open_mix' ? 7 : 30
+    const days = mode === 'open_mix' || mode === 'local' ? 3 : 7
     return `You recently left a cluster in this mode. A ${days}-day cooldown is active.`
   }
   if (message.includes('location_not_set') || message.includes('location not set') || message.includes('local radius')) {

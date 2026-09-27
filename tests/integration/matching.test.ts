@@ -297,7 +297,7 @@ describe('matching', () => {
     expect(members).toHaveLength(8)
   })
 
-  it('applies a 7-day cooldown when leaving an open_mix cluster', async () => {
+  it('applies a 3-day cooldown when leaving an open_mix cluster', async () => {
     const u = await onboarded('m-opencool')
     const clusterId = await createCluster(admin, {
       memberIds: [u.id],
@@ -317,8 +317,56 @@ describe('matching', () => {
       .eq('mode', 'open_mix')
     expect(cooldowns).toHaveLength(1)
     const delta = new Date(cooldowns![0].available_at).getTime() - Date.now()
+    expect(delta).toBeGreaterThan(2 * 24 * 3600 * 1000)
+    expect(delta).toBeLessThan(4 * 24 * 3600 * 1000)
+  })
+
+  it('applies a 7-day cooldown when leaving a date-mode cluster', async () => {
+    const u = await onboarded('m-datecool')
+    const clusterId = await createCluster(admin, {
+      memberIds: [u.id],
+      name: 'Date Cooldown',
+      status: 'active',
+      mode: 'birth_year',
+    })
+    clusterIds.push(clusterId)
+    const { error: leaveErr } = await u.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+    const { data: cooldowns } = await admin
+      .from('mode_cooldowns')
+      .select('mode, available_at')
+      .eq('user_id', u.id)
+      .eq('mode', 'birth_year')
+    expect(cooldowns).toHaveLength(1)
+    const delta = new Date(cooldowns![0].available_at).getTime() - Date.now()
     expect(delta).toBeGreaterThan(6 * 24 * 3600 * 1000)
     expect(delta).toBeLessThan(8 * 24 * 3600 * 1000)
+  })
+
+  it('applies a 3-day cooldown when leaving a local cluster', async () => {
+    const u = await onboarded('m-localcool')
+    const clusterId = await createCluster(admin, {
+      memberIds: [u.id],
+      name: 'Local Cooldown',
+      status: 'active',
+      mode: 'local',
+    })
+    clusterIds.push(clusterId)
+    const { error: leaveErr } = await u.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+    const { data: cooldowns } = await admin
+      .from('mode_cooldowns')
+      .select('mode, available_at')
+      .eq('user_id', u.id)
+      .eq('mode', 'local')
+    expect(cooldowns).toHaveLength(1)
+    const delta = new Date(cooldowns![0].available_at).getTime() - Date.now()
+    expect(delta).toBeGreaterThan(2 * 24 * 3600 * 1000)
+    expect(delta).toBeLessThan(4 * 24 * 3600 * 1000)
   })
 
   it('join_queue rate-limits churn after 20 joins per hour', async () => {

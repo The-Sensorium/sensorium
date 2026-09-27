@@ -41,7 +41,7 @@ export function isMatchingMode(value: string): value is MatchingMode {
   return MATCHING_MODES.some((m) => m.value === value)
 }
 
-/** Mirrors `fn_cooldown_interval` in 0132: 7 days for open_mix, 30 for the rest. */
-export function cooldownDaysForMode(mode: MatchingMode): 7 | 30 {
-  return mode === 'open_mix' ? 7 : 30
+/** Mirrors `fn_cooldown_interval` in 0167: 7 days for date modes, 3 for local and open_mix. */
+export function cooldownDaysForMode(mode: MatchingMode): 3 | 7 {
+  return mode === 'open_mix' || mode === 'local' ? 3 : 7
 }

@@ -89,7 +89,7 @@ export function SettingsView() {
           <h2 className="font-display text-lg font-semibold text-on-surface">Leave cluster</h2>
         </div>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 30}-day
+          Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day
           cooldown for this matching mode and triggers a replacement search so the cluster can stay
           at 8.
         </p>

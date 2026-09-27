@@ -310,10 +310,12 @@ export default function RoomScreen() {
       for (let i = 0; i < 5; i++) {
         const msgs = queryClient.getQueryData<Message[]>(key) ?? []
         if (msgs.some((m) => m.id === parentId && !m.deleted_at)) return
+        // Baseline before the fetch: prefer the tracked ref so a live message
+        // arriving mid-fetch still counts as new (added excludes live rows).
+        const before =
+          lastLenRef.current ?? queryClient.getQueryData<Message[]>(key)?.length ?? 0
         const result = await loadEarlier.mutateAsync()
-        // lastLenRef tracks list growth for the new-message effect; a history
-        // page must not read as fresh arrivals.
-        lastLenRef.current = (messages.data?.length ?? 0) + result.added
+        lastLenRef.current = before + result.added
         if (!result.hasMore) {
           exhaustedRef.current = true
           setHasMore(false)
@@ -488,7 +490,9 @@ export default function RoomScreen() {
   }, [deepLinkMessageId, clusterId, messages.isLoading, rows, loadEarlier.isPending, replyById])
 
   useEffect(() => {
-    const len = rows.length
+    const list = messages.data
+    if (!list || list.length === 0) return
+    const len = list.length
     const prev = lastLenRef.current
     lastLenRef.current = len
     if (prev === null) return
@@ -499,7 +503,7 @@ export default function RoomScreen() {
         setNewCount((c) => c + (len - prev))
       }
     }
-  }, [rows.length])
+  }, [messages.data])
 
   useEffect(() => {
     if (exhaustedRef.current) return
@@ -671,9 +675,12 @@ export default function RoomScreen() {
 
   async function handleLoadEarlier() {
     setError(null)
+    // Same baseline rule as pageBackToParent: history pages do not count as
+    // new, but a live arrival during the fetch must still bump the pill.
+    const before = lastLenRef.current ?? messages.data?.length ?? 0
     try {
       const result = await loadEarlier.mutateAsync()
-      lastLenRef.current = (messages.data?.length ?? 0) + result.added
+      lastLenRef.current = before + result.added
       if (!result.hasMore) {
         exhaustedRef.current = true
         setHasMore(false)

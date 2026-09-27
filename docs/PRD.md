@@ -342,13 +342,14 @@ Leaving a cluster triggers a cooldown before joining another cluster of the same
 
 | Mode | Cooldown |
 |---|---|
-| Open Mix | 7 days |
-| All other modes | 30 days |
+| Open Mix | 3 days |
+| Local | 3 days |
+| All date modes | 7 days |
 
 Example:
-Leaving a Birth Year + Month cluster triggers a 30 day cooldown for that specific mode only. It does not affect other modes the user is in.
+Leaving a Birth Year + Month cluster triggers a 7 day cooldown for that specific mode only. It does not affect other modes the user is in.
 
-Open question: beta research flagged fear of being "stuck" as a top concern. Worth weighing whether 30 days is the right length, or whether it should be shorter, especially since the multi mode model already gives users other active clusters to fall back on.
+Open question: beta research flagged fear of being "stuck" as a top concern. The cooldown is now 7 days for date modes and 3 days for local and open_mix, down from 30 and 7.
 
 ---
 ## Cluster Naming
