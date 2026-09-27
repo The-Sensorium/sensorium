@@ -7,6 +7,7 @@ import { LinkifiedText } from './LinkifiedText'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
+import { cn } from '../lib/utils'
 import { useDeleteComment, type PostComment } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 
@@ -28,6 +29,7 @@ export function CommentItem({
   likedByMe = false,
   replyCount,
   mutedBanner,
+  highlighted,
 }: {
   comment: PostComment
   clusterId: string
@@ -39,6 +41,7 @@ export function CommentItem({
   likedByMe?: boolean
   replyCount?: number
   mutedBanner?: ReactNode
+  highlighted?: boolean
 }) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -59,7 +62,13 @@ export function CommentItem({
   }
 
   return (
-    <li className="space-y-2">
+    <li
+      id={`comment-${comment.id}`}
+      // Outline (not ring) with an offset: the avatar sits flush at this
+      // element's edge, and a ring would clip into it. The offset leaves a
+      // transparent gap, so no offset color matching is needed.
+      className={cn('space-y-2 rounded-xl', highlighted && 'outline outline-2 outline-primary outline-offset-2')}
+    >
       {mutedBanner}
       <div className="flex gap-3">
       <Avatar

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { useParams } from 'react-router'
+import { useCallback, useMemo, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { useBackOr } from '../../lib/use-back-or'
@@ -20,6 +20,21 @@ import { isMutedAuthor, mutedIds, useMyMutes } from '../../features/moderation'
 export function PostDetailPage() {
   useDocumentTitle('Post')
   const { postId = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Notification deep link (?comment=) passes straight through to the
+  // thread, which reports back once handled so the param is cleared. Each
+  // new value (including a re-tap of the same comment) fires again.
+  const highlightCommentId = searchParams.get('comment')
+  const clearCommentParam = useCallback(() => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('comment')
+        return next
+      },
+      { replace: true },
+    )
+  }, [setSearchParams])
   const goBack = useBackOr('/posts')
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -110,6 +125,8 @@ export function PostDetailPage() {
         postId={p.id}
         comments={comments.data ?? []}
         memberById={memberById}
+        highlightCommentId={highlightCommentId}
+        onDeepLinkHandled={clearCommentParam}
         selfAvatar={{
           display_name: memberById.get(userId!)?.display_name ?? 'Member',
           avatar_url: memberById.get(userId!)?.avatar_url ?? null,

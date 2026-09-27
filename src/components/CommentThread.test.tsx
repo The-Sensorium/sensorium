@@ -51,7 +51,7 @@ function commentFixture(overrides: Partial<PostComment> = {}): PostComment {
   }
 }
 
-function setup(comments: PostComment[]) {
+function setup(comments: PostComment[], highlightCommentId?: string, onDeepLinkHandled?: (id: string) => void) {
   vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
   vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
   vi.mocked(useCreateComment).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never)
@@ -63,13 +63,15 @@ function setup(comments: PostComment[]) {
     ['u1', { id: 'u1', display_name: 'Titan', avatar_url: null }],
     ['u2', { id: 'u2', display_name: 'Page', avatar_url: null }],
   ])
-  render(
+  return render(
     <CommentThread
       clusterId="cl1"
       postId="p1"
       comments={comments}
       memberById={members as never}
       selfAvatar={{ display_name: 'Titan', avatar_url: null }}
+      highlightCommentId={highlightCommentId}
+      onDeepLinkHandled={onDeepLinkHandled}
     />,
   )
 }
@@ -112,5 +114,50 @@ describe('CommentThread reply placement', () => {
     const second = screen.getByText('second reply')
     expect(first.compareDocumentPosition(composer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(composer.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+})
+
+describe('CommentThread deep link', () => {
+  it('anchors and highlights the linked comment', () => {
+    const top = commentFixture({ id: 'c1', content: 'top comment' })
+    const reply = commentFixture({ id: 'c2', content: 'nested reply', parent_comment_id: 'c1' })
+    setup([top, reply], 'c2')
+    const row = document.getElementById('comment-c2')
+    expect(row).not.toBeNull()
+    expect(row!.className).toContain('outline-primary')
+  })
+
+  it('shows a fallback when the linked comment is missing', () => {
+    setup([commentFixture({ id: 'c1' })], 'gone')
+    expect(screen.getByText(/no longer available/)).toBeInTheDocument()
+  })
+
+  it('reports back once handled so the parent can clear the param', () => {
+    const onHandled = vi.fn()
+    setup([commentFixture({ id: 'c1' })], 'c1', onHandled)
+    expect(onHandled).toHaveBeenCalledWith('c1')
+  })
+
+  it('fires again when a different comment is linked afterwards', () => {
+    const top = commentFixture({ id: 'c1', content: 'top comment' })
+    const reply = commentFixture({ id: 'c2', content: 'nested reply', parent_comment_id: 'c1' })
+    const view = setup([top, reply], 'c1')
+    expect(document.getElementById('comment-c1')!.className).toContain('outline-primary')
+    view.rerender(
+      <CommentThread
+        clusterId="cl1"
+        postId="p1"
+        comments={[top, reply]}
+        memberById={
+          new Map([
+            ['u1', { id: 'u1', display_name: 'Titan', avatar_url: null }],
+            ['u2', { id: 'u2', display_name: 'Page', avatar_url: null }],
+          ]) as never
+        }
+        selfAvatar={{ display_name: 'Titan', avatar_url: null }}
+        highlightCommentId="c2"
+      />,
+    )
+    expect(document.getElementById('comment-c2')!.className).toContain('outline-primary')
   })
 })

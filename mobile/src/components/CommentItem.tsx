@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type RefObject } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { CornerUpLeft, Flag, Heart, MessageSquare, Trash2 } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
@@ -24,6 +24,8 @@ export function CommentItem({
   likeCount = 0,
   likedByMe = false,
   replyCount,
+  highlighted,
+  innerRef,
 }: {
   comment: PostComment
   clusterId: string
@@ -34,6 +36,8 @@ export function CommentItem({
   likeCount?: number
   likedByMe?: boolean
   replyCount?: number
+  highlighted?: boolean
+  innerRef?: RefObject<View | null>
 }) {
   const t = useTheme()
   const auth = useAuth()
@@ -55,7 +59,17 @@ export function CommentItem({
   }
 
   return (
-    <View style={{ flexDirection: 'row', gap: 12 }}>
+    <View
+      ref={innerRef}
+      style={{
+        flexDirection: 'row',
+        gap: 12,
+        borderWidth: highlighted ? 2 : 0,
+        borderColor: highlighted ? t.primary : 'transparent',
+        borderRadius: 12,
+        padding: highlighted ? 8 : 0,
+      }}
+    >
       <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={32} />
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

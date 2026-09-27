@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type ReactNode, type RefObject } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { Eye, EyeOff } from 'lucide-react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { KeyboardAwareScrollView, KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
+import { KeyboardAwareScrollView, KeyboardChatScrollView, KeyboardStickyView, type KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller'
 import type { SharedValue } from 'react-native-reanimated'
 import { Link, type Href } from 'expo-router'
 import { radii, shadowShape, spacing } from '../lib/theme-tokens'
@@ -331,6 +331,7 @@ export function Screen({
   onStickyFooterLayout,
   onRefresh,
   refreshing,
+  scrollRef,
 }: {
   children: ReactNode
   avoiding?: boolean
@@ -339,6 +340,7 @@ export function Screen({
   onStickyFooterLayout?(height: number): void
   onRefresh?: () => void
   refreshing?: boolean
+  scrollRef?: RefObject<KeyboardAwareScrollViewRef | null>
 }) {
   const t = useTheme()
   // Edge-to-edge production builds report a non-zero bottom inset (gesture
@@ -388,6 +390,7 @@ export function Screen({
     // Other screens keep the aware scroll view.
     const scrollBody = stickyFooterHeight ? (
       <KeyboardChatScrollView
+        ref={scrollRef}
         extraContentPadding={stickyFooterHeight}
         keyboardLiftBehavior="whenAtEnd"
         contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
@@ -398,6 +401,7 @@ export function Screen({
       </KeyboardChatScrollView>
     ) : (
       <KeyboardAwareScrollView
+        ref={scrollRef}
         bottomOffset={16}
         contentContainerStyle={{ padding: spacing.containerMargin, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"

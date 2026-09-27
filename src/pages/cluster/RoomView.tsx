@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
@@ -66,6 +66,7 @@ function dayKey(iso: string) {
 export function RoomView() {
   useDocumentTitle('Cluster Chat')
   const { clusterId = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
@@ -722,6 +723,12 @@ export function RoomView() {
     })
   }
 
+  // Ref mirror so the notification deep-link effect can page back without
+  // listing the per-render function in its deps (the consume-once ref guards
+  // re-runs).
+  const pageBackRef = useRef(pageBackToParent)
+  pageBackRef.current = pageBackToParent
+
   // A jump whose parent paged in afterwards: scroll once it renders.
   useEffect(() => {
     if (!pendingJumpId) return
@@ -730,6 +737,41 @@ export function RoomView() {
     setPendingJumpId(null)
     scrollMessageIntoView(target)
   }, [timeline, pendingJumpId])
+
+  // Notification deep link (?message=): same scroll plus highlight as a reply
+  // jump, but the target is any message, not just a reply parent. The param
+  // is consumed (cleared) on every run, so each new value fires exactly once
+  // even when the room instance is reused across taps.
+  useEffect(() => {
+    const messageId = searchParams.get('message')
+    if (!messageId || !clusterId || messages.isLoading) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('message')
+    setSearchParams(next, { replace: true })
+    if (jumpInFlight.current) return
+    // Known but deleted: no point paging back for it. A muted-hidden target
+    // renders its placeholder with an anchor, so the normal scroll path
+    // below lands on it.
+    const known = replyById.get(messageId)
+    if (known && known.deleted_at) {
+      setError('That message is no longer available.')
+      return
+    }
+    if (timeline.some((it) => it.kind === 'message' && it.data.id === messageId)) {
+      scrollMessageIntoView(messageId)
+      return
+    }
+    if (loadEarlier.isPending) {
+      setError('That message is still loading. Try again in a moment.')
+      return
+    }
+    jumpInFlight.current = true
+    setError(null)
+    setPendingJumpId(messageId)
+    void pageBackRef.current(messageId, ['cluster-messages', clusterId]).finally(() => {
+      jumpInFlight.current = false
+    })
+  }, [searchParams, clusterId, messages.isLoading, timeline, loadEarlier.isPending, setSearchParams, replyById])
 
   async function handleRaise() {
     const prompt = signalPrompt.trim()
@@ -918,6 +960,8 @@ export function RoomView() {
                     return (
                       <li key={m.id}>
                         <MutedPlaceholder
+                          id={`message-${m.id}`}
+                          highlighted={jumpHighlightId === m.id}
                           name={memberMap.get(m.author_id)?.display_name ?? 'Member'}
                           onToggle={() => toggleReveal(m.id)}
                         />

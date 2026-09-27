@@ -62,8 +62,38 @@ describe('notificationTarget', () => {
       created_at: null,
     }) as unknown as MyNotification
 
+  const withPayload = (type: MyNotification['type'], clusterId: string | null, payload: Record<string, unknown>): MyNotification =>
+    ({
+      id: 'n1',
+      type,
+      user_id: 'u1',
+      cluster_id: clusterId,
+      payload,
+      read_at: null,
+      created_at: null,
+    }) as unknown as MyNotification
+
   it('deep-links message-type notifications to the cluster', () => {
     expect(notificationTarget(n('message', 'c1'))).toEqual({ to: '/cluster/c1' })
+  })
+
+  it('deep-links mention and reaction rows to the exact message', () => {
+    expect(notificationTarget(withPayload('mention', 'c1', { message_id: 'm1' }))).toEqual({
+      to: '/cluster/c1?message=m1',
+    })
+    expect(notificationTarget(withPayload('reaction', 'c1', { message_id: 'm2', emoji: '👍' }))).toEqual({
+      to: '/cluster/c1?message=m2',
+    })
+    expect(notificationTarget(n('mention', 'c1'))).toEqual({ to: '/cluster/c1' })
+    expect(notificationTarget(withPayload('mention', 'c1', { message_id: 42 }))).toEqual({ to: '/cluster/c1' })
+  })
+
+  it('deep-links post comments to the exact comment, likes to the post', () => {
+    expect(notificationTarget(withPayload('post_comment', 'c1', { post_id: 'p1', comment_id: 'cm1' }))).toEqual({
+      to: '/posts/p1?comment=cm1',
+    })
+    expect(notificationTarget(withPayload('post_comment', 'c1', { post_id: 'p1' }))).toEqual({ to: '/posts/p1' })
+    expect(notificationTarget(withPayload('post_like', 'c1', { post_id: 'p1' }))).toEqual({ to: '/posts/p1' })
   })
 
   it('links signal_new to the signal thread when present', () => {

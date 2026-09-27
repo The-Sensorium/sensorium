@@ -380,6 +380,20 @@ export function useNotificationsChannel(userId: string | null) {
 }
 
 /** Where a notification should deep-link when tapped (null = no navigation). */
+export function payloadMessageId(n: MyNotification | NotificationRow): string | null {
+  const payload = (n.payload ?? {}) as Record<string, unknown>
+  const id = payload.message_id
+  return typeof id === 'string' && id.length > 0 ? id : null
+}
+
+/** Comment id for post_comment deep links (0162 added it; legacy rows lack it). */
+export function payloadCommentId(n: MyNotification | NotificationRow): string | null {
+  const payload = (n.payload ?? {}) as Record<string, unknown>
+  const id = payload.comment_id
+  return typeof id === 'string' && id.length > 0 ? id : null
+}
+
+/** Where a notification should deep-link when tapped (null = no navigation). */
 export function notificationTarget(
   n: MyNotification | NotificationRow,
 ): { to: string } | null {
@@ -387,14 +401,20 @@ export function notificationTarget(
   const payload = (n.payload ?? {}) as Record<string, unknown>
   const signalId = typeof payload.signal_id === 'string' ? payload.signal_id : null
   const postId = typeof payload.post_id === 'string' ? payload.post_id : null
+  const messageId = payloadMessageId(n)
+  const commentId = payloadCommentId(n)
 
   switch (n.type) {
     case 'post_comment':
+      if (postId && commentId) return { to: `/posts/${postId}?comment=${commentId}` }
+      return postId ? { to: `/posts/${postId}` } : clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'post_like':
       return postId ? { to: `/posts/${postId}` } : clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'message':
     case 'mention':
     case 'reaction':
+      if (clusterId && messageId) return { to: `/cluster/${clusterId}?message=${messageId}` }
+      return clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'unlocked':
       return clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'signal_new':

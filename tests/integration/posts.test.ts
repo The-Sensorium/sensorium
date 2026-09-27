@@ -273,7 +273,7 @@ describe('posts RLS + RPC', () => {
     const postId = await createPost(a, clusterId)
 
     // b comments on a's post → a (post author) is notified.
-    await b.client.rpc('create_post_comment', { p_post_id: postId, p_content: 'nice' })
+    const { data: firstCommentId } = await b.client.rpc('create_post_comment', { p_post_id: postId, p_content: 'nice' })
     const { data: aNotifs } = await admin
       .from('notifications')
       .select('type, payload')
@@ -281,6 +281,7 @@ describe('posts RLS + RPC', () => {
       .eq('type', 'post_comment')
     expect(aNotifs).toHaveLength(1)
     expect((aNotifs?.[0]?.payload as { post_id?: string })?.post_id).toBe(postId)
+    expect((aNotifs?.[0]?.payload as { comment_id?: string })?.comment_id).toBe(firstCommentId)
 
     // a replying to b's comment does not notify a (actor) but notifies b (parent author).
     const { data: bComment } = await admin
@@ -298,10 +299,19 @@ describe('posts RLS + RPC', () => {
     })
     const { data: bNotifs } = await admin
       .from('notifications')
-      .select('type')
+      .select('type, payload')
       .eq('user_id', b.id)
       .eq('type', 'post_comment')
     expect(bNotifs).toHaveLength(1)
+    // The reply notice carries the new reply row id so clients can deep-link.
+    const { data: replyRow } = await admin
+      .from('post_comments')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('author_id', a.id)
+      .eq('content', 'replying to you')
+      .single()
+    expect((bNotifs?.[0]?.payload as { comment_id?: string })?.comment_id).toBe(replyRow?.id)
     // a still only has the one notification from b's comment (a's own reply is excluded).
     const { data: aAfter } = await admin
       .from('notifications')
