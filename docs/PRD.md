@@ -454,7 +454,10 @@ Violations may result in suspension or removal.
 ### Muting and blocking
 
 Individual **mute** is shipped: a member can mute another member, which hides that
-person's content (chat messages, posts, comments, signals) for the muter only. It
+person's content (chat messages, posts, comments, signals) for the muter only and
+suppresses new notification traffic from them (no inbox rows, no push, no email
+for mentions, reactions, post comments/replies, post likes, and plain-chat pushes;
+rows created before the mute stay visible). It
 is a personal safeguard; it does not remove anyone, change the 8-member
 governance model, or affect votes, replacement, or moderation. Muted content is
 collapsed rather than vanished, with an inline "Show" reveal. Muted users appear
