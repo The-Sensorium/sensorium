@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Clock } from 'lucide-react'
-import { formatMemberTime, isValidTimeZone } from '../lib/timezones'
+import { Moon, Sun } from 'lucide-react'
+import { formatMemberTime, isMemberDaytime, isValidTimeZone } from '../lib/timezones'
 
 function msToNextMinute(now: Date): number {
   return 60_000 - (now.getSeconds() * 1000 + now.getMilliseconds())
@@ -24,10 +24,18 @@ export function MemberLocalTime({ timeZone }: { timeZone: string | null | undefi
   }, [valid, timeZone])
 
   if (!valid) return null
+  const now = new Date()
+  const isDay = isMemberDaytime(now, timeZone as string)
+  const Icon = isDay === false ? Moon : Sun
   return (
     <span className="inline-flex items-center gap-1">
-      <Clock className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
-      {formatMemberTime(new Date(), timeZone as string)}
+      <Icon
+        className="h-4 w-4 shrink-0 text-amber-500 dark:text-amber-400"
+        strokeWidth={1.5}
+        fill="currentColor"
+        aria-hidden
+      />
+      {formatMemberTime(now, timeZone as string)}
     </span>
   )
 }

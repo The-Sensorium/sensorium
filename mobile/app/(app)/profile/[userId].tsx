@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Link, router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Briefcase, Cake, Flag, Heart, Sparkles, Target, Telescope, Users } from 'lucide-react-native'
@@ -42,8 +42,6 @@ export default function ProfileScreen() {
   const { online } = usePresence(clusterId || null)
   const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
-  const [bioExpanded, setBioExpanded] = useState(false)
-  useEffect(() => setBioExpanded(false), [userId, clusterId])
   const userPosts = useUserPosts(userId || null)
   const profilePostIds = useMemo(
     () => [...new Set((userPosts.data ?? []).map((p) => p.id))],
@@ -156,129 +154,40 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {member.current_status || member.bio ? (
+        {member.current_status ? (
           <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.surfaceContainer, alignItems: 'flex-start' }}>
-            {member.current_status ? (
-              <View style={{ alignItems: 'flex-start', width: '100%' }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-                  Status
-                </Text>
-                <View
-                  accessibilityLabel={`Status: ${member.current_status}`}
-                  style={{ marginTop: 4, width: '100%' }}
-                >
-                  <LinkifiedText text={member.current_status} fontSize={12} lineHeight={16} color={t.onSurfaceVariant} italic />
-                </View>
-              </View>
-            ) : null}
-            {member.bio ? (
-              <View style={{ marginTop: member.current_status ? 10 : 0, alignItems: 'flex-start', width: '100%' }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-                  About
-                </Text>
-                <View style={{ marginTop: 4, width: '100%' }}>
-                  <LinkifiedText
-                    text={member.bio}
-                    fontSize={14}
-                    lineHeight={20}
-                    numberOfLines={bioExpanded ? undefined : 3}
-                  />
-                </View>
-                {member.bio.length > 180 ? (
-                  <Pressable
-                    onPress={() => setBioExpanded((v) => !v)}
-                    accessibilityRole="button"
-                    accessibilityState={{ expanded: bioExpanded }}
-                    hitSlop={8}
-                    style={{ paddingVertical: 8, minHeight: 32, justifyContent: 'center' }}
-                  >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: t.primary }}>
-                      {bioExpanded ? 'Show less' : 'Show more'}
-                    </Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-
-        {member.birth_year ? (
-          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.surfaceContainer, alignItems: 'flex-start', width: '100%' }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-              Born
-            </Text>
-            <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Cake size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
-                {member.birth_year}
-              </Text>
+            <View
+              accessibilityLabel={`Status: ${member.current_status}`}
+              style={{ width: '100%' }}
+            >
+              <LinkifiedText text={member.current_status} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} italic />
             </View>
-          </View>
-        ) : null}
-
-        {clusterInfo ? (
-          <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: t.surfaceContainer, alignItems: 'flex-start', width: '100%' }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
-              Cluster
-            </Text>
-            <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface, textAlign: 'left' }}>
-                {clusterInfo.cluster.name}
-              </Text>
-              <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
-                · {clusterInfo.memberCount} / 8 members
-              </Text>
-            </View>
-          </View>
-        ) : null}
-
-        {!isSelf ? (
-          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: t.surfaceContainer, gap: 8 }}>
-            <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId } }} asChild>
-              <Pressable
-                accessibilityRole="button"
-                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
-                  Message {member.display_name}
-                </Text>
-              </Pressable>
-            </Link>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 1 }}>
-                <MuteButton targetUserId={member.id} targetName={member.display_name} fill />
-              </View>
-              <Pressable
-                onPress={() => setReportOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Report member"
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48 }}
-              >
-                <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
-                  Report
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
-        {isSelf ? (
-          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: t.surfaceContainer }}>
-            <Link href="/(app)/settings" asChild>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Edit profile"
-                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
-              >
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
-                  Edit profile
-                </Text>
-              </Pressable>
-            </Link>
           </View>
         ) : null}
       </Card>
+
+      {member.bio ? (
+        <Card>
+          <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+            About
+          </Text>
+          <View style={{ marginTop: 8, flexDirection: 'row', gap: 8 }}>
+            <Text accessible={false} style={{ fontSize: 24, lineHeight: 28, color: t.onSurfaceVariant, opacity: 0.6 }}>
+              “
+            </Text>
+            <View style={{ flex: 1 }}>
+              <LinkifiedText
+                text={member.bio}
+                fontSize={14}
+                lineHeight={20}
+              />
+            </View>
+            <Text accessible={false} style={{ fontSize: 24, lineHeight: 28, color: t.onSurfaceVariant, opacity: 0.6, alignSelf: 'flex-end' }}>
+              ”
+            </Text>
+          </View>
+        </Card>
+      ) : null}
 
       <ReportModal
         open={reportOpen}
@@ -298,7 +207,7 @@ export default function ProfileScreen() {
             <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
               {isSelf
                 ? 'You have not completed your introductions yet.'
-                : `${member.display_name} hasn&apos;t completed their introductions.`}
+                : `${member.display_name} hasn't completed their introductions.`}
             </Text>
             {isSelf ? (
               <Link
@@ -329,7 +238,7 @@ export default function ProfileScreen() {
                   <Icon size={15} color={t.primary} strokeWidth={1.5} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, lineHeight: 18, fontWeight: '600', color: t.primary }}>{prompt}</Text>
+                  <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.primary }}>{prompt}</Text>
                   <View style={{ marginTop: 2 }}>
                     <LinkifiedText text={a.answer} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} />
                   </View>
@@ -338,6 +247,83 @@ export default function ProfileScreen() {
             )
           })
         )}
+      </Card>
+
+      <Card>
+        {member.birth_year ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' }}>
+            <Cake size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                Born
+              </Text>
+              <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
+                {member.birth_year}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {clusterInfo ? (
+          <View style={{ marginTop: member.birth_year ? 10 : 0, paddingTop: member.birth_year ? 10 : 0, borderTopWidth: member.birth_year ? 1 : 0, borderTopColor: t.surfaceContainer, flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' }}>
+            <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                Cluster
+              </Text>
+              <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
+                {clusterInfo.cluster.name}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {!isSelf ? (
+          <View style={{ marginTop: (member.birth_year || clusterInfo) ? 12 : 0, gap: 8 }}>
+            <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId } }} asChild>
+              <Pressable
+                accessibilityRole="button"
+                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+                  Message {member.display_name}
+                </Text>
+              </Pressable>
+            </Link>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <MuteButton targetUserId={member.id} targetName={member.display_name} fill />
+              </View>
+              <Pressable
+                onPress={() => setReportOpen(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Report member"
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48 }}
+              >
+                <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
+                  Report
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
+        {isSelf ? (
+          <View style={{ marginTop: (member.birth_year || clusterInfo) ? 12 : 0 }}>
+            <Link href="/(app)/settings" asChild>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Edit profile"
+                style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+                  Edit profile
+                </Text>
+              </Pressable>
+            </Link>
+          </View>
+        ) : null}
       </Card>
 
       {!userPosts.isLoading && (userPosts.data ?? []).length > 0 ? (

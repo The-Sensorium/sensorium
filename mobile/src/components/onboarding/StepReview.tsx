@@ -45,7 +45,7 @@ export function StepReview({ draft }: { draft: OnboardingDraft }) {
         />
         <Row label="Country" value={countryName(draft.countryCode)} />
         <Row label="Timezone" value={draft.timezone} />
-        <Row label="Bio" value={draft.bio.trim()} />
+        <Row label="About" value={draft.bio.trim()} />
         <Row
           label="Matching modes"
           value={draft.selectedModes.map((m) => modeInfo(m).label).join(', ')}
