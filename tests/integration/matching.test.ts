@@ -134,6 +134,7 @@ describe('matching', () => {
         latitude: 38.7,
         longitude: -9.14,
         local_area: 'Lisbon',
+        local_country_code: 'PT',
         local_radius_km: 50,
       })
       .eq('id', u.id)
@@ -147,6 +148,53 @@ describe('matching', () => {
     const row = data?.[0]
     expect(row?.queue_key).toContain('PT')
     expect(row?.queue_key).toContain('Lisbon')
+  })
+
+  it('rejects unsupported local radii', async () => {
+    const u = await onboarded('m-local-radius')
+    // NOTE: local_radius_km is intentionally left null here. The CHECK
+    // constraint would reject a direct write of 25, so the unsupported value
+    // must arrive via p_radius_km to reach the join_queue guard.
+    const { error: profErr } = await admin
+      .from('profiles')
+      .update({
+        country_code: 'PT',
+        latitude: 38.7,
+        longitude: -9.14,
+        local_area: 'lisbon',
+        local_country_code: 'PT',
+        local_radius_km: null,
+      })
+      .eq('id', u.id)
+    expect(profErr).toBeNull()
+
+    const { error } = await u.client.rpc('join_queue', {
+      p_mode: 'local',
+      p_radius_km: 25,
+    })
+    expect(error?.message).toContain('invalid_radius')
+  })
+
+  it('groups travelers by located country, not profile country', async () => {
+    const traveler = await onboarded('m-local-traveler')
+    await admin
+      .from('profiles')
+      .update({
+        country_code: 'DE',
+        latitude: 38.7,
+        longitude: -9.14,
+        local_area: 'lisbon',
+        local_country_code: 'PT',
+        local_radius_km: 50,
+      })
+      .eq('id', traveler.id)
+
+    const { data, error } = await traveler.client.rpc('join_queue', {
+      p_mode: 'local',
+      p_radius_km: 50,
+    })
+    expect(error).toBeNull()
+    expect(data?.[0]?.queue_key).toBe('PT:lisbon:50')
   })
 
   it('forms a cluster once eight users share a queue key', async () => {

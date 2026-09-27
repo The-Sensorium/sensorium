@@ -3,7 +3,8 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { MapPin } from 'lucide-react-native'
 import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { toErrorMessage } from '../../lib/error'
-import { LOCAL_RADII, type LocalRadius, type OnboardingDraft } from '../../lib/onboarding-draft'
+import { LOCAL_RADII, LOCAL_RADIUS_LABELS, localQueueKey, type LocalRadius, type OnboardingDraft } from '../../lib/onboarding-draft'
+import { useQueueCount } from '../../features/matching'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 
@@ -17,6 +18,22 @@ export function StepLocal({
   const t = useTheme()
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const located = draft.shareLocation && draft.localArea != null
+  const count10 = useQueueCount(
+    'local',
+    located ? localQueueKey(draft.localCountryCode, draft.localArea as string, 10) : null,
+  )
+  const count50 = useQueueCount(
+    'local',
+    located ? localQueueKey(draft.localCountryCode, draft.localArea as string, 50) : null,
+  )
+  const count100 = useQueueCount(
+    'local',
+    located ? localQueueKey(draft.localCountryCode, draft.localArea as string, 100) : null,
+  )
+  const counts: Record<number, number | null> | undefined = located
+    ? { 10: count10.count, 50: count50.count, 100: count100.count }
+    : undefined
 
   async function locate() {
     setLocating(true)
@@ -28,11 +45,12 @@ export function StepLocal({
         coordinates: coords,
         localArea: place.slug,
         localLabel: place.label,
+        localCountryCode: place.countryCode,
         shareLocation: true,
       })
     } catch (err) {
       setError(toErrorMessage(err, 'Couldn’t determine your location.'))
-      patch({ shareLocation: false, coordinates: null, localArea: null, localLabel: null })
+      patch({ shareLocation: false, coordinates: null, localArea: null, localLabel: null, localCountryCode: null })
     } finally {
       setLocating(false)
     }
@@ -78,7 +96,9 @@ export function StepLocal({
         >
           {draft.shareLocation
             ? draft.localLabel
-              ? `Within ${draft.radiusKm ?? '-'} km of ${draft.localLabel}`
+              ? draft.radiusKm != null
+                ? `Within ${draft.radiusKm} km of ${draft.localLabel}`
+                : `Near ${draft.localLabel}: choose a radius below`
               : 'Location shared'
             : locating
               ? 'Finding your location…'
@@ -89,16 +109,39 @@ export function StepLocal({
         <Text style={{ marginTop: 8, fontSize: 14, color: t.error }}>{error}</Text>
       ) : !draft.shareLocation ? (
         <Text style={{ marginTop: 8, fontSize: 12, color: t.onSurfaceVariant }}>
-          Your phone will ask for permission. You can adjust the radius below.
+          Your phone will ask for permission. You will choose a radius next.
         </Text>
       ) : null}
+      {draft.shareLocation ? (
+        <Pressable
+          onPress={() =>
+            patch({
+              shareLocation: false,
+              coordinates: null,
+              localArea: null,
+              localLabel: null,
+              localCountryCode: null,
+              radiusKm: null,
+            })
+          }
+          disabled={locating}
+          accessibilityRole="button"
+          accessibilityLabel="Remove location"
+          style={{ marginTop: 8, minHeight: 44, justifyContent: 'center', opacity: locating ? 0.6 : 1 }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>Remove location</Text>
+        </Pressable>
+      ) : null}
 
+      {draft.shareLocation && draft.localArea ? (
+      <>
       <Text style={{ marginTop: 16, fontSize: 14, fontWeight: '600', color: t.onSurface }}>
         Matching radius
       </Text>
-      <View style={{ marginTop: 8, flexDirection: 'row', gap: 8 }}>
+      <View style={{ marginTop: 8, flexDirection: 'column', gap: 8 }}>
         {LOCAL_RADII.map((radius) => {
           const active = draft.radiusKm === radius
+          const count = counts?.[radius] ?? null
           return (
             <Pressable
               key={radius}
@@ -107,7 +150,6 @@ export function StepLocal({
               accessibilityState={{ selected: active }}
               accessibilityLabel={`${radius} kilometer radius`}
               style={{
-                flex: 1,
                 borderWidth: 1,
                 borderColor: active ? t.primary : t.outlineVariant,
                 backgroundColor: active ? t.primary : 'transparent',
@@ -121,12 +163,14 @@ export function StepLocal({
               <Text
                 style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}
               >
-                {radius} km
+                {radius} km - {LOCAL_RADIUS_LABELS[radius as LocalRadius]}{count != null ? ` - ${count}/8` : ''}
               </Text>
             </Pressable>
           )
         })}
       </View>
+      </>
+      ) : null}
     </View>
   )
 }

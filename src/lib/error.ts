@@ -46,6 +46,9 @@ export function joinQueueErrorMessage(error: unknown, mode?: string): string {
   if (message.includes('location_not_set') || message.includes('location not set') || message.includes('local radius')) {
     return 'Set your local radius first, then try again.'
   }
+  if (message.includes('invalid_radius')) {
+    return 'That radius is not supported. Choose 10, 50, or 100 km.'
+  }
   if (message.includes('already_in_cluster') || message.includes('already in a cluster')) {
     return 'You’re already in a cluster for this mode.'
   }

@@ -141,6 +141,7 @@ describe('reverseGeocode', () => {
     await expect(reverseGeocode({ lat: 38.7223, lng: -9.1393 })).resolves.toEqual({
       slug: '38-72-9-14',
       label: '38.72, -9.14',
+      countryCode: null,
     })
   })
 
@@ -156,6 +157,7 @@ describe('reverseGeocode', () => {
     await expect(reverseGeocode({ lat: 1.234, lng: 5.678 })).resolves.toEqual({
       slug: 'your-area',
       label: 'Your area',
+      countryCode: null,
     })
   })
 
@@ -167,6 +169,31 @@ describe('reverseGeocode', () => {
     await expect(reverseGeocode({ lat: 1, lng: 2 })).resolves.toEqual({
       slug: 's-o-paulo',
       label: 'São Paulo!',
+      countryCode: null,
+    })
+  })
+
+  it('returns the BigDataCloud country code uppercased', async () => {
+    defaultFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ locality: 'Lisbon', countryCode: 'pt' }),
+    } as Response)
+    await expect(reverseGeocode({ lat: 38.7, lng: -9.1 })).resolves.toEqual({
+      slug: 'lisbon',
+      label: 'Lisbon',
+      countryCode: 'PT',
+    })
+  })
+
+  it('returns null country for invalid codes', async () => {
+    defaultFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ locality: 'Nowhere', countryCode: 'PTT' }),
+    } as Response)
+    await expect(reverseGeocode({ lat: 0, lng: 0 })).resolves.toEqual({
+      slug: 'nowhere',
+      label: 'Nowhere',
+      countryCode: null,
     })
   })
 })
@@ -184,6 +211,7 @@ describe('reverseGeocode with a configured endpoint', () => {
     await expect(reverseGeocode({ lat: 1, lng: 2 })).resolves.toEqual({
       slug: 'lisbon',
       label: 'Lisbon',
+      countryCode: null,
     })
     expect(fetchMock).toHaveBeenCalledWith('https://geo.example.test?latitude=1&longitude=2')
   })
@@ -203,6 +231,7 @@ describe('reverseGeocode with a configured endpoint', () => {
     await expect(reverseGeocode({ lat: 1, lng: 2 })).resolves.toEqual({
       slug: 'porto',
       label: 'Porto',
+      countryCode: null,
     })
   })
 

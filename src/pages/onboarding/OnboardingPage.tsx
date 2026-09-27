@@ -107,6 +107,7 @@ export function OnboardingPage() {
             latitude: draft.coordinates?.lat ?? null,
             longitude: draft.coordinates?.lng ?? null,
             local_area: draft.localArea ?? null,
+            local_country_code: draft.localCountryCode ?? null,
             local_radius_km: draft.radiusKm ?? null,
           },
           { onConflict: 'id' },

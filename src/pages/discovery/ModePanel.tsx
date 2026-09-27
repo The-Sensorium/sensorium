@@ -2,15 +2,16 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ArrowRight, Loader2, MapPin } from 'lucide-react'
 import { useAuth } from '../../app/auth-context'
-import { cn } from '../../lib/utils'
 import { CLUSTER_SIZE } from '../../lib/constants'
 import type { MatchingMode } from '../../lib/modes'
-import { LOCAL_RADII, type LocalRadius } from '../onboarding/draft'
+import { humanizeAreaSlug, localQueueKey, type LocalRadius } from '../onboarding/draft'
+import { RadiusPicker } from '../../components/RadiusPicker'
 import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
+import { Modal } from '../../components/Modal'
 import { WhatsNextSteps } from '../../components/WhatsNextSteps'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 
@@ -38,12 +39,13 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
     mode === 'local' &&
     (!row.queue_key || editingLocal || (!row.joined && !hasLocalLocation))
   ) {
-    body = <LocalSetupCard onDone={() => setEditingLocal(false)} />
+    body = <LocalSetupCard onDone={editingLocal ? () => setEditingLocal(false) : undefined} />
   } else if (row.joined) {
     body = (
       <JoinedCard
         mode={mode}
         queueKey={row.queue_key}
+        label={row.label}
         onEditLocation={mode === 'local' ? () => setEditingLocal(true) : undefined}
       />
     )
@@ -52,6 +54,7 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
       <JoinCard
         mode={mode}
         queueKey={row.queue_key}
+        label={row.label}
         waiting={row.waiting}
         onEditLocation={mode === 'local' ? () => setEditingLocal(true) : undefined}
       />
@@ -90,11 +93,13 @@ function InClusterCard({ clusterId }: { clusterId: string }) {
 function JoinCard({
   mode,
   queueKey,
+  label,
   waiting,
   onEditLocation,
 }: {
   mode: MatchingMode
   queueKey: string
+  label: string | null
   waiting: number
   onEditLocation?: () => void
 }) {
@@ -102,7 +107,7 @@ function JoinCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? waiting
   const profile = useProfile()
-  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
+  const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
   const displayBlurb =
     mode === 'open_mix'
       ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
@@ -159,15 +164,17 @@ function JoinCard({
 function JoinedCard({
   mode,
   queueKey,
+  label,
   onEditLocation,
 }: {
   mode: MatchingMode
   queueKey: string
+  label: string | null
   onEditLocation?: () => void
 }) {
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? 0
-  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
+  const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
 
   return (
     <div className="rounded-2xl border border-primary/30 bg-primary-container/10 p-6 shadow-soft">
@@ -210,9 +217,51 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [radius, setRadius] = useState<LocalRadius>(50)
-  const [place, setPlace] = useState<{ slug: string; label: string } | null>(null)
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
+  const [radius, setRadius] = useState<LocalRadius | null>(
+    (profile.data?.local_radius_km as LocalRadius | null) ?? null,
+  )
+  const [pendingRadius, setPendingRadius] = useState<LocalRadius | null>(null)
+  const [joining, setJoining] = useState(false)
+  const [pendingLeave, setPendingLeave] = useState<LocalRadius | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const [dialogError, setDialogError] = useState<string | null>(null)
+  const [place, setPlace] = useState<{ slug: string; label: string; countryCode: string | null } | null>(null)
   const hasArea = !!profile.data?.local_area
+
+  const areaSlug = place?.slug ?? profile.data?.local_area ?? null
+  const countryForKey =
+    place?.countryCode ?? profile.data?.local_country_code ?? profile.data?.country_code ?? null
+  const count10 = useQueueCount(
+    'local',
+    areaSlug ? localQueueKey(countryForKey, areaSlug, 10) : null,
+  )
+  const count50 = useQueueCount(
+    'local',
+    areaSlug ? localQueueKey(countryForKey, areaSlug, 50) : null,
+  )
+  const count100 = useQueueCount(
+    'local',
+    areaSlug ? localQueueKey(countryForKey, areaSlug, 100) : null,
+  )
+  const counts = areaSlug
+    ? { 10: count10.count, 50: count50.count, 100: count100.count }
+    : undefined
+  const pendingCount = pendingRadius != null ? (counts?.[pendingRadius] ?? null) : null
+  const savedAreaLabel = profile.data?.local_area ? humanizeAreaSlug(profile.data.local_area) : null
+  const dialogAreaLabel = place?.label ?? savedAreaLabel ?? 'your area'
+  const queuedLocalKey =
+    status.data?.find((r) => r.mode === 'local' && r.joined)?.queue_key ?? null
+
+  function onPickRadius(next: LocalRadius) {
+    setDialogError(null)
+    const key = areaSlug ? localQueueKey(countryForKey, areaSlug, next) : null
+    if (queuedLocalKey != null && key != null && queuedLocalKey === key) {
+      setPendingLeave(next)
+    } else {
+      setPendingRadius(next)
+    }
+  }
 
   useEffect(() => {
     const saved = profile.data?.local_radius_km
@@ -225,13 +274,13 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     try {
       const coords = await getCurrentPosition()
       const found = await reverseGeocode(coords)
-      setPlace(found)
       if (auth.state === 'signedIn') {
         setSaving(true)
         const supabase = requireSupabase()
         const inLocalQueue = status.data?.find((r) => r.mode === 'local' && r.joined)
         if (inLocalQueue) {
-          await supabase.rpc('leave_queue', { p_mode: 'local' })
+          const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+          if (leaveErr) throw leaveErr
         }
         const { error: upErr } = await supabase
           .from('profiles')
@@ -239,23 +288,32 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
             latitude: coords.lat,
             longitude: coords.lng,
             local_area: found.slug,
-            local_radius_km: radius,
+            local_country_code: found.countryCode,
           })
           .eq('id', auth.userId)
         if (upErr) throw upErr
         {
           const uid = auth.userId
           queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
-            old ? { ...old, latitude: coords.lat, longitude: coords.lng, local_area: found.slug, local_radius_km: radius } : old,
+            old
+              ? {
+                  ...old,
+                  latitude: coords.lat,
+                  longitude: coords.lng,
+                  local_area: found.slug,
+                  local_country_code: found.countryCode,
+                }
+              : old,
           )
           await Promise.all([
             queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
             queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
             queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+            queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
           ])
         }
+        setPlace(found)
       }
-      onDone?.()
     } catch (err) {
       setError(toErrorMessage(err, 'Couldn’t determine your location.'))
     } finally {
@@ -264,16 +322,29 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  async function changeRadius(next: LocalRadius) {
-    setRadius(next)
-    if (!place || auth.state !== 'signedIn') return
+  async function confirmRadiusJoin() {
+    const next = pendingRadius
+    if (auth.state !== 'signedIn' || next == null) return
+    setDialogError(null)
+    setJoining(true)
     try {
       const supabase = requireSupabase()
-      const { error } = await supabase
+      const wasQueued = status.data?.some((r) => r.mode === 'local' && r.joined) ?? false
+      if (wasQueued) {
+        const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+        if (leaveErr) throw leaveErr
+      }
+      const { error: upErr } = await supabase
         .from('profiles')
         .update({ local_radius_km: next })
         .eq('id', auth.userId)
-      if (error) throw error
+      if (upErr) throw upErr
+      const { error: joinErr } = await supabase.rpc('join_queue', {
+        p_mode: 'local',
+        p_radius_km: next,
+      })
+      if (joinErr) throw joinErr
+      setRadius(next)
       {
         const uid = auth.userId
         queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
@@ -281,16 +352,117 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         )
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
           queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
         ])
       }
+      setPendingRadius(null)
+      onDone?.()
     } catch (err) {
-      setError(toErrorMessage(err, 'Couldn’t update your radius.'))
+      setDialogError(toErrorMessage(err, 'Couldn’t join this queue.'))
+    } finally {
+      setJoining(false)
     }
   }
 
-  if (place && status.data?.find((r) => r.mode === 'local')?.queue_key) {
-    return null
+  function closeRadiusDialog() {
+    if (!joining) {
+      setPendingRadius(null)
+      setDialogError(null)
+    }
+  }
+
+  async function confirmRadiusLeave() {
+    if (auth.state !== 'signedIn' || pendingLeave == null) return
+    setDialogError(null)
+    setLeaving(true)
+    try {
+      const supabase = requireSupabase()
+      const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+      if (leaveErr) throw leaveErr
+      const { error: upErr } = await supabase
+        .from('profiles')
+        .update({ local_radius_km: null })
+        .eq('id', auth.userId)
+      if (upErr) throw upErr
+      setRadius(null)
+      {
+        const uid = auth.userId
+        queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
+          old ? { ...old, local_radius_km: null } : old,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
+        ])
+      }
+      setPendingLeave(null)
+    } catch (err) {
+      setDialogError(toErrorMessage(err, 'Couldn’t leave this queue.'))
+    } finally {
+      setLeaving(false)
+    }
+  }
+
+  function closeLeaveDialog() {
+    if (!leaving) {
+      setPendingLeave(null)
+      setDialogError(null)
+    }
+  }
+
+  async function removeLocation() {
+    if (auth.state !== 'signedIn') return
+    setError(null)
+    setSaving(true)
+    try {
+      const supabase = requireSupabase()
+      const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+      if (leaveErr) throw leaveErr
+      const { error: upErr } = await supabase
+        .from('profiles')
+        .update({
+          latitude: null,
+          longitude: null,
+          local_area: null,
+          local_country_code: null,
+          local_radius_km: null,
+        })
+        .eq('id', auth.userId)
+      if (upErr) throw upErr
+      setPlace(null)
+      setRadius(null)
+      setConfirmingRemove(false)
+      {
+        const uid = auth.userId
+        queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
+          old
+            ? {
+                ...old,
+                latitude: null,
+                longitude: null,
+                local_area: null,
+                local_country_code: null,
+                local_radius_km: null,
+              }
+            : old,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
+        ])
+      }
+      onDone?.()
+    } catch (err) {
+      setError(toErrorMessage(err, 'Couldn’t remove your location.'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -302,66 +474,191 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
             {hasArea ? 'Update your local area' : 'Set your local area'}
           </h2>
         </div>
-        {hasArea && onDone && (
-          <button
-            type="button"
-            onClick={onDone}
-            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center px-2 py-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
-          >
-            Cancel
-          </button>
-        )}
       </div>
       <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-        {hasArea
-          ? 'You’ll be matched within your new area. If you’re currently queued locally, this updates your queue.'
-          : 'You haven’t set a local area yet. Share your location once and you’ll be matched within your chosen radius. Your exact coordinates are never shared with cluster members.'}
+          {hasArea
+            ? 'You’ll be matched within your new area. If you were in a queue, join the new one to continue.'
+            : 'You haven’t set a local area yet. Share your location once and you’ll be matched within your chosen radius. Your exact coordinates are never shared with cluster members.'}
       </p>
 
-      <fieldset className="mt-5">
-        <legend className="text-sm font-semibold text-on-surface">Matching radius</legend>
-        <div className="mt-2 flex gap-2">
-          {LOCAL_RADII.map((r) => (
-            <button
-              key={r}
-              type="button"
-              aria-pressed={radius === r}
-              onClick={() => void changeRadius(r as LocalRadius)}
-              className={cn(
-                'min-h-[44px] flex-1 rounded-pill border px-4 py-2.5 text-sm font-semibold transition-colors',
-                radius === r
-                  ? 'border-primary bg-primary text-on-primary'
-                  : 'border-outline-variant/70 text-on-surface hover:bg-surface-container',
-              )}
-            >
-              {r} km
-            </button>
-          ))}
+      {(place || hasArea) && (
+        <div className="mt-5">
+          <RadiusPicker value={radius} onChange={onPickRadius} counts={counts} />
         </div>
-      </fieldset>
-
-      <button
-        type="button"
-        onClick={locate}
-        disabled={locating || saving}
-        className="mt-5 inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+      )}
+      <Modal
+        open={pendingRadius != null}
+        onClose={closeRadiusDialog}
+        title={pendingRadius != null ? `Join the ${pendingRadius} km queue?` : 'Join queue?'}
       >
-        {locating || saving ? (
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        ) : (
-          <MapPin className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        <div className="mt-4 space-y-4">
+          <p className="text-sm leading-6 text-on-surface-variant">
+            {pendingRadius != null
+              ? `You’ll be matched within ${pendingRadius} km of ${dialogAreaLabel}${
+                  pendingCount != null ? `, where ${pendingCount} of ${CLUSTER_SIZE} are waiting` : ''
+                }.`
+              : null}
+          </p>
+          {dialogError && (
+            <p role="alert" className="text-sm text-error">
+              {dialogError}
+            </p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeRadiusDialog}
+              disabled={joining}
+              className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmRadiusJoin()}
+              disabled={joining}
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+            >
+              {joining && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              Join queue
+            </button>
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        open={pendingLeave != null}
+        onClose={closeLeaveDialog}
+        title={pendingLeave != null ? `Leave the ${pendingLeave} km queue?` : 'Leave queue?'}
+      >
+        <div className="mt-4 space-y-4">
+          <p className="text-sm leading-6 text-on-surface-variant">
+            {pendingLeave != null
+              ? `You’ll stop waiting within ${pendingLeave} km of ${dialogAreaLabel}. Your radius choice will be cleared, but your area stays saved.`
+              : null}
+          </p>
+          {dialogError && (
+            <p role="alert" className="text-sm text-error">
+              {dialogError}
+            </p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={closeLeaveDialog}
+              disabled={leaving}
+              className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmRadiusLeave()}
+              disabled={leaving}
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+            >
+              {leaving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              Leave queue
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {(place || savedAreaLabel) && (
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="text-sm text-on-surface-variant">
+            Area:{' '}
+            <span className="font-semibold text-on-surface">{place?.label ?? savedAreaLabel}</span>
+          </p>
+          {!confirmingRemove && (
+            <button
+              type="button"
+              onClick={() => setConfirmingRemove(true)}
+              disabled={locating || saving}
+              className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-error hover:underline disabled:opacity-60"
+            >
+              Remove location
+            </button>
+          )}
+        </div>
+      )}
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
+        {!hasArea && (
+          <button
+            type="button"
+            onClick={locate}
+            disabled={locating || saving}
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-6 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            {locating || saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <MapPin className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            )}
+            {locating ? 'Finding your location…' : saving ? 'Saving…' : 'Share my location'}
+          </button>
         )}
-        {locating ? 'Finding your location…' : saving ? 'Saving…' : hasArea ? 'Update location' : 'Share my location'}
-      </button>
+        {hasArea && radius != null && (
+          <p className="inline-flex min-h-[44px] flex-wrap items-center gap-x-1.5 text-sm text-on-surface-variant">
+            Wrong area?
+            <button
+              type="button"
+              onClick={locate}
+              disabled={locating || saving}
+              className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-primary hover:underline disabled:opacity-60"
+            >
+              {locating || saving ? 'Locating…' : 'Update location'}
+            </button>
+          </p>
+        )}
+      </div>
+      <Modal
+        open={confirmingRemove}
+        onClose={() => {
+          if (!saving) setConfirmingRemove(false)
+        }}
+        title="Remove location?"
+      >
+        <div className="mt-4 space-y-4">
+            <p className="text-sm leading-6 text-on-surface-variant">
+              Your local area, coordinates, and radius will be cleared. You will leave the
+              Local queue if you are in one. Clusters you already joined are unaffected.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmingRemove(false)}
+                disabled={saving}
+                className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void removeLocation()}
+                disabled={saving}
+                className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                Remove location
+              </button>
+            </div>
+        </div>
+      </Modal>
       {error && (
         <p role="alert" className="mt-3 text-sm text-error">
           {error}
         </p>
       )}
-      {place && (
-        <p className="mt-3 text-sm text-on-surface-variant">
-          Area: <span className="font-semibold text-on-surface">{place.label}</span>
-        </p>
+      {hasArea && onDone && (
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={onDone}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-pill border border-outline-variant/70 px-5 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+          >
+            Cancel
+          </button>
+        </div>
       )}
     </div>
   )
