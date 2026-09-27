@@ -616,8 +616,12 @@ export function RoomView() {
       }
     }
     try {
+      // Baseline before the fetch: prefer the tracked ref so consecutive pages
+      // in the page-back loop stay accurate and a live arrival mid-fetch still
+      // counts as new (added excludes live rows).
+      const before = lastLenRef.current ?? messages.data?.length ?? 0
       const result = await loadEarlier.mutateAsync()
-      lastLenRef.current = (messages.data?.length ?? 0) + result.added
+      lastLenRef.current = before + result.added
       if (!result.hasMore) {
         exhaustedRef.current = true
         setHasMore(false)

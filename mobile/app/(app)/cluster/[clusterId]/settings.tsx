@@ -97,7 +97,7 @@ export default function ClusterSettingsScreen() {
             </Text>
           </View>
           <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
-            Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 30}-day
+            Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day
             cooldown for this matching mode and triggers a replacement search so the cluster can stay
             at 8.
           </Text>
