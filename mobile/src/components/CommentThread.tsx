@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { ActivityIndicator, Text, View, findNodeHandle } from 'react-native'
+import { ActivityIndicator, Text, View } from 'react-native'
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller'
 import { useAuth } from '../auth-context'
 import { CommentItem } from './CommentItem'
@@ -18,16 +18,18 @@ export function CommentThread({
   comments,
   memberById,
   onReply,
-  highlightCommentId,
+  deepLinkCommentId,
   scrollRef,
+  contentRef,
   onDeepLinkHandled,
 }: {
   clusterId: string
   comments: PostComment[]
   memberById: Map<string, { id: string; display_name: string; avatar_url: string | null }>
   onReply(target: ReplyTarget): void
-  highlightCommentId?: string | null
+  deepLinkCommentId?: string | null
   scrollRef?: RefObject<KeyboardAwareScrollViewRef | null>
+  contentRef?: RefObject<View | null>
   onDeepLinkHandled?: (commentId: string) => void
 }) {
   const t = useTheme()
@@ -40,69 +42,115 @@ export function CommentThread({
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
-  const [highlightId, setHighlightId] = useState<string | null>(highlightCommentId ?? null)
+  const [highlightId, setHighlightId] = useState<string | null>(deepLinkCommentId ?? null)
   const [deepLinkMissing, setDeepLinkMissing] = useState(false)
-  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const measureRaf = useRef<number | null>(null)
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const targetRef = useRef<View>(null)
+  // The scroll target is owned locally until the scroll is dispatched.
+  // Clearing the route param (via onDeepLinkHandled) re-renders with
+  // deepLinkCommentId = null, which detaches targetRef; holding the id here
+  // keeps the measured view mounted until after measureInWindow runs.
+  const [scrollTargetId, setScrollTargetId] = useState<string | null>(deepLinkCommentId ?? null)
+  const handledRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    if (highlightCommentId) setHighlightId(highlightCommentId)
-  }, [highlightCommentId])
+    if (deepLinkCommentId) {
+      // A re-tap of an already-handled comment arrives as a fresh value
+      // (the parent cleared it in between), so unmark it to fire again.
+      handledRef.current.delete(deepLinkCommentId)
+      setScrollTargetId(deepLinkCommentId)
+      setHighlightId(deepLinkCommentId)
+    }
+  }, [deepLinkCommentId])
 
   useEffect(() => {
     return () => {
-      if (highlightTimer.current) clearTimeout(highlightTimer.current)
       if (measureRaf.current !== null) cancelAnimationFrame(measureRaf.current)
+      if (retryTimer.current !== null) clearTimeout(retryTimer.current)
+      if (highlightTimer.current) clearTimeout(highlightTimer.current)
     }
   }, [])
 
   // Notification deep link: scroll the target comment into view once loaded,
-  // then flash the shared highlight ring. Firing is driven by the
-  // highlightCommentId value itself; the parent clears it (via
-  // onDeepLinkHandled) after handling, so each new value fires exactly once
+  // then flash the shared highlight ring. Each new value fires exactly once
   // even when this instance is reused across taps.
   useEffect(() => {
-    if (!highlightCommentId || comments.length === 0) return
-    const target = comments.find((c) => c.id === highlightCommentId)
+    if (!scrollTargetId || comments.length === 0) return
+    if (handledRef.current.has(scrollTargetId)) return
+    const pendingId = scrollTargetId
+    const target = comments.find((c) => c.id === pendingId)
+    function finish() {
+      if (handledRef.current.has(pendingId)) return
+      handledRef.current.add(pendingId)
+      if (retryTimer.current !== null) {
+        clearTimeout(retryTimer.current)
+        retryTimer.current = null
+      }
+      setScrollTargetId(null)
+      onDeepLinkHandled?.(pendingId)
+    }
     if (!target || target.deleted_at) {
       setDeepLinkMissing(true)
       setHighlightId(null)
-      onDeepLinkHandled?.(highlightCommentId)
+      if (highlightTimer.current) {
+        clearTimeout(highlightTimer.current)
+        highlightTimer.current = null
+      }
+      finish()
       return
     }
     // A muted-hidden target still renders its placeholder (now measurable
-    // via innerRef), so scroll and highlight it like any other target.
+    // via innerRef), so scroll to it like any other target.
     setDeepLinkMissing(false)
-    setHighlightId(highlightCommentId)
-    // Measure on the next frame so the native view exists, and only when
-    // the ref is usable. Measurement failure must never break the highlight
-    // or spam warnings, so skip silently in that case.
-    if (measureRaf.current !== null) cancelAnimationFrame(measureRaf.current)
-    measureRaf.current = requestAnimationFrame(() => {
-      try {
-        const scroller = scrollRef?.current ?? null
-        const target = targetRef.current
-        const node = scroller ? findNodeHandle(scroller) : null
-        if (!node || !target || typeof target.measureLayout !== 'function') return
-        target.measureLayout(
-          node,
-          (x, y) => {
-            scroller?.scrollTo({ y: Math.max(0, y - 120), animated: true })
-          },
-          () => {},
-        )
-      } catch {
-        // Ignore measurement failures; the highlight still shows.
-      }
-    })
+    setHighlightId(pendingId)
     if (highlightTimer.current) clearTimeout(highlightTimer.current)
     highlightTimer.current = setTimeout(() => {
       highlightTimer.current = null
       setHighlightId(null)
     }, 1600)
-    onDeepLinkHandled?.(highlightCommentId)
-  }, [highlightCommentId, comments, scrollRef, onDeepLinkHandled, mutedSet, revealed])
+    // Measure on the next frame so the native views exist. measureInWindow
+    // needs no ancestor handle (measureLayout's ancestor must be a native
+    // element instance, which the keyboard-controller wrapper ref is not),
+    // and window coords cancel out in the subtraction, yielding the target's
+    // exact offset within the scroll content. Measurement failure must never
+    // break navigation or spam warnings, so skip silently in that case.
+    function attempt(lastTry: boolean) {
+      try {
+        const scroller = scrollRef?.current ?? null
+        const nodeTarget = targetRef.current
+        const content = contentRef?.current ?? null
+        if (scroller && nodeTarget && content) {
+          nodeTarget.measureInWindow((tx, ty) => {
+            content.measureInWindow((cx, cy) => {
+              scroller.scrollTo({ y: Math.max(0, ty - cy - 120), animated: true })
+              finish()
+            })
+          })
+          // Fallback: if the native callbacks never fire, don't hold the
+          // target (and its ref) forever; clear it without scrolling.
+          if (retryTimer.current !== null) clearTimeout(retryTimer.current)
+          retryTimer.current = setTimeout(() => finish(), 1500)
+          return
+        }
+      } catch {
+        // Ignore measurement failures; navigation still completes.
+      }
+      if (lastTry) {
+        finish()
+        return
+      }
+      if (retryTimer.current !== null) clearTimeout(retryTimer.current)
+      retryTimer.current = setTimeout(() => attempt(true), 350)
+    }
+    if (measureRaf.current !== null) cancelAnimationFrame(measureRaf.current)
+    measureRaf.current = requestAnimationFrame(() => attempt(false))
+    return () => {
+      if (measureRaf.current !== null) cancelAnimationFrame(measureRaf.current)
+      if (retryTimer.current !== null) clearTimeout(retryTimer.current)
+    }
+  }, [scrollTargetId, comments, scrollRef, contentRef, onDeepLinkHandled, mutedSet, revealed])
   const commentIds = comments.map((c) => c.id)
   const commentLikes = useClusterCommentLikes(clusterId)
   const toggleCommentLike = useToggleCommentLike(clusterId)
@@ -193,7 +241,7 @@ export function CommentThread({
                       onToggle={() => toggleReveal(tc.id)}
                       kind="comment"
                       highlighted={highlightId === tc.id}
-                      innerRef={highlightCommentId === tc.id ? targetRef : undefined}
+                      innerRef={scrollTargetId === tc.id ? targetRef : undefined}
                     />
                   ) : (
                     <View style={{ gap: 8 }}>
@@ -214,7 +262,7 @@ export function CommentThread({
                         likedByMe={likesByComment.get(tc.id)?.mine ?? false}
                         replyCount={thread.length}
                         highlighted={highlightId === tc.id}
-                        innerRef={highlightCommentId === tc.id ? targetRef : undefined}
+                        innerRef={scrollTargetId === tc.id ? targetRef : undefined}
                       />
                     </View>
                   )}
@@ -230,7 +278,7 @@ export function CommentThread({
                                 onToggle={() => toggleReveal(r.id)}
                                 kind="comment"
                                 highlighted={highlightId === r.id}
-                                innerRef={highlightCommentId === r.id ? targetRef : undefined}
+                                innerRef={scrollTargetId === r.id ? targetRef : undefined}
                               />
                             </Fragment>
                           )
@@ -254,7 +302,7 @@ export function CommentThread({
                               likeCount={likesByComment.get(r.id)?.count ?? 0}
                               likedByMe={likesByComment.get(r.id)?.mine ?? false}
                               highlighted={highlightId === r.id}
-                              innerRef={highlightCommentId === r.id ? targetRef : undefined}
+                              innerRef={scrollTargetId === r.id ? targetRef : undefined}
                             />
                           </View>
                         )
@@ -274,7 +322,7 @@ export function CommentThread({
                       onToggle={() => toggleReveal(c.id)}
                       kind="comment"
                       highlighted={highlightId === c.id}
-                      innerRef={highlightCommentId === c.id ? targetRef : undefined}
+                      innerRef={scrollTargetId === c.id ? targetRef : undefined}
                     />
                   </View>
                 )
@@ -298,7 +346,7 @@ export function CommentThread({
                     likeCount={likesByComment.get(c.id)?.count ?? 0}
                     likedByMe={likesByComment.get(c.id)?.mine ?? false}
                     highlighted={highlightId === c.id}
-                    innerRef={highlightCommentId === c.id ? targetRef : undefined}
+                    innerRef={scrollTargetId === c.id ? targetRef : undefined}
                   />
                 </View>
               )

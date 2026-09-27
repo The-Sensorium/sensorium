@@ -27,7 +27,7 @@ export function CommentThread({
   comments,
   memberById,
   selfAvatar,
-  highlightCommentId,
+  deepLinkCommentId,
   onDeepLinkHandled,
 }: {
   clusterId: string
@@ -35,7 +35,7 @@ export function CommentThread({
   comments: PostComment[]
   memberById: Map<string, { id: string; display_name: string; avatar_url: string | null }>
   selfAvatar: { display_name: string; avatar_url: string | null }
-  highlightCommentId?: string | null
+  deepLinkCommentId?: string | null
   onDeepLinkHandled?: (commentId: string) => void
 }) {
   const auth = useAuth()
@@ -117,13 +117,13 @@ export function CommentThread({
   const commentIds = comments.map((c) => c.id)
   const commentLikes = useClusterCommentLikes(clusterId)
   const toggleCommentLike = useToggleCommentLike(clusterId)
-  const [highlightId, setHighlightId] = useState<string | null>(highlightCommentId ?? null)
+  const [highlightId, setHighlightId] = useState<string | null>(deepLinkCommentId ?? null)
   const [deepLinkMissing, setDeepLinkMissing] = useState(false)
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (highlightCommentId) setHighlightId(highlightCommentId)
-  }, [highlightCommentId])
+    if (deepLinkCommentId) setHighlightId(deepLinkCommentId)
+  }, [deepLinkCommentId])
 
   useEffect(() => {
     return () => {
@@ -133,39 +133,39 @@ export function CommentThread({
 
   // Notification deep link: scroll the target comment into view once the
   // list loads, then flash the shared highlight ring. Firing is driven by
-  // the highlightCommentId value itself; the parent clears it (via
+  // the deepLinkCommentId value itself; the parent clears it (via
   // onDeepLinkHandled) after handling, so each new value fires exactly once
   // even when this instance is reused across taps.
   useEffect(() => {
-    if (!highlightCommentId || comments.length === 0) return
-    const target = comments.find((c) => c.id === highlightCommentId)
+    if (!deepLinkCommentId || comments.length === 0) return
+    const target = comments.find((c) => c.id === deepLinkCommentId)
     if (!target || target.deleted_at) {
       setDeepLinkMissing(true)
       setHighlightId(null)
-      onDeepLinkHandled?.(highlightCommentId)
+      onDeepLinkHandled?.(deepLinkCommentId)
       return
     }
-    const el = document.getElementById(`comment-${highlightCommentId}`)
+    const el = document.getElementById(`comment-${deepLinkCommentId}`)
     if (!el) {
       // Muted-hidden or otherwise not rendered: do not reveal, just note it.
       setDeepLinkMissing(true)
       setHighlightId(null)
-      onDeepLinkHandled?.(highlightCommentId)
+      onDeepLinkHandled?.(deepLinkCommentId)
       return
     }
     const reduceMotion =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
     el.scrollIntoView?.({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
-    setHighlightId(highlightCommentId)
+    setHighlightId(deepLinkCommentId)
     setDeepLinkMissing(false)
     if (highlightTimer.current) clearTimeout(highlightTimer.current)
     highlightTimer.current = setTimeout(() => {
       highlightTimer.current = null
       setHighlightId(null)
     }, 1600)
-    onDeepLinkHandled?.(highlightCommentId)
-  }, [highlightCommentId, comments, onDeepLinkHandled])
+    onDeepLinkHandled?.(deepLinkCommentId)
+  }, [deepLinkCommentId, comments, onDeepLinkHandled])
 
   // Comment likes are cached by cluster, not by comment set. When a new comment
   // arrives the ids grow but the query key doesn't, so refetch to pick up the

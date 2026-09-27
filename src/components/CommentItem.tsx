@@ -62,13 +62,7 @@ export function CommentItem({
   }
 
   return (
-    <li
-      id={`comment-${comment.id}`}
-      // Outline (not ring) with an offset: the avatar sits flush at this
-      // element's edge, and a ring would clip into it. The offset leaves a
-      // transparent gap, so no offset color matching is needed.
-      className={cn('space-y-2 rounded-xl', highlighted && 'outline outline-2 outline-primary outline-offset-2')}
-    >
+    <li id={`comment-${comment.id}`} className="space-y-2 rounded-xl">
       {mutedBanner}
       <div className="flex gap-3">
       <Avatar
@@ -83,15 +77,20 @@ export function CommentItem({
           {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}
           <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(comment.created_at))}</span>
         </div>
-        {comment.content && (
-          <p className="mt-0.5 whitespace-pre-wrap text-sm leading-5">
-            {repliedToName && (
-              <span className="mr-1 font-semibold text-primary">@{repliedToName}</span>
+        {comment.content || comment.image_url || comment.gif_url ? (
+          // Highlight hugs only the comment body, not the author row or actions.
+          <div className={cn('rounded-xl', highlighted && 'outline outline-2 outline-primary outline-offset-2')}>
+            {comment.content && (
+              <p className="mt-0.5 whitespace-pre-wrap text-sm leading-5">
+                {repliedToName && (
+                  <span className="mr-1 font-semibold text-primary">@{repliedToName}</span>
+                )}
+                <span className="text-on-surface"><LinkifiedText text={comment.content} /></span>
+              </p>
             )}
-            <span className="text-on-surface"><LinkifiedText text={comment.content} /></span>
-          </p>
-        )}
-        <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
+            <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
+          </div>
+        ) : null}
         <div className="mt-1 flex items-center gap-3">
           {onLike && (
             <button

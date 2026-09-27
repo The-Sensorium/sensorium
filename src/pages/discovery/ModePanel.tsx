@@ -217,7 +217,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [confirmingRemove, setConfirmingRemove] = useState(false)
   const [radius, setRadius] = useState<LocalRadius | null>(
     (profile.data?.local_radius_km as LocalRadius | null) ?? null,
   )
@@ -414,57 +413,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  async function removeLocation() {
-    if (auth.state !== 'signedIn') return
-    setError(null)
-    setSaving(true)
-    try {
-      const supabase = requireSupabase()
-      const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
-      if (leaveErr) throw leaveErr
-      const { error: upErr } = await supabase
-        .from('profiles')
-        .update({
-          latitude: null,
-          longitude: null,
-          local_area: null,
-          local_country_code: null,
-          local_radius_km: null,
-        })
-        .eq('id', auth.userId)
-      if (upErr) throw upErr
-      setPlace(null)
-      setRadius(null)
-      setConfirmingRemove(false)
-      {
-        const uid = auth.userId
-        queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
-          old
-            ? {
-                ...old,
-                latitude: null,
-                longitude: null,
-                local_area: null,
-                local_country_code: null,
-                local_radius_km: null,
-              }
-            : old,
-        )
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
-          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
-          queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
-          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
-        ])
-      }
-      onDone?.()
-    } catch (err) {
-      setError(toErrorMessage(err, 'Couldn’t remove your location.'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
       <div className="flex items-start justify-between gap-3">
@@ -569,16 +517,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
             Area:{' '}
             <span className="font-semibold text-on-surface">{place?.label ?? savedAreaLabel}</span>
           </p>
-          {!confirmingRemove && (
-            <button
-              type="button"
-              onClick={() => setConfirmingRemove(true)}
-              disabled={locating || saving}
-              className="inline-flex min-h-[44px] items-center justify-center text-sm font-semibold text-error hover:underline disabled:opacity-60"
-            >
-              Remove location
-            </button>
-          )}
         </div>
       )}
       <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -611,39 +549,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
           </p>
         )}
       </div>
-      <Modal
-        open={confirmingRemove}
-        onClose={() => {
-          if (!saving) setConfirmingRemove(false)
-        }}
-        title="Remove location?"
-      >
-        <div className="mt-4 space-y-4">
-            <p className="text-sm leading-6 text-on-surface-variant">
-              Your local area, coordinates, and radius will be cleared. You will leave the
-              Local queue if you are in one. Clusters you already joined are unaffected.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmingRemove(false)}
-                disabled={saving}
-                className="min-h-[44px] flex-1 rounded-pill border border-outline-variant/70 px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void removeLocation()}
-                disabled={saving}
-                className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
-              >
-                {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-                Remove location
-              </button>
-            </div>
-        </div>
-      </Modal>
       {error && (
         <p role="alert" className="mt-3 text-sm text-error">
           {error}

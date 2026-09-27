@@ -220,7 +220,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [confirmingRemove, setConfirmingRemove] = useState(false)
   const [pendingRadius, setPendingRadius] = useState<LocalRadius | null>(null)
   const [joining, setJoining] = useState(false)
   const [pendingLeave, setPendingLeave] = useState<LocalRadius | null>(null)
@@ -410,57 +409,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  async function removeLocation() {
-    if (auth.state !== 'signedIn') return
-    setError(null)
-    setSaving(true)
-    try {
-      const supabase = requireSupabase()
-      const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
-      if (leaveErr) throw leaveErr
-      const { error: upErr } = await supabase
-        .from('profiles')
-        .update({
-          latitude: null,
-          longitude: null,
-          local_area: null,
-          local_country_code: null,
-          local_radius_km: null,
-        })
-        .eq('id', auth.userId)
-      if (upErr) throw upErr
-      setPlace(null)
-      setRadius(null)
-      setConfirmingRemove(false)
-      {
-        const uid = auth.userId
-        queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
-          old
-            ? {
-                ...old,
-                latitude: null,
-                longitude: null,
-                local_area: null,
-                local_country_code: null,
-                local_radius_km: null,
-              }
-            : old,
-        )
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
-          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
-          queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
-          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
-        ])
-      }
-      onDone?.()
-    } catch (err) {
-      setError(toErrorMessage(err, 'Couldn’t remove your location.'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <Card>
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
@@ -517,17 +465,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
           <Text style={{ flexShrink: 1, fontSize: 14, color: t.onSurfaceVariant }}>
             Area: <Text style={{ fontWeight: '600', color: t.onSurface }}>{place?.label ?? savedAreaLabel}</Text>
           </Text>
-          {!confirmingRemove ? (
-            <Pressable
-              onPress={() => setConfirmingRemove(true)}
-              disabled={busy}
-              accessibilityRole="button"
-              accessibilityLabel="Remove location"
-              style={{ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>Remove location</Text>
-            </Pressable>
-          ) : null}
         </View>
       )}
       {!hasArea ? (
@@ -555,37 +492,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
             </Text>
           </Pressable>
         </View>
-      ) : null}
-      {confirmingRemove ? (
-        <Modal
-          open={confirmingRemove}
-          onClose={() => {
-            if (!saving) setConfirmingRemove(false)
-          }}
-          title="Remove location?"
-        >
-          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-            Your local area, coordinates, and radius will be cleared. You will leave the
-            Local queue if you are in one. Clusters you already joined are unaffected.
-          </Text>
-          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={() => setConfirmingRemove(false)}
-              disabled={saving}
-              hitSlop={8}
-              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: saving ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-            </Pressable>
-            <PrimaryButton
-              title="Remove"
-              loadingTitle="Removing…"
-              loading={saving}
-              tone="error"
-              onPress={() => void removeLocation()}
-            />
-          </View>
-        </Modal>
       ) : null}
       {pendingRadius != null ? (
         <Modal
