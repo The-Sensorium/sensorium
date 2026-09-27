@@ -4,7 +4,7 @@ import { Link } from 'expo-router'
 import { useAuth } from '../../auth-context'
 import { CLUSTER_SIZE } from '../../lib/constants'
 import type { MatchingMode } from '../../lib/modes'
-import { LOCAL_RADII, type LocalRadius } from '../../lib/onboarding-draft'
+import { LOCAL_RADII, LOCAL_RADIUS_LABELS, humanizeAreaSlug, localQueueKey, type LocalRadius } from '../../lib/onboarding-draft'
 import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
@@ -14,6 +14,7 @@ import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { Card, LoadingView, PrimaryButton } from '../ui'
+import { Modal } from '../Modal'
 import { WhatsNextSteps } from '../WhatsNextSteps'
 
 export function ModePanel({ mode }: { mode: MatchingMode }) {
@@ -43,13 +44,14 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
     mode === 'local' &&
     (!row.queue_key || editingLocal || (!row.joined && !hasLocalLocation))
   ) {
-    return <LocalSetupCard onDone={() => setEditingLocal(false)} />
+    return <LocalSetupCard onDone={editingLocal ? () => setEditingLocal(false) : undefined} />
   }
   if (row.joined && row.queue_key) {
     return (
       <JoinedCard
         mode={mode}
         queueKey={row.queue_key}
+        label={row.label}
         onEditLocation={mode === 'local' ? () => setEditingLocal(true) : undefined}
       />
     )
@@ -59,6 +61,7 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
       <JoinCard
         mode={mode}
         queueKey={row.queue_key}
+        label={row.label}
         waiting={row.waiting}
         onEditLocation={mode === 'local' ? () => setEditingLocal(true) : undefined}
       />
@@ -100,11 +103,13 @@ function InClusterCard({ clusterId }: { clusterId: string }) {
 function JoinCard({
   mode,
   queueKey,
+  label,
   waiting,
   onEditLocation,
 }: {
   mode: MatchingMode
   queueKey: string
+  label: string | null
   waiting: number
   onEditLocation?: () => void
 }) {
@@ -113,7 +118,7 @@ function JoinCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? waiting
   const profile = useProfile()
-  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
+  const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
   const displayBlurb =
     mode === 'open_mix'
       ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
@@ -165,16 +170,18 @@ function JoinCard({
 function JoinedCard({
   mode,
   queueKey,
+  label,
   onEditLocation,
 }: {
   mode: MatchingMode
   queueKey: string
+  label: string | null
   onEditLocation?: () => void
 }) {
   const t = useTheme()
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? 0
-  const displayKey = mode === 'open_mix' ? 'Open pool' : queueKey
+  const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
 
   return (
     <Card>
@@ -213,10 +220,52 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const [radius, setRadius] = useState<LocalRadius>(50)
-  const [place, setPlace] = useState<{ slug: string; label: string } | null>(null)
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
+  const [pendingRadius, setPendingRadius] = useState<LocalRadius | null>(null)
+  const [joining, setJoining] = useState(false)
+  const [pendingLeave, setPendingLeave] = useState<LocalRadius | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const [dialogError, setDialogError] = useState<string | null>(null)
+  const [radius, setRadius] = useState<LocalRadius | null>(
+    (profile.data?.local_radius_km as LocalRadius | null) ?? null,
+  )
+  const [place, setPlace] = useState<{ slug: string; label: string; countryCode: string | null } | null>(null)
   const hasArea = !!profile.data?.local_area
   const busy = locating || saving
+
+  const areaSlug = place?.slug ?? profile.data?.local_area ?? null
+  const countryForKey =
+    place?.countryCode ?? profile.data?.local_country_code ?? profile.data?.country_code ?? null
+  const count10 = useQueueCount(
+    'local',
+    areaSlug ? localQueueKey(countryForKey, areaSlug, 10) : null,
+  )
+  const count50 = useQueueCount(
+    'local',
+    areaSlug ? localQueueKey(countryForKey, areaSlug, 50) : null,
+  )
+  const count100 = useQueueCount(
+    'local',
+    areaSlug ? localQueueKey(countryForKey, areaSlug, 100) : null,
+  )
+  const counts: Record<number, number | null> | undefined = areaSlug
+    ? { 10: count10.count, 50: count50.count, 100: count100.count }
+    : undefined
+  const pendingCount = pendingRadius != null ? (counts?.[pendingRadius] ?? null) : null
+  const savedAreaLabel = profile.data?.local_area ? humanizeAreaSlug(profile.data.local_area) : null
+  const dialogAreaLabel = place?.label ?? savedAreaLabel ?? 'your area'
+  const queuedLocalKey =
+    status.data?.find((r) => r.mode === 'local' && r.joined)?.queue_key ?? null
+
+  function onPickRadius(next: LocalRadius) {
+    setDialogError(null)
+    const key = areaSlug ? localQueueKey(countryForKey, areaSlug, next) : null
+    if (queuedLocalKey != null && key != null && queuedLocalKey === key) {
+      setPendingLeave(next)
+    } else {
+      setPendingRadius(next)
+    }
+  }
 
   useEffect(() => {
     const saved = profile.data?.local_radius_km
@@ -229,13 +278,13 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     try {
       const coords = await getCurrentPosition()
       const found = await reverseGeocode(coords)
-      setPlace(found)
       if (auth.state === 'signedIn') {
         setSaving(true)
         const supabase = requireSupabase()
         const inLocalQueue = status.data?.find((r) => r.mode === 'local' && r.joined)
         if (inLocalQueue) {
-          await supabase.rpc('leave_queue', { p_mode: 'local' })
+          const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+          if (leaveErr) throw leaveErr
         }
         const { error: upErr } = await supabase
           .from('profiles')
@@ -243,23 +292,24 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
             latitude: coords.lat,
             longitude: coords.lng,
             local_area: found.slug,
-            local_radius_km: radius,
+            local_country_code: found.countryCode,
           })
           .eq('id', auth.userId)
         if (upErr) throw upErr
         {
           const uid = auth.userId
           queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
-            old ? { ...old, latitude: coords.lat, longitude: coords.lng, local_area: found.slug, local_radius_km: radius } : old,
+            old ? { ...old, latitude: coords.lat, longitude: coords.lng, local_area: found.slug, local_country_code: found.countryCode } : old,
           )
           await Promise.all([
             queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
             queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
             queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+            queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
           ])
         }
+        setPlace(found)
       }
-      onDone?.()
     } catch (err) {
       setError(toErrorMessage(err, 'Couldn’t determine your location.'))
     } finally {
@@ -268,16 +318,29 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  async function changeRadius(next: LocalRadius) {
-    setRadius(next)
-    if (!place || auth.state !== 'signedIn') return
+  async function confirmRadiusJoin() {
+    const next = pendingRadius
+    if (auth.state !== 'signedIn' || next == null) return
+    setDialogError(null)
+    setJoining(true)
     try {
       const supabase = requireSupabase()
-      const { error } = await supabase
+      const wasQueued = status.data?.some((r) => r.mode === 'local' && r.joined) ?? false
+      if (wasQueued) {
+        const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+        if (leaveErr) throw leaveErr
+      }
+      const { error: upErr } = await supabase
         .from('profiles')
         .update({ local_radius_km: next })
         .eq('id', auth.userId)
-      if (error) throw error
+      if (upErr) throw upErr
+      const { error: joinErr } = await supabase.rpc('join_queue', {
+        p_mode: 'local',
+        p_radius_km: next,
+      })
+      if (joinErr) throw joinErr
+      setRadius(next)
       {
         const uid = auth.userId
         queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
@@ -285,16 +348,117 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         )
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
           queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
         ])
       }
+      setPendingRadius(null)
+      onDone?.()
     } catch (err) {
-      setError(toErrorMessage(err, 'Couldn’t update your radius.'))
+      setDialogError(toErrorMessage(err, 'Couldn’t join this queue.'))
+    } finally {
+      setJoining(false)
     }
   }
 
-  if (place && status.data?.find((r) => r.mode === 'local')?.queue_key) {
-    return null
+  function closeRadiusDialog() {
+    if (!joining) {
+      setPendingRadius(null)
+      setDialogError(null)
+    }
+  }
+
+  async function confirmRadiusLeave() {
+    if (auth.state !== 'signedIn' || pendingLeave == null) return
+    setDialogError(null)
+    setLeaving(true)
+    try {
+      const supabase = requireSupabase()
+      const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+      if (leaveErr) throw leaveErr
+      const { error: upErr } = await supabase
+        .from('profiles')
+        .update({ local_radius_km: null })
+        .eq('id', auth.userId)
+      if (upErr) throw upErr
+      setRadius(null)
+      {
+        const uid = auth.userId
+        queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
+          old ? { ...old, local_radius_km: null } : old,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
+        ])
+      }
+      setPendingLeave(null)
+    } catch (err) {
+      setDialogError(toErrorMessage(err, 'Couldn’t leave this queue.'))
+    } finally {
+      setLeaving(false)
+    }
+  }
+
+  function closeLeaveDialog() {
+    if (!leaving) {
+      setPendingLeave(null)
+      setDialogError(null)
+    }
+  }
+
+  async function removeLocation() {
+    if (auth.state !== 'signedIn') return
+    setError(null)
+    setSaving(true)
+    try {
+      const supabase = requireSupabase()
+      const { error: leaveErr } = await supabase.rpc('leave_queue', { p_mode: 'local' })
+      if (leaveErr) throw leaveErr
+      const { error: upErr } = await supabase
+        .from('profiles')
+        .update({
+          latitude: null,
+          longitude: null,
+          local_area: null,
+          local_country_code: null,
+          local_radius_km: null,
+        })
+        .eq('id', auth.userId)
+      if (upErr) throw upErr
+      setPlace(null)
+      setRadius(null)
+      setConfirmingRemove(false)
+      {
+        const uid = auth.userId
+        queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
+          old
+            ? {
+                ...old,
+                latitude: null,
+                longitude: null,
+                local_area: null,
+                local_country_code: null,
+                local_radius_km: null,
+              }
+            : old,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: profileKey(uid) }),
+          queryClient.invalidateQueries({ queryKey: ['my-queues', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['matching-status', uid] }),
+          queryClient.invalidateQueries({ queryKey: ['queue-count'] }),
+        ])
+      }
+      onDone?.()
+    } catch (err) {
+      setError(toErrorMessage(err, 'Couldn’t remove your location.'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -307,25 +471,27 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
         {hasArea
-          ? 'You’ll be matched within your new area. If you’re currently queued locally, this updates your queue.'
+          ? 'You’ll be matched within your new area. If you were in a queue, join the new one to continue.'
           : 'You haven’t set a local area yet. Share your location once and you’ll be matched within your chosen radius. Your exact coordinates are never shared with cluster members.'}
       </Text>
 
+      {(place || hasArea) ? (
+      <>
       <Text style={{ marginTop: 16, fontSize: 14, fontWeight: '600', color: t.onSurface }}>
         Matching radius
       </Text>
-      <View style={{ marginTop: 8, flexDirection: 'row', gap: 8 }}>
+      <View style={{ marginTop: 8, flexDirection: 'column', gap: 8 }}>
         {LOCAL_RADII.map((r) => {
           const active = radius === r
+          const count = counts?.[r] ?? null
           return (
             <Pressable
               key={r}
-              onPress={() => void changeRadius(r as LocalRadius)}
+              onPress={() => onPickRadius(r as LocalRadius)}
               accessibilityRole="radio"
               accessibilityState={{ selected: active }}
               accessibilityLabel={`${r} kilometer radius`}
               style={{
-                flex: 1,
                 borderWidth: 1,
                 borderColor: active ? t.primary : t.outlineVariant,
                 backgroundColor: active ? t.primary : 'transparent',
@@ -337,28 +503,168 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
               }}
             >
               <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}>
-                {r} km
+                {r} km - {LOCAL_RADIUS_LABELS[r as LocalRadius]}{count != null ? ` - ${count}/8` : ''}
               </Text>
             </Pressable>
           )
         })}
       </View>
+      </>
+      ) : null}
 
+      {(place || savedAreaLabel) && (
+        <View style={{ marginTop: 20, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+          <Text style={{ flexShrink: 1, fontSize: 14, color: t.onSurfaceVariant }}>
+            Area: <Text style={{ fontWeight: '600', color: t.onSurface }}>{place?.label ?? savedAreaLabel}</Text>
+          </Text>
+          {!confirmingRemove ? (
+            <Pressable
+              onPress={() => setConfirmingRemove(true)}
+              disabled={busy}
+              accessibilityRole="button"
+              accessibilityLabel="Remove location"
+              style={{ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.6 : 1 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>Remove location</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
+      {!hasArea ? (
       <View style={{ marginTop: 20 }}>
         <PrimaryButton
-          title={hasArea ? 'Update location' : 'Share my location'}
+          title="Share my location"
           loadingTitle={locating ? 'Finding your location…' : 'Saving…'}
           loading={busy}
           onPress={locate}
         />
       </View>
+      ) : null}
+      {hasArea && radius != null ? (
+        <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>Wrong area?</Text>
+          <Pressable
+            onPress={locate}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel="Update location"
+            style={{ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.6 : 1 }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+              {busy ? 'Locating…' : 'Update location'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {confirmingRemove ? (
+        <Modal
+          open={confirmingRemove}
+          onClose={() => {
+            if (!saving) setConfirmingRemove(false)
+          }}
+          title="Remove location?"
+        >
+          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+            Your local area, coordinates, and radius will be cleared. You will leave the
+            Local queue if you are in one. Clusters you already joined are unaffected.
+          </Text>
+          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+            <Pressable
+              onPress={() => setConfirmingRemove(false)}
+              disabled={saving}
+              hitSlop={8}
+              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: saving ? 0.6 : 1 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+            </Pressable>
+            <PrimaryButton
+              title="Remove"
+              loadingTitle="Removing…"
+              loading={saving}
+              tone="error"
+              onPress={() => void removeLocation()}
+            />
+          </View>
+        </Modal>
+      ) : null}
+      {pendingRadius != null ? (
+        <Modal
+          open={pendingRadius != null}
+          onClose={closeRadiusDialog}
+          title={`Join the ${pendingRadius} km queue?`}
+        >
+          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+            {`You’ll be matched within ${pendingRadius} km of ${dialogAreaLabel}${
+              pendingCount != null ? `, where ${pendingCount} of ${CLUSTER_SIZE} are waiting` : ''
+            }.`}
+          </Text>
+          {dialogError ? (
+            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{dialogError}</Text>
+          ) : null}
+          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+            <Pressable
+              onPress={closeRadiusDialog}
+              disabled={joining}
+              hitSlop={8}
+              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: joining ? 0.6 : 1 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+            </Pressable>
+            <PrimaryButton
+              title="Join queue"
+              loadingTitle="Joining…"
+              loading={joining}
+              onPress={() => void confirmRadiusJoin()}
+            />
+          </View>
+        </Modal>
+      ) : null}
+      {pendingLeave != null ? (
+        <Modal
+          open={pendingLeave != null}
+          onClose={closeLeaveDialog}
+          title={`Leave the ${pendingLeave} km queue?`}
+        >
+          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+            {`You’ll stop waiting within ${pendingLeave} km of ${dialogAreaLabel}. Your radius choice will be cleared, but your area stays saved.`}
+          </Text>
+          {dialogError ? (
+            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{dialogError}</Text>
+          ) : null}
+          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+            <Pressable
+              onPress={closeLeaveDialog}
+              disabled={leaving}
+              hitSlop={8}
+              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leaving ? 0.6 : 1 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+            </Pressable>
+            <PrimaryButton
+              title="Leave queue"
+              loadingTitle="Leaving…"
+              loading={leaving}
+              tone="error"
+              onPress={() => void confirmRadiusLeave()}
+            />
+          </View>
+        </Modal>
+      ) : null}
       {error ? (
         <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{error}</Text>
       ) : null}
-      {place ? (
-        <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-          Area: <Text style={{ fontWeight: '600', color: t.onSurface }}>{place.label}</Text>
-        </Text>
+      {hasArea && onDone ? (
+        <View style={{ marginTop: 20, flexDirection: 'row', justifyContent: 'flex-end' }}>
+          <Pressable
+            onPress={onDone}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+            hitSlop={8}
+            style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 44, justifyContent: 'center', alignItems: 'center' }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
+          </Pressable>
+        </View>
       ) : null}
     </Card>
   )

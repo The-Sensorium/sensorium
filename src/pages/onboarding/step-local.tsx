@@ -3,7 +3,9 @@ import { Loader2, MapPin } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { toErrorMessage } from '../../lib/error'
-import { LOCAL_RADII, type LocalRadius, type OnboardingDraft } from './draft'
+import { useQueueCount } from '../../features/matching'
+import { localQueueKey, type OnboardingDraft } from './draft'
+import { RadiusPicker } from '../../components/RadiusPicker'
 
 interface Props {
   draft: OnboardingDraft
@@ -13,6 +15,22 @@ interface Props {
 export function StepLocal({ draft, patch }: Props) {
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const located = draft.shareLocation && draft.localArea != null
+  const count10 = useQueueCount(
+    'local',
+    located ? localQueueKey(draft.localCountryCode, draft.localArea as string, 10) : null,
+  )
+  const count50 = useQueueCount(
+    'local',
+    located ? localQueueKey(draft.localCountryCode, draft.localArea as string, 50) : null,
+  )
+  const count100 = useQueueCount(
+    'local',
+    located ? localQueueKey(draft.localCountryCode, draft.localArea as string, 100) : null,
+  )
+  const counts = located
+    ? { 10: count10.count, 50: count50.count, 100: count100.count }
+    : undefined
 
   async function locate() {
     setLocating(true)
@@ -24,11 +42,12 @@ export function StepLocal({ draft, patch }: Props) {
         coordinates: coords,
         localArea: place.slug,
         localLabel: place.label,
+        localCountryCode: place.countryCode,
         shareLocation: true,
       })
     } catch (err) {
       setError(toErrorMessage(err, 'Couldn’t determine your location.'))
-      patch({ shareLocation: false, coordinates: null, localArea: null, localLabel: null })
+      patch({ shareLocation: false, coordinates: null, localArea: null, localLabel: null, localCountryCode: null })
     } finally {
       setLocating(false)
     }
@@ -63,7 +82,9 @@ export function StepLocal({ draft, patch }: Props) {
           )}
           {draft.shareLocation
             ? draft.localLabel
-              ? `Within ${draft.radiusKm ?? '-'} km of ${draft.localLabel}`
+              ? draft.radiusKm != null
+                ? `Within ${draft.radiusKm} km of ${draft.localLabel}`
+                : `Near ${draft.localLabel}: choose a radius below`
               : 'Location shared'
             : locating
               ? 'Finding your location…'
@@ -72,32 +93,37 @@ export function StepLocal({ draft, patch }: Props) {
         {error && <p className="mt-2 text-sm text-error">{error}</p>}
         {!draft.shareLocation && !error && (
           <p className="mt-2 text-xs text-on-surface-variant">
-            Your browser will ask for permission. You can adjust the radius below.
+            Your browser will ask for permission. You will choose a radius next.
           </p>
+        )}
+        {draft.shareLocation && (
+          <button
+            type="button"
+            disabled={locating}
+            onClick={() =>
+              patch({
+                shareLocation: false,
+                coordinates: null,
+                localArea: null,
+                localLabel: null,
+                localCountryCode: null,
+                radiusKm: null,
+              })
+            }
+            className="mt-2 min-h-[44px] text-sm font-semibold text-error hover:underline disabled:opacity-60"
+          >
+            Remove location
+          </button>
         )}
       </div>
 
-      <fieldset>
-        <legend className="text-sm font-semibold text-on-surface">Matching radius</legend>
-        <div className="mt-2 flex gap-2">
-          {LOCAL_RADII.map((radius) => (
-            <button
-              key={radius}
-              type="button"
-              aria-pressed={draft.radiusKm === radius}
-              onClick={() => patch({ radiusKm: radius as LocalRadius })}
-              className={cn(
-                'min-h-[44px] flex-1 rounded-pill border px-4 py-2.5 text-sm font-semibold transition-colors',
-                draft.radiusKm === radius
-                  ? 'border-primary bg-primary text-on-primary'
-                  : 'border-outline-variant/70 text-on-surface hover:bg-surface-container',
-              )}
-            >
-              {radius} km
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      {draft.shareLocation && draft.localArea && (
+        <RadiusPicker
+          value={draft.radiusKm}
+          onChange={(radiusKm) => patch({ radiusKm })}
+          counts={counts}
+        />
+      )}
     </div>
   )
 }

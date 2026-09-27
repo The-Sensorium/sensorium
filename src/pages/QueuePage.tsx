@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useBackOr } from '../lib/use-back-or'
-import { useMyQueueKeys, useLeaveQueue } from '../features/matching'
+import { useMyQueueKeys, useMyQueueStatus, useLeaveQueue } from '../features/matching'
 import { modeInfo, isMatchingMode } from '../lib/modes'
 import { toErrorMessage } from '../lib/error'
 import { QueueProgress } from '../components/QueueCard'
@@ -14,6 +14,7 @@ export function QueuePage() {
   const { queueId = '' } = useParams()
   const navigate = useNavigate()
   const queues = useMyQueueKeys()
+  const status = useMyQueueStatus()
   const leave = useLeaveQueue()
   const [leaveError, setLeaveError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
@@ -53,7 +54,9 @@ export function QueuePage() {
   const current = entry
   const info = modeInfo(current.mode)
   const leaving = leave.isPending
-  const displayKey = current.mode === 'open_mix' ? 'Open pool' : current.queue_key
+  const statusLabel = status.data?.find((r) => r.mode === current.mode)?.label
+  const displayKey =
+    current.mode === 'open_mix' ? 'Open pool' : current.mode === 'local' && statusLabel ? statusLabel : current.queue_key
 
   async function handleLeave() {
     setLeaveError(null)

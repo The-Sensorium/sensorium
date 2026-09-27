@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   EMPTY_DRAFT,
+  LOCAL_RADIUS_LABELS,
   MIN_AGE,
   ageOnDate,
+  humanizeAreaSlug,
   isValidDate,
+  localQueueKey,
   validateStep,
 } from '../onboarding/draft'
 
@@ -93,5 +96,21 @@ describe('validateStep', () => {
 
   it('unknown steps validate clean', () => {
     expect(validateStep(99, EMPTY_DRAFT)).toBeNull()
+  })
+
+  it('builds local queue keys like fn_queue_key', () => {
+    expect(localQueueKey('pt', 'lisbon', 50)).toBe('PT:lisbon:50')
+    expect(localQueueKey(null, 'lisbon', 10)).toBe(':lisbon:10')
+  })
+
+  it('labels every radius bucket', () => {
+    expect(LOCAL_RADIUS_LABELS[10]).toBe('City')
+    expect(LOCAL_RADIUS_LABELS[50]).toBe('Commute')
+    expect(LOCAL_RADIUS_LABELS[100]).toBe('Region')
+  })
+
+  it('humanizes area slugs like fn_mode_label', () => {
+    expect(humanizeAreaSlug('thiruvananthapuram')).toBe('Thiruvananthapuram')
+    expect(humanizeAreaSlug('new-york')).toBe('New York')
   })
 })
