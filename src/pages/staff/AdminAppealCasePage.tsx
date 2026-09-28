@@ -254,8 +254,8 @@ export function AdminAppealCasePage() {
         </div>
       )}
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="min-w-0 rounded-lg border border-outline-variant/60 bg-surface p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
             <MessageSquareWarning className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
             Appellant
@@ -306,8 +306,8 @@ export function AdminAppealCasePage() {
           )}
         </div>
 
-        <div className="grid content-start gap-4">
-          <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+        <div className="grid min-w-0 grid-cols-1 content-start gap-4">
+          <div className="min-w-0 rounded-lg border border-outline-variant/60 bg-surface p-4">
             <h2 className="text-sm font-semibold text-on-surface">Original decision</h2>
             {action?.id ? (
               <dl className="mt-3 space-y-2 text-sm">
@@ -350,7 +350,7 @@ export function AdminAppealCasePage() {
           </div>
 
           {reports.length > 0 && (
-            <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+            <div className="min-w-0 rounded-lg border border-outline-variant/60 bg-surface p-4">
               <h2 className="text-sm font-semibold text-on-surface">Recent reports against them</h2>
               <ul className="mt-3 space-y-2">
                 {reports.map((report) => (

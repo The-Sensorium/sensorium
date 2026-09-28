@@ -8,6 +8,7 @@ import { useAuth } from '../../src/auth-context'
 import { useProfile } from '../../src/lib/use-profile'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { useClusterMembers, useMyClusters, useLatestClusterFormed } from '../../src/features/matching'
+import { useCluster } from '../../src/features/introductions'
 import {
   useRecentClusterPosts,
   usePostLikes,
@@ -24,6 +25,7 @@ import { toErrorMessage } from '../../src/lib/error'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
+import { Modal } from '../../src/components/Modal'
 import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 import { MemberClusterCard } from '../../src/components/ClusterCard'
 import { useUnreadChatCounts } from '../../src/features/notifications'
@@ -63,9 +65,32 @@ export default function HomeScreen() {
   const profile = useProfile()
   const clusters = useMyClusters()
   const formed = useLatestClusterFormed()
+  const formedMembers = useClusterMembers(
+    formed.data?.cluster_id ?? null,
+    formed.data?.cluster_id != null,
+  )
+  const formedCluster = useCluster(
+    formed.data?.cluster_id ?? null,
+    formed.data?.cluster_id != null,
+  )
+  const formedCount = formedMembers.data?.length
+  // Dynamic copy only for user-created activations; queue clusters keep the
+  // established copy even if membership later dips below 8. While either the
+  // roster or the cluster row is still loading (origin unknown), show a
+  // neutral line instead of flashing the queue copy.
+  const formedCopy =
+    formedCluster.data?.origin === 'queue'
+      ? 'Eight of you were matched. Jump in and say hello.'
+      : formedCount == null
+        ? 'Your cluster is active. Jump in and say hello.'
+        : formedCount >= 8
+          ? 'Eight of you were matched. Jump in and say hello.'
+          : `${formedCount} of you are in. Jump in and say hello.`
   const invitations = useMyPendingInvitations()
   const acceptInvite = useAcceptInvitation()
   const declineInvite = useDeclineInvitation()
+  const [confirmDeclineId, setConfirmDeclineId] = useState<string | null>(null)
+  const confirmDecline = (invitations.data ?? []).find((i) => i.id === confirmDeclineId) ?? null
   const queryClient = useQueryClient()
   const clusterIds = useMemo(() => (clusters.data ?? []).map((c) => c.cluster.id), [clusters.data])
   const unread = useUnreadChatCounts(clusterIds.length > 0)
@@ -128,7 +153,7 @@ export default function HomeScreen() {
       <PushPermissionPrompt compact />
       {(invitations.data ?? []).map((inv) => (
         <Card key={inv.id}>
-          <View style={{ marginBottom: 16 }}>
+          <View style={{ marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View
                 style={{
@@ -146,15 +171,29 @@ export default function HomeScreen() {
                 <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>
                   You’re invited to join a cluster
                 </Text>
-                <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
-                  {inv.cluster_name} · {inv.mode_label}
-                </Text>
+                {inv.origin === 'created' ? (
+                  <Text style={{ fontSize: 14, color: t.onSurfaceVariant }} numberOfLines={1}>
+                    Cluster name:{' '}
+                    <Text style={{ fontWeight: '600', color: t.onSurface }}>
+                      {inv.cluster_name}
+                    </Text>
+                  </Text>
+                ) : (
+                  <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+                    {inv.cluster_name} · {inv.mode_label}
+                  </Text>
+                )}
+                {inv.origin === 'created' && inv.inviter_name ? (
+                  <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+                    Created by {inv.inviter_name}
+                  </Text>
+                ) : null}
               </View>
             </View>
             {inviteError ? (
               <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{inviteError}</Text>
             ) : null}
-            <View style={{ marginTop: 16, flexDirection: 'row', gap: 8 }}>
+            <View style={{ marginTop: 12, flexDirection: 'row', gap: 8 }}>
               <View style={{ flex: 1 }}>
                 <PrimaryButton
                   title="Accept"
@@ -164,20 +203,46 @@ export default function HomeScreen() {
               </View>
               <Pressable
                 disabled={acceptInvite.isPending || declineInvite.isPending}
-                onPress={() => void declineInvite.mutateAsync(inv.id).catch(() => {})}
+                onPress={() => {
+                  // Created invites are final once declined, so confirm first.
+                  // Replacement invites keep the existing one-tap decline.
+                  if (inv.origin === 'created') {
+                    setConfirmDeclineId(inv.id)
+                  } else {
+                    void declineInvite.mutateAsync(inv.id).catch(() => {})
+                  }
+                }}
                 style={{
                   flex: 1,
                   borderWidth: 1,
                   borderColor: t.outlineVariant,
                   borderRadius: radii.pill,
-                  paddingVertical: 14,
+                  paddingHorizontal: 24,
+                  paddingVertical: 16,
+                  minHeight: 48,
                   alignItems: 'center',
+                  justifyContent: 'center',
                   opacity: acceptInvite.isPending || declineInvite.isPending ? 0.6 : 1,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Decline</Text>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Decline</Text>
               </Pressable>
             </View>
+            {inv.origin === 'created' ? (
+              <Link
+                href={{ pathname: '/invites/[invitationId]', params: { invitationId: inv.id } }}
+                asChild
+              >
+                <Pressable
+                  hitSlop={8}
+                  style={{ marginTop: 8, paddingVertical: 8, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: t.primary }}>
+                    View invitation details
+                  </Text>
+                </Pressable>
+              </Link>
+            ) : null}
           </View>
         </Card>
       ))}
@@ -218,7 +283,7 @@ export default function HomeScreen() {
                 Your cluster is ready
               </Text>
               <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
-                Eight of you were matched. Jump in and say hello.
+                {formedCopy}
               </Text>
             </View>
             <ArrowRight size={20} color={t.primary} />
@@ -310,6 +375,63 @@ export default function HomeScreen() {
           </View>
         )
       )}
+      <Modal
+        open={confirmDecline !== null}
+        onClose={() => setConfirmDeclineId(null)}
+        title="Decline invitation?"
+      >
+        <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+          {confirmDecline
+            ? `You won’t be invited to ${confirmDecline.cluster_name} again. You can still be invited to other clusters.`
+            : null}
+        </Text>
+        {declineInvite.error ? (
+          <Text
+            accessibilityRole="alert"
+            style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}
+          >
+            {toErrorMessage(declineInvite.error, 'Could not decline the invitation. Please try again.')}
+          </Text>
+        ) : null}
+        <View style={{ marginTop: 20, flexDirection: 'row', gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            <Pressable
+              onPress={() => setConfirmDeclineId(null)}
+              accessibilityRole="button"
+              style={{
+                borderWidth: 1,
+                borderColor: t.outlineVariant,
+                borderRadius: radii.pill,
+                paddingHorizontal: 24,
+                paddingVertical: 16,
+                minHeight: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
+                Keep invitation
+              </Text>
+            </Pressable>
+          </View>
+          <View style={{ flex: 1 }}>
+            <PrimaryButton
+              title="Decline"
+              loadingTitle="Declining…"
+              loading={declineInvite.isPending}
+              onPress={() => {
+                if (!confirmDecline) return
+                void declineInvite
+                  .mutateAsync(confirmDecline.id)
+                  .then(() => setConfirmDeclineId(null))
+                  .catch(() => {
+                    // Surfaced via declineInvite.error inside the dialog; stay open to retry.
+                  })
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   )
 }

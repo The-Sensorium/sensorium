@@ -11,7 +11,7 @@ import { useAvatarUrl } from '../features/avatars'
 describe('Avatar', () => {
   it('renders the initial when there is no resolved url', () => {
     vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
-    render(<Avatar name="Alice" />)
+    render(<Avatar name="Alice" className="h-8 w-8" />)
     expect(screen.getByText('A')).toBeInTheDocument()
     expect(screen.queryByRole('img')).not.toBeInTheDocument()
   })
@@ -28,7 +28,21 @@ describe('Avatar', () => {
 
   it('uppercases the initial', () => {
     vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
-    render(<Avatar name="carol" />)
+    render(<Avatar name="carol" className="h-8 w-8" />)
     expect(screen.getByText('C')).toBeInTheDocument()
+  })
+
+  it('scales the initial to the container by default', () => {
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    render(<Avatar name="Alice" className="h-32 w-32" />)
+    expect(screen.getByText('A')).toHaveClass('text-[42cqi]')
+  })
+
+  it('lets textClassName override the scaled default', () => {
+    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    render(<Avatar name="Alice" className="h-8 w-8" textClassName="text-xs" />)
+    const initial = screen.getByText('A')
+    expect(initial).toHaveClass('text-xs')
+    expect(initial).not.toHaveClass('text-[42cqi]')
   })
 })

@@ -5,6 +5,7 @@ import { ArrowRight, Hourglass, Loader2, ThumbsDown, ThumbsUp } from 'lucide-rea
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
+import { useCluster } from '../../features/introductions'
 import {
   useClusterVotes,
   useVoteCounts,
@@ -39,6 +40,8 @@ export function VotesView() {
   const counts = useVoteCounts(clusterId)
   const round = useReplacementRound(clusterId)
   const members = useClusterMembers(clusterId)
+  const cluster = useCluster(clusterId)
+  const created = cluster.data?.origin === 'created'
 
   const startReplace = useStartReplaceVote(clusterId)
   const startName = useStartNameVote(clusterId)
@@ -139,13 +142,15 @@ export function VotesView() {
           Any member can start a community vote. Results are hidden until it closes.
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-          <button
-            type="button"
-            onClick={() => setModal('replace')}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
-          >
-            Replace a member <ArrowRight className="h-4 w-4" aria-hidden />
-          </button>
+          {!created && (
+            <button
+              type="button"
+              onClick={() => setModal('replace')}
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+            >
+              Replace a member <ArrowRight className="h-4 w-4" aria-hidden />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setModal('name')}

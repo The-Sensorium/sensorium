@@ -183,8 +183,8 @@ export function AccountDetailPage() {
         </section>
       )}
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="min-w-0 rounded-lg border border-outline-variant/60 bg-surface p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
             <User className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
             Identity
@@ -222,7 +222,7 @@ export function AccountDetailPage() {
           )}
         </div>
 
-        <div className="rounded-lg border border-outline-variant/60 bg-surface p-4">
+        <div className="min-w-0 rounded-lg border border-outline-variant/60 bg-surface p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
             <ClipboardList className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
             Moderation summary

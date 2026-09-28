@@ -47,7 +47,7 @@ export function PostMedia({
           e.stopPropagation()
           setOpen(true)
         }}
-        className={cn('block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40', className)}
+        className={cn('block w-full cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40', className)}
       >
         <img
           src={src}

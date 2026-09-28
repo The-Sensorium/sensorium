@@ -1,14 +1,19 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { MembersView } from './MembersView'
 
 const hooks = vi.hoisted(() => ({
   useAuth: vi.fn(),
+  useCluster: vi.fn(),
   useClusterMembers: vi.fn(),
   useReplacementRound: vi.fn(),
   usePresence: vi.fn(),
   useAvatarUrl: vi.fn(),
+  useCreatedPendingInvites: vi.fn(),
+  useEligibleComembers: vi.fn(),
+  useInviteToCreatedCluster: vi.fn(),
+  useCancelCreatedInvitation: vi.fn(),
 }))
 
 vi.mock('react-router', async (importOriginal) => {
@@ -17,13 +22,31 @@ vi.mock('react-router', async (importOriginal) => {
 })
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
+vi.mock('../../features/introductions', () => ({ useCluster: hooks.useCluster }))
 vi.mock('../../features/votes', () => ({ useReplacementRound: hooks.useReplacementRound }))
+vi.mock('../../features/created-clusters', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../features/created-clusters')>()
+  return {
+    ...actual,
+    useCreatedPendingInvites: hooks.useCreatedPendingInvites,
+    useEligibleComembers: hooks.useEligibleComembers,
+    useInviteToCreatedCluster: hooks.useInviteToCreatedCluster,
+    useCancelCreatedInvitation: hooks.useCancelCreatedInvitation,
+  }
+})
 vi.mock('../../features/realtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../features/realtime')>()
   return { ...actual, usePresence: hooks.usePresence }
 })
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
-vi.mock('../../components/MuteButton', () => ({ MuteButton: () => null }))
+vi.mock('../../components/MuteButton', () => ({
+  MuteButton: ({ targetName }: { targetName: string }) => (
+    <button type="button" role="menuitem">
+      Mute {targetName}
+    </button>
+  ),
+}))
+vi.mock('../../components/ReportModal', () => ({ ReportModal: () => null }))
 vi.mock('../../components/IntroChecklistBanner', () => ({ IntroChecklistBanner: () => null }))
 
 const member = {
@@ -54,10 +77,15 @@ describe('MembersView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1' })
+    hooks.useCluster.mockReturnValue(queryStub({ id: 'c1', origin: 'queue', created_by: 'u9' }))
     hooks.useClusterMembers.mockReturnValue(queryStub([member]))
     hooks.useReplacementRound.mockReturnValue(queryStub(null))
     hooks.usePresence.mockReturnValue({ online: new Set() })
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
+    hooks.useCreatedPendingInvites.mockReturnValue(queryStub([]))
+    hooks.useEligibleComembers.mockReturnValue(queryStub([]))
+    hooks.useInviteToCreatedCluster.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
+    hooks.useCancelCreatedInvitation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
   })
 
   it('shows the loading state while members load', () => {
@@ -72,19 +100,14 @@ describe('MembersView', () => {
     expect(screen.getByText('No members yet.')).toBeInTheDocument()
   })
 
-  it('renders member details and country', () => {
-    renderPage()
+  it('renders member details with a flag-only country', () => {
+    const { container } = renderPage()
     expect(screen.getByText('Bo')).toBeInTheDocument()
-    expect(screen.getByText('United States')).toBeInTheDocument()
+    expect(container.querySelector('svg[aria-label="United States"]')).not.toBeNull()
+    expect(screen.queryByText('United States', { selector: 'span' })).not.toBeInTheDocument()
     expect(screen.getByText('1990')).toBeInTheDocument()
     expect(screen.getByText('they/them')).toBeInTheDocument()
     expect(screen.getByText('“Deep in a book”')).toBeInTheDocument()
-  })
-
-  it('renders a flag next to the country name', () => {
-    renderPage()
-    const country = screen.getByText('United States').closest('span')
-    expect(country?.querySelector('svg')).not.toBeNull()
   })
 
   it('renders the member local time when a timezone is set', () => {
@@ -118,5 +141,75 @@ describe('MembersView', () => {
     renderPage()
     expect(screen.getByText('A spot just opened')).toBeInTheDocument()
     expect(screen.getByText("We're 1 of 8, finding a new member.")).toBeInTheDocument()
+  })
+
+  it('renders a 56px avatar with the online indicator attached', () => {
+    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+    const { container } = renderPage()
+    const avatar = container.querySelector('.h-14.w-14')
+    expect(avatar).not.toBeNull()
+    expect(avatar?.parentElement?.querySelector('.bg-emerald-500')).not.toBeNull()
+  })
+
+  it('shows a small options button instead of a large mute button', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Member options for Bo' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /mute bo/i })).not.toBeInTheDocument()
+  })
+
+  it('separates country, birth year, and local time without dangling dividers', () => {
+    const { container } = renderPage()
+    expect(container.querySelectorAll('span.w-px')).toHaveLength(2)
+  })
+
+  it('leaves no dangling divider when local time is missing', () => {
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, timezone: null }]))
+    const { container } = renderPage()
+    expect(container.querySelectorAll('span.w-px')).toHaveLength(1)
+  })
+
+  it('opens a menu with profile, mute, and report actions', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Member options for Bo' }))
+    expect(screen.getByRole('menuitem', { name: 'View profile' })).toHaveAttribute(
+      'href',
+      '/profile/m1?cluster=c1',
+    )
+    expect(screen.getByRole('menuitem', { name: 'Mute Bo' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Report' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /block/i })).not.toBeInTheDocument()
+  })
+
+  it('shows the created pending banner and invitees for the creator', () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'creator' })
+    hooks.useCluster.mockReturnValue(
+      queryStub({ id: 'c1', origin: 'created', created_by: 'creator' }),
+    )
+    hooks.useCreatedPendingInvites.mockReturnValue(
+      queryStub([
+        {
+          invitation_id: 'i1',
+          user_id: 'm2',
+          display_name: 'Mo',
+          avatar_url: null,
+          created_at: '2026-01-01T00:00:00Z',
+          expires_at: '2026-01-04T00:00:00Z',
+        },
+      ]),
+    )
+    renderPage()
+    expect(screen.getByText('2 more members needed to activate.')).toBeInTheDocument()
+    expect(screen.getByText('Mo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Invite more people' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel invitation to Mo' })).toBeInTheDocument()
+  })
+
+  it('hides invite controls from non-creators', () => {
+    hooks.useCluster.mockReturnValue(
+      queryStub({ id: 'c1', origin: 'created', created_by: 'someone-else' }),
+    )
+    hooks.useCreatedPendingInvites.mockReturnValue(queryStub([]))
+    renderPage()
+    expect(screen.queryByRole('button', { name: 'Invite more people' })).not.toBeInTheDocument()
   })
 })

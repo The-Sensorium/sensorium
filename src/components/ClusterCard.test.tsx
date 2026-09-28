@@ -147,4 +147,28 @@ describe('ClusterCard', () => {
     )
     expect(screen.getByText('Active').parentElement).toBe(row)
   })
+
+  it('labels created clusters and shows pending progress', () => {
+    const item = makeCluster({ origin: 'created' })
+    item.memberCount = 1
+    render(
+      <MemoryRouter>
+        <ClusterCard item={item} myIntroCompletedAt="2026-01-02T00:00:00Z" />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Created cluster')).toBeInTheDocument()
+    expect(screen.getByText('Pending · 2 more to activate')).toBeInTheDocument()
+  })
+
+  it('shows created clusters as active once 3 members joined', () => {
+    const item = makeCluster({ origin: 'created' })
+    item.memberCount = 3
+    render(
+      <MemoryRouter>
+        <ClusterCard item={item} myIntroCompletedAt="2026-01-02T00:00:00Z" />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Created cluster')).toBeInTheDocument()
+    expect(screen.getByText('Active')).toBeInTheDocument()
+  })
 })

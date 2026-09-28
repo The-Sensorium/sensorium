@@ -10,6 +10,7 @@ import {
   useClusterMembers,
   type ClusterFormedNotification,
 } from '../../src/features/matching'
+import { useCluster } from '../../src/features/introductions'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
@@ -38,6 +39,20 @@ export default function ClusterCreatedScreen() {
 
   const clusterId = notif?.cluster_id ?? null
   const members = useClusterMembers(clusterId, clusterId !== null)
+  const cluster = useCluster(clusterId, clusterId !== null)
+  const readyCount = members.data?.length
+  // Dynamic copy only for user-created activations; queue clusters keep the
+  // established copy even if membership later dips below 8. While either the
+  // roster or the cluster row is still loading (origin unknown), show a
+  // neutral line instead of flashing the queue copy.
+  const readyCopy =
+    cluster.data?.origin === 'queue'
+      ? 'Eight strangers matched. Jump in and say hello.'
+      : readyCount == null
+        ? 'Your cluster is active. Jump in and say hello.'
+        : readyCount >= 8
+          ? 'Eight strangers matched. Jump in and say hello.'
+          : `${readyCount} of you are in. Jump in and say hello.`
 
   if (!notif && formed.isLoading) {
     return (
@@ -82,7 +97,7 @@ export default function ClusterCreatedScreen() {
           Your cluster is ready
         </Text>
         <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, textAlign: 'center', color: t.onSurfaceVariant }}>
-          Eight strangers matched. Jump in and say hello.
+          {readyCopy}
         </Text>
       </View>
 

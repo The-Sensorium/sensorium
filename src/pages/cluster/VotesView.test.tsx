@@ -5,6 +5,7 @@ import { VotesView } from './VotesView'
 
 const hooks = vi.hoisted(() => ({
   useAuth: vi.fn(),
+  useCluster: vi.fn(),
   useClusterMembers: vi.fn(),
   useClusterVotes: vi.fn(),
   useVoteCounts: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock('react-router', async (importOriginal) => {
 })
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
+vi.mock('../../features/introductions', () => ({ useCluster: hooks.useCluster }))
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
 vi.mock('../../features/votes', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../features/votes')>()
@@ -76,6 +78,7 @@ describe('VotesView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1' })
+    hooks.useCluster.mockReturnValue(queryStub({ id: 'c1', origin: 'queue' }))
     hooks.useClusterMembers.mockReturnValue(queryStub(members))
     hooks.useClusterVotes.mockReturnValue(queryStub([]))
     hooks.useVoteCounts.mockReturnValue(queryStub([]))
@@ -223,5 +226,12 @@ describe('VotesView', () => {
     expect(screen.getByText('Past votes')).toBeInTheDocument()
     expect(screen.getByText('A replacement round has started.')).toBeInTheDocument()
     expect(screen.getByText('Passed')).toBeInTheDocument()
+  })
+
+  it('hides the replace-member action for created clusters', () => {
+    hooks.useCluster.mockReturnValue(queryStub({ id: 'c1', origin: 'created' }))
+    renderPage()
+    expect(screen.queryByRole('button', { name: /Replace a member/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Suggest a cluster name/ })).toBeInTheDocument()
   })
 })

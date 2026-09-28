@@ -24,6 +24,7 @@ import {
 } from '../features/posts'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
+import { AvatarViewer } from '../components/AvatarViewer'
 import { AvailabilityBadge } from '../components/AvailabilityBadge'
 import { CountryFlag } from '../components/CountryFlag'
 import { MemberLocalTime } from '../components/MemberLocalTime'
@@ -141,50 +142,48 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
 
       {/* ── Profile Header ─────────────────────────────────── */}
       <div className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft md:p-5">
-        <div className="flex flex-1 items-start gap-3 md:gap-4">
-          <Avatar
+        <div className="flex flex-col items-center text-center">
+          <AvatarViewer
             name={member.display_name}
             src={member.avatar_url}
-            className="h-20 w-20 md:h-[88px] md:w-[88px]"
+            className="h-32 w-32 md:h-36 md:w-36"
           />
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-xl font-semibold text-on-surface">
-              {member.display_name}
-            </h1>
-            {member.pronouns && (
-              <div className="mt-1.5">
-                <PronounBadge pronouns={member.pronouns} />
-              </div>
+          {member.pronouns && (
+            <div className="mt-3">
+              <PronounBadge pronouns={member.pronouns} />
+            </div>
+          )}
+          <h1 className="mt-1.5 w-full truncate text-center font-display text-xl font-semibold text-on-surface">
+            {member.display_name}
+          </h1>
+          <p className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-sm text-on-surface-variant">
+            {member.country_code && (
+              <span className="inline-flex items-center gap-1">
+                <CountryFlag code={member.country_code} />
+                {countryName(member.country_code)}
+              </span>
             )}
-            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-on-surface-variant">
-              {member.country_code && (
-                <span className="inline-flex items-center gap-1">
-                  <CountryFlag code={member.country_code} />
-                  {countryName(member.country_code)}
-                </span>
-              )}
-              {member.country_code && hasLocalTime && (
-                <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
-              )}
-              {hasLocalTime ? (
-                <span>
-                  <span className="sr-only">Local time: </span>
-                  <MemberLocalTime timeZone={member.timezone} />
-                </span>
-              ) : null}
-              {(member.country_code || hasLocalTime) && (
-                <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
-              )}
-              {onlineNow ? (
-                <AvailabilityBadge value={member.availability} />
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
-                  <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
-                  Offline
-                </span>
-              )}
-            </p>
-          </div>
+            {member.country_code && hasLocalTime && (
+              <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
+            )}
+            {hasLocalTime ? (
+              <span>
+                <span className="sr-only">Local time: </span>
+                <MemberLocalTime timeZone={member.timezone} />
+              </span>
+            ) : null}
+            {(member.country_code || hasLocalTime) && (
+              <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
+            )}
+            {onlineNow ? (
+              <AvailabilityBadge value={member.availability} />
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
+                <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
+                Offline
+              </span>
+            )}
+          </p>
         </div>
 
         {member.current_status && (

@@ -448,4 +448,68 @@ describe('useNotificationsChannel', () => {
     renderHook(() => useNotificationsChannel(null), { wrapper })
     expect(channelSpy).not.toHaveBeenCalled()
   })
+
+  it('busts the roster cache on membership-change notices (join/leave/activation)', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
+    }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    spy.mockClear()
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const notificationCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'notifications',
+    )
+    expect(notificationCall).toBeDefined()
+    const handler = notificationCall![2] as (payload?: unknown) => void
+    handler({ new: { cluster_id: 'c1', type: 'replacement' } })
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-members', 'c1'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['my-clusters', 'u1'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['created-pending-invites', 'c1'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['eligible-comembers', 'u1'] })
+    })
+    handler({ new: { cluster_id: 'c1', type: 'cluster_formed' } })
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-members', 'c1'] })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['eligible-comembers', 'u1'] })
+    })
+  })
+
+  it('does not bust the roster cache for non-membership notices', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
+    }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    spy.mockClear()
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const notificationCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'notifications',
+    )
+    expect(notificationCall).toBeDefined()
+    const handler = notificationCall![2] as (payload?: unknown) => void
+    handler({ new: { cluster_id: 'c1', type: 'mention' } })
+    handler({ new: { cluster_id: null, type: 'replacement' } })
+    handler()
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
+    })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['cluster-members', 'c1'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['my-clusters', 'u1'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['created-pending-invites', 'c1'] })
+    expect(spy).not.toHaveBeenCalledWith({ queryKey: ['eligible-comembers', 'u1'] })
+  })
 })

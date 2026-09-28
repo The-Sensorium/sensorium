@@ -114,7 +114,7 @@ export function ModerationCasePage() {
       {error && <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{error}</p>}
       {success && <p role="status" className="rounded-md border border-primary/30 bg-primary-container/10 p-3 text-sm text-on-surface">{success}</p>}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <EvidencePanel
           data={data}
           msg={msg ?? null}
@@ -140,7 +140,7 @@ export function ModerationCasePage() {
             })
           }
         />
-        <div className="grid content-start gap-4">
+        <div className="grid min-w-0 grid-cols-1 content-start gap-4">
           <ReporterPanel reporter={reporter} accountHref={reporterHref} />
           <TargetPanel target={target} accountHref={targetHref} />
         </div>

@@ -115,6 +115,8 @@ export default function AppTabs() {
       />
       <Tabs.Screen name="mode/[modeId]" options={{ href: null }} />
       <Tabs.Screen name="queue/[queueId]" options={{ href: null }} />
+      <Tabs.Screen name="clusters/new" options={{ href: null }} />
+      <Tabs.Screen name="invites/[invitationId]" options={{ href: null }} />
       <Tabs.Screen name="cluster-created" options={{ href: null }} />
       <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null, tabBarStyle: { display: 'none' } }} />

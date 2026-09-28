@@ -27,13 +27,15 @@ export function Avatar({
   return (
     <span
       aria-hidden
+      style={{ containerType: 'inline-size' }}
       className={cn(
-        'grid shrink-0 place-items-center rounded-full bg-primary-container/25 font-display font-semibold text-primary',
+        'grid shrink-0 place-items-center overflow-hidden rounded-full bg-primary-container/25 font-display font-semibold text-primary',
         className,
-        textClassName,
       )}
     >
-      {name.charAt(0).toUpperCase()}
+      <span aria-hidden className={cn('leading-none', textClassName ?? 'text-[42cqi]')}>
+        {name.charAt(0).toUpperCase()}
+      </span>
     </span>
   )
 }
