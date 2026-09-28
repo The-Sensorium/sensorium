@@ -69,7 +69,7 @@ export function GifPicker({
                   onClick={() => onSelect(g)}
                   className={cn(
                     'block w-full overflow-hidden rounded-xl bg-surface-container transition-transform',
-                    pending ? 'cursor-wait opacity-70' : 'hover:scale-[1.02]',
+                    pending ? 'cursor-wait opacity-70' : 'cursor-pointer hover:scale-[1.02]',
                   )}
                 >
                   <img

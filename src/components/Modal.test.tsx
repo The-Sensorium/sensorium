@@ -51,13 +51,25 @@ describe('Modal', () => {
   it('closes when clicking the backdrop', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
-    const { container } = render(
+    render(
       <Modal open onClose={onClose} title="Settings">
         <p>content</p>
       </Modal>,
     )
-    await user.click(container.querySelector('div[role="presentation"]') as HTMLElement)
+    await user.click(document.body.querySelector('div[role="presentation"]') as HTMLElement)
     expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('portals the dialog to document.body so ancestors cannot cap its backdrop', () => {
+    const { container } = render(
+      <div style={{ position: 'relative', zIndex: 20 }}>
+        <Modal open onClose={() => {}} title="Settings">
+          <p>content</p>
+        </Modal>
+      </div>,
+    )
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.body.querySelector('[role="dialog"]')).not.toBeNull()
   })
 
   it('does not close when clicking inside the panel', async () => {

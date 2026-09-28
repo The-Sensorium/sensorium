@@ -12,7 +12,7 @@ import {
   useTogglePostLikeForPost,
 } from '../../../src/features/posts'
 import { useAuth } from '../../../src/auth-context'
-import { Avatar } from '../../../src/components/Avatar'
+import { AvatarViewer } from '../../../src/components/AvatarViewer'
 import { AvailabilityBadge } from '../../../src/components/AvailabilityBadge'
 import { CountryFlag } from '../../../src/components/CountryFlag'
 import { MemberLocalTime } from '../../../src/components/MemberLocalTime'
@@ -115,18 +115,17 @@ export default function ProfileScreen() {
       </Link>
 
       <Card>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Avatar name={member.display_name} src={member.avatar_url} size={72} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'left' }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
-              {member.display_name}
-            </Text>
-            {member.pronouns ? (
-              <View style={{ marginTop: 6, alignSelf: 'flex-start' }}>
-                <PronounBadge pronouns={member.pronouns} />
-              </View>
-            ) : null}
-            <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+        <View style={{ alignItems: 'center' }}>
+          <AvatarViewer name={member.display_name} src={member.avatar_url} size={128} />
+          {member.pronouns ? (
+            <View style={{ marginTop: 12, alignItems: 'center' }}>
+              <PronounBadge pronouns={member.pronouns} />
+            </View>
+          ) : null}
+          <Text style={{ marginTop: 6, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'center' }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+            {member.display_name}
+          </Text>
+          <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
               {member.country_code ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <CountryFlag code={member.country_code} />
@@ -157,7 +156,6 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
-          </View>
         </View>
 
         {member.current_status ? (

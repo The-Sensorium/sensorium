@@ -8,10 +8,14 @@ export function MuteButton({
   targetUserId,
   targetName,
   fullWidth = false,
+  menuItem = false,
+  onDialogClose,
 }: {
   targetUserId: string
   targetName: string
   fullWidth?: boolean
+  menuItem?: boolean
+  onDialogClose?: () => void
 }) {
   const auth = useAuth()
   const selfId = auth.state === 'signedIn' ? auth.userId : null
@@ -43,6 +47,7 @@ export function MuteButton({
     setConfirmOpen(false)
     setConfirmError(null)
     setConfirmKind(null)
+    onDialogClose?.()
   }
 
   async function handleConfirm() {
@@ -62,7 +67,11 @@ export function MuteButton({
   return (
     <span
       className={
-        fullWidth ? 'flex w-full items-center gap-2' : 'inline-flex items-center gap-2'
+        menuItem
+          ? 'contents'
+          : fullWidth
+            ? 'flex w-full items-center gap-2'
+            : 'inline-flex items-center gap-2'
       }
     >
       <button
@@ -71,16 +80,19 @@ export function MuteButton({
         onClick={() => openConfirm()}
         aria-label={`${label} ${targetName}`}
         aria-haspopup="dialog"
+        {...(menuItem ? { role: 'menuitem' } : {})}
         className={
-          fullWidth
-            ? 'inline-flex min-h-[44px] w-full flex-1 items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
-            : 'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
+          menuItem
+            ? 'flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60'
+            : fullWidth
+              ? 'inline-flex min-h-[44px] w-full flex-1 items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
+              : 'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
         }
       >
         <Icon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
         {label}
       </button>
-      {error && (
+      {!menuItem && error && (
         <span role="alert" className="text-xs text-error">
           Couldn’t update. Try again.
         </span>
