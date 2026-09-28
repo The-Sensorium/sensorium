@@ -355,11 +355,30 @@ export function useNotificationsChannel(userId: string | null) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        () => {
+        (payload?: { new?: { cluster_id?: unknown; type?: unknown } }) => {
           void queryClient.invalidateQueries({ queryKey: ['notifications', userId] })
           void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
           void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-chat'] })
           void queryClient.invalidateQueries({ queryKey: ['staff', 'unread'] })
+          // Membership-change fan-outs (joins, leaves, activation) must bust
+          // the roster cache too. Otherwise a tap on the "X joined" notice
+          // lands on a profile screen reading a stale roster (staleTime 2m)
+          // whenever the viewer wasn't subscribed to that cluster's channel,
+          // and the new member wrongly reads as "isn't in your cluster".
+          // The creator's pending-invite list goes stale the same way (an
+          // accept/decline changes it), and any join grows the eligible
+          // co-member pool - so bust those as well. Over-busting on
+          // declines/expiries (same type, no roster change) is harmless.
+          const row = payload?.new
+          const changedClusterId =
+            typeof row?.cluster_id === 'string' && row.cluster_id ? row.cluster_id : null
+          const changedType = typeof row?.type === 'string' ? row.type : null
+          if (changedClusterId && (changedType === 'replacement' || changedType === 'cluster_formed')) {
+            void queryClient.invalidateQueries({ queryKey: ['cluster-members', changedClusterId] })
+            void queryClient.invalidateQueries({ queryKey: ['my-clusters', userId] })
+            void queryClient.invalidateQueries({ queryKey: ['created-pending-invites', changedClusterId] })
+            void queryClient.invalidateQueries({ queryKey: ['eligible-comembers', userId] })
+          }
         },
       )
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, bumpChat)

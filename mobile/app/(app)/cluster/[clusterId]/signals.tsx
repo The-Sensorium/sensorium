@@ -10,6 +10,7 @@ import { Avatar } from '../../../../src/components/Avatar'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalModal'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
+import { useClusterChannel } from '../../../../src/features/realtime'
 import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -34,6 +35,8 @@ export default function SignalsScreen() {
   const replies = useSignalReplies(clusterId || null, null)
   const members = useClusterMembers(clusterId || null)
   const cluster = useCluster(clusterId || null)
+  // Keep the list live while watching: signal_new taps must not render stale.
+  useClusterChannel(clusterId || null)
   const raise = useRaiseSignal(clusterId || null)
 
   const [modalOpen, setModalOpen] = useState(false)
