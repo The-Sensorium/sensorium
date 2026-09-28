@@ -5,6 +5,7 @@ import { Cake, UserPlus } from 'lucide-react-native'
 import { CLUSTER_SIZE } from '../../../../src/lib/constants'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
+import { useCluster } from '../../../../src/features/introductions'
 import { useReplacementRound } from '../../../../src/features/votes'
 import { usePresence } from '../../../../src/features/realtime'
 import { Avatar } from '../../../../src/components/Avatar'
@@ -21,6 +22,7 @@ import { useTheme } from '../../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
+import { CreatedPendingSection } from '../../../../src/components/created/CreatedPendingSection'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 export default function MembersScreen() {
@@ -30,6 +32,7 @@ export default function MembersScreen() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const members = useClusterMembers(clusterId || null)
+  const cluster = useCluster(clusterId || null)
   const { online } = usePresence(clusterId || null)
   const replacement = useReplacementRound(clusterId || null)
   const pull = usePullToRefresh([() => members.refetch(), () => replacement.refetch()])
@@ -53,6 +56,14 @@ export default function MembersScreen() {
       <ClusterSectionHeader title="Members" clusterId={clusterId} section="members" />
       <ErrorText message={pull.error} />
       <IntroChecklistBanner key={clusterId} clusterId={clusterId} dismissible={false} />
+      {cluster.data?.origin === 'created' ? (
+        <CreatedPendingSection
+          clusterId={clusterId}
+          confirmedCount={list.length}
+          confirmedIds={list.map((m) => m.id)}
+          isCreator={cluster.data.created_by === userId}
+        />
+      ) : null}
       {replacement.data ? (
         <View
           style={{

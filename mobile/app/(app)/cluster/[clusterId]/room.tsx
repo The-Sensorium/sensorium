@@ -64,6 +64,7 @@ import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { Modal } from '../../../../src/components/Modal'
 import { PrimaryButton } from '../../../../src/components/ui'
+import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
@@ -779,6 +780,41 @@ export default function RoomScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={t.primary} />
+      </SafeAreaView>
+    )
+  }
+
+  // User-created clusters stay members-tab-only until 3 confirmed members
+  // activate them. Unknown membership locks (no unlocked flash on direct
+  // nav); a roster error fails open (RLS/RPCs still enforce access).
+  if (
+    cluster.data?.origin === 'created' &&
+    (members.isPending || (members.data ?? []).length < 3) &&
+    !members.isError
+  ) {
+    return (
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
+          <Pressable
+            accessibilityLabel="Back"
+            onPress={() => {
+              router.replace('/(app)/home')
+            }}
+            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
+              {cluster.data.name}
+            </Text>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
+              Created cluster
+            </Text>
+          </View>
+          <ClusterMenu clusterId={clusterId} active="room" />
+        </View>
+        <CreatedPendingGate clusterId={clusterId} confirmedCount={memberCount} loading={members.isPending} />
       </SafeAreaView>
     )
   }

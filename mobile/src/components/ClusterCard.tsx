@@ -2,6 +2,7 @@ import { Pressable, Text, View } from 'react-native'
 import { Link, type Href } from 'expo-router'
 import { MessagesSquare, Users } from 'lucide-react-native'
 import type { MyCluster } from '../features/matching'
+import { isCreatedCluster, isPendingCreated } from '../features/created-clusters'
 import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
 import { radii, shadowShape } from '../lib/theme-tokens'
@@ -27,6 +28,8 @@ export function ClusterCard({
   const Icon = info.icon
   const needsIntros = myIntroCompletedAt === null
   const count = unreadCount ?? 0
+  const created = isCreatedCluster(cluster)
+  const pending = isPendingCreated(cluster, item.memberCount)
   const target: Href = { pathname: '/cluster/[clusterId]/room', params: { clusterId: cluster.id } }
 
   return (
@@ -44,7 +47,11 @@ export function ClusterCard({
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Icon size={14} color={t.primary} strokeWidth={1.5} />
+              {created ? (
+                <Users size={14} color={t.primary} strokeWidth={1.5} />
+              ) : (
+                <Icon size={14} color={t.primary} strokeWidth={1.5} />
+              )}
               <Text
                 style={{
                   fontSize: 12,
@@ -58,7 +65,7 @@ export function ClusterCard({
                 numberOfLines={1}
                 maxFontSizeMultiplier={1.4}
               >
-                {info.label}
+                {created ? 'Created cluster' : info.label}
               </Text>
             </View>
             <Text
@@ -89,7 +96,11 @@ export function ClusterCard({
         </View>
         <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <Text style={{ flex: 1, fontSize: 14, color: t.onSurfaceVariant }}>
-            {needsIntros ? (
+            {pending ? (
+              <Text>
+                Pending · {3 - item.memberCount} more to activate
+              </Text>
+            ) : needsIntros ? (
               <Text>Complete your introductions</Text>
             ) : (
               statusLabel(cluster.status)

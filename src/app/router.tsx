@@ -29,6 +29,8 @@ import { TermsPage } from '../pages/TermsPage'
 // leaf, so adding a route only means adding one lazy() line + one Route.
 const HomePage = lazy(() => import('../pages/HomePage').then((m) => ({ default: m.HomePage })))
 const ClustersPage = lazy(() => import('../pages/ClustersPage').then((m) => ({ default: m.ClustersPage })))
+const CreateClusterPage = lazy(() => import('../pages/CreateClusterPage').then((m) => ({ default: m.CreateClusterPage })))
+const InviteDetailPage = lazy(() => import('../pages/InviteDetailPage').then((m) => ({ default: m.InviteDetailPage })))
 const PostsFeedPage = lazy(() => import('../pages/posts/PostsFeedPage').then((m) => ({ default: m.PostsFeedPage })))
 const PostDetailPage = lazy(() => import('../pages/posts/PostDetailPage').then((m) => ({ default: m.PostDetailPage })))
 const DiscoveryModePage = lazy(() => import('../pages/DiscoveryModePage').then((m) => ({ default: m.DiscoveryModePage })))
@@ -197,6 +199,8 @@ export function AppRouter() {
             <Route path="/posts" element={<PostsFeedPage />} />
             <Route path="/posts/:postId" element={<PostDetailPage />} />
             <Route path="/clusters" element={<ClustersPage />} />
+            <Route path="/clusters/new" element={<CreateClusterPage />} />
+            <Route path="/invites/:invitationId" element={<InviteDetailPage />} />
             <Route path="/discovery" element={<Navigate to="/clusters" replace />} />
             <Route path="/discovery/:modeId" element={<DiscoveryModePage />} />
             <Route path="/queue/:queueId" element={<QueuePage />} />

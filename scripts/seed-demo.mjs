@@ -369,6 +369,8 @@ async function ensureUser(admin, email, { displayName, dob, countryCode, timezon
     fresh = true
   }
   // dob is immutable once set, so only apply it to a freshly created profile.
+  // Cluster members are active users, so backfill onboarding for seed members
+  // that never completed it (created-cluster eligibility requires it).
   const patch = {
     display_name: displayName,
     country_code: countryCode,
@@ -378,6 +380,12 @@ async function ensureUser(admin, email, { displayName, dob, countryCode, timezon
   }
   const { error: pErr } = await admin.from('profiles').update(patch).eq('id', userId)
   if (pErr) throw pErr
+  const { error: obErr } = await admin
+    .from('profiles')
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq('id', userId)
+    .is('onboarding_completed_at', null)
+  if (obErr) throw obErr
   return userId
 }
 

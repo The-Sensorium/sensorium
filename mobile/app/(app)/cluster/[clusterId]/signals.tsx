@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { Link, useLocalSearchParams } from 'expo-router'
 import { ChevronDown, MessageSquare, Plus } from 'lucide-react-native'
 import { useClusterMembers } from '../../../../src/features/matching'
+import { useCluster } from '../../../../src/features/introductions'
 import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal, type SignalStatus } from '../../../../src/features/signals'
 import { useAuth } from '../../../../src/auth-context'
 import { Avatar } from '../../../../src/components/Avatar'
@@ -14,6 +15,7 @@ import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
+import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 const statusMeta: Record<SignalStatus, { label: string; colorKey: 'primary' | 'tertiary' | 'onSurfaceVariant' }> = {
@@ -31,6 +33,7 @@ export default function SignalsScreen() {
   const signals = useClusterSignals(clusterId || null)
   const replies = useSignalReplies(clusterId || null, null)
   const members = useClusterMembers(clusterId || null)
+  const cluster = useCluster(clusterId || null)
   const raise = useRaiseSignal(clusterId || null)
 
   const [modalOpen, setModalOpen] = useState(false)
@@ -76,6 +79,10 @@ export default function SignalsScreen() {
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ClusterSectionHeader title="Signals" clusterId={clusterId} section="signals" />
       <ErrorText message={pull.error} />
+      {cluster.data?.origin === 'created' && (members.isPending || (members.data ?? []).length < 3) && !members.isError ? (
+        <CreatedPendingGate clusterId={clusterId} confirmedCount={(members.data ?? []).length} loading={members.isPending} />
+      ) : (
+      <>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Signals</Text>
@@ -185,6 +192,8 @@ export default function SignalsScreen() {
             </Card>
           ) : null}
         </>
+      )}
+      </>
       )}
 
       <RaiseSignalModal

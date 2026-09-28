@@ -6,6 +6,7 @@ import { useCluster } from '../../../../src/features/introductions'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useLeaveCluster } from '../../../../src/features/cluster'
 import { modeInfo, cooldownDaysForMode } from '../../../../src/lib/modes'
+import { CLUSTER_SIZE } from '../../../../src/lib/constants'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
@@ -32,6 +33,7 @@ export default function ClusterSettingsScreen() {
     }, []),
   )
   const MatchedByIcon = cluster.data ? modeInfo(cluster.data.matching_mode).icon : Compass
+  const created = cluster.data?.origin === 'created'
 
   async function handleLeave() {
     if (!clusterId) return
@@ -62,7 +64,7 @@ export default function ClusterSettingsScreen() {
             <DetailRow
               icon={<MatchedByIcon size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />}
               label="Matched by"
-              value={cluster.data ? modeInfo(cluster.data.matching_mode).label : '-'}
+              value={cluster.data ? (created ? 'Created cluster' : modeInfo(cluster.data.matching_mode).label) : '-'}
             />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -71,7 +73,7 @@ export default function ClusterSettingsScreen() {
               </View>
               <View style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
                 <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>
-                  {(members.data ?? []).length} / 8
+                  {(members.data ?? []).length} / {CLUSTER_SIZE}
                 </Text>
               </View>
             </View>
@@ -97,9 +99,9 @@ export default function ClusterSettingsScreen() {
             </Text>
           </View>
           <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
-            Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day
-            cooldown for this matching mode and triggers a replacement search so the cluster can stay
-            at 8.
+            {created
+              ? 'Leaving a created cluster frees your spot right away. There is no cooldown.'
+              : `Leaving starts a ${cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day cooldown for this matching mode and triggers a replacement search so the cluster can stay at 8.`}
           </Text>
           {confirming ? (
             <View style={{ marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>

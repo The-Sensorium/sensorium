@@ -81,6 +81,8 @@ export function useMyClusters(enabled = true) {
           mode_label: row.mode_label,
           queue_key: row.queue_key,
           status: row.status,
+          origin: row.origin,
+          created_by: row.created_by,
           introductions_deadline: row.introductions_deadline,
           introductions_completed_at: row.introductions_completed_at,
           created_at: row.created_at,
