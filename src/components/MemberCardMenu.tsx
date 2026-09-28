@@ -78,7 +78,7 @@ export function MemberCardMenu({
             role="menu"
             aria-label={`Options for ${member.display_name}`}
             className={cn(
-              'absolute right-0 z-20 flex w-40 flex-col rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift',
+              'absolute right-0 z-20 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift',
               menuAbove ? 'bottom-full mb-2' : 'top-full mt-1',
             )}
           >
@@ -92,24 +92,18 @@ export function MemberCardMenu({
               View profile
             </Link>
             {!isSelf && (
-              <>
-                <div aria-hidden className="mx-3 h-px bg-outline-variant/40" />
-                <MuteButton
-                  targetUserId={member.id}
-                  targetName={member.display_name}
-                  menuItem
-                  onDialogClose={onClose}
-                />
-              </>
+              <MuteButton
+                targetUserId={member.id}
+                targetName={member.display_name}
+                menuItem
+                onDialogClose={onClose}
+              />
             )}
             {!isSelf && (
-              <>
-                <div aria-hidden className="mx-3 h-px bg-outline-variant/40" />
-                <button type="button" role="menuitem" onClick={onReport} className={rowClass}>
-                  <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-                  Report
-                </button>
-              </>
+              <button type="button" role="menuitem" onClick={onReport} className={rowClass}>
+                <Flag className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                Report
+              </button>
             )}
           </div>
         </>

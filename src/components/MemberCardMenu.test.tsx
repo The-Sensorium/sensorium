@@ -54,11 +54,6 @@ describe('MemberCardMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'Report' })).toBeInTheDocument()
   })
 
-  it('separates the three rows with hairline dividers', () => {
-    const { container } = renderMenu({ open: true })
-    expect(container.querySelectorAll('.h-px')).toHaveLength(2)
-  })
-
   it('shows only view profile for the member themselves', () => {
     renderMenu({ open: true, isSelf: true })
     expect(screen.getByRole('menuitem', { name: 'View profile' })).toBeInTheDocument()
