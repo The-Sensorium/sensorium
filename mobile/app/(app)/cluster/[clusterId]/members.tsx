@@ -7,7 +7,7 @@ import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useCluster } from '../../../../src/features/introductions'
 import { useReplacementRound } from '../../../../src/features/votes'
-import { usePresence } from '../../../../src/features/realtime'
+import { usePresence, useClusterChannel } from '../../../../src/features/realtime'
 import { Avatar } from '../../../../src/components/Avatar'
 import { CountryFlag } from '../../../../src/components/CountryFlag'
 import { MemberLocalTime } from '../../../../src/components/MemberLocalTime'
@@ -33,6 +33,9 @@ export default function MembersScreen() {
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const members = useClusterMembers(clusterId || null)
   const cluster = useCluster(clusterId || null)
+  // Keep roster, round, and pending lists live while watching: notification
+  // taps (join notices, vote starts) must not render stale screens.
+  useClusterChannel(clusterId || null)
   const { online } = usePresence(clusterId || null)
   const replacement = useReplacementRound(clusterId || null)
   const pull = usePullToRefresh([() => members.refetch(), () => replacement.refetch()])

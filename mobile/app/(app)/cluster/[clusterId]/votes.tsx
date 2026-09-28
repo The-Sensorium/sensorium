@@ -5,6 +5,7 @@ import { ArrowRight, Hourglass, ThumbsDown, ThumbsUp } from 'lucide-react-native
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useCluster } from '../../../../src/features/introductions'
+import { useClusterChannel } from '../../../../src/features/realtime'
 import {
   useClusterVotes,
   useVoteCounts,
@@ -52,6 +53,8 @@ export default function VotesScreen() {
   const members = useClusterMembers(clusterId || null)
   const cluster = useCluster(clusterId || null)
   const created = cluster.data?.origin === 'created'
+  // Keep ballots and round live while watching: vote taps must not render stale.
+  useClusterChannel(clusterId || null)
   const createdPending =
     created === true && (members.isPending || (members.data ?? []).length < 3) && !members.isError
 

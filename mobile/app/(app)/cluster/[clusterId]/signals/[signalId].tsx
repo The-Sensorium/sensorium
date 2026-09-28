@@ -3,6 +3,7 @@ import { Pressable, Text, TextInput, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, MessageSquare } from 'lucide-react-native'
 import { useClusterMembers } from '../../../../../src/features/matching'
+import { useCluster } from '../../../../../src/features/introductions'
 import {
   useClusterSignals,
   useSignalReplies,
@@ -16,11 +17,13 @@ import { Avatar } from '../../../../../src/components/Avatar'
 import { MutedHideBar, MutedPlaceholder } from '../../../../../src/components/MutedPlaceholder'
 import { ClusterMenu, ClusterSectionHeader } from '../../../../../src/components/ClusterMenu'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../../src/features/moderation'
+import { useClusterChannel } from '../../../../../src/features/realtime'
 import { dateTimeFormatter } from '../../../../../src/components/room/format'
 import { radii } from '../../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../../src/lib/use-theme'
 import { useDismissKeyboardOnBlur } from '../../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../../../../src/components/ui'
+import { CreatedPendingGate } from '../../../../../src/components/created/CreatedPendingGate'
 
 const statusMeta: Record<SignalStatus, { label: string }> = {
   open: { label: 'Open' },
@@ -37,6 +40,13 @@ export default function SignalDetailScreen() {
   const signals = useClusterSignals(clusterId || null)
   const replies = useSignalReplies(clusterId || null, signalId || null)
   const members = useClusterMembers(clusterId || null)
+  const cluster = useCluster(clusterId || null)
+  // Keep the thread live while watching: reply taps must not render stale.
+  useClusterChannel(clusterId || null)
+  const createdPending =
+    cluster.data?.origin === 'created' &&
+    (members.isPending || (members.data ?? []).length < 3) &&
+    !members.isError
   const reply = useReplySignal(clusterId || null, signalId || null)
   const setStatus = useSetSignalStatus(clusterId || null)
 
@@ -94,11 +104,24 @@ export default function SignalDetailScreen() {
     }
   }
 
-  if (signals.isLoading || replies.isLoading || members.isLoading || myMutes.isLoading) {
+  if (signals.isLoading || replies.isLoading || members.isLoading || myMutes.isLoading || cluster.isLoading) {
     return (
       <Screen>
         <ClusterSectionHeader title="Signal" clusterId={clusterId} section="signals" />
         <LoadingView label="Loading signal…" />
+      </Screen>
+    )
+  }
+
+  if (createdPending) {
+    return (
+      <Screen>
+        <ClusterSectionHeader title="Signal" clusterId={clusterId} section="signals" />
+        <CreatedPendingGate
+          clusterId={clusterId}
+          confirmedCount={(members.data ?? []).length}
+          loading={members.isPending}
+        />
       </Screen>
     )
   }
