@@ -175,7 +175,7 @@ export function ModerationRolesPage() {
                       <tr>
                         <td className="max-w-56 border-b border-outline-variant/40 px-4 py-3 align-middle">
                           <div className="flex items-center gap-3">
-                            <Avatar name={row.display_name || '?'} src={null} className="h-9 w-9 text-sm" />
+                            <Avatar name={row.display_name || '?'} src={null} className="h-9 w-9" textClassName="text-sm" />
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-on-surface">{row.display_name || row.email || 'Deleted account'}</p>
                               <p className="truncate text-xs text-on-surface-variant">{row.email}</p>
@@ -262,7 +262,7 @@ export function ModerationRolesPage() {
             {rows.map((row) => (
               <li key={row.id}>
                 <div className="flex items-start gap-3 rounded-lg border border-outline-variant/60 bg-surface p-4">
-                  <Avatar name={row.display_name || '?'} src={null} className="h-10 w-10 text-sm" />
+                  <Avatar name={row.display_name || '?'} src={null} className="h-10 w-10" textClassName="text-sm" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="min-w-0 flex-1 truncate text-sm font-semibold text-on-surface">{row.display_name || row.email || 'Deleted account'}</p>
@@ -436,7 +436,7 @@ function GrantRoleDialog({ open, onClose }: { open: boolean; onClose: (notice?: 
                   }}
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-surface-container"
                 >
-                  <Avatar name={account.display_name || '?'} src={null} className="h-8 w-8 text-xs" />
+                  <Avatar name={account.display_name || '?'} src={null} className="h-8 w-8" textClassName="text-xs" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-on-surface">{account.display_name}</span>
                     <span className="block truncate text-xs text-on-surface-variant">{account.email}</span>

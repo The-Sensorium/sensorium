@@ -215,7 +215,7 @@ export function ModerationAuditPage() {
       </header>
       {exportError && <p role="alert" className="rounded-md border border-error/30 bg-error/10 p-3 text-sm text-error">{exportError}</p>}
 
-      <section aria-label="Audit filters" className="grid gap-2 rounded-lg border border-outline-variant/60 bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-label="Audit filters" className="grid grid-cols-1 gap-2 rounded-lg border border-outline-variant/60 bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block text-xs font-semibold text-on-surface">
           Search
           <input

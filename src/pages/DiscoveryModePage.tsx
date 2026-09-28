@@ -61,7 +61,7 @@ export function DiscoveryModePage() {
         ) : (clusters.data ?? []).length === 0 ? (
           <p className="text-sm text-on-surface-variant">No clusters in this mode yet.</p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {(clusters.data ?? []).map((c) => (
               <PublicClusterCard key={c.id} cluster={c} isMember={myClusterIds.has(c.id)} />
             ))}

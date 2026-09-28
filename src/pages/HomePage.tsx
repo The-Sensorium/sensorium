@@ -328,7 +328,7 @@ function YourClusters({ clusters }: { clusters: MyCluster[] }) {
           View all clusters <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {clusters.map((item) => (
           <MemberClusterCard
             key={item.cluster.id}

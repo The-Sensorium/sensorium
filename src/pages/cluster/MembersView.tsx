@@ -77,12 +77,12 @@ export function MembersView() {
           No members yet.
         </div>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {list.map((member) => {
             const onlineNow = isOnline(member.id)
             const hasLocalTime = !!member.timezone && isValidTimeZone(member.timezone)
             return (
-              <li key={member.id}>
+              <li key={member.id} className="min-w-0">
                 <div className="h-full rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-shadow hover:shadow-lift">
                   <div className="flex items-start gap-4">
                     <Link

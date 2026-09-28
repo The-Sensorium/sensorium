@@ -63,7 +63,7 @@ export function ClustersPage() {
 
       <section aria-label="Matching modes" className="space-y-3">
         <h2 className="font-display text-xl font-semibold text-on-surface">Find a match</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MATCHING_MODES.map((mode) => (
             <ModeTile
               key={mode.value}
@@ -104,7 +104,7 @@ function ClusterList({
           ))}
         </div>
       )}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {active.map((item) => (
           <MemberClusterCard
             key={item.cluster.id}
