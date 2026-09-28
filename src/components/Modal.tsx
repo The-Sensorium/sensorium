@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -66,7 +67,11 @@ export function Modal({
 
   if (!open) return null
 
-  return (
+  // Portaled to document.body so the backdrop always paints in the root
+  // stacking context. Rendered inline, any positioned ancestor with a
+  // z-index (member menu popover, sticky headers) would cap the dialog
+  // below overlapping chrome instead of covering it.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 p-4"
       role="presentation"
@@ -95,6 +100,7 @@ export function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

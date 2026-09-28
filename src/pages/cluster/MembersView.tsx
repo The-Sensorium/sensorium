@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { Cake, Loader2, UserPlus } from 'lucide-react'
@@ -9,10 +10,12 @@ import { isOnlineNow, usePresence } from '../../features/realtime'
 import { Avatar } from '../../components/Avatar'
 import { CountryFlag } from '../../components/CountryFlag'
 import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
+import { MemberCardMenu } from '../../components/MemberCardMenu'
 import { MemberLocalTime } from '../../components/MemberLocalTime'
-import { MuteButton } from '../../components/MuteButton'
 import { PronounBadge } from '../../components/PronounBadge'
+import { ReportModal } from '../../components/ReportModal'
 import { countryName } from '../../lib/countries'
+import { isValidTimeZone } from '../../lib/timezones'
 
 export function MembersView() {
   useDocumentTitle('Members')
@@ -22,6 +25,8 @@ export function MembersView() {
   const members = useClusterMembers(clusterId)
   const { online } = usePresence(clusterId)
   const replacement = useReplacementRound(clusterId)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [reportFor, setReportFor] = useState<{ id: string; name: string } | null>(null)
 
   if (members.isLoading) {
     return (
@@ -61,75 +66,95 @@ export function MembersView() {
         <ul className="grid gap-3 sm:grid-cols-2">
           {list.map((member) => {
             const onlineNow = isOnline(member.id)
+            const hasLocalTime = !!member.timezone && isValidTimeZone(member.timezone)
             return (
               <li key={member.id}>
                 <div className="h-full rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft transition-shadow hover:shadow-lift">
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-4">
                     <Link
                       to={`/profile/${member.id}?cluster=${clusterId}`}
-                      className="block min-w-0 flex-1"
+                      className="flex min-w-0 flex-1 items-start gap-4"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="relative shrink-0">
-                          <Avatar
-                            name={member.display_name}
-                            src={member.avatar_url}
-                            className="h-11 w-11"
+                      <div className="relative shrink-0">
+<Avatar
+                          name={member.display_name}
+                          src={member.avatar_url}
+                          className="h-14 w-14"
+                        />
+                        {onlineNow ? (
+                          <span
+                            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
+                            aria-hidden
                           />
-                          {onlineNow ? (
-                            <span
-                              className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
-                              aria-hidden
-                            />
-                          ) : null}
-                          <span className="sr-only">{onlineNow ? 'Online' : 'Offline'}</span>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-on-surface">
+                        ) : null}
+                        <span className="sr-only">{onlineNow ? 'Online' : 'Offline'}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="min-w-0 truncate text-base font-semibold text-on-surface">
                             {member.display_name}
-                          </p>
-                          {member.pronouns && (
-                            <div className="mt-1">
-                              <PronounBadge pronouns={member.pronouns} />
-                            </div>
-                          )}
+                          </span>
+                          {member.pronouns && <PronounBadge pronouns={member.pronouns} />}
                         </div>
+                        {(member.country_code || member.birth_year || hasLocalTime) && (
+                          <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-on-surface-variant">
+                            {member.country_code && (
+                              <CountryFlag
+                                code={member.country_code}
+                                label={countryName(member.country_code)}
+                              />
+                            )}
+                            {member.country_code && (member.birth_year || hasLocalTime) && (
+                              <span className="h-3 w-px bg-outline-variant/60" aria-hidden />
+                            )}
+                            {member.birth_year && (
+                              <span className="inline-flex items-center gap-1">
+                                <Cake className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
+                                {member.birth_year}
+                              </span>
+                            )}
+                            {member.birth_year && hasLocalTime && (
+                              <span className="h-3 w-px bg-outline-variant/60" aria-hidden />
+                            )}
+                            {hasLocalTime ? (
+                              <MemberLocalTime timeZone={member.timezone} />
+                            ) : null}
+                          </p>
+                        )}
+                        {member.current_status ? (
+                          <span className="mt-1.5 block truncate text-xs text-on-surface-variant">
+                            “{member.current_status}”
+                          </span>
+                        ) : null}
                       </div>
                     </Link>
-                    {member.id !== userId && (
-                      <span className="shrink-0">
-                        <MuteButton targetUserId={member.id} targetName={member.display_name} />
-                      </span>
-                    )}
+                    <MemberCardMenu
+                      member={member}
+                      clusterId={clusterId}
+                      isSelf={member.id === userId}
+                      open={openMenuId === member.id}
+                      onOpen={() => setOpenMenuId(member.id)}
+                      onClose={() => setOpenMenuId(null)}
+                      onReport={() => {
+                        setOpenMenuId(null)
+                        setReportFor({ id: member.id, name: member.display_name })
+                      }}
+                    />
                   </div>
-                  {(member.country_code || member.birth_year || member.timezone) && (
-                    <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 truncate text-xs text-on-surface-variant">
-                      {member.country_code && (
-                        <span className="inline-flex items-center gap-1">
-                          <CountryFlag code={member.country_code} />
-                          {countryName(member.country_code)}
-                        </span>
-                      )}
-                      {member.birth_year && (
-                        <span className="inline-flex items-center gap-1">
-                          <Cake className="h-3 w-3 shrink-0" strokeWidth={1.5} aria-hidden />
-                          {member.birth_year}
-                        </span>
-                      )}
-                      {member.timezone ? <MemberLocalTime timeZone={member.timezone} /> : null}
-                    </p>
-                  )}
-                  {member.current_status ? (
-                    <span className="mt-2 block truncate text-xs text-on-surface-variant">
-                      “{member.current_status}”
-                    </span>
-                  ) : null}
                 </div>
               </li>
             )
           })}
         </ul>
       )}
+      {reportFor ? (
+        <ReportModal
+          open
+          onClose={() => setReportFor(null)}
+          clusterId={clusterId}
+          target={reportFor}
+        />
+      ) : null}
     </section>
   )
 }

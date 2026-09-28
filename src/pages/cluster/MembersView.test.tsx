@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { MembersView } from './MembersView'
 
@@ -23,7 +23,14 @@ vi.mock('../../features/realtime', async (importOriginal) => {
   return { ...actual, usePresence: hooks.usePresence }
 })
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
-vi.mock('../../components/MuteButton', () => ({ MuteButton: () => null }))
+vi.mock('../../components/MuteButton', () => ({
+  MuteButton: ({ targetName }: { targetName: string }) => (
+    <button type="button" role="menuitem">
+      Mute {targetName}
+    </button>
+  ),
+}))
+vi.mock('../../components/ReportModal', () => ({ ReportModal: () => null }))
 vi.mock('../../components/IntroChecklistBanner', () => ({ IntroChecklistBanner: () => null }))
 
 const member = {
@@ -72,19 +79,14 @@ describe('MembersView', () => {
     expect(screen.getByText('No members yet.')).toBeInTheDocument()
   })
 
-  it('renders member details and country', () => {
-    renderPage()
+  it('renders member details with a flag-only country', () => {
+    const { container } = renderPage()
     expect(screen.getByText('Bo')).toBeInTheDocument()
-    expect(screen.getByText('United States')).toBeInTheDocument()
+    expect(container.querySelector('svg[aria-label="United States"]')).not.toBeNull()
+    expect(screen.queryByText('United States', { selector: 'span' })).not.toBeInTheDocument()
     expect(screen.getByText('1990')).toBeInTheDocument()
     expect(screen.getByText('they/them')).toBeInTheDocument()
     expect(screen.getByText('“Deep in a book”')).toBeInTheDocument()
-  })
-
-  it('renders a flag next to the country name', () => {
-    renderPage()
-    const country = screen.getByText('United States').closest('span')
-    expect(country?.querySelector('svg')).not.toBeNull()
   })
 
   it('renders the member local time when a timezone is set', () => {
@@ -118,5 +120,42 @@ describe('MembersView', () => {
     renderPage()
     expect(screen.getByText('A spot just opened')).toBeInTheDocument()
     expect(screen.getByText("We're 1 of 8, finding a new member.")).toBeInTheDocument()
+  })
+
+  it('renders a 56px avatar with the online indicator attached', () => {
+    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+    const { container } = renderPage()
+    const avatar = container.querySelector('.h-14.w-14')
+    expect(avatar).not.toBeNull()
+    expect(avatar?.parentElement?.querySelector('.bg-emerald-500')).not.toBeNull()
+  })
+
+  it('shows a small options button instead of a large mute button', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Member options for Bo' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /mute bo/i })).not.toBeInTheDocument()
+  })
+
+  it('separates country, birth year, and local time without dangling dividers', () => {
+    const { container } = renderPage()
+    expect(container.querySelectorAll('span.w-px')).toHaveLength(2)
+  })
+
+  it('leaves no dangling divider when local time is missing', () => {
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, timezone: null }]))
+    const { container } = renderPage()
+    expect(container.querySelectorAll('span.w-px')).toHaveLength(1)
+  })
+
+  it('opens a menu with profile, mute, and report actions', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Member options for Bo' }))
+    expect(screen.getByRole('menuitem', { name: 'View profile' })).toHaveAttribute(
+      'href',
+      '/profile/m1?cluster=c1',
+    )
+    expect(screen.getByRole('menuitem', { name: 'Mute Bo' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Report' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: /block/i })).not.toBeInTheDocument()
   })
 })

@@ -23,7 +23,7 @@ export function MessageImage({ path, alt }: { path: string; alt: string }) {
           e.stopPropagation()
           setOpen(true)
         }}
-        className="block w-full rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="block w-full cursor-pointer rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <img
           src={src}

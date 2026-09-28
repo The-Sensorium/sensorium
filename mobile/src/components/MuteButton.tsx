@@ -8,7 +8,7 @@ import { useTheme } from '../lib/use-theme'
 import { Modal } from './Modal'
 import { PrimaryButton } from './ui'
 
-export function MuteButton({ targetUserId, targetName, fill }: { targetUserId: string; targetName: string; fill?: boolean }) {
+export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogClose }: { targetUserId: string; targetName: string; fill?: boolean; menuItem?: boolean; onDialogClose?: () => void }) {
   const t = useTheme()
   const auth = useAuth()
   const selfId = auth.state === 'signedIn' ? auth.userId : null
@@ -40,6 +40,7 @@ export function MuteButton({ targetUserId, targetName, fill }: { targetUserId: s
     setConfirmOpen(false)
     setConfirmError(null)
     setConfirmKind(null)
+    onDialogClose?.()
   }
 
   async function handleConfirm() {
@@ -54,6 +55,66 @@ export function MuteButton({ targetUserId, targetName, fill }: { targetUserId: s
     } catch {
       setConfirmError('Couldn’t update. Try again.')
     }
+  }
+
+  if (menuItem) {
+    return (
+      <View>
+        <Pressable
+          disabled={pending}
+          onPress={() => openConfirm()}
+          accessibilityLabel={`${label} ${targetName}`}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: pending }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            minHeight: 52,
+            opacity: pending ? 0.6 : 1,
+          }}
+        >
+          <Icon size={18} color={t.onSurface} strokeWidth={1.5} />
+          <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.onSurface }}>
+            {label}
+          </Text>
+        </Pressable>
+        <Modal open={confirmOpen} onClose={() => { if (!pending) closeConfirm() }} title={dialogTitle}>
+          {dialogUnmute ? (
+            <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
+              Unmuting {targetName} shows their messages, posts, comments, and signals again right away.
+            </Text>
+          ) : (
+            <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
+              Muting {targetName} hides their messages, posts, comments, and signals for you only, in every shared
+              cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.
+            </Text>
+          )}
+          {confirmError ? (
+            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{confirmError}</Text>
+          ) : null}
+          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+            <Pressable
+              onPress={() => closeConfirm()}
+              disabled={pending}
+              hitSlop={8}
+              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: pending ? 0.6 : 1 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+            </Pressable>
+            <PrimaryButton
+              title={dialogLabel}
+              loadingTitle="Saving…"
+              loading={pending}
+              onPress={handleConfirm}
+              icon={<DialogIcon size={16} color={t.onPrimary} strokeWidth={1.5} />}
+            />
+          </View>
+        </Modal>
+      </View>
+    )
   }
 
   return (
