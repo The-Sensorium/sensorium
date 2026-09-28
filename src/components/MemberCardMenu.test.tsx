@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, afterEach } from 'vitest'
+import { useState } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { MemberCardMenu } from './MemberCardMenu'
@@ -30,7 +31,30 @@ function renderMenu(props?: Partial<Parameters<typeof MemberCardMenu>[0]>) {
   )
 }
 
+function renderOpenableMenu() {
+  function Harness() {
+    const [open, setOpen] = useState(false)
+    return (
+      <MemoryRouter>
+        <MemberCardMenu
+          member={member}
+          clusterId="c1"
+          isSelf={false}
+          open={open}
+          onOpen={() => setOpen(true)}
+          onClose={() => setOpen(false)}
+          onReport={vi.fn()}
+        />
+      </MemoryRouter>
+    )
+  }
+  return render(<Harness />)
+}
+
 describe('MemberCardMenu', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
   it('renders only the options button when closed', () => {
     renderMenu()
     expect(screen.getByRole('button', { name: 'Member options for Bo' })).toBeInTheDocument()
@@ -88,5 +112,43 @@ describe('MemberCardMenu', () => {
     renderMenu({ open: false, onClose })
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('opens below the trigger when there is room underneath', () => {
+    vi.spyOn(HTMLDivElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: 300,
+      bottom: 344,
+      left: 0,
+      right: 0,
+      width: 44,
+      height: 44,
+      x: 0,
+      y: 300,
+      toJSON: () => ({}),
+    } as DOMRect)
+    renderOpenableMenu()
+    fireEvent.click(screen.getByRole('button', { name: 'Member options for Bo' }))
+    const menu = screen.getByRole('menu')
+    expect(menu.className).toContain('top-full')
+    expect(menu.className).not.toContain('bottom-full')
+  })
+
+  it('flips above only when the menu would not fit below', () => {
+    vi.spyOn(HTMLDivElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      top: 700,
+      bottom: 744,
+      left: 0,
+      right: 0,
+      width: 44,
+      height: 44,
+      x: 0,
+      y: 700,
+      toJSON: () => ({}),
+    } as DOMRect)
+    renderOpenableMenu()
+    fireEvent.click(screen.getByRole('button', { name: 'Member options for Bo' }))
+    const menu = screen.getByRole('menu')
+    expect(menu.className).toContain('bottom-full')
+    expect(menu.className).not.toContain('top-full')
   })
 })

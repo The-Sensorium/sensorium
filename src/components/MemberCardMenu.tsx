@@ -7,6 +7,10 @@ import { cn } from '../lib/utils'
 const rowClass =
   'flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container'
 
+// Generous estimate of the open three-row menu height. Used to decide
+// whether the menu fits below the trigger before flipping it above.
+const MENU_EST_HEIGHT = 180
+
 export function MemberCardMenu({
   member,
   clusterId,
@@ -45,8 +49,12 @@ export function MemberCardMenu({
     }
     const wrap = wrapRef.current
     if (wrap) {
+      // Flip above only when the menu would not fit below. Comparing raw
+      // above/below space flips far too eagerly and can push the menu up
+      // under the sticky cluster header.
       const rect = wrap.getBoundingClientRect()
-      setMenuAbove(rect.top > window.innerHeight - rect.bottom)
+      const below = window.innerHeight - rect.bottom
+      setMenuAbove(below < MENU_EST_HEIGHT && rect.top > below)
     } else {
       setMenuAbove(false)
     }
@@ -78,7 +86,9 @@ export function MemberCardMenu({
             role="menu"
             aria-label={`Options for ${member.display_name}`}
             className={cn(
-              'absolute right-0 z-20 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift',
+              // z-40 keeps a flipped menu above the sticky cluster header
+              // (z-30) while staying below portaled dialogs (z-50).
+              'absolute right-0 z-40 flex w-40 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift',
               menuAbove ? 'bottom-full mb-2' : 'top-full mt-1',
             )}
           >
