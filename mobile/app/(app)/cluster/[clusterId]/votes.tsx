@@ -4,6 +4,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { ArrowRight, Hourglass, ThumbsDown, ThumbsUp } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
+import { useCluster } from '../../../../src/features/introductions'
 import {
   useClusterVotes,
   useVoteCounts,
@@ -24,6 +25,7 @@ import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../../src/components/ui'
+import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 type MemberCard = { id: string; display_name: string; avatar_url: string | null }
@@ -48,6 +50,10 @@ export default function VotesScreen() {
   const counts = useVoteCounts(clusterId || null)
   const round = useReplacementRound(clusterId || null)
   const members = useClusterMembers(clusterId || null)
+  const cluster = useCluster(clusterId || null)
+  const created = cluster.data?.origin === 'created'
+  const createdPending =
+    created === true && (members.isPending || (members.data ?? []).length < 3) && !members.isError
 
   const startReplace = useStartReplaceVote(clusterId || null)
   const startName = useStartNameVote(clusterId || null)
@@ -144,6 +150,10 @@ export default function VotesScreen() {
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ClusterSectionHeader title="Votes" clusterId={clusterId} section="votes" />
       <ErrorText message={pull.error} />
+      {createdPending ? (
+        <CreatedPendingGate clusterId={clusterId} confirmedCount={(members.data ?? []).length} loading={members.isPending} />
+      ) : (
+      <>
       {voteError ? (
         <Card>
           <Text style={{ fontSize: 14, color: t.error }}>{voteError}</Text>
@@ -159,6 +169,7 @@ export default function VotesScreen() {
             Any member can start a community vote. Results are hidden until it closes.
           </Text>
           <View style={{ marginTop: 16, gap: 8 }}>
+            {!created ? (
             <Pressable
               onPress={() => setModal('replace')}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12 }}
@@ -168,6 +179,7 @@ export default function VotesScreen() {
               </Text>
               <ArrowRight size={16} color={t.onSurface} />
             </Pressable>
+            ) : null}
             <Pressable
               onPress={() => setModal('name')}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12 }}
@@ -227,6 +239,8 @@ export default function VotesScreen() {
           ))}
         </>
       ) : null}
+      </>
+      )}
 
       <Modal open={modal === 'replace'} onClose={() => setModal(null)} title="Replace a member">
         <View style={{ marginTop: 12, gap: 12 }}>

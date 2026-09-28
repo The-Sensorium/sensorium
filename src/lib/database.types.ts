@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       account_restrictions: {
@@ -375,41 +350,55 @@ export type Database = {
       clusters: {
         Row: {
           created_at: string
+          created_by: string | null
           id: string
           introductions_completed_at: string | null
           introductions_deadline: string | null
           matching_mode: Database["public"]["Enums"]["matching_mode"]
           mode_label: string
           name: string
+          origin: string
           queue_key: string
           status: Database["public"]["Enums"]["cluster_status"]
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           id?: string
           introductions_completed_at?: string | null
           introductions_deadline?: string | null
           matching_mode: Database["public"]["Enums"]["matching_mode"]
           mode_label: string
           name: string
+          origin?: string
           queue_key: string
           status?: Database["public"]["Enums"]["cluster_status"]
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           id?: string
           introductions_completed_at?: string | null
           introductions_deadline?: string | null
           matching_mode?: Database["public"]["Enums"]["matching_mode"]
           mode_label?: string
           name?: string
+          origin?: string
           queue_key?: string
           status?: Database["public"]["Enums"]["cluster_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clusters_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comment_likes: {
         Row: {
@@ -551,6 +540,7 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          inviter_id: string | null
           responded_at: string | null
           status: Database["public"]["Enums"]["invitation_status"]
           user_id: string
@@ -560,6 +550,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          inviter_id?: string | null
           responded_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"]
           user_id: string
@@ -569,6 +560,7 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          inviter_id?: string | null
           responded_at?: string | null
           status?: Database["public"]["Enums"]["invitation_status"]
           user_id?: string
@@ -579,6 +571,13 @@ export type Database = {
             columns: ["cluster_id"]
             isOneToOne: false
             referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_inviter_id_fkey"
+            columns: ["inviter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2124,6 +2123,10 @@ export type Database = {
       }
       can_manage_roles: { Args: { p_user_id?: string }; Returns: boolean }
       can_moderate: { Args: { p_user_id?: string }; Returns: boolean }
+      cancel_created_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: undefined
+      }
       check_intro_deadlines: { Args: never; Returns: undefined }
       check_rate_limit: {
         Args: { p_action: string; p_limit: number; p_window: string }
@@ -2187,6 +2190,10 @@ export type Database = {
         Returns: boolean
       }
       cluster_unlocked: { Args: { p_cluster_id: string }; Returns: boolean }
+      create_created_cluster: {
+        Args: { p_invitee_ids: string[]; p_name: string }
+        Returns: string
+      }
       create_invitation: { Args: { p_round_id: string }; Returns: undefined }
       create_post: {
         Args: {
@@ -2410,6 +2417,37 @@ export type Database = {
           mode_label: string
           name: string
           status: Database["public"]["Enums"]["cluster_status"]
+        }[]
+      }
+      get_created_invite_detail: {
+        Args: { p_invitation_id: string }
+        Returns: {
+          cluster_id: string
+          cluster_name: string
+          creator_id: string
+          creator_name: string
+          member_count: number
+          members: Json
+          pending_count: number
+        }[]
+      }
+      get_created_pending_invites: {
+        Args: { p_cluster_id: string }
+        Returns: {
+          avatar_url: string
+          created_at: string
+          display_name: string
+          expires_at: string
+          invitation_id: string
+          user_id: string
+        }[]
+      }
+      get_eligible_comembers: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          display_name: string
+          user_id: string
         }[]
       }
       get_intro_progress: {
@@ -2679,6 +2717,7 @@ export type Database = {
         Args: never
         Returns: {
           created_at: string
+          created_by: string
           id: string
           introductions_completed_at: string
           introductions_deadline: string
@@ -2687,6 +2726,7 @@ export type Database = {
           member_count: number
           mode_label: string
           name: string
+          origin: string
           queue_key: string
           status: Database["public"]["Enums"]["cluster_status"]
           updated_at: string
@@ -2766,7 +2806,10 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          inviter_id: string
+          inviter_name: string
           mode_label: string
+          origin: string
         }[]
       }
       get_post_counts: {
@@ -2912,6 +2955,10 @@ export type Database = {
       }
       hide_post_comment: {
         Args: { p_comment_id: string; p_reason: string; p_report_id?: string }
+        Returns: undefined
+      }
+      invite_to_created_cluster: {
+        Args: { p_cluster_id: string; p_invitee_id: string }
         Returns: undefined
       }
       is_account_active: { Args: { p_user_id?: string }; Returns: boolean }
@@ -3365,12 +3412,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3394,11 +3441,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3419,11 +3466,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3444,11 +3491,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3461,11 +3508,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3475,9 +3522,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       account_status: ["active", "suspended", "banned"],

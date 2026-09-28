@@ -5,10 +5,15 @@ import { MembersView } from './MembersView'
 
 const hooks = vi.hoisted(() => ({
   useAuth: vi.fn(),
+  useCluster: vi.fn(),
   useClusterMembers: vi.fn(),
   useReplacementRound: vi.fn(),
   usePresence: vi.fn(),
   useAvatarUrl: vi.fn(),
+  useCreatedPendingInvites: vi.fn(),
+  useEligibleComembers: vi.fn(),
+  useInviteToCreatedCluster: vi.fn(),
+  useCancelCreatedInvitation: vi.fn(),
 }))
 
 vi.mock('react-router', async (importOriginal) => {
@@ -17,7 +22,18 @@ vi.mock('react-router', async (importOriginal) => {
 })
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
+vi.mock('../../features/introductions', () => ({ useCluster: hooks.useCluster }))
 vi.mock('../../features/votes', () => ({ useReplacementRound: hooks.useReplacementRound }))
+vi.mock('../../features/created-clusters', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../features/created-clusters')>()
+  return {
+    ...actual,
+    useCreatedPendingInvites: hooks.useCreatedPendingInvites,
+    useEligibleComembers: hooks.useEligibleComembers,
+    useInviteToCreatedCluster: hooks.useInviteToCreatedCluster,
+    useCancelCreatedInvitation: hooks.useCancelCreatedInvitation,
+  }
+})
 vi.mock('../../features/realtime', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../features/realtime')>()
   return { ...actual, usePresence: hooks.usePresence }
@@ -61,10 +77,15 @@ describe('MembersView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1' })
+    hooks.useCluster.mockReturnValue(queryStub({ id: 'c1', origin: 'queue', created_by: 'u9' }))
     hooks.useClusterMembers.mockReturnValue(queryStub([member]))
     hooks.useReplacementRound.mockReturnValue(queryStub(null))
     hooks.usePresence.mockReturnValue({ online: new Set() })
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
+    hooks.useCreatedPendingInvites.mockReturnValue(queryStub([]))
+    hooks.useEligibleComembers.mockReturnValue(queryStub([]))
+    hooks.useInviteToCreatedCluster.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
+    hooks.useCancelCreatedInvitation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
   })
 
   it('shows the loading state while members load', () => {
@@ -157,5 +178,38 @@ describe('MembersView', () => {
     expect(screen.getByRole('menuitem', { name: 'Mute Bo' })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Report' })).toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: /block/i })).not.toBeInTheDocument()
+  })
+
+  it('shows the created pending banner and invitees for the creator', () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'creator' })
+    hooks.useCluster.mockReturnValue(
+      queryStub({ id: 'c1', origin: 'created', created_by: 'creator' }),
+    )
+    hooks.useCreatedPendingInvites.mockReturnValue(
+      queryStub([
+        {
+          invitation_id: 'i1',
+          user_id: 'm2',
+          display_name: 'Mo',
+          avatar_url: null,
+          created_at: '2026-01-01T00:00:00Z',
+          expires_at: '2026-01-04T00:00:00Z',
+        },
+      ]),
+    )
+    renderPage()
+    expect(screen.getByText('2 more members needed to activate.')).toBeInTheDocument()
+    expect(screen.getByText('Mo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Invite more people' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel invitation to Mo' })).toBeInTheDocument()
+  })
+
+  it('hides invite controls from non-creators', () => {
+    hooks.useCluster.mockReturnValue(
+      queryStub({ id: 'c1', origin: 'created', created_by: 'someone-else' }),
+    )
+    hooks.useCreatedPendingInvites.mockReturnValue(queryStub([]))
+    renderPage()
+    expect(screen.queryByRole('button', { name: 'Invite more people' })).not.toBeInTheDocument()
   })
 })

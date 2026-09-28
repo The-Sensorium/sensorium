@@ -60,3 +60,33 @@ export function joinQueueErrorMessage(error: unknown, mode?: string): string {
   }
   return 'Something went wrong while joining. Please try again.'
 }
+
+/** Friendly copy for created-cluster invite errors; falls back to the raw message. */
+export function inviteErrorMessage(error: unknown, fallback: string): string {
+  const message = toErrorMessage(error, '').toLowerCase()
+  if (message.includes('rate_limited')) {
+    return 'You’re sending invites too quickly. Please wait a bit and try again.'
+  }
+  if (message.includes('previously_declined')) {
+    return 'They declined an invitation to this cluster, so they can’t be invited again.'
+  }
+  if (message.includes('already_invited')) {
+    return 'They already have a pending invitation to this cluster.'
+  }
+  if (message.includes('already_member')) {
+    return 'They’re already in this cluster.'
+  }
+  if (message.includes('cluster_full')) {
+    return 'This cluster is full (8 members max).'
+  }
+  if (message.includes('not_eligible')) {
+    return 'They can only be invited if you’ve shared a cluster and their account is active.'
+  }
+  if (message.includes('invalid_name')) {
+    return 'Give your cluster a name between 1 and 50 characters.'
+  }
+  if (message.includes('invalid_invite_count')) {
+    return 'Invite between 2 and 7 people to start a cluster.'
+  }
+  return toErrorMessage(error, fallback)
+}

@@ -6,6 +6,7 @@ import { useCluster } from '../../features/introductions'
 import { useClusterMembers } from '../../features/matching'
 import { useLeaveCluster } from '../../features/cluster'
 import { modeInfo, cooldownDaysForMode } from '../../lib/modes'
+import { CLUSTER_SIZE } from '../../lib/constants'
 import { toErrorMessage } from '../../lib/error'
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -24,6 +25,7 @@ export function SettingsView() {
   const [confirming, setConfirming] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
   const MatchedByIcon = cluster.data ? modeInfo(cluster.data.matching_mode).icon : Compass
+  const created = cluster.data?.origin === 'created'
 
   async function handleLeave() {
     if (!clusterId) return
@@ -55,7 +57,7 @@ export function SettingsView() {
               Matched by
             </dt>
             <dd className="text-right font-medium text-on-surface">
-              {cluster.data ? modeInfo(cluster.data.matching_mode).label : '-'}
+              {cluster.data ? (created ? 'Created cluster' : modeInfo(cluster.data.matching_mode).label) : '-'}
             </dd>
           </div>
           <div className="flex items-center justify-between gap-4">
@@ -65,7 +67,7 @@ export function SettingsView() {
             </dt>
             <dd className="text-right font-medium text-on-surface">
               <span className="inline-flex items-center rounded-pill bg-surface-container px-2.5 py-1 text-xs font-semibold">
-                {(members.data ?? []).length} / 8
+                {(members.data ?? []).length} / {CLUSTER_SIZE}
               </span>
             </dd>
           </div>
@@ -89,9 +91,15 @@ export function SettingsView() {
           <h2 className="font-display text-lg font-semibold text-on-surface">Leave cluster</h2>
         </div>
         <p className="mt-2 text-sm text-on-surface-variant">
-          Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day
-          cooldown for this matching mode and triggers a replacement search so the cluster can stay
-          at 8.
+          {created ? (
+            <>Leaving a created cluster frees your spot right away. There is no cooldown.</>
+          ) : (
+            <>
+              Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day
+              cooldown for this matching mode and triggers a replacement search so the cluster can stay
+              at 8.
+            </>
+          )}
         </p>
         {confirming ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">

@@ -4,6 +4,7 @@ import { ArrowLeft, Menu, MessageCircle, MessageSquare, Scale, Settings, Users }
 import { cn } from '../../lib/utils'
 import { modeInfo } from '../../lib/modes'
 import { useCluster, useMyMembership } from '../../features/introductions'
+import { useClusterMembers } from '../../features/matching'
 import { useClusterChannel } from '../../features/realtime'
 import { ClusterRail } from '../../components/ClusterRail'
 import { RoutePending } from '../../components/RoutePending'
@@ -25,6 +26,7 @@ export function ClusterLayout() {
 
   const cluster = useCluster(clusterId)
   const membership = useMyMembership(clusterId)
+  const members = useClusterMembers(clusterId)
   const [sectionsOpen, setSectionsOpen] = useState(false)
 
   // One Postgres-Changes subscription for the whole cluster shell keeps the room,
@@ -64,6 +66,20 @@ export function ClusterLayout() {
 
   // Clusters open at formation: every active member enters the room directly.
   // Introductions are an optional in-cluster checklist and never gate access.
+  // Exception: user-created clusters stay members-tab-only until 3 confirmed
+  // members activate them (see docs/CREATED_CLUSTER_PLAN.md). Settings stays
+  // open throughout: it holds only details plus leave, and leaving must stay
+  // possible while pending. Unknown membership locks: a direct nav must not
+  // flash the room before the roster resolves. A roster error fails open to
+  // the tabs (each shows its own error; RLS/RPCs still enforce access).
+  const isCreated = cluster.data?.origin === 'created'
+  const confirmedCount = members.data?.length ?? 0
+  const membersUnknown = members.isPending
+  const createdPending =
+    isCreated === true && (membersUnknown || confirmedCount < 3) && !members.isError
+  const onMembersTab = pathname === `/cluster/${clusterId}/members`
+  const onSettingsTab = pathname === `/cluster/${clusterId}/settings`
+  const locked = createdPending && !onMembersTab && !onSettingsTab
 
   const ModeIcon = cluster.data ? modeInfo(cluster.data.matching_mode).icon : null
 
@@ -94,7 +110,9 @@ export function ClusterLayout() {
           </button>
           <div className="min-w-0 flex-1">
             <p className="hidden items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary sm:flex">
-              {ModeIcon && cluster.data ? (
+              {cluster.data?.origin === 'created' ? (
+                <span className="truncate">Created cluster</span>
+              ) : ModeIcon && cluster.data ? (
                 <>
                   <ModeIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
                   <span className="truncate">{cluster.data.mode_label}</span>
@@ -191,7 +209,32 @@ export function ClusterLayout() {
           )}
         >
           <Suspense fallback={<RoutePending />}>
-            <Outlet />
+            {locked ? (
+              <div className="mx-auto w-full max-w-xl space-y-4 rounded-2xl border border-outline-variant/60 bg-surface-container/40 p-8 text-center">
+                <p className="font-display text-xl font-semibold text-on-surface">
+                  Waiting for members
+                </p>
+                <p className="text-sm text-on-surface-variant">
+                  {members.isPending ? (
+                    <>This cluster activates once 3 members have joined. Chat, signals, votes, and calls unlock then.</>
+                  ) : (
+                    <>
+                      This cluster activates once {3 - confirmedCount} more{' '}
+                      {3 - confirmedCount === 1 ? 'member joins' : 'members join'}. Chat, signals,
+                      votes, and calls unlock then.
+                    </>
+                  )}
+                </p>
+                <NavLink
+                  to={`/cluster/${clusterId}/members`}
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                >
+                  View members
+                </NavLink>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </Suspense>
         </div>
         {!isSettings && (

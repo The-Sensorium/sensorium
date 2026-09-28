@@ -10,6 +10,7 @@ import {
   useLatestClusterFormed,
   type MyCluster,
 } from '../features/matching'
+import { useCluster } from '../features/introductions'
 import {
   useMyPendingInvitations,
   useAcceptInvitation,
@@ -23,6 +24,7 @@ import {
   type Post,
 } from '../features/posts'
 import { MemberClusterCard } from '../components/ClusterCard'
+import { Modal } from '../components/Modal'
 import { useUnreadChatCounts } from '../features/notifications'
 import { MutedHideBar, MutedPlaceholder } from '../components/MutedPlaceholder'
 import { PostCard } from '../components/PostCard'
@@ -61,9 +63,27 @@ export function HomePage() {
   const navigate = useNavigate()
   const clusters = useMyClusters()
   const formed = useLatestClusterFormed()
+  const formedClusterId = formed.data?.cluster_id ?? null
+  const formedMembers = useClusterMembers(formedClusterId, formed.data !== null)
+  const formedCluster = useCluster(formedClusterId, formed.data !== null)
+  const formedCount = formedMembers.data?.length
+  // Dynamic copy only for user-created activations; queue clusters keep the
+  // established copy even if membership later dips below 8. While either the
+  // roster or the cluster row is still loading (origin unknown), show a
+  // neutral line instead of flashing the queue copy.
+  const formedCopy =
+    formedCluster.data?.origin === 'queue'
+      ? 'Eight of you were matched. Jump in and say hello.'
+      : formedCount == null
+        ? 'Your cluster is active. Jump in and say hello.'
+        : formedCount >= 8
+          ? 'Eight of you were matched. Jump in and say hello.'
+          : `${formedCount} of you are in. Jump in and say hello.`
   const invitations = useMyPendingInvitations()
   const acceptInvite = useAcceptInvitation()
   const declineInvite = useDeclineInvitation()
+  const [confirmDeclineId, setConfirmDeclineId] = useState<string | null>(null)
+  const confirmDecline = (invitations.data ?? []).find((i) => i.id === confirmDeclineId) ?? null
 
   const firstName = profile.data?.display_name?.split(' ')[0]
   const inviteError =
@@ -98,6 +118,7 @@ export function HomePage() {
       {(invitations.data ?? []).map((inv) => (
         <div
           key={inv.id}
+          data-e2e="invite-card"
           className="rounded-2xl border border-primary/30 bg-primary-container/15 p-5 shadow-soft"
         >
           <div className="flex items-center gap-4">
@@ -108,9 +129,21 @@ export function HomePage() {
               <p className="font-display text-lg font-semibold text-on-surface">
                 You’re invited to join a cluster
               </p>
-              <p className="text-sm text-on-surface-variant">
-                {inv.cluster_name} · {inv.mode_label}
-              </p>
+              {inv.origin === 'created' ? (
+                <p className="truncate text-sm text-on-surface-variant">
+                  Cluster name:{' '}
+                  <span className="font-semibold text-on-surface">{inv.cluster_name}</span>
+                </p>
+              ) : (
+                <p className="text-sm text-on-surface-variant">
+                  {inv.cluster_name} · {inv.mode_label}
+                </p>
+              )}
+              {inv.origin === 'created' && inv.inviter_name && (
+                <p className="text-sm text-on-surface-variant">
+                  Created by {inv.inviter_name}
+                </p>
+              )}
             </div>
           </div>
           {inviteError && (
@@ -118,7 +151,7 @@ export function HomePage() {
               {inviteError}
             </p>
           )}
-          <div className="mt-4 flex gap-2">
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
               disabled={acceptInvite.isPending || declineInvite.isPending}
@@ -134,12 +167,28 @@ export function HomePage() {
             <button
               type="button"
               disabled={acceptInvite.isPending || declineInvite.isPending}
-              onClick={() => declineInvite.mutateAsync(inv.id).catch(() => {})}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              onClick={() => {
+                // Created invites are final once declined, so confirm first.
+                // Replacement invites keep the existing one-tap decline.
+                if (inv.origin === 'created') {
+                  setConfirmDeclineId(inv.id)
+                } else {
+                  declineInvite.mutateAsync(inv.id).catch(() => {})
+                }
+              }}
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
             >
               Decline
             </button>
           </div>
+          {inv.origin === 'created' && (
+            <Link
+              to={`/invites/${inv.id}`}
+              className="mt-2 inline-block text-[13px] font-semibold text-primary"
+            >
+              View invitation details
+            </Link>
+          )}
         </div>
       ))}
 
@@ -168,7 +217,7 @@ export function HomePage() {
               Your cluster is ready
             </span>
             <span className="block text-sm text-on-surface-variant">
-              Eight of you were matched. Jump in and say hello.
+              {formedCopy}
             </span>
           </span>
           <ArrowRight className="h-5 w-5 shrink-0 text-primary" aria-hidden />
@@ -185,6 +234,49 @@ export function HomePage() {
           )}
         </>
       )}
+
+      <Modal
+        open={confirmDecline !== null}
+        onClose={() => setConfirmDeclineId(null)}
+        title="Decline invitation?"
+      >
+        <p className="text-sm text-on-surface-variant">
+          {confirmDecline
+            ? `You won’t be invited to ${confirmDecline.cluster_name} again. You can still be invited to other clusters.`
+            : null}
+        </p>
+        {declineInvite.error && (
+          <p role="alert" className="mt-3 rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
+            {toErrorMessage(declineInvite.error, 'Could not decline the invitation. Please try again.')}
+          </p>
+        )}
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmDeclineId(null)}
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            Keep invitation
+          </button>
+          <button
+            type="button"
+            data-e2e="confirm-decline-invitation"
+            disabled={declineInvite.isPending}
+            onClick={() => {
+              if (!confirmDecline) return
+              declineInvite
+                .mutateAsync(confirmDecline.id)
+                .then(() => setConfirmDeclineId(null))
+                .catch(() => {
+                  // Surfaced via declineInvite.error inside the dialog; stay open to retry.
+                })
+            }}
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            Decline
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

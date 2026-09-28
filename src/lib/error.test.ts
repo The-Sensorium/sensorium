@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isNetworkError, isRateLimited, joinQueueErrorMessage, rateLimitMessage, toErrorMessage } from './error'
+import { isNetworkError, isRateLimited, inviteErrorMessage, joinQueueErrorMessage, rateLimitMessage, toErrorMessage } from './error'
 
 describe('toErrorMessage', () => {
   it('returns the message from an Error instance', () => {
@@ -111,5 +111,32 @@ describe('joinQueueErrorMessage', () => {
     expect(joinQueueErrorMessage({ message: 'unexpected database state' })).toContain(
       'Something went wrong while joining.',
     )
+  })
+})
+
+describe('inviteErrorMessage', () => {
+  it('maps a final decline without leaking internals', () => {
+    expect(inviteErrorMessage({ message: 'previously_declined' }, 'fallback')).toContain(
+      'declined',
+    )
+  })
+
+  it('maps rate limits to a wait-and-retry message', () => {
+    expect(inviteErrorMessage({ message: 'rate_limited' }, 'fallback')).toContain('too quickly')
+  })
+
+  it('maps capacity and eligibility failures', () => {
+    expect(inviteErrorMessage({ message: 'cluster_full' }, 'fallback')).toContain('full')
+    expect(inviteErrorMessage({ message: 'already_invited' }, 'fallback')).toContain('pending')
+    expect(inviteErrorMessage({ message: 'not_eligible:abc' }, 'fallback')).toContain(
+      'shared a cluster',
+    )
+  })
+
+  it('falls back for unrecognized errors', () => {
+    expect(inviteErrorMessage({ message: 'unexpected database state' }, 'fallback')).toBe(
+      'unexpected database state',
+    )
+    expect(inviteErrorMessage(null, 'fallback')).toBe('fallback')
   })
 })

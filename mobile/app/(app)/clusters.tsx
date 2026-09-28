@@ -1,11 +1,12 @@
 import { Pressable, Text, View } from 'react-native'
-import { Link } from 'expo-router'
-import { ArrowRight, Users } from 'lucide-react-native'
+import { Link, router } from 'expo-router'
+import { ArrowRight, Plus, Users } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { CLUSTER_SIZE } from '../../src/lib/constants'
 import { MATCHING_MODES } from '../../src/lib/modes'
 import { usePublicClusterCounts } from '../../src/features/discovery'
-import { useMyQueueStatus, useMyClusters } from '../../src/features/matching'
+import { useMyQueueStatus, useMyClusters, type MyCluster } from '../../src/features/matching'
+import { isPendingCreated } from '../../src/features/created-clusters'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, Screen } from '../../src/components/ui'
@@ -30,8 +31,33 @@ export default function ClustersScreen() {
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Clusters</Text>
-      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 24 }}>
-        Every cluster you’ve been matched into. Browse a matching mode below to meet more people.
+      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+        Every cluster you’ve been matched into or created. Browse a matching mode below to meet more people.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Create a cluster"
+        onPress={() => router.push('/clusters/new')}
+        style={{
+          marginTop: 16,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          backgroundColor: t.primary,
+          borderRadius: radii.pill,
+          paddingHorizontal: 20,
+          paddingVertical: 14,
+          minHeight: 48,
+        }}
+      >
+        <Plus size={16} color={t.onPrimary} strokeWidth={2} />
+        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
+          Create a cluster
+        </Text>
+      </Pressable>
+      <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 18, color: t.onSurfaceVariant, marginBottom: 24 }}>
+        Bring people you’ve met in Sensorium together in a new space.
       </Text>
       <ErrorText message={pull.error} />
 
@@ -46,18 +72,12 @@ export default function ClustersScreen() {
             <Users size={24} color={t.onSurfaceVariant} strokeWidth={1.5} />
             <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
               No clusters yet. Join a matching mode below and you’ll be matched with{' '}
-              {CLUSTER_SIZE - 1} strangers.
+              {CLUSTER_SIZE - 1} strangers, or create a cluster with people you’ve already met.
             </Text>
           </View>
         </Card>
       ) : (
-        (clusters.data ?? []).map((item) => (
-          <MemberClusterCard
-            key={item.cluster.id}
-            item={item}
-            unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
-          />
-        ))
+        <ClusterList items={clusters.data ?? []} unreadByCluster={unreadByCluster} />
       )}
 
       <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginTop: 24, marginBottom: 12 }}>
@@ -75,6 +95,35 @@ export default function ClustersScreen() {
         />
       ))}
     </Screen>
+  )
+}
+
+function ClusterList({
+  items,
+  unreadByCluster,
+}: {
+  items: MyCluster[]
+  unreadByCluster: Map<string, number>
+}) {
+  const pending = items.filter((i) => isPendingCreated(i.cluster, i.memberCount))
+  const active = items.filter((i) => !isPendingCreated(i.cluster, i.memberCount))
+  return (
+    <View>
+      {pending.map((item) => (
+        <MemberClusterCard
+          key={item.cluster.id}
+          item={item}
+          unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
+        />
+      ))}
+      {active.map((item) => (
+        <MemberClusterCard
+          key={item.cluster.id}
+          item={item}
+          unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
+        />
+      ))}
+    </View>
   )
 }
 
