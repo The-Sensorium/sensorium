@@ -30,7 +30,7 @@ export function MessageImage({ path, alt }: { path: string; alt: string }) {
           alt={alt}
           loading="lazy"
           decoding="async"
-          className="max-h-80 w-full rounded-xl object-contain"
+          className="mx-auto max-h-80 max-w-full rounded-xl object-contain"
         />
       </button>
       {open && <ImagePreviewDialog src={src} alt={alt} onClose={() => setOpen(false)} />}

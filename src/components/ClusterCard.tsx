@@ -42,12 +42,12 @@ export function ClusterCard({
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
             {created ? (
               <>
-                <Users className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                <Users className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
                 <span className="truncate">Created cluster</span>
               </>
             ) : (
               <>
-                <info.icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} aria-hidden />
+                <info.icon className="h-5 w-5 shrink-0" strokeWidth={1.5} aria-hidden />
                 <span className="truncate">{info.label}</span>
               </>
             )}
@@ -57,7 +57,7 @@ export function ClusterCard({
           </h3>
         </div>
         <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
-          <Users className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+          <Users className="h-5 w-5" strokeWidth={1.5} aria-hidden />
           {item.memberCount} members
         </span>
       </div>

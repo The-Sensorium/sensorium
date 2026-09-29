@@ -11,13 +11,15 @@ export function PostActionsSheet({
   onEdit,
   onDelete,
   onReport,
+  label = 'Post actions',
 }: {
   open: boolean
   mine: boolean
   onClose: () => void
-  onEdit: () => void
+  onEdit?: () => void
   onDelete: () => void
   onReport: () => void
+  label?: string
 }) {
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
@@ -38,7 +40,7 @@ export function PostActionsSheet({
           style={{ position: 'absolute', start: 0, end: 0, top: 0, bottom: 0 }}
         />
         <View
-          accessibilityLabel="Post actions"
+          accessibilityLabel={label}
           style={{
             backgroundColor: t.surfaceLowest,
             borderTopLeftRadius: radii.xl,
@@ -60,9 +62,11 @@ export function PostActionsSheet({
           />
           {mine ? (
             <>
-              <SheetRow label="Edit" onPress={onEdit}>
-                <Pencil size={18} color={t.onSurface} strokeWidth={1.5} />
-              </SheetRow>
+              {onEdit ? (
+                <SheetRow label="Edit" onPress={onEdit}>
+                  <Pencil size={18} color={t.onSurface} strokeWidth={1.5} />
+                </SheetRow>
+              ) : null}
               <SheetRow label="Delete" danger onPress={onDelete}>
                 <Trash2 size={18} color={t.error} strokeWidth={1.5} />
               </SheetRow>
