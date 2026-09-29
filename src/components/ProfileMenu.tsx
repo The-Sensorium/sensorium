@@ -13,7 +13,7 @@ const themeOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
   { value: 'dark', label: 'Dark', icon: Moon },
 ]
 
-export function ProfileMenu({ className }: { className?: string }) {
+export function ProfileMenu({ className, accountLinks = true }: { className?: string; accountLinks?: boolean }) {
   const profile = useProfile()
   const navigate = useNavigate()
   const { mode, setMode } = useTheme()
@@ -59,24 +59,28 @@ export function ProfileMenu({ className }: { className?: string }) {
         >
           <p className="truncate px-3 pb-1.5 pt-2 text-sm font-semibold text-on-surface">{name}</p>
           <p className="truncate px-3 pb-2 text-xs text-on-surface-variant">{profile.data?.email}</p>
-          <Link
-            to="/settings/profile"
-            role="menuitem"
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
-          >
-            <UserRound className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-            Edit profile
-          </Link>
-          <Link
-            to="/settings"
-            role="menuitem"
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
-          >
-            <Settings className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-            Settings
-          </Link>
+          {accountLinks && (
+            <>
+              <Link
+                to="/settings/profile"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              >
+                <UserRound className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                Edit profile
+              </Link>
+              <Link
+                to="/settings"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+              >
+                <Settings className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                Settings
+              </Link>
+            </>
+          )}
           <button
             type="button"
             role="menuitem"

@@ -71,4 +71,22 @@ describe('ProfileMenu', () => {
       'true',
     )
   })
+
+  it('hides account links in the minimal variant', async () => {
+    const user = userEvent.setup()
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <ThemeContext.Provider value={{ mode: 'system', resolved: 'light', setMode: vi.fn() }}>
+            <ProfileMenu accountLinks={false} />
+          </ThemeContext.Provider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    await user.click(screen.getByRole('button', { name: 'Account menu for Ally' }))
+    expect(screen.queryByRole('menuitem', { name: 'Edit profile' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitemradio', { name: 'Dark' })).toBeInTheDocument()
+  })
 })
