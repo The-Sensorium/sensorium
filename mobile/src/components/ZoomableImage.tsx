@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
-import { Image, Modal as RNModal, Pressable, ScrollView, Text, View } from 'react-native'
+import { Modal as RNModal, Pressable, ScrollView, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { GestureViewer } from 'react-native-gesture-image-viewer'
 
 export function ZoomableImage({
@@ -19,7 +20,8 @@ export function ZoomableImage({
         source={{ uri: imageUrl }}
         accessibilityLabel={accessibilityLabel}
         style={{ width: '100%', height: '100%' }}
-        resizeMode="contain"
+        contentFit="contain"
+        cachePolicy="memory-disk"
       />
     ),
     [accessibilityLabel],

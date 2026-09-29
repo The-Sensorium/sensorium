@@ -102,6 +102,10 @@ export default function NotificationsScreen() {
       <FlatList
         data={visible}
         keyExtractor={(n) => n.id}
+        windowSize={5}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={false}
         renderItem={({ item }) => <NotificationRow item={item} onPress={() => handleClick(item)} />}
         ListHeaderComponent={
           <>

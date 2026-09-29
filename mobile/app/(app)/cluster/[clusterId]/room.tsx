@@ -1024,6 +1024,9 @@ export default function RoomScreen() {
               data={rows}
               keyExtractor={(r) => r.key}
               inverted
+              windowSize={7}
+              maxToRenderPerBatch={10}
+              removeClippedSubviews={false}
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
               renderScrollComponent={renderScrollComponent}

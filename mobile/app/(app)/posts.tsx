@@ -118,6 +118,10 @@ export default function PostsFeedScreen() {
       <FlatList
         data={inCluster && !posts.isLoading && !myMutes.isLoading ? sorted : []}
         keyExtractor={(post) => post.id}
+        windowSize={5}
+        initialNumToRender={6}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={false}
         renderItem={({ item: post }) => {
           const postMuted = isMutedAuthor(mutedSet, post.author_id)
           if (postMuted && !revealed.has(post.id)) {
@@ -171,7 +175,7 @@ export default function PostsFeedScreen() {
                       onPress={() => setSort(option)}
                       accessibilityRole="tab"
                       accessibilityState={{ selected: active }}
-                      hitSlop={4}
+                      hitSlop={8}
                       style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
                       <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', textTransform: 'capitalize', color: active ? t.primary : t.onSurfaceVariant }}>
@@ -191,7 +195,7 @@ export default function PostsFeedScreen() {
                     <Pressable
                       key={c.cluster.id}
                       onPress={() => setSelectedId(c.cluster.id)}
-                      hitSlop={4}
+                      hitSlop={8}
                       style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
                       <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>

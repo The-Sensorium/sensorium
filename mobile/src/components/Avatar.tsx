@@ -1,4 +1,5 @@
-import { Image, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
+import { Image } from 'expo-image'
 import { useAvatarUrl } from '../features/avatars'
 import { useTheme } from '../lib/use-theme'
 
@@ -9,7 +10,11 @@ export function Avatar({ name, src, size = 28 }: { name: string; src?: string | 
     return (
       <Image
         source={{ uri: resolved }}
+        accessibilityLabel={`${name}'s avatar`}
         style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: t.surfaceContainer }}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
       />
     )
   }
