@@ -189,6 +189,7 @@ export default function EditProfileScreen() {
                 title="Save changes"
                 loading={updateProfile.isPending}
                 disabled={!profileDirty}
+                quietDisabled
                 icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
                 onPress={() =>
                   void updateProfile.mutateAsync({
@@ -236,6 +237,7 @@ export default function EditProfileScreen() {
               title="Save changes"
               loading={updateProfile.isPending}
               disabled={!statusDirty}
+              quietDisabled
               icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
               onPress={() => void updateProfile.mutateAsync({ current_status: status.trim() || null })}
             />
