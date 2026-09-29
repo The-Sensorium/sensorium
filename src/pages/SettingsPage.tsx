@@ -45,7 +45,7 @@ export function SettingsPage() {
           <span className="block truncate font-display text-lg font-semibold text-on-surface">
             {profile.data?.display_name ?? 'You'}
           </span>
-          <span className="block truncate text-sm text-on-surface-variant">{profile.data?.email}</span>
+          <span className="block truncate text-sm text-on-surface-variant">{profile.data?.current_status ?? profile.data?.email}</span>
         </span>
         <ChevronRight className="h-5 w-5 shrink-0 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
       </Link>
