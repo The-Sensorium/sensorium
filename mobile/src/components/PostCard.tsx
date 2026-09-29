@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { Heart, MessageSquare, MoreVertical } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
