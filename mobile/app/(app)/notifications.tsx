@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { router } from 'expo-router'
 import {
   AtSign,
@@ -11,8 +12,10 @@ import {
   MessageCircle,
   MessageSquare,
   MessageSquareWarning,
+  MoreHorizontal,
   PartyPopper,
   ShieldCheck,
+  Trash2,
   UserPlus,
   Users,
   Vote,
@@ -20,6 +23,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import {
   timeAgo,
+  useClearAllNotifications,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useMyNotifications,
@@ -27,11 +31,13 @@ import {
   type NotificationType,
 } from '../../src/features/notifications'
 import { mobileTarget } from '../../src/lib/notification-routing'
-import { radii, spacing } from '../../src/lib/theme-tokens'
+import { toErrorMessage } from '../../src/lib/error'
+import { radii, shadowShape, spacing } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, LoadingView } from '../../src/components/ui'
+import { Card, ErrorText, LoadingView, PrimaryButton } from '../../src/components/ui'
+import { Modal } from '../../src/components/Modal'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { ActivityIndicator, FlatList, Modal as RNModal, Pressable, RefreshControl, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -58,14 +64,20 @@ export default function NotificationsScreen() {
   const notifications = useMyNotifications()
   const markRead = useMarkNotificationRead()
   const markAll = useMarkAllNotificationsRead()
+  const clearAll = useClearAllNotifications()
   const queryClient = useQueryClient()
   const pull = usePullToRefresh([
     () => notifications.refetch(),
     () => queryClient.refetchQueries({ queryKey: ['notifications', 'unread'] }),
   ])
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const items = notifications.data ?? []
   const unread = items.filter((n) => n.read_at === null).length
+  const visible = filter === 'unread' ? items.filter((n) => n.read_at === null) : items
+  const markAllDisabled = items.length === 0 || markAll.isPending
 
   function handleClick(n: MyNotification) {
     if (n.read_at === null) {
@@ -75,10 +87,20 @@ export default function NotificationsScreen() {
     if (target) router.push(target)
   }
 
+  async function handleClear() {
+    try {
+      await clearAll.mutateAsync()
+      setConfirmOpen(false)
+      setMenuOpen(false)
+    } catch {
+      // Surfaced via clearAll.error inside the dialog; stay open to retry.
+    }
+  }
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       <FlatList
-        data={items}
+        data={visible}
         keyExtractor={(n) => n.id}
         renderItem={({ item }) => <NotificationRow item={item} onPress={() => handleClick(item)} />}
         ListHeaderComponent={
@@ -90,17 +112,57 @@ export default function NotificationsScreen() {
                   {unread > 0 ? `${unread} unread` : 'You’re all caught up'}
                 </Text>
               </View>
-              <Pressable
-                onPress={() => void markAll.mutateAsync()}
-                disabled={items.length === 0 || markAll.isPending}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: items.length === 0 || markAll.isPending }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, opacity: items.length === 0 || markAll.isPending ? 0.5 : 1 }}
-              >
-                {markAll.isPending ? <ActivityIndicator size="small" color={t.onSurface} /> : null}
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Mark all read</Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pressable
+                  onPress={() => void markAll.mutateAsync()}
+                  disabled={markAllDisabled}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: markAllDisabled }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, opacity: markAllDisabled ? 0.5 : 1 }}
+                >
+                  {markAll.isPending ? <ActivityIndicator size="small" color={t.onSurface} /> : null}
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Mark all read</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setMenuOpen(true)}
+                  disabled={items.length === 0}
+                  accessibilityLabel="More notification options"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: menuOpen, disabled: items.length === 0 }}
+                  hitSlop={8}
+                  style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: t.outlineVariant, alignItems: 'center', justifyContent: 'center', opacity: items.length === 0 ? 0.5 : 1 }}
+                >
+                  <MoreHorizontal size={20} color={t.onSurface} strokeWidth={1.5} />
+                </Pressable>
+              </View>
             </View>
+            {items.length > 0 ? (
+              <View
+                accessibilityLabel="Notification filter"
+                style={{ flexDirection: 'row', borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, backgroundColor: t.surfaceLowest, padding: 4, marginBottom: 16 }}
+              >
+                <Pressable
+                  onPress={() => setFilter('all')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: filter === 'all' }}
+                  style={{ flex: 1, borderRadius: radii.pill, backgroundColor: filter === 'all' ? t.primary : 'transparent', paddingVertical: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: filter === 'all' ? t.onPrimary : t.onSurfaceVariant }}>
+                    All
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setFilter('unread')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: filter === 'unread' }}
+                  style={{ flex: 1, borderRadius: radii.pill, backgroundColor: filter === 'unread' ? t.primary : 'transparent', paddingVertical: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: filter === 'unread' ? t.onPrimary : t.onSurfaceVariant }}>
+                    {unread > 0 ? `Unread · ${unread}` : 'Unread'}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
             <ErrorText message={pull.error} />
           </>
         }
@@ -116,6 +178,15 @@ export default function NotificationsScreen() {
                 </Text>
                 <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   Something went wrong while fetching them. Please try again.
+                </Text>
+              </View>
+            </Card>
+          ) : items.length > 0 && visible.length === 0 ? (
+            <Card plain>
+              <View style={{ alignItems: 'center', padding: 16 }}>
+                <Bell size={28} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+                  You’re all caught up. Nothing unread right now.
                 </Text>
               </View>
             </Card>
@@ -143,6 +214,75 @@ export default function NotificationsScreen() {
           />
         }
       />
+      <RNModal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <View style={{ flex: 1 }}>
+          <Pressable
+            onPress={() => setMenuOpen(false)}
+            accessibilityLabel="Close notification options"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          <View
+            accessibilityLabel="Notification options"
+            style={{
+              position: 'absolute',
+              top: 110,
+              right: 24,
+              width: 248,
+              backgroundColor: t.surfaceLowest,
+              borderWidth: 1,
+              borderColor: t.outlineVariant,
+              borderRadius: radii.xl,
+              padding: 8,
+              ...shadowShape,
+              shadowColor: t.shadowColor,
+            }}
+          >
+            <Pressable
+              onPress={() => {
+                setMenuOpen(false)
+                setConfirmOpen(true)
+              }}
+              accessibilityLabel="Clear all notifications"
+              accessibilityRole="button"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, minHeight: 52 }}
+            >
+              <Trash2 size={18} color={t.error} strokeWidth={1.5} />
+              <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.error }}>
+                Clear all notifications
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </RNModal>
+      <Modal open={confirmOpen} onClose={() => { if (!clearAll.isPending) setConfirmOpen(false) }} title="Clear all notifications?">
+        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+          This will permanently remove all notifications from your list. This action can't be undone.
+        </Text>
+        {clearAll.error ? (
+          <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>
+            {toErrorMessage(clearAll.error, 'Could not clear notifications. Please try again.')}
+          </Text>
+        ) : null}
+        <View style={{ marginTop: 24, flexDirection: 'row', gap: 12 }}>
+          <Pressable
+            onPress={() => setConfirmOpen(false)}
+            disabled={clearAll.isPending}
+            accessibilityRole="button"
+            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', opacity: clearAll.isPending ? 0.6 : 1 }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <PrimaryButton
+              title="Clear all"
+              loadingTitle="Clearing…"
+              loading={clearAll.isPending}
+              tone="error"
+              onPress={() => void handleClear()}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }

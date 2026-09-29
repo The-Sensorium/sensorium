@@ -116,7 +116,7 @@ test.describe('notifications (seeded)', () => {
     await expect(page.getByRole('button', { name: new RegExp(`e2e mixed unread ${stamp}`) })).toBeVisible()
   })
 
-  test('marks all seeded notifications read via the bulk action', async ({ page }) => {
+  test('marks all seeded notifications read via the bulk action (history stays)', async ({ page }) => {
     await seedNotification({ title: `e2e bulk a ${Date.now()}` })
     await seedNotification({ title: `e2e bulk b ${Date.now()}` })
 
@@ -128,6 +128,41 @@ test.describe('notifications (seeded)', () => {
     await page.getByRole('button', { name: 'Mark all read' }).click()
     await expect(page.getByLabel('Unread', { exact: true })).toHaveCount(0)
     await expect(page.getByText(/all caught up/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /e2e bulk/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /e2e bulk/ })).toHaveCount(2)
+  })
+
+  test('filters to unread only', async ({ page }) => {
+    const stamp = Date.now()
+    await seedNotification({ title: `e2e filter read ${stamp}`, readAt: new Date().toISOString() })
+    await seedNotification({ title: `e2e filter unread ${stamp}` })
+
+    await login(page)
+    await page.goto('/notifications')
+    await page.getByRole('button', { name: 'Unread · 1', exact: true }).click()
+    await expect(page.getByRole('button', { name: new RegExp(`e2e filter unread ${stamp}`) })).toBeVisible()
+    await expect(page.getByRole('button', { name: new RegExp(`e2e filter read ${stamp}`) })).toHaveCount(0)
+  })
+
+  test('clear all requires confirmation and empties the list', async ({ page }) => {
+    const stamp = Date.now()
+    await seedNotification({ title: `e2e clear ${stamp}` })
+
+    await login(page)
+    await page.goto('/notifications')
+    const card = page.getByRole('button', { name: new RegExp(`e2e clear ${stamp}`) })
+    await expect(card).toBeVisible()
+
+    await page.getByRole('button', { name: 'More notification options' }).click()
+    await page.getByRole('menuitem', { name: 'Clear all notifications' }).click()
+    await expect(page.getByRole('dialog', { name: 'Clear all notifications?' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Cancel' }).click()
+    await expect(card).toBeVisible()
+
+    await page.getByRole('button', { name: 'More notification options' }).click()
+    await page.getByRole('menuitem', { name: 'Clear all notifications' }).click()
+    await page.getByRole('button', { name: 'Clear all' }).click()
+    await expect(card).toHaveCount(0)
+    await expect(page.getByText(/no notifications yet/i)).toBeVisible()
   })
 })

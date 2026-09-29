@@ -46,13 +46,14 @@ export default function ClustersScreen() {
           gap: 8,
           backgroundColor: t.primary,
           borderRadius: radii.pill,
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           paddingVertical: 14,
           minHeight: 48,
+          alignSelf: 'flex-start',
         }}
       >
         <Plus size={16} color={t.onPrimary} strokeWidth={2} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
+        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
           Create a cluster
         </Text>
       </Pressable>

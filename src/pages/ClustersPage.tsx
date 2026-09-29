@@ -29,7 +29,7 @@ export function ClustersPage() {
         <Link
           to="/clusters/new"
           data-e2e="create-cluster-button"
-          className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          className="mt-4 inline-flex min-h-[48px] items-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
         >
           <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
           Create a cluster

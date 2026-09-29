@@ -7,6 +7,7 @@ const hooks = vi.hoisted(() => ({
   list: { data: [] as MyNotification[], isLoading: false, isError: false },
   markRead: { mutate: vi.fn() },
   markAll: { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false },
+  clearAll: { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false, error: null },
 }))
 
 const navigate = vi.hoisted(() => vi.fn())
@@ -20,6 +21,7 @@ vi.mock('../features/notifications', async (importOriginal) => {
     useMyNotifications: () => hooks.list,
     useMarkNotificationRead: () => hooks.markRead,
     useMarkAllNotificationsRead: () => hooks.markAll,
+    useClearAllNotifications: () => hooks.clearAll,
   }
 })
 
@@ -43,6 +45,9 @@ beforeEach(() => {
   hooks.markRead.mutate.mockClear()
   hooks.markAll.mutateAsync.mockClear()
   hooks.markAll.isPending = false
+  hooks.clearAll.mutateAsync.mockClear()
+  hooks.clearAll.isPending = false
+  hooks.clearAll.error = null
   navigate.mockClear()
 })
 
@@ -95,5 +100,70 @@ describe('NotificationsPage seen-vs-clear', () => {
 
     expect(screen.getByRole('button', { name: 'Mark all read' })).toBeDisabled()
     expect(screen.getByText(/no notifications yet/i)).toBeVisible()
+  })
+})
+
+describe('NotificationsPage filter', () => {
+  it('shows All and Unread segments and filters to unread only', () => {
+    hooks.list.data = [
+      row({ id: 'n1' }),
+      row({ id: 'n2', read_at: '2026-01-01T00:00:00Z' }),
+    ]
+    render(<NotificationsPage />)
+
+    expect(screen.getByRole('button', { name: 'All' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Unread · 1' })).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unread · 1' }))
+    expect(screen.getByRole('button', { name: /title n1/ })).toBeVisible()
+    expect(screen.queryByRole('button', { name: /title n2/ })).toBeNull()
+  })
+
+  it('shows a caught-up empty state when the unread filter has nothing', () => {
+    hooks.list.data = [row({ id: 'n2', read_at: '2026-01-01T00:00:00Z' })]
+    render(<NotificationsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Unread' }))
+    expect(screen.getByText('You’re all caught up. Nothing unread right now.')).toBeVisible()
+  })
+
+  it('hides the filter when the list is empty', () => {
+    hooks.list.data = []
+    render(<NotificationsPage />)
+
+    expect(screen.queryByRole('button', { name: 'All' })).toBeNull()
+  })
+})
+
+describe('NotificationsPage clear all', () => {
+  it('opens the clear action from the more menu', () => {
+    hooks.list.data = [row({ id: 'n1' })]
+    render(<NotificationsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'More notification options' }))
+    expect(screen.getByRole('menuitem', { name: 'Clear all notifications' })).toBeVisible()
+  })
+
+  it('cancel closes the dialog without clearing', () => {
+    hooks.list.data = [row({ id: 'n1' })]
+    render(<NotificationsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'More notification options' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Clear all notifications' }))
+    expect(screen.getByRole('dialog', { name: 'Clear all notifications?' })).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(hooks.clearAll.mutateAsync).not.toHaveBeenCalled()
+    expect(screen.queryByRole('dialog', { name: 'Clear all notifications?' })).toBeNull()
+  })
+
+  it('confirm clears all notifications', () => {
+    hooks.list.data = [row({ id: 'n1' })]
+    render(<NotificationsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'More notification options' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Clear all notifications' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all' }))
+    expect(hooks.clearAll.mutateAsync).toHaveBeenCalledTimes(1)
   })
 })

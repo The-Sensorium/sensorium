@@ -269,7 +269,7 @@ describe('notifications', () => {
     expect(mentions).toHaveLength(0)
   })
 
-  it('mark_all_read deletes event notifications and clears chat unread', async () => {
+  it('mark_all_read marks event notifications read and clears chat unread', async () => {
     const a = await member('n-all-a')
     const b = await member('n-all-b')
     await admin.from('profiles').update({ display_name: 'Dana All' }).eq('id', b.id)
@@ -295,7 +295,44 @@ describe('notifications', () => {
     const { data: after } = await b.client.rpc('get_unread_notification_count')
     expect(after).toBe(0)
 
-    // Bulk clear deletes stored rows, so the center is empty too.
+    // Bulk read keeps stored rows as read history, so the center still lists it.
+    const { data: listAfter } = await b.client.rpc('get_my_notifications')
+    const rowsAfter = ((listAfter ?? []) as MyNotificationRow[]).filter((n) => n.type === 'mention')
+    expect(rowsAfter).toHaveLength(1)
+    expect(rowsAfter[0]!.read_at).not.toBeNull()
+
+    const { data: stored } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', b.id)
+    expect(stored ?? []).toHaveLength(1)
+  })
+
+  it('clear_all_notifications deletes event notifications and clears chat unread', async () => {
+    const a = await member('n-clear-a')
+    const b = await member('n-clear-b')
+    await admin.from('profiles').update({ display_name: 'Cora Clear' }).eq('id', b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hello @Cora Clear',
+    })
+
+    const { data: before } = await b.client.rpc('get_unread_notification_count')
+    expect(before).toBe(1)
+
+    const { error } = await b.client.rpc('clear_all_notifications')
+    expect(error).toBeNull()
+
+    const { data: after } = await b.client.rpc('get_unread_notification_count')
+    expect(after).toBe(0)
+
+    // Clear deletes stored rows, so the center is empty too.
     const { data: listAfter } = await b.client.rpc('get_my_notifications')
     expect(listAfter ?? []).toHaveLength(0)
 
@@ -341,7 +378,7 @@ describe('notifications', () => {
     expect(count).toBe(0)
   })
 
-  it('a single read stays while mark_all_read empties the center', async () => {
+  it('a single read stays while mark_all_read keeps history and clear empties the center', async () => {
     const a = await member('n-mixed-a')
     const b = await member('n-mixed-b')
     await admin.from('profiles').update({ display_name: 'Morgan Mixed' }).eq('id', b.id)
@@ -371,6 +408,13 @@ describe('notifications', () => {
 
     const { error: allErr } = await b.client.rpc('mark_all_read')
     expect(allErr).toBeNull()
+    const { data: kept } = await b.client.rpc('get_my_notifications')
+    const keptRows = ((kept ?? []) as MyNotificationRow[]).filter((n) => n.type === 'mention')
+    expect(keptRows).toHaveLength(2)
+    expect(keptRows.filter((n) => n.read_at === null)).toHaveLength(0)
+
+    const { error: clearErr } = await b.client.rpc('clear_all_notifications')
+    expect(clearErr).toBeNull()
     const { data: emptied } = await b.client.rpc('get_my_notifications')
     expect((emptied ?? []) as MyNotificationRow[]).toHaveLength(0)
   })
