@@ -796,7 +796,7 @@ export default function RoomScreen() {
   ) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
+        <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back to home"
@@ -811,11 +811,15 @@ export default function RoomScreen() {
               Home
             </Text>
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
+          <View style={{ flex: 1 }} />
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 88 }}
+          >
+            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface, textAlign: 'center' }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
               {cluster.data.name}
             </Text>
-            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
               Created cluster
             </Text>
           </View>
@@ -829,7 +833,7 @@ export default function RoomScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
+        <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back to home"
@@ -847,11 +851,15 @@ export default function RoomScreen() {
               Home
             </Text>
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
+          <View style={{ flex: 1 }} />
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 88 }}
+          >
+            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface, textAlign: 'center' }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
               {cluster.data.name}
             </Text>
-            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
               {onlineCount} of {memberCount} here
             </Text>
           </View>
