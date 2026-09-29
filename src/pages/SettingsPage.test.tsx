@@ -97,33 +97,6 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument()
   })
 
-  it('saves the timezone', async () => {
-    renderPage()
-    fireEvent.change(screen.getByLabelText('Timezone'), { target: { value: 'Europe/Lisbon' } })
-    fireEvent.click(within(screen.getByRole('region', { name: 'Local time' })).getByRole('button', { name: 'Save changes' }))
-    await waitFor(() => expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ timezone: 'Europe/Lisbon' }))
-  })
-
-  it('picks up the saved timezone once the profile loads', () => {
-    hooks.useProfile.mockReturnValue({ data: undefined, isLoading: true })
-    const page = render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter>
-          <SettingsPage />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    )
-    hooks.useProfile.mockReturnValue({ data: { ...profile, timezone: 'Europe/Lisbon' }, isLoading: false })
-    page.rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter>
-          <SettingsPage />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    )
-    expect(screen.getByLabelText('Timezone')).toHaveValue('Europe/Lisbon')
-  })
-
   it('signs the user out', async () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))

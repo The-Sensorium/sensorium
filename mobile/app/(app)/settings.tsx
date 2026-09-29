@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellRing, ChevronDown, ChevronRight, Clock, LogOut, MonitorSmartphone, Moon, Save, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
+import { AlertTriangle, BellRing, ChevronDown, ChevronRight, LogOut, MonitorSmartphone, Moon, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
 import { goLogin } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
 import { errorHaptic, lightHaptic, successHaptic } from '../../src/lib/haptics'
 import { useMyClusters } from '../../src/features/matching'
-import { useUpdateProfile } from '../../src/features/cluster'
 import { useDeleteAccount, useMyMutes } from '../../src/features/moderation'
 import {
   PREF_LABELS,
@@ -21,7 +20,6 @@ import {
 import { Avatar } from '../../src/components/Avatar'
 import { MuteButton } from '../../src/components/MuteButton'
 import { Modal } from '../../src/components/Modal'
-import { TimezonePicker } from '../../src/components/TimezonePicker'
 import { PrimaryButton } from '../../src/components/ui'
 import { useThemeChoice, type ThemeChoice } from '../../src/lib/theme-choice'
 import { radii, shadowShape } from '../../src/lib/theme-tokens'
@@ -32,18 +30,8 @@ import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 export default function SettingsScreen() {
   const t = useTheme()
   const profile = useProfile()
-  const [timezone, setTimezone] = useState(profile.data?.timezone ?? '')
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
-  const updateProfile = useUpdateProfile()
-
-  // Profile loads async; pick up the saved zone once it arrives so saving
-  // another field never wipes a value the user never touched.
-  useEffect(() => {
-    setTimezone(profile.data?.timezone ?? '')
-  }, [profile.data?.timezone])
-
-  const timezoneDirty = (timezone || '') !== (profile.data?.timezone ?? '')
 
   return (
     <Screen avoiding>
@@ -81,29 +69,6 @@ export default function SettingsScreen() {
           <ChevronRight size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
         </Pressable>
       </Link>
-
-      <Card>
-        <View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Clock size={20} color={t.primary} strokeWidth={1.5} />
-            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Local time</Text>
-          </View>
-          <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
-            Shown on your member card in every cluster.
-          </Text>
-          <View style={{ marginTop: 12, gap: 8 }}>
-            <TimezonePicker value={timezone} onChange={setTimezone} placeholder="Not set" />
-            <PrimaryButton
-              title="Save changes"
-              loading={updateProfile.isPending}
-              disabled={!timezoneDirty}
-              quietDisabled
-              icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
-              onPress={() => void updateProfile.mutateAsync({ timezone: timezone || null })}
-            />
-          </View>
-        </View>
-      </Card>
 
       <NotificationPreferences />
       <SafetySection />
