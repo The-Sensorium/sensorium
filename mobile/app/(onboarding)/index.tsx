@@ -182,7 +182,11 @@ export default function OnboardingScreen() {
           {step === 4 ? <StepLocal draft={draft} patch={patch} /> : null}
           {step === 5 ? <StepReview draft={draft} /> : null}
 
-          {error ? <Text style={{ marginTop: 16, fontSize: 14, color: t.error }}>{error}</Text> : null}
+          {error ? (
+            <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ marginTop: 16, fontSize: 14, color: t.error }}>
+              {error}
+            </Text>
+          ) : null}
           {step === TOTAL_STEPS && !hasLocalLocation ? (
             <Text style={{ marginTop: 16, fontSize: 14, color: t.onSurfaceVariant }}>
               Add your location to join the Local mode.

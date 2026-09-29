@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Link, router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Briefcase, Cake, Flag, Heart, Sparkles, Target, Telescope, Users } from 'lucide-react-native'
@@ -69,8 +69,13 @@ export default function ProfileScreen() {
     return byPost
   }, [postComments.data])
 
+  useEffect(() => {
+    if (!clusterId) {
+      router.replace('/(app)/home')
+    }
+  }, [clusterId])
+
   if (!clusterId) {
-    router.replace('/(app)/home')
     return null
   }
 
