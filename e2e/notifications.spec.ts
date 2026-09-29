@@ -138,7 +138,7 @@ test.describe('notifications (seeded)', () => {
 
     await login(page)
     await page.goto('/notifications')
-    await page.getByRole('button', { name: /Unread/ }).click()
+    await page.getByRole('button', { name: 'Unread · 1', exact: true }).click()
     await expect(page.getByRole('button', { name: new RegExp(`e2e filter unread ${stamp}`) })).toBeVisible()
     await expect(page.getByRole('button', { name: new RegExp(`e2e filter read ${stamp}`) })).toHaveCount(0)
   })
