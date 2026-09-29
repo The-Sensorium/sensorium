@@ -67,6 +67,13 @@ export function StepLocal({
       <Pressable
         onPress={locate}
         disabled={locating}
+        accessibilityRole="button"
+        accessibilityLabel={
+          draft.shareLocation && draft.localLabel && draft.radiusKm != null
+            ? `Location shared, within ${draft.radiusKm} kilometers of ${draft.localLabel}, double tap to update`
+            : 'Share my location'
+        }
+        accessibilityState={{ busy: locating, disabled: locating }}
         style={{
           flexDirection: 'row',
           alignItems: 'center',

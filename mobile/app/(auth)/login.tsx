@@ -49,6 +49,10 @@ export default function LoginScreen() {
       setError('Please enter your email address.')
       return
     }
+    if (!password) {
+      setError('Please enter your password.')
+      return
+    }
     if (!captcha.challengeUrl) {
       if (!captchaBypassAllowed()) {
         setError('Human verification is unavailable. Please update the app and try again.')
@@ -88,13 +92,18 @@ export default function LoginScreen() {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoComplete="email"
+        textContentType="emailAddress"
         autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="next"
       />
       <PasswordField
         label="Password"
         value={password}
         onChangeText={setPassword}
         autoComplete="password"
+        textContentType="password"
+        returnKeyType="go"
         onSubmitEditing={onSubmit}
       />
       <View style={{ alignItems: 'flex-end', marginBottom: 16 }}>

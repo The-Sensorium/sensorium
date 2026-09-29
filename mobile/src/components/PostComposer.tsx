@@ -194,7 +194,7 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
         <Pressable
           accessibilityLabel="Attach image"
           onPress={() => void handlePickImage()}
-          hitSlop={4}
+          hitSlop={8}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, flexShrink: 0 }}
         >
           <ImagePlus size={16} color={image ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
@@ -205,7 +205,7 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
         <Pressable
           accessibilityLabel="Add a GIF"
           onPress={() => setGifOpen((o) => !o)}
-          hitSlop={4}
+          hitSlop={8}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, flexShrink: 0 }}
         >
           <ImagePlay size={16} color={gif ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
@@ -221,7 +221,7 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
               setGifOpen(false)
               setError(null)
             }}
-            hitSlop={4}
+            hitSlop={8}
             style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: create.isPending ? 0.5 : 1, flexShrink: 0 }}
           >
             <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>

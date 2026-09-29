@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { createPortal, flushSync } from 'react-dom'
-import { BriefcaseBusiness, Check, ChevronDown, LogOut, Shield, ShieldCheck, User } from 'lucide-react'
+import { flushSync } from 'react-dom'
+import { BriefcaseBusiness, Check, ChevronDown, Shield, ShieldCheck, User } from 'lucide-react'
 import { useSessionRole } from '../app/session-role-context'
 import { isMobileDevice } from '../lib/device'
 import {
@@ -12,7 +12,6 @@ import {
   useMyAccess,
   type SessionRole,
 } from '../features/access'
-import { SignOutModal } from './SignOutModal'
 
 const ROLE_ICONS: Record<SessionRole, typeof User> = {
   member: User,
@@ -27,7 +26,6 @@ export function SwitchRoleButton() {
   const { role, setRole } = useSessionRole()
   const [open, setOpen] = useState(false)
   const [pendingRole, setPendingRole] = useState<SessionRole | null>(null)
-  const [signOutOpen, setSignOutOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const available = activeSessionRoles(access.data)
 
@@ -159,33 +157,7 @@ export function SwitchRoleButton() {
               </div>
             </div>
           )}
-
-          <div className="mt-1 border-t border-outline-variant/50 pt-1">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false)
-                setSignOutOpen(true)
-              }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-error transition-colors hover:bg-error/5"
-            >
-              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-error/10 text-error">
-                <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-              </span>
-              <span className="text-sm font-semibold">Sign out</span>
-            </button>
-          </div>
         </div>
-      )}
-
-      {createPortal(
-        <SignOutModal
-          open={signOutOpen}
-          onClose={() => setSignOutOpen(false)}
-          onSignedOut={() => navigate('/auth/login')}
-        />,
-        document.body,
       )}
     </div>
   )

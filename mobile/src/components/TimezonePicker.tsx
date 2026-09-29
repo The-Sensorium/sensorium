@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { FlatList, Modal, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { ChevronDown } from 'lucide-react-native'
 import { timeZoneList } from '../lib/timezones'
 import { radii, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -33,7 +34,12 @@ export function TimezonePicker({
           setQuery('')
           setOpen(true)
         }}
+        accessibilityRole="button"
+        accessibilityLabel={value ? `Timezone, ${value}, double tap to change` : placeholder}
         style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
           backgroundColor: t.surface,
           borderWidth: 1,
           borderColor: t.outlineVariant,
@@ -44,9 +50,10 @@ export function TimezonePicker({
           justifyContent: 'center',
         }}
       >
-        <Text style={{ fontSize: 16, lineHeight: 24, color: value ? t.onSurface : t.onSurfaceVariant }}>
+        <Text style={{ flex: 1, fontSize: 16, lineHeight: 24, color: value ? t.onSurface : t.onSurfaceVariant }}>
           {value || placeholder}
         </Text>
+        <ChevronDown size={18} color={t.onSurfaceVariant} strokeWidth={1.5} />
       </Pressable>
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: t.background }}>

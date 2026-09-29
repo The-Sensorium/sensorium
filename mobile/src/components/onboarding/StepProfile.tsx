@@ -25,6 +25,9 @@ function CountryField({ value, onChange }: { value: string; onChange: (code: str
         Country
       </Text>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={value ? `Country, ${countryName(value)}, double tap to change` : 'Select your country'}
+        accessibilityHint="Opens the country picker"
         onPress={() => {
           setQuery('')
           setOpen(true)
@@ -105,6 +108,9 @@ function DobField({ value, onChange }: { value: string; onChange: (dob: string) 
         Date of birth
       </Text>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={value ? `Date of birth, ${value}, double tap to change` : 'Select your date of birth'}
+        accessibilityHint="Opens the date picker"
         onPress={() => setOpen(true)}
         style={{
           flexDirection: 'row',
@@ -131,6 +137,7 @@ function DobField({ value, onChange }: { value: string; onChange: (dob: string) 
           maximumDate={maxDob}
           onValueChange={(_, selected) => {
             setOpen(false)
+            if (!selected) return
             onChange(toISODate(selected))
           }}
           onDismiss={() => setOpen(false)}

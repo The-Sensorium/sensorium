@@ -13,16 +13,19 @@ export default function TermsScreen() {
       <Pressable
         onPress={() => {
           if (router.canGoBack()) router.back()
-          else router.replace('/settings')
+          else router.replace('/(app)/settings')
         }}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}
+        accessibilityRole="button"
+        accessibilityLabel="Back to settings"
+        hitSlop={8}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, minHeight: 44 }}
       >
         <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
         <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
           Back to settings
         </Text>
       </Pressable>
-      <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>{TERMS_DOCUMENT.title}</Text>
+      <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '600', color: t.onSurface }}>{TERMS_DOCUMENT.title}</Text>
       <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant, marginBottom: 16 }}>
         Last updated {TERMS_DOCUMENT.updated}
       </Text>
@@ -60,6 +63,8 @@ export default function TermsScreen() {
                   {b.before}
                   <Text
                     style={{ color: t.primary, textDecorationLine: 'underline' }}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Email ${b.address}`}
                     onPress={() => void Linking.openURL(`mailto:${b.address}`)}
                   >
                     {b.address}

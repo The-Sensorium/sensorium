@@ -38,10 +38,38 @@ async function notifications(): Promise<NotificationsModule | null> {
       const importance = mod.AndroidImportance?.HIGH ?? 4
       const def = mod.AndroidImportance?.DEFAULT ?? 3
       await Promise.all([
-        mod.setNotificationChannelAsync('messages', { name: 'Messages', importance: def }),
-        mod.setNotificationChannelAsync('mentions', { name: 'Mentions', importance }),
-        mod.setNotificationChannelAsync('invites', { name: 'Invites', importance }),
-        mod.setNotificationChannelAsync('governance', { name: 'Governance', importance: def }),
+        mod.setNotificationChannelAsync('messages', {
+          name: 'Messages',
+          description: 'New messages in your clusters',
+          importance: def,
+          sound: 'default',
+          vibrationPattern: [0, 250, 250, 250],
+          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+        }),
+        mod.setNotificationChannelAsync('mentions', {
+          name: 'Mentions',
+          description: 'Mentions and replies to you',
+          importance,
+          sound: 'default',
+          vibrationPattern: [0, 250, 250, 250],
+          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+        }),
+        mod.setNotificationChannelAsync('invites', {
+          name: 'Invites',
+          description: 'Cluster invitations',
+          importance,
+          sound: 'default',
+          vibrationPattern: [0, 250, 250, 250],
+          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+        }),
+        mod.setNotificationChannelAsync('governance', {
+          name: 'Governance',
+          description: 'Votes, moderation, and account updates',
+          importance: def,
+          sound: 'default',
+          vibrationPattern: [0, 250, 250, 250],
+          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+        }),
       ]).catch(() => undefined)
     }
     cached = mod

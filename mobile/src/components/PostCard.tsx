@@ -11,7 +11,7 @@ import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
-import { lightHaptic, mediumHaptic } from '../lib/haptics'
+import { errorHaptic, lightHaptic, mediumHaptic, successHaptic } from '../lib/haptics'
 import { dateTimeFormatter } from './room/format'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -68,9 +68,11 @@ export function PostCard({
     setDeleteError(null)
     try {
       await del.mutateAsync(post.id)
+      successHaptic()
       setConfirmOpen(false)
       onDeleted?.()
     } catch (e) {
+      errorHaptic()
       setDeleteError(toErrorMessage(e, 'Could not delete your post. Try again.'))
     }
   }
@@ -194,14 +196,21 @@ export function PostCard({
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{likeCount}</Text>
             </Pressable>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Pressable
+              accessibilityLabel={`View comments, ${commentCount}`}
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/posts/[postId]', params: { postId: post.id } })}
+              hitSlop={8}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 12, minWidth: 48, minHeight: 48 }}
+            >
               <MessageSquare size={22} color={t.onSurfaceVariant} strokeWidth={2} />
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{commentCount}</Text>
-            </View>
+            </Pressable>
 
             <View style={{ marginLeft: 'auto' }}>
               <Pressable
                 accessibilityLabel="Post actions"
+                accessibilityRole="button"
                 onPress={() => setMenuOpen(true)}
                 hitSlop={8}
                 style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}

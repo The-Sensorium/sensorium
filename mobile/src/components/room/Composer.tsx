@@ -303,10 +303,11 @@ export function Composer({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {mentionOpen ? (
           <View
+            accessibilityLabel={`Mention suggestions, ${mentionOptions.length} available`}
             style={{
               position: 'absolute',
               bottom: '100%',
-              left: 0,
+              start: 0,
               minWidth: 176,
               maxWidth: '85%',
               marginBottom: 8,
@@ -324,7 +325,9 @@ export function Composer({
                 option.kind === 'everyone' ? (
                   <Pressable
                     onPress={() => insertEveryone()}
-                    hitSlop={4}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Mention everyone"
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
                   >
                     <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}>
@@ -337,7 +340,9 @@ export function Composer({
                 ) : (
                   <Pressable
                     onPress={() => insertMention(option.member)}
-                    hitSlop={4}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mention ${option.member.display_name}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
                   >
                     <Avatar name={option.member.display_name} src={option.member.avatar_url} size={24} />
@@ -360,8 +365,8 @@ export function Composer({
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.md,
-            paddingLeft: 6,
-            paddingRight: 4,
+            paddingStart: 6,
+            paddingEnd: 4,
             paddingVertical: 4,
           }}
         >
@@ -373,7 +378,7 @@ export function Composer({
                 setGifOpen(false)
                 setMenuOpen((o) => !o)
               }}
-              hitSlop={4}
+              hitSlop={8}
               style={{
                 width: 44,
                 height: 44,
@@ -418,7 +423,7 @@ export function Composer({
               accessibilityLabel="Attach image"
               accessibilityRole="button"
               onPress={() => void handlePickImage()}
-              hitSlop={4}
+              hitSlop={8}
               style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             >
               <ImagePlus size={22} color={stagedImage ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
@@ -432,7 +437,7 @@ export function Composer({
                 setMenuOpen(false)
                 setGifOpen((o) => !o)
               }}
-              hitSlop={4}
+              hitSlop={8}
               style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             >
               <View
@@ -456,7 +461,7 @@ export function Composer({
           disabled={!canSend}
           accessibilityState={{ disabled: !canSend }}
           onPress={() => void handleSend()}
-          hitSlop={4}
+          hitSlop={8}
           style={{
             width: 44,
             height: 44,

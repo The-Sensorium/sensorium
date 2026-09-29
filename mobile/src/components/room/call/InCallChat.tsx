@@ -143,7 +143,7 @@ export function InCallChat({
           disabled={!draft.trim() || isSending}
           accessibilityState={{ disabled: !draft.trim() || isSending }}
           onPress={() => void handleSend()}
-          hitSlop={4}
+          hitSlop={8}
           style={{
             width: 48,
             height: 48,

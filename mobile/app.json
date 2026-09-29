@@ -12,7 +12,8 @@
       "bundleIdentifier": "online.thesensorium.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera is used for video during cluster calls.",
-        "NSMicrophoneUsageDescription": "Microphone is used for audio during cluster calls."
+        "NSMicrophoneUsageDescription": "Microphone is used for audio during cluster calls.",
+        "UIBackgroundModes": ["audio"]
       },
       "icon": {
         "light": "./assets/icon-light.png",
@@ -36,7 +37,9 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
       ]
     },
     "plugins": [
@@ -66,7 +69,8 @@
       "@react-native-community/datetimepicker",
       "expo-web-browser",
       "@livekit/react-native-expo-plugin",
-      "@config-plugins/react-native-webrtc"
+      "@config-plugins/react-native-webrtc",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true

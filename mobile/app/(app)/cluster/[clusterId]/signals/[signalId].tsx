@@ -150,7 +150,10 @@ export default function SignalDetailScreen() {
             if (router.canGoBack()) router.back()
             else router.replace({ pathname: '/cluster/[clusterId]/signals', params: { clusterId } })
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Back to signals"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, minHeight: 44 }}
         >
           <ArrowLeft size={16} color={t.primary} strokeWidth={1.5} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Back</Text>
@@ -214,7 +217,9 @@ export default function SignalDetailScreen() {
                       setStatusError(null)
                     }}
                     disabled={setStatus.isPending}
-                    style={{ paddingHorizontal: 16, paddingVertical: 10, opacity: setStatus.isPending ? 0.6 : 1 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel resolving signal"
+                    style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, justifyContent: 'center', opacity: setStatus.isPending ? 0.6 : 1 }}
                   >
                     <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
                       Cancel
@@ -230,13 +235,18 @@ export default function SignalDetailScreen() {
                     } else void handleStatus(nextStatus)
                   }}
                   disabled={setStatus.isPending}
+                  accessibilityRole="button"
+                  accessibilityLabel={nextStatus === 'in_progress' ? 'Mark signal in progress' : 'Mark signal resolved'}
+                  accessibilityState={{ disabled: setStatus.isPending }}
                   style={{
                     borderWidth: nextStatus === 'resolved' ? 1 : 0,
                     borderColor: t.error,
                     backgroundColor: nextStatus === 'resolved' ? 'transparent' : t.primary,
                     borderRadius: radii.pill,
                     paddingHorizontal: 16,
-                    paddingVertical: 10,
+                    paddingVertical: 12,
+                    minHeight: 48,
+                    justifyContent: 'center',
                     opacity: setStatus.isPending ? 0.6 : 1,
                   }}
                 >

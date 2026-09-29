@@ -33,7 +33,7 @@ import { toErrorMessage } from '../lib/error'
 
 const GET_STARTED_STEPS = [
   {
-    to: '/settings',
+    to: '/settings/profile',
     title: 'Set up your profile',
     desc: 'Add a photo, bio and status so your cluster knows who you are.',
   },

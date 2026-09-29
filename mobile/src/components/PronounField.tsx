@@ -34,13 +34,18 @@ export function PronounField({ value, onChange }: { value: string; onChange: (v:
             <Pressable
               key={option}
               onPress={() => pick(option)}
+              accessibilityRole="button"
+              accessibilityLabel={`Pronouns ${option}`}
+              accessibilityState={{ selected: active }}
               style={{
                 borderWidth: 1,
                 borderColor: active ? t.primary : t.outlineVariant,
                 backgroundColor: active ? t.primary : t.surface,
                 borderRadius: radii.pill,
                 paddingHorizontal: 14,
-                paddingVertical: 8,
+                paddingVertical: 12,
+                minHeight: 44,
+                justifyContent: 'center',
               }}
             >
               <Text

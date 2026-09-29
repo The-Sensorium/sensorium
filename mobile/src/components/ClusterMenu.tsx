@@ -48,13 +48,22 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
       >
         <Menu size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
       </Pressable>
-      <Modal visible={open} transparent animationType="none" onRequestClose={() => setOpen(false)}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="none"
+        onRequestClose={() => setOpen(false)}
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
+        accessibilityViewIsModal
+      >
         <Pressable onPress={() => setOpen(false)} style={{ flex: 1 }}>
           <View
+            accessibilityLabel="Cluster sections"
             style={{
               position: 'absolute',
               top: 64,
-              right: 16,
+              end: 16,
               width: 208,
               backgroundColor: t.surfaceLowest,
               borderRadius: radii.xl,

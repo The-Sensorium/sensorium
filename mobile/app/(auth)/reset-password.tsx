@@ -36,6 +36,8 @@ export default function ResetPasswordScreen() {
         value={password}
         onChangeText={setPassword}
         autoComplete="new-password"
+        textContentType="newPassword"
+        returnKeyType="go"
         onSubmitEditing={onSubmit}
       />
       <ErrorText message={error} />
