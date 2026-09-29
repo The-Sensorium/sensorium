@@ -79,7 +79,7 @@ export function CommentItem({
         </div>
         {comment.content || comment.image_url || comment.gif_url ? (
           // Highlight hugs only the comment body, not the author row or actions.
-          <div className={cn('rounded-xl', highlighted && 'outline outline-2 outline-primary outline-offset-2')}>
+          <div className={cn('px-2 -mx-2', highlighted && 'outline outline-2 outline-primary outline-offset-2')}>
             {comment.content && (
               <p className="mt-0.5 whitespace-pre-wrap text-sm leading-5">
                 {repliedToName && (

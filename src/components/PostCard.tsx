@@ -11,12 +11,14 @@ import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 import { cn } from '../lib/utils'
 
-const timeAgo = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-})
+const postDatePart = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
+const postTimePart = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+
+/** Post card header timestamp as `29 Sept · 10:46 PM`. */
+function formatPostTimestamp(value: Date | string | number): string {
+  const d = new Date(value)
+  return `${postDatePart.format(d)} · ${postTimePart.format(d)}`
+}
 
 export function PostCard({
   post,
@@ -157,7 +159,7 @@ export function PostCard({
               <p className="truncate text-sm text-on-surface">
                 <span className="font-medium">{author?.display_name ?? 'Member'}</span>
                 {isMine && <span className="text-on-surface-variant"> (you)</span>}
-                <span className="text-on-surface-variant"> · {timeAgo.format(new Date(post.created_at))}</span>
+                <span className="text-on-surface-variant"> · {formatPostTimestamp(post.created_at)}</span>
                 {post.edited_at && <span className="text-on-surface-variant"> · edited</span>}
               </p>
               {clusterName && <p className="mt-0.5 truncate text-xs font-semibold text-primary">{clusterName}</p>}
@@ -173,7 +175,7 @@ export function PostCard({
             />
             <span className="text-sm font-medium text-on-surface">{author?.display_name ?? 'Member'}</span>
             {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}
-            <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(post.created_at))}</span>
+            <span className="text-xs text-on-surface-variant">· {formatPostTimestamp(post.created_at)}</span>
             {clusterName && <span className="text-xs font-semibold text-primary">· {clusterName}</span>}
             {post.edited_at && <span className="text-xs text-on-surface-variant">· edited</span>}
           </div>

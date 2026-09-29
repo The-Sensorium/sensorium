@@ -12,7 +12,7 @@ import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 import { errorHaptic, lightHaptic, mediumHaptic, successHaptic } from '../lib/haptics'
-import { dateTimeFormatter } from './room/format'
+import { formatPostTimestamp } from './room/format'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { PrimaryButton } from './ui'
@@ -101,43 +101,26 @@ export function PostCard({
           }}
           delayLongPress={350}
         >
-          {compact ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
-                  <Text style={{ fontWeight: '500' }}>{author?.display_name ?? 'Member'}</Text>
-                  {isMine ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}> (you)</Text> : null}
-                  <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
-                    {' '}· {dateTimeFormatter.format(new Date(post.created_at))}
-                  </Text>
-                  {post.edited_at ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}> · edited</Text> : null}
-                </Text>
-                {clusterName ? (
-                  <Text style={{ marginTop: 2, fontSize: 12, lineHeight: 16, fontWeight: '600', color: t.primary }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
-                    {clusterName}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
-              <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurface }}>
-                {author?.display_name ?? 'Member'}
-              </Text>
-              {isMine ? <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>(you)</Text> : null}
-              <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                · {dateTimeFormatter.format(new Date(post.created_at))}
+          {/* Header is shared by compact and full cards so the avatar,
+              author, date, and cluster label match on every page. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+                <Text style={{ fontWeight: '500' }}>{author?.display_name ?? 'Member'}</Text>
+                {isMine ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}> (you)</Text> : null}
               </Text>
               {clusterName ? (
-                <Text style={{ fontSize: 12, fontWeight: '600', color: t.primary }}>· {clusterName}</Text>
-              ) : null}
-              {post.edited_at ? (
-                <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>· edited</Text>
+                <Text style={{ marginTop: 2, fontSize: 12, lineHeight: 16, fontWeight: '600', color: t.primary }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
+                  {clusterName}
+                </Text>
               ) : null}
             </View>
-          )}
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>
+              {formatPostTimestamp(post.created_at)}
+              {post.edited_at ? ' · edited' : null}
+            </Text>
+          </View>
           {post.title ? (
             <Text
               style={{ marginTop: 8, fontSize: 16, fontWeight: '600', lineHeight: 22, color: t.onSurface }}
@@ -175,7 +158,7 @@ export function PostCard({
             </Pressable>
           ) : null}
           <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />
-          <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <Pressable
               accessibilityLabel="Like post"
               accessibilityRole="button"
@@ -206,18 +189,15 @@ export function PostCard({
               <MessageSquare size={22} color={t.onSurfaceVariant} strokeWidth={2} />
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{commentCount}</Text>
             </Pressable>
-
-            <View style={{ marginLeft: 'auto' }}>
-              <Pressable
-                accessibilityLabel="Post actions"
-                accessibilityRole="button"
-                onPress={() => setMenuOpen(true)}
-                hitSlop={8}
-                style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              </Pressable>
-            </View>
+            <Pressable
+              accessibilityLabel="Post actions"
+              accessibilityRole="button"
+              onPress={() => setMenuOpen(true)}
+              hitSlop={8}
+              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            </Pressable>
           </View>
         </Pressable>
       </Link>
