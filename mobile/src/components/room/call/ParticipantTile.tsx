@@ -44,6 +44,8 @@ export function ParticipantTile({ trackRef, speaking, style }: ParticipantTilePr
         </View>
       )}
       <View
+        accessible
+        accessibilityLabel={participant.isMicrophoneEnabled ? name : `${name}, muted`}
         style={{
           position: 'absolute',
           start: 8,

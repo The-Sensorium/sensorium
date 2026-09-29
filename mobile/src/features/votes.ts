@@ -138,18 +138,22 @@ export function useStartNameVote(clusterId: string | null) {
   })
 }
 
-/** Cast (or change) the caller's vote on an open vote. */
+/** Cast (or change) the caller's vote on an open vote. Retries transient
+ * network failures; permanent RLS/validation errors throw immediately. */
 export function useVoteOn(clusterId: string | null) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ voteId, choice }: { voteId: string; choice: string }) => {
-      const supabase = requireSupabase()
-      const { error } = await supabase.rpc('vote_on', {
-        p_vote_id: voteId,
-        p_choice: choice,
+      const { mutateWithRetry } = await import('../lib/mutate-retry')
+      await mutateWithRetry(async () => {
+        const supabase = requireSupabase()
+        const { error } = await supabase.rpc('vote_on', {
+          p_vote_id: voteId,
+          p_choice: choice,
+        })
+        if (error) throw error
       })
-      if (error) throw error
     },
     onSuccess: () => {
       if (clusterId) {

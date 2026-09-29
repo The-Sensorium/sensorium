@@ -8,6 +8,7 @@ import { useLeaveCluster } from '../../../../src/features/cluster'
 import { modeInfo, cooldownDaysForMode } from '../../../../src/lib/modes'
 import { CLUSTER_SIZE } from '../../../../src/lib/constants'
 import { toErrorMessage } from '../../../../src/lib/error'
+import { errorHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -40,8 +41,10 @@ export default function ClusterSettingsScreen() {
     setLeaveError(null)
     try {
       await leave.mutateAsync(clusterId)
+      successHaptic()
       router.replace('/(app)/home')
     } catch (err) {
+      errorHaptic()
       setLeaveError(toErrorMessage(err, 'Could not leave the cluster. Please try again.'))
       setConfirming(false)
     }

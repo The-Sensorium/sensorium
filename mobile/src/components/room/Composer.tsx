@@ -303,6 +303,7 @@ export function Composer({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {mentionOpen ? (
           <View
+            accessibilityLabel={`Mention suggestions, ${mentionOptions.length} available`}
             style={{
               position: 'absolute',
               bottom: '100%',
@@ -324,7 +325,9 @@ export function Composer({
                 option.kind === 'everyone' ? (
                   <Pressable
                     onPress={() => insertEveryone()}
-                    hitSlop={4}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Mention everyone"
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
                   >
                     <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}>
@@ -337,7 +340,9 @@ export function Composer({
                 ) : (
                   <Pressable
                     onPress={() => insertMention(option.member)}
-                    hitSlop={4}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Mention ${option.member.display_name}`}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
                   >
                     <Avatar name={option.member.display_name} src={option.member.avatar_url} size={24} />

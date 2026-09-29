@@ -9,7 +9,7 @@ import { useProfile } from '../../src/lib/use-profile'
 import { goLogin } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
-import { lightHaptic } from '../../src/lib/haptics'
+import { errorHaptic, lightHaptic, successHaptic } from '../../src/lib/haptics'
 import { useMyClusters } from '../../src/features/matching'
 import { useUpdateProfile } from '../../src/features/cluster'
 import { deleteAvatarObject } from '../../src/features/avatars'
@@ -395,8 +395,10 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
     setError(null)
     try {
       await deleteAccount.mutateAsync()
+      successHaptic()
       router.replace('/')
     } catch {
+      errorHaptic()
       setError('Could not delete your account. Please try again.')
     }
   }

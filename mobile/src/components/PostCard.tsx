@@ -11,7 +11,7 @@ import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
-import { lightHaptic, mediumHaptic } from '../lib/haptics'
+import { errorHaptic, lightHaptic, mediumHaptic, successHaptic } from '../lib/haptics'
 import { dateTimeFormatter } from './room/format'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -68,9 +68,11 @@ export function PostCard({
     setDeleteError(null)
     try {
       await del.mutateAsync(post.id)
+      successHaptic()
       setConfirmOpen(false)
       onDeleted?.()
     } catch (e) {
+      errorHaptic()
       setDeleteError(toErrorMessage(e, 'Could not delete your post. Try again.'))
     }
   }

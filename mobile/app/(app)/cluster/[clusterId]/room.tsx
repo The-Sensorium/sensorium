@@ -668,8 +668,10 @@ export default function RoomScreen() {
     setDeleteError(null)
     try {
       await deleteMessage.mutateAsync(messageId)
+      successHaptic()
       setDeleteFor(null)
     } catch (e) {
+      errorHaptic()
       setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
