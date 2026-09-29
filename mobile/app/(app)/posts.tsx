@@ -53,10 +53,13 @@ export default function PostsFeedScreen() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const pull = usePullToRefresh([
     () => clusters.refetch(),
-    () => posts.refetch(),
-    () => members.refetch(),
-    () => likes.refetch(),
-    () => comments.refetch(),
+    // Never force-fetch the per-cluster queries while clusterless:
+    // refetch() on a disabled query runs its queryFn, which throws
+    // 'No cluster' and would surface as a feed error.
+    () => (clusterId ? posts.refetch() : Promise.resolve()),
+    () => (clusterId ? members.refetch() : Promise.resolve()),
+    () => (clusterId ? likes.refetch() : Promise.resolve()),
+    () => (clusterId ? comments.refetch() : Promise.resolve()),
     () => myMutes.refetch(),
   ])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
@@ -103,9 +106,10 @@ export default function PostsFeedScreen() {
   useEffect(() => {
     if (prevPostIdsKey.current === postIdsKey) return
     prevPostIdsKey.current = postIdsKey
+    if (!clusterId) return
     void refetchEngagement.current.likes()
     void refetchEngagement.current.comments()
-  }, [postIdsKey])
+  }, [postIdsKey, clusterId])
 
   const selected = (clusters.data ?? []).find((c) => c.cluster.id === selectedId)
   const hasMore =
@@ -214,16 +218,16 @@ export default function PostsFeedScreen() {
         ListEmptyComponent={
           feedLoading ? (
             <FeedSkeleton />
-          ) : posts.isError || myMutes.isError ? (
-            <Card>
-              <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
-                Couldn’t load posts. Please try again.
-              </Text>
-            </Card>
           ) : !inCluster ? (
             <Card>
               <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurface }}>
                 You aren’t in a cluster yet. Join a matching mode to start sharing posts.
+              </Text>
+            </Card>
+          ) : posts.isError || myMutes.isError ? (
+            <Card>
+              <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
+                Couldn’t load posts. Please try again.
               </Text>
             </Card>
           ) : (
