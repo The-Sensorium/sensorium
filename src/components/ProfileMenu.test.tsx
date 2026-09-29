@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ProfileMenu } from './ProfileMenu'
+import { ThemeContext } from '../lib/theme'
 
 const hooks = vi.hoisted(() => ({
   useProfile: vi.fn(),
@@ -15,7 +16,9 @@ function renderMenu() {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter>
-        <ProfileMenu />
+        <ThemeContext.Provider value={{ mode: 'system', resolved: 'light', setMode: vi.fn() }}>
+          <ProfileMenu />
+        </ThemeContext.Provider>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -54,5 +57,18 @@ describe('ProfileMenu', () => {
     expect(screen.getByRole('menu', { name: 'Account' })).toBeInTheDocument()
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('menu', { name: 'Account' })).not.toBeInTheDocument()
+  })
+
+  it('lists appearance options in the menu', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+    await user.click(screen.getByRole('button', { name: 'Account menu for Ally' }))
+    for (const label of ['Light', 'System', 'Dark']) {
+      expect(screen.getByRole('menuitemradio', { name: label })).toBeInTheDocument()
+    }
+    expect(screen.getByRole('menuitemradio', { name: 'System' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    )
   })
 })
