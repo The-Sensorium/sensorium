@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { flushSync } from 'react-dom'
-import { BriefcaseBusiness, Check, ChevronDown, Shield, ShieldCheck, User } from 'lucide-react'
+import { Check, Shield, ShieldCheck, User } from 'lucide-react'
 import { useSessionRole } from '../app/session-role-context'
 import { isMobileDevice } from '../lib/device'
 import {
@@ -58,6 +58,7 @@ export function SwitchRoleButton() {
   if (isMobileDevice()) return null
   if (available.length < 2) return null
   const currentRole = role ?? available[0]
+  const CurrentIcon = ROLE_ICONS[currentRole]
 
   function choose(nextRole: SessionRole) {
     if (nextRole === currentRole) {
@@ -86,12 +87,9 @@ export function SwitchRoleButton() {
           setOpen((value) => !value)
           setPendingRole(null)
         }}
-        className="inline-flex items-center gap-2 rounded-pill border border-outline-variant/60 px-3 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+        className="grid h-9 w-9 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
       >
-        <BriefcaseBusiness className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-        <span className="hidden sm:inline">{SESSION_ROLE_LABELS[currentRole]} workspace</span>
-        <span className="sm:hidden">{SESSION_ROLE_LABELS[currentRole]}</span>
-        <ChevronDown className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+        <CurrentIcon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
       </button>
 
       {open && (
