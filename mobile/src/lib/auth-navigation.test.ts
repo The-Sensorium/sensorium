@@ -4,6 +4,7 @@ import { goHome, goLogin, goRestricted, resetTo } from './auth-navigation'
 
 vi.mock('expo-router', () => ({
   router: {
+    canGoBack: vi.fn(),
     canDismiss: vi.fn(),
     dismissAll: vi.fn(),
     replace: vi.fn(),
@@ -18,6 +19,7 @@ beforeEach(() => {
 
 describe('goHome', () => {
   it('clears dismissible screens before replacing with home', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     goHome()
     expect(mockRouter.dismissAll).toHaveBeenCalledOnce()
@@ -25,13 +27,23 @@ describe('goHome', () => {
   })
 
   it('replaces with home when there is nothing to dismiss', () => {
+    mockRouter.canGoBack.mockReturnValue(false)
     mockRouter.canDismiss.mockReturnValue(false)
     goHome()
     expect(mockRouter.dismissAll).not.toHaveBeenCalled()
     expect(mockRouter.replace).toHaveBeenCalledWith('/(app)/home')
   })
 
+  it('skips dismiss on a single-screen stack even when dismiss reports available', () => {
+    mockRouter.canGoBack.mockReturnValue(false)
+    mockRouter.canDismiss.mockReturnValue(true)
+    goHome()
+    expect(mockRouter.dismissAll).not.toHaveBeenCalled()
+    expect(mockRouter.replace).toHaveBeenCalledWith('/(app)/home')
+  })
+
   it('still replaces with home when dismiss throws', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     mockRouter.dismissAll.mockImplementationOnce(() => {
       throw new Error('nothing to dismiss')
@@ -43,6 +55,7 @@ describe('goHome', () => {
 
 describe('goLogin', () => {
   it('clears dismissible screens before replacing with login', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     goLogin()
     expect(mockRouter.dismissAll).toHaveBeenCalledOnce()
@@ -50,6 +63,7 @@ describe('goLogin', () => {
   })
 
   it('replaces with login when there is nothing to dismiss', () => {
+    mockRouter.canGoBack.mockReturnValue(false)
     mockRouter.canDismiss.mockReturnValue(false)
     goLogin()
     expect(mockRouter.dismissAll).not.toHaveBeenCalled()
@@ -57,6 +71,7 @@ describe('goLogin', () => {
   })
 
   it('still replaces with login when dismiss throws', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     mockRouter.dismissAll.mockImplementationOnce(() => {
       throw new Error('nothing to dismiss')
@@ -68,6 +83,7 @@ describe('goLogin', () => {
 
 describe('goRestricted', () => {
   it('clears dismissible screens before replacing with restricted', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     goRestricted()
     expect(mockRouter.dismissAll).toHaveBeenCalledOnce()
@@ -75,6 +91,7 @@ describe('goRestricted', () => {
   })
 
   it('replaces with restricted when there is nothing to dismiss', () => {
+    mockRouter.canGoBack.mockReturnValue(false)
     mockRouter.canDismiss.mockReturnValue(false)
     goRestricted()
     expect(mockRouter.dismissAll).not.toHaveBeenCalled()
@@ -82,6 +99,7 @@ describe('goRestricted', () => {
   })
 
   it('still replaces with restricted when dismiss throws', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     mockRouter.dismissAll.mockImplementationOnce(() => {
       throw new Error('nothing to dismiss')
@@ -93,6 +111,7 @@ describe('goRestricted', () => {
 
 describe('resetTo', () => {
   it('replaces with an arbitrary href', () => {
+    mockRouter.canGoBack.mockReturnValue(false)
     mockRouter.canDismiss.mockReturnValue(false)
     resetTo('/(auth)/reset-password')
     expect(mockRouter.dismissAll).not.toHaveBeenCalled()
@@ -100,6 +119,7 @@ describe('resetTo', () => {
   })
 
   it('clears dismissible screens before replacing with an arbitrary href', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     resetTo('/(auth)/reset-password')
     expect(mockRouter.dismissAll).toHaveBeenCalledOnce()
@@ -107,6 +127,7 @@ describe('resetTo', () => {
   })
 
   it('still replaces when dismiss throws', () => {
+    mockRouter.canGoBack.mockReturnValue(true)
     mockRouter.canDismiss.mockReturnValue(true)
     mockRouter.dismissAll.mockImplementationOnce(() => {
       throw new Error('nothing to dismiss')
