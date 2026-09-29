@@ -111,7 +111,9 @@ export default function PostsFeedScreen() {
   const hasMore =
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
   const inCluster = !clusters.isLoading && (clusters.data ?? []).length > 0
-  const feedLoading = clusters.isLoading || posts.isLoading || myMutes.isLoading || !selected
+  // Gate the per-cluster waits on membership: with no clusters selected is
+  // null forever, so including !selected unconditionally pins the skeleton.
+  const feedLoading = clusters.isLoading || (inCluster && (posts.isLoading || myMutes.isLoading || !selected))
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
