@@ -47,7 +47,12 @@ export function ProfileMenu({ className, accountLinks = true }: { className?: st
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((openState) => !openState)}
-        className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-surface-container focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className={cn(
+          'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+          open
+            ? 'ring-2 ring-primary/40 ring-offset-2 ring-offset-surface'
+            : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-2 hover:ring-offset-surface',
+        )}
       >
         <Avatar name={name} src={profile.data?.avatar_url} className="h-9 w-9" textClassName="text-sm" />
       </button>
