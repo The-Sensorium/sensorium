@@ -11,10 +11,6 @@ import { ZoomableImage } from './ZoomableImage'
  * cropped in the preview and open full-size on tap, so one long screenshot
  * cannot push the rest of the feed off screen. */
 const MAX_PORTRAIT_ASPECT = 4 / 5
-/** Never cover-crop a source narrower than this: magnifying a small image
- * into the 4:5 crop looks softer than showing the whole frame. Needs roughly
- * 2x the ~350pt card width for retina sharpness. */
-const MIN_COVER_WIDTH = 700
 
 export function PostMedia({
   imageUrl,
@@ -32,25 +28,21 @@ export function PostMedia({
   const src = gifUrl ?? signedUrl ?? null
   const [open, setOpen] = useState(false)
   const [aspect, setAspect] = useState<number | null>(null)
-  const [sourceWidth, setSourceWidth] = useState(0)
+  const [sizingFailed, setSizingFailed] = useState(false)
 
   useEffect(() => {
     setAspect(null)
-    setSourceWidth(0)
+    setSizingFailed(false)
     if (!src) return
     let live = true
     RNImage.getSize(
       src,
       (width, height) => {
-        if (live && width > 0 && height > 0) {
-          setAspect(width / height)
-          setSourceWidth(width)
-          if (__DEV__) {
-            console.log(`[post-image] measured ${width}x${height}`)
-          }
-        }
+        if (live && width > 0 && height > 0) setAspect(width / height)
       },
-      () => undefined,
+      () => {
+        if (live) setSizingFailed(true)
+      },
     )
     return () => {
       live = false
@@ -59,8 +51,26 @@ export function PostMedia({
 
   if (!src) return null
 
-  const tall = aspect !== null && aspect < MAX_PORTRAIT_ASPECT && sourceWidth >= MIN_COVER_WIDTH
+  const tall = aspect !== null && aspect < MAX_PORTRAIT_ASPECT
   const previewAspect = tall ? MAX_PORTRAIT_ASPECT : aspect
+
+  // Reserve space while measuring so the image mounts once at its final
+  // size. Mounting it first in the small fallback box lets the native
+  // decoder cache a low-res bitmap that gets upscaled after the layout
+  // jumps to the measured aspect (blurry feed previews).
+  if (!previewAspect && !sizingFailed) {
+    return (
+      <View
+        style={{
+          marginTop: 12,
+          width: '100%',
+          height: compact ? 176 : 300,
+          borderRadius: radii.xl,
+          backgroundColor: t.surfaceContainer,
+        }}
+      />
+    )
+  }
 
   return (
     <>
@@ -102,9 +112,7 @@ export function PostMedia({
               flexDirection: 'row',
               alignItems: 'center',
               gap: 4,
-              backgroundColor: 'rgba(0,0,0,0.65)',
-              borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.35)',
+              backgroundColor: 'rgba(0,0,0,0.55)',
               borderRadius: radii.pill,
               paddingHorizontal: 10,
               paddingVertical: 6,
