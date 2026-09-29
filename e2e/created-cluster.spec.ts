@@ -69,6 +69,7 @@ async function createCluster(page: Page, name: string) {
   await expect(page.getByText('You', { exact: true })).toBeVisible()
   await expect(page.getByText('Creator')).toBeVisible()
   await page.getByTestId('create-cluster-send').click()
+  await page.getByTestId('create-cluster-confirm').click()
 
   await expect(page).toHaveURL(/\/cluster\/.+\/members/)
   return name
