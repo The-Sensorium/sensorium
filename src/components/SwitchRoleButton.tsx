@@ -4,6 +4,7 @@ import { flushSync } from 'react-dom'
 import { Check, Shield, ShieldCheck, User } from 'lucide-react'
 import { useSessionRole } from '../app/session-role-context'
 import { isMobileDevice } from '../lib/device'
+import { cn } from '../lib/utils'
 import {
   activeSessionRoles,
   SESSION_ROLE_DESCRIPTIONS,
@@ -87,7 +88,12 @@ export function SwitchRoleButton() {
           setOpen((value) => !value)
           setPendingRole(null)
         }}
-        className="grid h-9 w-9 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+        className={cn(
+          'grid h-9 w-9 cursor-pointer place-items-center rounded-full text-on-surface-variant transition-all hover:bg-surface-container hover:text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+          open
+            ? 'bg-surface-container text-on-surface ring-2 ring-primary/40 ring-offset-2 ring-offset-surface'
+            : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-2 hover:ring-offset-surface',
+        )}
       >
         <CurrentIcon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
       </button>
