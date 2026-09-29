@@ -38,7 +38,7 @@ export function AdminLayout() {
           <StaffNavigation items={navItems} />
           <div className="flex items-center gap-2">
             <SwitchRoleButton />
-            <ProfileMenu />
+            <ProfileMenu accountLinks={false} />
           </div>
         </div>
       </header>
