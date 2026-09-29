@@ -90,72 +90,11 @@ describe('SettingsPage', () => {
     })
   })
 
-  it('renders the profile display name and email', () => {
+  it('links to the edit profile page', () => {
     renderPage()
     expect(screen.getByText('Ally')).toBeInTheDocument()
-    expect(screen.getByText('ally@example.com')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Edit profile' })).toHaveAttribute('href', '/settings/profile')
     expect(screen.getByText('Settings')).toBeInTheDocument()
-  })
-
-  it('saves profile edits', async () => {
-    renderPage()
-    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Ally Updated' } })
-    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
-    await waitFor(() =>
-      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
-        display_name: 'Ally Updated',
-        bio: 'Hello there',
-        pronouns: 'she/her',
-      }),
-    )
-  })
-
-  it('saves pronouns', async () => {
-    renderPage()
-    fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: 'they/them' } })
-    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
-    await waitFor(() =>
-      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
-        display_name: 'Ally',
-        bio: 'Hello there',
-        pronouns: 'they/them',
-      }),
-    )
-  })
-
-  it('saves custom pronouns from the free-text option', async () => {
-    renderPage()
-    fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: '__custom__' } })
-    fireEvent.change(screen.getByLabelText('Custom pronouns'), { target: { value: 'ze/zir' } })
-    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
-    await waitFor(() =>
-      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
-        display_name: 'Ally',
-        bio: 'Hello there',
-        pronouns: 'ze/zir',
-      }),
-    )
-  })
-
-  it('clears pronouns when set to "Don’t share"', async () => {
-    renderPage()
-    fireEvent.change(screen.getByLabelText('Pronouns'), { target: { value: '' } })
-    fireEvent.click(within(screen.getByRole('region', { name: 'Profile' })).getByRole('button', { name: 'Save changes' }))
-    await waitFor(() =>
-      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
-        display_name: 'Ally',
-        bio: 'Hello there',
-        pronouns: null,
-      }),
-    )
-  })
-
-  it('saves the status', async () => {
-    renderPage()
-    const status = screen.getByPlaceholderText('e.g. Deep in a good book')
-    fireEvent.change(status, { target: { value: 'In a meeting' } })
-    fireEvent.click(within(screen.getByRole('region', { name: 'Status' })).getByRole('button', { name: 'Save changes' }))
-    await waitFor(() => expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ current_status: 'In a meeting' }))
   })
 
   it('saves the timezone', async () => {
@@ -183,51 +122,6 @@ describe('SettingsPage', () => {
       </QueryClientProvider>,
     )
     expect(screen.getByLabelText('Timezone')).toHaveValue('Europe/Lisbon')
-  })
-
-  it('shows an error banner when saving fails', () => {
-    hooks.useUpdateProfile.mockReturnValue({ ...updateProfile, isError: true })
-    renderPage()
-    expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t save your changes')
-  })
-
-  it('rejects an avatar with an unsupported type', async () => {
-    renderPage()
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(input, {
-      target: { files: [new File(['x'], 'photo.bmp', { type: 'image/bmp' })] },
-    })
-    await waitFor(() => expect(screen.getByText('Please choose a JPG, PNG, WebP, or GIF image.')).toBeInTheDocument())
-    expect(hooks.requireSupabase().storage.from).not.toHaveBeenCalled()
-  })
-
-  it('rejects an avatar larger than 5 MB', async () => {
-    renderPage()
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    const big = new File([new ArrayBuffer(5 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' })
-    fireEvent.change(input, { target: { files: [big] } })
-    await waitFor(() => expect(screen.getByText('That image is larger than 5 MB.')).toBeInTheDocument())
-  })
-
-  it('uploads an avatar and saves the new URL', async () => {
-    hooks.prepareImage.mockResolvedValue(new File(['x'], 'photo.png', { type: 'image/png' }))
-    renderPage()
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    fireEvent.change(input, {
-      target: { files: [new File(['x'], 'photo.png', { type: 'image/png' })] },
-    })
-    await waitFor(() =>
-      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ avatar_url: 'u1/123.png' }),
-    )
-  })
-
-  it('removes the avatar photo', async () => {
-    hooks.useProfile.mockReturnValue({ data: { ...profile, avatar_url: 'u1/a.png' }, isLoading: false })
-    renderPage()
-    fireEvent.click(screen.getByRole('button', { name: 'Remove photo' }))
-    const dialog = screen.getByRole('dialog', { name: 'Remove photo?' })
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Remove photo' }))
-    await waitFor(() => expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ avatar_url: null }))
   })
 
   it('signs the user out', async () => {

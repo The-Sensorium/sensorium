@@ -216,7 +216,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
           </div>
         ) : (
           <Link
-            to="/settings"
+            to="/settings/profile"
             className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
           >
             Edit profile

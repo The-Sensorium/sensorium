@@ -42,6 +42,7 @@ const ProfilePage = lazy(() => import('../pages/ProfilePage').then((m) => ({ def
 const NotificationsPage = lazy(() => import('../pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
 const SettingsPage = lazy(() => import('../pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const MyReportsPage = lazy(() => import('../pages/settings/MyReportsPage').then((m) => ({ default: m.MyReportsPage })))
+const EditProfilePage = lazy(() => import('../pages/settings/EditProfilePage').then((m) => ({ default: m.EditProfilePage })))
 const RoomView = lazy(() => import('../pages/cluster/RoomView').then((m) => ({ default: m.RoomView })))
 const MembersView = lazy(() => import('../pages/cluster/MembersView').then((m) => ({ default: m.MembersView })))
 const SignalsView = lazy(() => import('../pages/cluster/SignalsView').then((m) => ({ default: m.SignalsView })))
@@ -218,6 +219,7 @@ export function AppRouter() {
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings/profile" element={<EditProfilePage />} />
             <Route path="/settings/reports" element={<MyReportsPage />} />
           </Route>
 
