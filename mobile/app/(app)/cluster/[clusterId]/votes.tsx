@@ -21,6 +21,7 @@ import { Modal } from '../../../../src/components/Modal'
 import { Avatar } from '../../../../src/components/Avatar'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
@@ -104,7 +105,10 @@ export default function VotesScreen() {
     setVoteError(null)
     setPendingVoteId(voteId)
     try {
-      await voteOn.mutateAsync({ voteId, choice })
+      // Retries transient network failures; permanent RLS/validation
+      // errors throw immediately. The generated useVoteOn hook itself is
+      // owned by sync:db-types and must not be hand-edited.
+      await mutateWithRetry(() => voteOn.mutateAsync({ voteId, choice }))
     } catch (err) {
       setVoteError(toErrorMessage(err, 'Could not cast your vote'))
     } finally {
