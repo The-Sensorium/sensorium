@@ -12,9 +12,9 @@ import { toErrorMessage } from '../lib/error'
 import { cn } from '../lib/utils'
 
 const postDatePart = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
-const postTimePart = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })
+const postTimePart = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
 
-/** Post card header timestamp as `29 Sept · 10:46 PM`. */
+/** Post card header timestamp as `29 Sept · 10:46 PM` (locale hour cycle). */
 function formatPostTimestamp(value: Date | string | number): string {
   const d = new Date(value)
   return `${postDatePart.format(d)} · ${postTimePart.format(d)}`
