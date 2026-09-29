@@ -335,6 +335,7 @@ export default function VotesScreen() {
             title="Start replacement vote"
             loadingTitle="Starting…"
             loading={startReplace.isPending}
+            tone="error"
             onPress={() => void confirmReplace()}
           />
         </View>
