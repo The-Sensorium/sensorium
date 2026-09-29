@@ -151,7 +151,7 @@ export function CallControls({
               style={{
                 position: 'absolute',
                 top: 4,
-                right: 4,
+                end: 4,
                 minWidth: 18,
                 height: 18,
                 borderRadius: 9,

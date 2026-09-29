@@ -306,7 +306,7 @@ export function Composer({
             style={{
               position: 'absolute',
               bottom: '100%',
-              left: 0,
+              start: 0,
               minWidth: 176,
               maxWidth: '85%',
               marginBottom: 8,
@@ -360,8 +360,8 @@ export function Composer({
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.md,
-            paddingLeft: 6,
-            paddingRight: 4,
+            paddingStart: 6,
+            paddingEnd: 4,
             paddingVertical: 4,
           }}
         >
