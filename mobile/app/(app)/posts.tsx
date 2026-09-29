@@ -220,7 +220,7 @@ export default function PostsFeedScreen() {
             <FeedSkeleton />
           ) : !inCluster ? (
             <Card>
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurface }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurfaceVariant }}>
                 You aren’t in a cluster yet. Join a matching mode to start sharing posts.
               </Text>
             </Card>
