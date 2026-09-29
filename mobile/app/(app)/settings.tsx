@@ -47,7 +47,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen avoiding>
-      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface, marginBottom: 16 }} accessibilityRole="header">
+      <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface, marginBottom: 16 }} accessibilityRole="header">
         Settings
       </Text>
 
@@ -81,7 +81,7 @@ export default function SettingsScreen() {
       </Link>
 
       <Card>
-        <View style={{ marginBottom: 12 }}>
+        <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Clock size={20} color={t.primary} strokeWidth={1.5} />
             <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Local time</Text>
@@ -89,12 +89,13 @@ export default function SettingsScreen() {
           <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
             Shown on your member card in every cluster.
           </Text>
-          <View style={{ marginTop: 16, gap: 12 }}>
+          <View style={{ marginTop: 12, gap: 8 }}>
             <TimezonePicker value={timezone} onChange={setTimezone} placeholder="Not set" />
             <PrimaryButton
               title="Save changes"
               loading={updateProfile.isPending}
               disabled={!timezoneDirty}
+              quietDisabled
               icon={<Save size={16} color={t.onPrimary} strokeWidth={2} />}
               onPress={() => void updateProfile.mutateAsync({ timezone: timezone || null })}
             />

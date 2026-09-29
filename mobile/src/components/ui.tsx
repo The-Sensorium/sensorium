@@ -195,6 +195,7 @@ export function PrimaryButton({
   onPress,
   loading,
   disabled,
+  quietDisabled,
   icon,
   tone = 'primary',
 }: {
@@ -203,6 +204,7 @@ export function PrimaryButton({
   onPress: () => void
   loading?: boolean
   disabled?: boolean
+  quietDisabled?: boolean
   icon?: ReactNode
   tone?: 'primary' | 'error'
 }) {
@@ -228,7 +230,7 @@ export function PrimaryButton({
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        opacity: inactive ? 0.6 : 1,
+        opacity: inactive ? (quietDisabled ? 0.35 : 0.6) : 1,
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
