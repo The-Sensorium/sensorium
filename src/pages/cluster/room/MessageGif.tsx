@@ -20,7 +20,7 @@ export function MessageGif({ src }: { src: string }) {
           src={src}
           alt="GIF"
           loading="lazy"
-          className="max-h-80 w-full rounded-xl object-contain"
+          className="mx-auto max-h-80 max-w-full rounded-xl object-contain"
         />
       </button>
       {open && <ImagePreviewDialog src={src} alt="GIF" onClose={() => setOpen(false)} />}
