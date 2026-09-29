@@ -218,6 +218,12 @@ export default function PostsFeedScreen() {
         ListEmptyComponent={
           feedLoading ? (
             <FeedSkeleton />
+          ) : clusters.isError ? (
+            <Card>
+              <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
+                Couldn’t load your clusters. Please try again.
+              </Text>
+            </Card>
           ) : !inCluster ? (
             <Card>
               <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurfaceVariant }}>

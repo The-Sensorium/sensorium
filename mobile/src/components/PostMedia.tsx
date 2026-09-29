@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Image as RNImage, Pressable, Text, View } from 'react-native'
+import { Image as RNImage, Pressable, Text, View } from 'react-native'
 import { Image } from 'expo-image'
 import { Expand } from 'lucide-react-native'
 import { usePostImageUrl } from '../features/posts'
@@ -140,9 +140,6 @@ export function PostMedia({
         open={open}
         onClose={() => setOpen(false)}
       />
-      {signedUrl === undefined && !gifUrl ? (
-        <ActivityIndicator size="small" color={t.primary} />
-      ) : null}
     </>
   )
 }
