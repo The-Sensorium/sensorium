@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { CalendarDays, Compass, LogOut, Tag, Users } from 'lucide-react-native'
 import { useCluster } from '../../../../src/features/introductions'
@@ -13,7 +13,8 @@ import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
-import { Card, Screen } from '../../../../src/components/ui'
+import { Card, PrimaryButton, Screen } from '../../../../src/components/ui'
+import { Modal } from '../../../../src/components/Modal'
 
 export default function ClusterSettingsScreen() {
   const t = useTheme()
@@ -42,11 +43,11 @@ export default function ClusterSettingsScreen() {
     try {
       await leave.mutateAsync(clusterId)
       successHaptic()
+      setConfirming(false)
       router.replace('/(app)/home')
     } catch (err) {
       errorHaptic()
       setLeaveError(toErrorMessage(err, 'Could not leave the cluster. Please try again.'))
-      setConfirming(false)
     }
   }
 
@@ -106,35 +107,11 @@ export default function ClusterSettingsScreen() {
               ? 'Leaving a created cluster frees your spot right away. There is no cooldown.'
               : `Leaving starts a ${cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day cooldown for this matching mode and triggers a replacement search so the cluster can stay at 8.`}
           </Text>
-          {confirming ? (
-            <View style={{ marginTop: 16, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-              <Pressable
-                onPress={() => void handleLeave()}
-                disabled={leave.isPending}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: leave.isPending }}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: t.error, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, opacity: leave.isPending ? 0.6 : 1 }}
-              >
-                {leave.isPending ? <ActivityIndicator size="small" color={t.onError} /> : null}
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onError }}>
-                  Confirm leave
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setConfirming(false)}
-                disabled={leave.isPending}
-                hitSlop={4}
-                style={{ paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leave.isPending ? 0.6 : 1 }}
-              >
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
-                  Cancel
-                </Text>
-              </Pressable>
-            </View>
-          ) : (
+          {confirming ? null : (
             <Pressable
               onPress={() => setConfirming(true)}
               accessibilityRole="button"
+              accessibilityLabel="Leave cluster"
               style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
               <LogOut size={16} color={t.error} strokeWidth={1.5} />
@@ -143,11 +120,35 @@ export default function ClusterSettingsScreen() {
               </Text>
             </Pressable>
           )}
-          {leaveError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{leaveError}</Text>
-          ) : null}
         </View>
       </Card>
+      <Modal open={confirming} onClose={() => { if (!leave.isPending) setConfirming(false) }} title="Leave cluster?">
+        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
+          {created
+            ? 'Leaving frees your spot right away. There is no cooldown.'
+            : `Leaving starts a ${cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day cooldown for this matching mode and triggers a replacement search so the cluster can stay at 8.`}
+        </Text>
+        {leaveError ? (
+          <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, color: t.error }}>{leaveError}</Text>
+        ) : null}
+        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+          <Pressable
+            onPress={() => setConfirming(false)}
+            disabled={leave.isPending}
+            hitSlop={8}
+            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leave.isPending ? 0.6 : 1 }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+          </Pressable>
+          <PrimaryButton
+            title="Leave cluster"
+            loadingTitle="Leaving…"
+            loading={leave.isPending}
+            tone="error"
+            onPress={() => void handleLeave()}
+          />
+        </View>
+      </Modal>
     </Screen>
   )
 }
