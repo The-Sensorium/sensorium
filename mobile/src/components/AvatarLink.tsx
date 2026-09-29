@@ -17,7 +17,7 @@ export function AvatarLink({
 }) {
   return (
     <Link href={{ pathname: '/profile/[userId]', params: { userId, cluster: clusterId } }} asChild>
-      <Pressable hitSlop={10} accessibilityRole="button">
+      <Pressable hitSlop={12} accessibilityRole="button" accessibilityLabel={`Open ${name}'s profile`}>
         {({ pressed }) => (
           <View style={{ opacity: pressed ? 0.6 : 1 }}>
             <Avatar name={name} src={src} size={size} />

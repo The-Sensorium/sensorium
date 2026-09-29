@@ -95,7 +95,9 @@ export default function SignalsScreen() {
         </View>
         <Pressable
           onPress={() => setModalOpen(true)}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Raise a signal"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
         >
           <Plus size={16} color={t.onPrimary} strokeWidth={2} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>Raise</Text>
@@ -147,7 +149,10 @@ export default function SignalsScreen() {
             <Card>
               <Pressable
                 onPress={() => setShowResolved((v) => !v)}
-                style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}
+                accessibilityRole="button"
+                accessibilityLabel={showResolved ? 'Hide resolved signals' : `Show resolved signals, ${resolved.length}`}
+                accessibilityState={{ expanded: showResolved }}
+                style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 12, minHeight: 48 }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
                   Resolved ({resolved.length})

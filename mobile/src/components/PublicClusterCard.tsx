@@ -98,8 +98,14 @@ export function PublicClusterCard({
   if (isMember) {
     return (
       <Link href={{ pathname: '/cluster/[clusterId]/room', params: { clusterId: cluster.id } }} asChild>
-        <Pressable style={{ marginBottom: 16 }}>{body}</Pressable>
-      </Link>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${cluster.name}`}
+        style={{ marginBottom: 16 }}
+      >
+        {body}
+      </Pressable>
+    </Link>
     )
   }
   return <View style={{ marginBottom: 16 }}>{body}</View>

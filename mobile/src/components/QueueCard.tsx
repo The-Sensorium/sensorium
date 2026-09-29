@@ -50,6 +50,8 @@ export function QueueCard({ entry }: { entry: MyQueueEntry }) {
   return (
     <Link href={{ pathname: '/queue/[queueId]', params: { queueId: entry.mode } }} asChild>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${info.label} queue`}
         style={{
           backgroundColor: t.surfaceLowest,
           borderRadius: radii.xl,

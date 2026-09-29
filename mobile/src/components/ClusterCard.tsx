@@ -35,6 +35,8 @@ export function ClusterCard({
   return (
     <Link href={target} asChild>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${cluster.name}`}
         style={{
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.xl,

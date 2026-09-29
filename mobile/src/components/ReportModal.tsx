@@ -103,13 +103,17 @@ export function ReportModal({
             <Pressable
               disabled={muteUser.isPending}
               onPress={() => muteUser.mutate({ targetUserId: target.id, displayName: target.name })}
+              accessibilityRole="button"
+              accessibilityLabel={`Also mute ${target.name}`}
               style={{
                 marginTop: 8,
                 borderWidth: 1,
                 borderColor: t.outlineVariant,
                 borderRadius: radii.pill,
                 paddingHorizontal: 16,
-                paddingVertical: 8,
+                paddingVertical: 12,
+                minHeight: 44,
+                justifyContent: 'center',
                 opacity: muteUser.isPending ? 0.6 : 1,
               }}
             >
@@ -135,6 +139,9 @@ export function ReportModal({
               <Pressable
                 key={r.value}
                 onPress={() => setReason(r.value)}
+                accessibilityRole="radio"
+                accessibilityLabel={r.label}
+                accessibilityState={{ checked: active }}
                 style={{
                   borderWidth: 1,
                   borderColor: active ? t.primary : t.outlineVariant,
@@ -142,6 +149,8 @@ export function ReportModal({
                   borderRadius: radii.md,
                   paddingHorizontal: 16,
                   paddingVertical: 12,
+                  minHeight: 48,
+                  justifyContent: 'center',
                 }}
               >
                 <Text style={{ fontSize: 14, color: active ? t.onSurface : t.onSurfaceVariant }}>

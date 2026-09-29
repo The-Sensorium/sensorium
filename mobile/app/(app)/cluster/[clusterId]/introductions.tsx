@@ -131,7 +131,7 @@ export default function IntroductionsScreen() {
       ))}
 
       {error ? (
-        <Text style={{ fontSize: 14, color: t.error, marginBottom: 16 }}>{error}</Text>
+        <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ fontSize: 14, color: t.error, marginBottom: 16 }}>{error}</Text>
       ) : null}
 
       <PrimaryButton

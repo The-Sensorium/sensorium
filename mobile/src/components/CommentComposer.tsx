@@ -225,8 +225,8 @@ export function CommentComposer({
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.md,
-            paddingLeft: 6,
-            paddingRight: 4,
+            paddingStart: 6,
+            paddingEnd: 4,
             paddingVertical: 4,
           }}
         >

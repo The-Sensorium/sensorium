@@ -175,7 +175,9 @@ export default function VotesScreen() {
             {!created ? (
             <Pressable
               onPress={() => setModal('replace')}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Replace a member"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
                 Replace a member
@@ -185,7 +187,9 @@ export default function VotesScreen() {
             ) : null}
             <Pressable
               onPress={() => setModal('name')}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Suggest a cluster name"
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
                 Suggest a cluster name
@@ -258,6 +262,9 @@ export default function VotesScreen() {
                 <Pressable
                   key={m.id}
                   onPress={() => setTargetId(m.id)}
+                  accessibilityRole="radio"
+                  accessibilityLabel={m.display_name}
+                  accessibilityState={{ checked: active }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -439,14 +446,20 @@ function ActiveVoteCard({
           <Pressable
             disabled={pending}
             onPress={() => onVote(vote.id, 'yes')}
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: pending ? 0.6 : 1 }}
+            accessibilityRole="button"
+            accessibilityLabel="Vote yes"
+            accessibilityState={{ disabled: pending }}
+            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', opacity: pending ? 0.6 : 1 }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Yes</Text>
           </Pressable>
           <Pressable
             disabled={pending}
             onPress={() => onVote(vote.id, 'no')}
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: pending ? 0.6 : 1 }}
+            accessibilityRole="button"
+            accessibilityLabel="Vote no"
+            accessibilityState={{ disabled: pending }}
+            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', opacity: pending ? 0.6 : 1 }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>No</Text>
           </Pressable>
