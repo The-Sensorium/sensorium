@@ -45,6 +45,9 @@ export function PostMedia({
         if (live && width > 0 && height > 0) {
           setAspect(width / height)
           setSourceWidth(width)
+          if (__DEV__) {
+            console.log(`[post-image] measured ${width}x${height}`)
+          }
         }
       },
       () => undefined,
