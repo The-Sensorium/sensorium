@@ -47,7 +47,7 @@ export function SettingsPage() {
           </span>
           <span className="block truncate text-sm text-on-surface-variant">{profile.data?.current_status ?? profile.data?.email}</span>
         </span>
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-container text-primary" aria-hidden>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-on-primary" aria-hidden>
           <Pencil className="h-[18px] w-[18px]" strokeWidth={1.5} />
         </span>
       </Link>
