@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import {
   AtSign,
@@ -12,17 +13,22 @@ import {
   MessageCircle,
   MessageSquare,
   MessageSquareWarning,
+  MoreHorizontal,
   PartyPopper,
   ShieldCheck,
+  Trash2,
   UserPlus,
   Users,
   Vote,
 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { toErrorMessage } from '../lib/error'
 import { cn } from '../lib/utils'
+import { Modal } from '../components/Modal'
 import {
   notificationTarget,
   timeAgo,
+  useClearAllNotifications,
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useMyNotifications,
@@ -55,9 +61,41 @@ export function NotificationsPage() {
   const notifications = useMyNotifications()
   const markRead = useMarkNotificationRead()
   const markAll = useMarkAllNotificationsRead()
+  const clearAll = useClearAllNotifications()
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuAbove, setMenuAbove] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const menuWrapRef = useRef<HTMLDivElement>(null)
 
   const items = notifications.data ?? []
   const unread = items.filter((n) => n.read_at === null).length
+  const visible = filter === 'unread' ? items.filter((n) => n.read_at === null) : items
+
+  useEffect(() => {
+    if (!menuOpen) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [menuOpen])
+
+  function toggleMenu() {
+    if (menuOpen) {
+      setMenuOpen(false)
+      return
+    }
+    const wrap = menuWrapRef.current
+    if (wrap) {
+      const rect = wrap.getBoundingClientRect()
+      const below = window.innerHeight - rect.bottom
+      setMenuAbove(below < 120 && rect.top > below)
+    } else {
+      setMenuAbove(false)
+    }
+    setMenuOpen(true)
+  }
 
   async function handleClick(n: MyNotification) {
     if (n.read_at === null) {
@@ -65,6 +103,16 @@ export function NotificationsPage() {
     }
     const target = notificationTarget(n)
     if (target) navigate(target.to)
+  }
+
+  async function handleClear() {
+    try {
+      await clearAll.mutateAsync()
+      setConfirmOpen(false)
+      setMenuOpen(false)
+    } catch {
+      // Surfaced via clearAll.error inside the dialog; stay open to retry.
+    }
   }
 
   return (
@@ -76,16 +124,98 @@ export function NotificationsPage() {
             {unread > 0 ? `${unread} unread` : 'You’re all caught up'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void markAll.mutateAsync()}
-          disabled={items.length === 0 || markAll.isPending}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
-        >
-          {markAll.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          Mark all read
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void markAll.mutateAsync()}
+            disabled={items.length === 0 || markAll.isPending}
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
+          >
+            {markAll.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            Mark all read
+          </button>
+          <div ref={menuWrapRef} className="relative">
+            <button
+              type="button"
+              aria-label="More notification options"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              onClick={toggleMenu}
+              disabled={items.length === 0}
+              className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full border border-outline-variant/60 text-on-surface transition-colors hover:bg-surface-container disabled:opacity-50"
+            >
+              <MoreHorizontal className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+            </button>
+            {menuOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close notification options"
+                  className="fixed inset-0 z-10 cursor-default"
+                  onClick={() => setMenuOpen(false)}
+                  tabIndex={-1}
+                />
+                <div
+                  role="menu"
+                  aria-label="Notification options"
+                  className={cn(
+                    'absolute right-0 z-20 flex w-56 flex-col gap-1 rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-lift',
+                    menuAbove ? 'bottom-full mb-2' : 'top-full mt-1',
+                  )}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      setConfirmOpen(true)
+                    }}
+                    className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/10"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                    Clear all notifications
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </header>
+
+      {items.length > 0 ? (
+        <div
+          role="group"
+          aria-label="Notification filter"
+          className="flex rounded-pill border border-outline-variant/60 bg-surface p-1"
+        >
+          <button
+            type="button"
+            aria-pressed={filter === 'all'}
+            onClick={() => setFilter('all')}
+            className={cn(
+              'min-h-[44px] flex-1 rounded-pill px-4 py-2 text-sm font-semibold transition-colors',
+              filter === 'all'
+                ? 'bg-primary text-on-primary'
+                : 'text-on-surface-variant hover:bg-surface-container',
+            )}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            aria-pressed={filter === 'unread'}
+            onClick={() => setFilter('unread')}
+            className={cn(
+              'min-h-[44px] flex-1 rounded-pill px-4 py-2 text-sm font-semibold transition-colors',
+              filter === 'unread'
+                ? 'bg-primary text-on-primary'
+                : 'text-on-surface-variant hover:bg-surface-container',
+            )}
+          >
+            Unread{unread > 0 ? ` · ${unread}` : ''}
+          </button>
+        </div>
+      ) : null}
 
       {notifications.isLoading ? (
         <NotificationSkeleton />
@@ -104,9 +234,16 @@ export function NotificationsPage() {
             No notifications yet. Activity from your clusters will show up here.
           </p>
         </div>
+      ) : visible.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
+          <Bell className="mx-auto h-7 w-7 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
+          <p className="mt-3 text-sm text-on-surface-variant">
+            You’re all caught up. Nothing unread right now.
+          </p>
+        </div>
       ) : (
         <ul className="space-y-2">
-          {items.map((n) => {
+          {visible.map((n) => {
             const Icon = ICONS[n.type] ?? Bell
             return (
               <li key={n.id}>
@@ -148,6 +285,42 @@ export function NotificationsPage() {
           })}
         </ul>
       )}
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => {
+          if (!clearAll.isPending) setConfirmOpen(false)
+        }}
+        title="Clear all notifications?"
+      >
+        <p className="mt-3 text-sm text-on-surface-variant">
+          This will permanently remove all notifications from your list. This action can't be undone.
+        </p>
+        {clearAll.error && (
+          <p role="alert" className="mt-3 text-sm text-error">
+            {toErrorMessage(clearAll.error, 'Could not clear notifications. Please try again.')}
+          </p>
+        )}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmOpen(false)}
+            disabled={clearAll.isPending}
+            className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleClear()}
+            disabled={clearAll.isPending}
+            className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+          >
+            {clearAll.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            {clearAll.isPending ? 'Clearing…' : 'Clear all'}
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }
