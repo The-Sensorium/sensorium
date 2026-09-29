@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
-import { ArrowRight, Hourglass, ThumbsDown, ThumbsUp } from 'lucide-react-native'
+import { ArrowRight, Hourglass, Tag, ThumbsDown, ThumbsUp, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useCluster } from '../../../../src/features/introductions'
@@ -176,25 +176,67 @@ export default function VotesScreen() {
             <Pressable
               onPress={() => setModal('replace')}
               accessibilityRole="button"
-              accessibilityLabel="Replace a member"
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
+              accessibilityLabel="Replace a member, put a member up for a community vote"
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                borderWidth: 1,
+                borderColor: t.outlineVariant,
+                borderRadius: radii.md,
+                paddingHorizontal: 12,
+                paddingVertical: 12,
+                minHeight: 64,
+                opacity: pressed ? 0.6 : 1,
+              })}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                Replace a member
-              </Text>
-              <ArrowRight size={16} color={t.onSurface} />
+              <View
+                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.errorContainer, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Users size={18} color={t.error} strokeWidth={1.5} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>
+                  Replace a member
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
+                  Put a member up for a community vote
+                </Text>
+              </View>
+              <ArrowRight size={16} color={t.onSurfaceVariant} />
             </Pressable>
             ) : null}
             <Pressable
               onPress={() => setModal('name')}
               accessibilityRole="button"
-              accessibilityLabel="Suggest a cluster name"
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
+              accessibilityLabel="Suggest a cluster name, propose a new name for everyone"
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                borderWidth: 1,
+                borderColor: t.outlineVariant,
+                borderRadius: radii.md,
+                paddingHorizontal: 12,
+                paddingVertical: 12,
+                minHeight: 64,
+                opacity: pressed ? 0.6 : 1,
+              })}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                Suggest a cluster name
-              </Text>
-              <ArrowRight size={16} color={t.onSurface} />
+              <View
+                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Tag size={18} color={t.primary} strokeWidth={1.5} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>
+                  Suggest a cluster name
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
+                  Propose a new name for everyone
+                </Text>
+              </View>
+              <ArrowRight size={16} color={t.onSurfaceVariant} />
             </Pressable>
           </View>
         </View>
