@@ -43,7 +43,7 @@ function daypartGreeting(): string {
 
 const GET_STARTED_STEPS: { to: Href; title: string; desc: string }[] = [
   {
-    to: '/(app)/settings',
+    to: '/(app)/settings/profile',
     title: 'Set up your profile',
     desc: 'Add a photo, bio and status so your cluster knows who you are.',
   },
