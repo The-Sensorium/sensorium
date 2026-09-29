@@ -34,6 +34,8 @@ export function ZoomableImage({
       animationType="fade"
       onRequestClose={onClose}
       statusBarTranslucent
+      presentationStyle="overFullScreen"
+      accessibilityViewIsModal
     >
       <View style={{ flex: 1, backgroundColor: 'black' }}>
         <GestureViewer

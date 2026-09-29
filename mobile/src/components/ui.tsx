@@ -16,6 +16,7 @@ import type { SharedValue } from 'react-native-reanimated'
 import { Link, type Href } from 'expo-router'
 import { radii, shadowShape, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { lightHaptic } from '../lib/haptics'
 import { BrandMark } from './BrandMark'
 import { BrandWordmark } from './BrandWordmark'
 import { GoogleMark } from './GoogleMark'
@@ -73,7 +74,15 @@ export function AuthShell({
   )
 }
 
-export function Field({ label, style, ...props }: { label: string } & TextInputProps) {
+export function Field({
+  label,
+  style,
+  error,
+  ...props
+}: {
+  label: string
+  error?: string | null
+} & TextInputProps) {
   const t = useTheme()
   return (
     <View style={{ marginBottom: spacing.gutter }}>
@@ -84,12 +93,15 @@ export function Field({ label, style, ...props }: { label: string } & TextInputP
       </Text>
       <TextInput
         autoCapitalize="none"
+        autoCorrect={false}
+        spellCheck={false}
         placeholderTextColor={t.onSurfaceVariant}
+        accessibilityLabel={props.accessibilityLabel ?? label}
         style={[
           {
             backgroundColor: t.surfaceContainer,
             borderWidth: 1,
-            borderColor: t.outlineVariant,
+            borderColor: error ? t.error : t.outlineVariant,
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 12,
@@ -101,14 +113,20 @@ export function Field({ label, style, ...props }: { label: string } & TextInputP
         ]}
         {...props}
       />
+      {error ? (
+        <Text accessibilityRole="alert" style={{ marginTop: 4, fontSize: 12, lineHeight: 16, color: t.error }}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   )
 }
 
 export function PasswordField({
   label,
+  error,
   ...props
-}: Omit<{ label: string } & TextInputProps, 'secureTextEntry'>) {
+}: Omit<{ label: string; error?: string | null } & TextInputProps, 'secureTextEntry'>) {
   const t = useTheme()
   const [visible, setVisible] = useState(false)
   const Icon = visible ? EyeOff : Eye
@@ -125,14 +143,18 @@ export function PasswordField({
           alignItems: 'center',
           backgroundColor: t.surfaceContainer,
           borderWidth: 1,
-          borderColor: t.outlineVariant,
+          borderColor: error ? t.error : t.outlineVariant,
           borderRadius: radii.md,
         }}
       >
         <TextInput
           autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
           placeholderTextColor={t.onSurfaceVariant}
           secureTextEntry={!visible}
+          accessibilityLabel={props.accessibilityLabel ?? label}
+          textContentType={props.textContentType ?? 'password'}
           style={{
             flex: 1,
             paddingHorizontal: 16,
@@ -147,7 +169,7 @@ export function PasswordField({
           accessibilityLabel={visible ? 'Hide password' : 'Show password'}
           accessibilityRole="button"
           onPress={() => setVisible((v) => !v)}
-          hitSlop={4}
+          hitSlop={12}
           style={{
             width: 48,
             height: 48,
@@ -158,6 +180,11 @@ export function PasswordField({
           <Icon size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
         </Pressable>
       </View>
+      {error ? (
+        <Text accessibilityRole="alert" style={{ marginTop: 4, fontSize: 12, lineHeight: 16, color: t.error }}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   )
 }
@@ -185,10 +212,13 @@ export function PrimaryButton({
   const color = tone === 'error' ? t.onError : t.onPrimary
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        lightHaptic()
+        onPress()
+      }}
       disabled={inactive}
       accessibilityRole="button"
-      accessibilityState={{ disabled: inactive }}
+      accessibilityState={{ disabled: inactive ?? false, busy: loading ?? false }}
       style={{
         backgroundColor,
         borderRadius: radii.pill,
@@ -202,7 +232,7 @@ export function PrimaryButton({
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-        {!loading ? icon : null}
+        {loading ? <ActivityIndicator size="small" color={color} /> : icon}
         <Text style={{ color, fontSize: 16, lineHeight: 24, fontWeight: '600' }}>
           {loading ? (loadingTitle ?? 'Please wait…') : title}
         </Text>
@@ -262,7 +292,7 @@ export function GoogleButton({
       onPress={onPress}
       disabled={inactive}
       accessibilityRole="button"
-      accessibilityState={{ disabled: inactive ?? false }}
+      accessibilityState={{ disabled: inactive ?? false, busy: loading ?? false }}
       style={{
         flexDirection: 'row',
         gap: 8,

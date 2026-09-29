@@ -21,7 +21,16 @@ export function Modal({
 }) {
   const t = useTheme()
   return (
-    <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose} onShow={onShow}>
+    <RNModal
+      visible={open}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onShow={onShow}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      accessibilityViewIsModal
+    >
       {/* Backdrop and content are siblings: the backdrop Pressable closes on
           out-of-dialog taps only, while content taps never reach it. A nested
           Pressable would bubble content taps up to the backdrop close. */}

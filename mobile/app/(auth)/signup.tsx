@@ -101,19 +101,26 @@ export default function SignupScreen() {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoComplete="email"
+        textContentType="emailAddress"
         autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="next"
       />
       <PasswordField
         label="Password"
         value={password}
         onChangeText={setPassword}
         autoComplete="new-password"
+        textContentType="newPassword"
+        returnKeyType="next"
       />
       <PasswordField
         label="Confirm Password"
         value={confirm}
         onChangeText={setConfirm}
         autoComplete="new-password"
+        textContentType="newPassword"
+        returnKeyType="go"
         onSubmitEditing={onSubmit}
       />
       <ErrorText message={error} />
