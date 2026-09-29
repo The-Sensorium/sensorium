@@ -111,23 +111,23 @@ export function CommentItem({
                 onLike(comment.id)
               }}
               hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
               <Heart
-                size={16}
+                size={22}
                 color={likedByMe ? t.like : t.onSurfaceVariant}
                 strokeWidth={2}
                 fill={likedByMe ? t.like : 'transparent'}
               />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
                 {likeCount}
               </Text>
             </Pressable>
           ) : null}
           {replyCount !== undefined ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <MessageSquare size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>{replyCount}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <MessageSquare size={22} color={t.onSurfaceVariant} strokeWidth={2} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{replyCount}</Text>
             </View>
           ) : null}
           {onReply ? (
@@ -136,10 +136,10 @@ export function CommentItem({
               accessibilityLabel="Reply to comment"
               onPress={() => onReply(comment)}
               hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
-              <CornerUpLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Reply</Text>
+              <CornerUpLeft size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Reply</Text>
             </Pressable>
           ) : null}
           {isMine ? (
@@ -150,20 +150,20 @@ export function CommentItem({
                 setConfirmOpen(true)
               }}
               hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
-              <Trash2 size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Delete</Text>
+              <Trash2 size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Delete</Text>
             </Pressable>
           ) : (
             <Pressable
               accessibilityLabel="Report comment"
               onPress={() => setReportOpen(true)}
               hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
             >
-              <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Report</Text>
+              <Flag size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Report</Text>
             </Pressable>
           )}
         </View>
