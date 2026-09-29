@@ -798,13 +798,18 @@ export default function RoomScreen() {
       <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
-            accessibilityLabel="Back"
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
             onPress={() => {
               router.replace('/(app)/home')
             }}
-            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />
+            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+              Home
+            </Text>
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
@@ -826,16 +831,21 @@ export default function RoomScreen() {
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
-            accessibilityLabel="Back"
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
             onPress={() => {
               // Deterministic parent, not history: with backBehavior="history"
               // a router.back() here could return to settings or signals if
               // that was the previous stop. The room always exits home.
               router.replace('/(app)/home')
             }}
-            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />
+            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+              Home
+            </Text>
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
