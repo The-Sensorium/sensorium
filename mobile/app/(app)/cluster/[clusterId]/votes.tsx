@@ -159,7 +159,7 @@ export default function VotesScreen() {
       <>
       {voteError ? (
         <Card>
-          <Text style={{ fontSize: 14, color: t.error }}>{voteError}</Text>
+          <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ fontSize: 14, color: t.error }}>{voteError}</Text>
         </Card>
       ) : null}
 
