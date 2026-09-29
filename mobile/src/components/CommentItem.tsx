@@ -132,6 +132,8 @@ export function CommentItem({
           ) : null}
           {onReply ? (
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reply to comment"
               onPress={() => onReply(comment)}
               hitSlop={8}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}

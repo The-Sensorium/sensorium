@@ -378,7 +378,7 @@ export function Composer({
                 setGifOpen(false)
                 setMenuOpen((o) => !o)
               }}
-              hitSlop={4}
+              hitSlop={8}
               style={{
                 width: 44,
                 height: 44,
@@ -423,7 +423,7 @@ export function Composer({
               accessibilityLabel="Attach image"
               accessibilityRole="button"
               onPress={() => void handlePickImage()}
-              hitSlop={4}
+              hitSlop={8}
               style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             >
               <ImagePlus size={22} color={stagedImage ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
@@ -437,7 +437,7 @@ export function Composer({
                 setMenuOpen(false)
                 setGifOpen((o) => !o)
               }}
-              hitSlop={4}
+              hitSlop={8}
               style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             >
               <View
@@ -461,7 +461,7 @@ export function Composer({
           disabled={!canSend}
           accessibilityState={{ disabled: !canSend }}
           onPress={() => void handleSend()}
-          hitSlop={4}
+          hitSlop={8}
           style={{
             width: 44,
             height: 44,
