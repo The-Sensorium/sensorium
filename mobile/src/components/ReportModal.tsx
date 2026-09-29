@@ -51,6 +51,14 @@ export function ReportModal({
   const muteUser = useMuteUser()
   const title = contentTarget ? `Report ${contentTarget.kind}` : 'Report member'
 
+  // The scroll view only guarantees the focused input stays visible, so the
+  // submit button below it would end up behind the keyboard. bottomOffset
+  // lifts the input above the keyboard by exactly this much, so size it to
+  // the content between the caret of an empty details field and the bottom
+  // of the submit button: rest of input (68 - 12) + gaps (8 + 8) + button
+  // (16 + 16 + 24), plus one error line when shown.
+  const submitOffset = error ? 150 : 130
+
   useEffect(() => {
     if (open) {
       setReason(null)
@@ -88,7 +96,7 @@ export function ReportModal({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal open={open} onClose={onClose} title={title} bottomOffset={submitOffset}>
       {submitted ? (
         <View style={{ marginTop: 16, alignItems: 'center', gap: 8, padding: 16 }}>
           <CheckCircle2 size={32} color={t.primary} strokeWidth={1.5} />
@@ -129,7 +137,7 @@ export function ReportModal({
           ) : null}
         </View>
       ) : (
-        <View style={{ marginTop: 16, gap: 12 }}>
+        <View style={{ marginTop: 12, gap: 8 }}>
           <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
             Why are you reporting{contentTarget ? ` this ${contentTarget.kind}` : ` ${target.name}`}?
           </Text>
@@ -147,13 +155,13 @@ export function ReportModal({
                   borderColor: active ? t.primary : t.outlineVariant,
                   backgroundColor: active ? t.surfaceContainer : 'transparent',
                   borderRadius: radii.md,
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  minHeight: 48,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  minHeight: 44,
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ fontSize: 14, color: active ? t.onSurface : t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: active ? t.onSurface : t.onSurfaceVariant }}>
                   {r.label}
                 </Text>
               </Pressable>
@@ -164,7 +172,7 @@ export function ReportModal({
             onChangeText={setDetails}
             maxLength={2000}
             multiline
-            numberOfLines={3}
+            numberOfLines={2}
             placeholder="Anything that helps our moderators understand the issue… (optional)"
             placeholderTextColor={t.onSurfaceVariant}
             style={{
@@ -172,10 +180,10 @@ export function ReportModal({
               borderWidth: 1,
               borderColor: t.outlineVariant,
               borderRadius: radii.md,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
               fontSize: 14,
-              minHeight: 88,
+              minHeight: 68,
               textAlignVertical: 'top',
               color: t.onSurface,
             }}

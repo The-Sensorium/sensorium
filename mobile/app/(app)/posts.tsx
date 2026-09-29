@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Newspaper } from 'lucide-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../src/auth-context'
 import { useClusterMembers, useMyClusters } from '../../src/features/matching'
@@ -238,9 +239,12 @@ export default function PostsFeedScreen() {
             </Card>
           ) : (
             <Card plain>
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurface }}>
-                No posts in {selected?.cluster.name ?? 'this cluster'} yet. Share the first one.
-              </Text>
+              <View style={{ alignItems: 'center', padding: 16 }}>
+                <Newspaper size={28} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+                  No posts in {selected?.cluster.name ?? 'this cluster'} yet. Share the first one.
+                </Text>
+              </View>
             </Card>
           )
         }

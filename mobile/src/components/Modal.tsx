@@ -11,12 +11,14 @@ export function Modal({
   onClose,
   onShow,
   title,
+  bottomOffset = 16,
   children,
 }: {
   open: boolean
   onClose: () => void
   onShow?: () => void
   title: string
+  bottomOffset?: number
   children: ReactNode
 }) {
   const t = useTheme()
@@ -59,7 +61,7 @@ export function Modal({
             {/* Keyboard-aware scroll view from react-native-keyboard-controller:
                 scrolls the focused field above the keyboard on both platforms
                 via native contentInset (no layout thrash, no manual offsets). */}
-            <KeyboardAwareScrollView keyboardShouldPersistTaps="handled" bottomOffset={16}>
+            <KeyboardAwareScrollView keyboardShouldPersistTaps="handled" bottomOffset={bottomOffset}>
               {children}
             </KeyboardAwareScrollView>
           </SafeAreaView>
