@@ -4,6 +4,7 @@ import { router } from 'expo-router'
 import { ArrowLeft, Check, Search, Users } from 'lucide-react-native'
 import { useProfile } from '../../../src/lib/use-profile'
 import { Avatar } from '../../../src/components/Avatar'
+import { Modal } from '../../../src/components/Modal'
 import { toErrorMessage, inviteErrorMessage } from '../../../src/lib/error'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
@@ -41,6 +42,7 @@ export default function NewClusterScreen() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [capped, setCapped] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const trimmed = name.trim()
   const nameValid = trimmed.length >= 1 && trimmed.length <= NAME_LIMIT
@@ -297,11 +299,39 @@ export default function NewClusterScreen() {
               title="Send invitations"
               loadingTitle="Sending…"
               loading={create.isPending}
-              onPress={() => void send(trimmed)}
+              onPress={() => setConfirmOpen(true)}
             />
           </View>
         </View>
       ) : null}
+      <Modal open={confirmOpen} onClose={() => { if (!create.isPending) setConfirmOpen(false) }} title="Send invitations?">
+        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
+          {selectedPeople.length === 1
+            ? `Invite ${selectedPeople[0]?.display_name ?? 'this member'} to “${trimmed}”? They’ll be notified right away.`
+            : `Invite ${selectedPeople.length} people to “${trimmed}”? They’ll all be notified right away.`}
+        </Text>
+        {create.error ? (
+          <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, color: t.error }}>
+            {inviteErrorMessage(create.error, 'Could not send the invitations. Please try again.')}
+          </Text>
+        ) : null}
+        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+          <Pressable
+            onPress={() => setConfirmOpen(false)}
+            disabled={create.isPending}
+            hitSlop={8}
+            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: create.isPending ? 0.6 : 1 }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
+          </Pressable>
+          <PrimaryButton
+            title="Send"
+            loadingTitle="Sending…"
+            loading={create.isPending}
+            onPress={() => void send(trimmed)}
+          />
+        </View>
+      </Modal>
     </Screen>
   )
 }
