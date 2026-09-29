@@ -87,7 +87,7 @@ export function SwitchRoleButton() {
           setOpen((value) => !value)
           setPendingRole(null)
         }}
-        className="grid h-9 w-9 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+        className="grid h-9 w-9 cursor-pointer place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
       >
         <CurrentIcon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
       </button>
