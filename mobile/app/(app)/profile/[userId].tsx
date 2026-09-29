@@ -204,7 +204,7 @@ export default function ProfileScreen() {
             </View>
           </View>
         ) : (
-          <Link href="/(app)/settings" asChild>
+          <Link href="/(app)/settings/profile" asChild>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Edit profile"
