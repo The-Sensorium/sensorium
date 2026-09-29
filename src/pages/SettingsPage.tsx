@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ChevronDown, ChevronRight, Loader2, LogOut, ShieldCheck, Trash2 } from 'lucide-react'
+import { AlertTriangle, BellRing, ChevronDown, ChevronRight, Loader2, LogOut, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
@@ -47,7 +47,9 @@ export function SettingsPage() {
           </span>
           <span className="block truncate text-sm text-on-surface-variant">{profile.data?.current_status ?? profile.data?.email}</span>
         </span>
-        <ChevronRight className="h-5 w-5 shrink-0 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-container text-primary" aria-hidden>
+          <Pencil className="h-[18px] w-[18px]" strokeWidth={1.5} />
+        </span>
       </Link>
 
       <NotificationPreferences />

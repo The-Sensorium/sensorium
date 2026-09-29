@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellRing, ChevronDown, ChevronRight, LogOut, MonitorSmartphone, Moon, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
+import { AlertTriangle, BellRing, ChevronDown, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
 import { goLogin } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
@@ -66,7 +66,11 @@ export default function SettingsScreen() {
               {profile.data?.current_status ?? profile.data?.email ?? ''}
             </Text>
           </View>
-          <ChevronRight size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          <View
+            style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Pencil size={18} color={t.primary} strokeWidth={1.5} />
+          </View>
         </Pressable>
       </Link>
 
