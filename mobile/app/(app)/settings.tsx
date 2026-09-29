@@ -67,9 +67,9 @@ export default function SettingsScreen() {
             </Text>
           </View>
           <View
-            style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Pencil size={18} color={t.primary} strokeWidth={1.5} />
+            <Pencil size={18} color={t.onPrimary} strokeWidth={1.5} />
           </View>
         </Pressable>
       </Link>
