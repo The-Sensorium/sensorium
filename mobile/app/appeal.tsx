@@ -178,6 +178,7 @@ export default function AppealScreen() {
                   title="Submit appeal"
                   loading={submit.isPending}
                   disabled={!details.trim()}
+                  quietDisabled
                   onPress={() => void handleSubmit()}
                 />
               </View>

@@ -140,7 +140,7 @@ export default function NewClusterScreen() {
             {trimmed.length}/{NAME_LIMIT}
           </Text>
           <View style={{ marginTop: 16 }}>
-            <PrimaryButton title="Continue" disabled={!nameValid} onPress={() => setStep(1)} />
+            <PrimaryButton title="Continue" disabled={!nameValid} quietDisabled onPress={() => setStep(1)} />
           </View>
         </View>
       ) : null}
@@ -249,6 +249,7 @@ export default function NewClusterScreen() {
             <PrimaryButton
               title="Continue"
               disabled={selected.length < MIN_INVITEES}
+              quietDisabled
               onPress={() => setStep(2)}
             />
           </View>
