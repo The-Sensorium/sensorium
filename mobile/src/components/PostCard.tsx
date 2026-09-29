@@ -189,15 +189,17 @@ export function PostCard({
               <MessageSquare size={22} color={t.onSurfaceVariant} strokeWidth={2} />
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>{commentCount}</Text>
             </Pressable>
-            <Pressable
-              accessibilityLabel="Post actions"
-              accessibilityRole="button"
-              onPress={() => setMenuOpen(true)}
-              hitSlop={8}
-              style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            </Pressable>
+            <View style={{ marginLeft: 'auto' }}>
+              <Pressable
+                accessibilityLabel="Post actions"
+                accessibilityRole="button"
+                onPress={() => setMenuOpen(true)}
+                hitSlop={8}
+                style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              </Pressable>
+            </View>
           </View>
         </Pressable>
       </Link>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Archive, CalendarDays, CircleCheck, Hourglass, Users } from 'lucide-react'
+import { Archive, CalendarDays, Check, CircleCheck, Hourglass, Users } from 'lucide-react'
 import type { ClusterTile } from '../features/discovery'
 import { modeInfo } from '../lib/modes'
 
@@ -44,10 +44,18 @@ export function PublicClusterCard({ cluster, isMember }: { cluster: ClusterTile;
             {cluster.name}
           </h3>
         </div>
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
-          <Users className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-          {cluster.member_count} members
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
+            <Users className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+            {cluster.member_count} members
+          </span>
+          {isMember ? (
+            <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-lowest px-3 py-1.5 text-xs font-semibold text-primary">
+              <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              Your cluster
+            </span>
+          ) : null}
+        </div>
       </div>
       <div className="mt-3 flex flex-col gap-1 text-sm text-on-surface-variant">
         <span className="flex items-center gap-1.5">

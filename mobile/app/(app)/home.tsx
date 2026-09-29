@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, router, type Href } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, MailOpen, PartyPopper, Sparkles } from 'lucide-react-native'
+import { ArrowRight, MailOpen, Moon, PartyPopper, Sparkles, Sun } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
 import { useProfile } from '../../src/lib/use-profile'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
@@ -33,12 +33,12 @@ import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceh
 import { PostCard } from '../../src/components/PostCard'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
 
-function daypartGreeting(): string {
+function daypart(): { label: string; Icon: typeof Sun } {
   const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'Good morning'
-  if (hour >= 12 && hour < 17) return 'Good afternoon'
-  if (hour >= 17 && hour < 23) return 'Good evening'
-  return 'Good night'
+  if (hour >= 5 && hour < 12) return { label: 'Good morning', Icon: Sun }
+  if (hour >= 12 && hour < 17) return { label: 'Good afternoon', Icon: Sun }
+  // Overnight stays "Good evening": "Good night" is a farewell, not a greeting.
+  return { label: 'Good evening', Icon: Moon }
 }
 
 const GET_STARTED_STEPS: { to: Href; title: string; desc: string }[] = [
@@ -130,6 +130,7 @@ export default function HomeScreen() {
   }
 
   const firstName = profile.data?.display_name?.split(' ')[0]
+  const { label: daypartLabel, Icon: DaypartIcon } = daypart()
   const inviteError =
     toErrorMessage(acceptInvite.error, '') || toErrorMessage(declineInvite.error, '') || null
   const loading = clusters.isLoading || invitations.isLoading
@@ -145,9 +146,12 @@ export default function HomeScreen() {
       <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
         {firstName ? `Welcome, ${firstName}` : 'Home'}
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 17, lineHeight: 22, color: t.onSurfaceVariant, marginBottom: 24 }}>
-        {daypartGreeting()}
-      </Text>
+      <View style={{ marginTop: 4, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <DaypartIcon size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+        <Text style={{ fontSize: 17, lineHeight: 22, color: t.onSurfaceVariant }}>
+          {daypartLabel}
+        </Text>
+      </View>
       <ErrorText message={pull.error} />
 
       <PushPermissionPrompt compact />

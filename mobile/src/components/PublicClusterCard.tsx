@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 import { Link } from 'expo-router'
-import { Archive, CalendarDays, CircleCheck, Hourglass, Users } from 'lucide-react-native'
+import { Archive, CalendarDays, Check, CircleCheck, Hourglass, Users } from 'lucide-react-native'
 import type { ClusterTile } from '../features/discovery'
 import { modeInfo } from '../lib/modes'
 import { radii, shadowShape } from '../lib/theme-tokens'
@@ -62,22 +62,43 @@ export function PublicClusterCard({
             {cluster.name}
           </Text>
         </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            backgroundColor: t.surfaceLowest,
-            borderRadius: radii.pill,
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            alignSelf: 'flex-start',
-          }}
-        >
-          <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-          <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
-            {cluster.member_count} members
-          </Text>
+        <View style={{ alignItems: 'flex-end', gap: 8 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: t.surfaceLowest,
+              borderRadius: radii.pill,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              alignSelf: 'flex-start',
+            }}
+          >
+            <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
+              {cluster.member_count} members
+            </Text>
+          </View>
+          {isMember ? (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: t.surfaceLowest,
+                borderRadius: radii.pill,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                flexShrink: 0,
+              }}
+            >
+              <Check size={14} color={t.primary} strokeWidth={2} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: t.primary }}>
+                Your cluster
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
       <View style={{ marginTop: 12, gap: 4 }}>
