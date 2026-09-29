@@ -111,7 +111,7 @@ export default function NotificationsScreen() {
           <>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 16 }}>
               <View>
-                <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Notifications</Text>
+                <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Notifications</Text>
                 <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   {unread > 0 ? `${unread} unread` : 'You’re all caught up'}
                 </Text>

@@ -102,7 +102,7 @@ export default function EditProfileScreen() {
           Back to settings
         </Text>
       </Pressable>
-      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface, marginBottom: 16 }} accessibilityRole="header">
+      <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface, marginBottom: 16 }} accessibilityRole="header">
         Edit profile
       </Text>
 

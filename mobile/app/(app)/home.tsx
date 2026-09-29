@@ -142,7 +142,7 @@ export default function HomeScreen() {
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
-      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+      <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
         {firstName ? `Welcome, ${firstName}` : 'Home'}
       </Text>
       <Text style={{ marginTop: 4, fontSize: 17, lineHeight: 22, color: t.onSurfaceVariant, marginBottom: 24 }}>

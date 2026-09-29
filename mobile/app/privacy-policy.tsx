@@ -25,7 +25,7 @@ export default function PrivacyPolicyScreen() {
           Back to settings
         </Text>
       </Pressable>
-      <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>{PRIVACY_DOCUMENT.title}</Text>
+      <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '600', color: t.onSurface }}>{PRIVACY_DOCUMENT.title}</Text>
       <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant, marginBottom: 16 }}>
         Last updated {PRIVACY_DOCUMENT.updated}
       </Text>
