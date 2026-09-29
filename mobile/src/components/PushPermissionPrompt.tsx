@@ -81,6 +81,7 @@ export function PushPermissionPrompt({ compact }: { compact?: boolean }) {
       </View>
       {showSettings ? (
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Open settings"
           onPress={() => void Linking.openSettings()}
           style={{
@@ -88,21 +89,27 @@ export function PushPermissionPrompt({ compact }: { compact?: boolean }) {
             borderColor: t.primary,
             borderRadius: radii.pill,
             paddingHorizontal: 16,
-            paddingVertical: 10,
+            paddingVertical: 12,
+            minHeight: 44,
+            justifyContent: 'center',
           }}
         >
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Settings</Text>
         </Pressable>
       ) : (
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Enable notifications"
           onPress={() => void enable()}
           disabled={requesting}
+          accessibilityState={{ disabled: requesting }}
           style={{
             backgroundColor: t.primary,
             borderRadius: radii.pill,
             paddingHorizontal: 16,
-            paddingVertical: 10,
+            paddingVertical: 12,
+            minHeight: 44,
+            justifyContent: 'center',
             opacity: requesting ? 0.6 : 1,
           }}
         >

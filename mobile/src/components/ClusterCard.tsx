@@ -35,6 +35,8 @@ export function ClusterCard({
   return (
     <Link href={target} asChild>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${cluster.name}`}
         style={{
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.xl,
@@ -48,9 +50,9 @@ export function ClusterCard({
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {created ? (
-                <Users size={14} color={t.primary} strokeWidth={1.5} />
+                <Users size={20} color={t.primary} strokeWidth={1.5} />
               ) : (
-                <Icon size={14} color={t.primary} strokeWidth={1.5} />
+                <Icon size={20} color={t.primary} strokeWidth={1.5} />
               )}
               <Text
                 style={{
@@ -88,7 +90,7 @@ export function ClusterCard({
               alignSelf: 'flex-start',
             }}
           >
-            <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
             <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
               {item.memberCount} members
             </Text>

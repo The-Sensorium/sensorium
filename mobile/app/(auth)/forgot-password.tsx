@@ -73,7 +73,10 @@ export default function ForgotPasswordScreen() {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoComplete="email"
+        textContentType="emailAddress"
         autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="send"
         onSubmitEditing={onSubmit}
       />
       <ErrorText message={error} />

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { Image } from 'expo-image'
 // Gesture-handler scroller, not the core one: the picker nests inside other
 // vertical scrollers (posts page FlatList header), where a stock nested
 // scroller loses every gesture to its parent. Deliberately a plain
@@ -103,7 +104,9 @@ export function GifPicker({
                 <Image
                   source={{ uri: item.thumb }}
                   accessibilityLabel={item.title || 'GIF'}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                   style={{ flex: 1, width: '100%', borderRadius: radii.md, backgroundColor: t.surfaceContainer }}
                 />
               </Pressable>

@@ -30,7 +30,7 @@ export default function ClustersScreen() {
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
-      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Clusters</Text>
+      <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Clusters</Text>
       <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
         Every cluster you’ve been matched into or created. Browse a matching mode below to meet more people.
       </Text>
@@ -46,13 +46,14 @@ export default function ClustersScreen() {
           gap: 8,
           backgroundColor: t.primary,
           borderRadius: radii.pill,
-          paddingHorizontal: 20,
+          paddingHorizontal: 16,
           paddingVertical: 14,
           minHeight: 48,
+          alignSelf: 'flex-start',
         }}
       >
         <Plus size={16} color={t.onPrimary} strokeWidth={2} />
-        <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
+        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
           Create a cluster
         </Text>
       </Pressable>

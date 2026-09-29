@@ -3,7 +3,7 @@ import { Outlet } from 'react-router'
 import { Flag, LayoutDashboard, Users } from 'lucide-react'
 import { useAuth } from '../auth-context'
 import { BrandMark } from '../../components/BrandMark'
-import { ThemeToggle } from '../../components/theme-toggle'
+import { ProfileMenu } from '../../components/ProfileMenu'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
 import { RoutePending } from '../../components/RoutePending'
 import { StaffMobileNav, StaffNavigation, type StaffNavItem } from '../../components/StaffNavigation'
@@ -34,7 +34,7 @@ export function ModeratorLayout() {
           <StaffNavigation items={navItems} />
           <div className="flex items-center gap-2">
             <SwitchRoleButton />
-            <ThemeToggle />
+            <ProfileMenu accountLinks={false} />
           </div>
         </div>
       </header>

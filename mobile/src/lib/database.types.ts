@@ -2166,6 +2166,7 @@ export type Database = {
           title: string
         }[]
       }
+      clear_all_notifications: { Args: never; Returns: undefined }
       close_expired_votes: { Args: never; Returns: undefined }
       close_post_report_as_actioned: {
         Args: {

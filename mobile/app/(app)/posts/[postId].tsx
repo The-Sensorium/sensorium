@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react-native'
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller'
 import { useAuth } from '../../../src/auth-context'
 import { useClusterMembers } from '../../../src/features/matching'
+import { useCluster } from '../../../src/features/introductions'
 import {
   usePost,
   useClusterPostLikes,
@@ -33,6 +34,7 @@ export default function PostDetailScreen() {
 
   const post = usePost(postId || null)
   const clusterId = post.data?.cluster_id ?? null
+  const cluster = useCluster(clusterId)
   const members = useClusterMembers(clusterId)
   const likes = useClusterPostLikes(clusterId)
   const comments = usePostComments(clusterId, postId || null)
@@ -166,6 +168,7 @@ export default function PostDetailScreen() {
               commentCount={comments.data?.length ?? 0}
               onLike={(id) => void toggle.mutateAsync(id)}
               onDeleted={() => router.back()}
+              clusterName={cluster.data?.name}
             />
           </View>
         )}

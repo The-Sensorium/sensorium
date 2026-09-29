@@ -154,8 +154,8 @@ export function MessageItem({
                 style={{
                   position: 'absolute',
                   top: -2,
-                  left: -2,
-                  right: -2,
+                  start: -2,
+                  end: -2,
                   bottom: -2,
                   borderWidth: 2,
                   borderColor: t.primary,

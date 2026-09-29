@@ -88,12 +88,15 @@ export function IntroChecklistBanner({
           asChild
         >
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Answer the intro questions"
             style={{
               backgroundColor: t.primary,
               borderRadius: radii.pill,
               paddingHorizontal: 16,
-              paddingVertical: 8,
+              paddingVertical: 12,
+              minHeight: 44,
+              justifyContent: 'center',
             }}
           >
             <Text style={{ fontSize: 12, fontWeight: '600', color: t.onPrimary }}>Answer</Text>
@@ -101,9 +104,11 @@ export function IntroChecklistBanner({
         </Link>
         {dismissible ? (
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Dismiss introductions reminder"
             onPress={dismiss}
-            style={{ paddingHorizontal: 4, paddingVertical: 8 }}
+            hitSlop={8}
+            style={{ paddingHorizontal: 12, paddingVertical: 12, minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' }}
           >
             <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </Pressable>

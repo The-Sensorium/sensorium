@@ -11,6 +11,7 @@ import {
   PREF_LABELS,
   PREF_TOGGLES,
   timeAgo,
+  useClearAllNotifications,
   useMarkAllNotificationsRead,
   useMarkClusterRead,
   useMarkNotificationRead,
@@ -236,11 +237,22 @@ describe('hooks', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'u1'] })
   })
 
-  it('useMarkAllNotificationsRead clears the center and chat via mark_all_read', async () => {
+  it('useMarkAllNotificationsRead marks read via mark_all_read (history stays)', async () => {
     const { result } = renderHook(() => useMarkAllNotificationsRead(), { wrapper })
     result.current.mutate()
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('mark_all_read')
+  })
+
+  it('useClearAllNotifications deletes via clear_all_notifications', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useClearAllNotifications(), { wrapper })
+    result.current.mutate()
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('clear_all_notifications')
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread-chat'] })
   })
 
   it('useMarkAllNotificationsRead also refreshes per-cluster chat counts', async () => {

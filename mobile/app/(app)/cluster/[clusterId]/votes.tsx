@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
-import { ArrowRight, Hourglass, ThumbsDown, ThumbsUp } from 'lucide-react-native'
+import { ArrowRight, Hourglass, Tag, ThumbsDown, ThumbsUp, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useCluster } from '../../../../src/features/introductions'
@@ -21,6 +21,7 @@ import { Modal } from '../../../../src/components/Modal'
 import { Avatar } from '../../../../src/components/Avatar'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
@@ -104,7 +105,10 @@ export default function VotesScreen() {
     setVoteError(null)
     setPendingVoteId(voteId)
     try {
-      await voteOn.mutateAsync({ voteId, choice })
+      // Retries transient network failures; permanent RLS/validation
+      // errors throw immediately. The generated useVoteOn hook itself is
+      // owned by sync:db-types and must not be hand-edited.
+      await mutateWithRetry(() => voteOn.mutateAsync({ voteId, choice }))
     } catch (err) {
       setVoteError(toErrorMessage(err, 'Could not cast your vote'))
     } finally {
@@ -159,7 +163,7 @@ export default function VotesScreen() {
       <>
       {voteError ? (
         <Card>
-          <Text style={{ fontSize: 14, color: t.error }}>{voteError}</Text>
+          <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ fontSize: 14, color: t.error }}>{voteError}</Text>
         </Card>
       ) : null}
 
@@ -175,22 +179,68 @@ export default function VotesScreen() {
             {!created ? (
             <Pressable
               onPress={() => setModal('replace')}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Replace a member, put a member up for a community vote"
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                borderWidth: 1,
+                borderColor: t.outlineVariant,
+                borderRadius: radii.md,
+                paddingHorizontal: 12,
+                paddingVertical: 12,
+                minHeight: 64,
+                opacity: pressed ? 0.6 : 1,
+              })}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                Replace a member
-              </Text>
-              <ArrowRight size={16} color={t.onSurface} />
+              <View
+                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.errorContainer, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Users size={18} color={t.error} strokeWidth={1.5} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>
+                  Replace a member
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
+                  Put a member up for a community vote
+                </Text>
+              </View>
+              <ArrowRight size={16} color={t.onSurfaceVariant} />
             </Pressable>
             ) : null}
             <Pressable
               onPress={() => setModal('name')}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel="Suggest a cluster name, propose a new name for everyone"
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                borderWidth: 1,
+                borderColor: t.outlineVariant,
+                borderRadius: radii.md,
+                paddingHorizontal: 12,
+                paddingVertical: 12,
+                minHeight: 64,
+                opacity: pressed ? 0.6 : 1,
+              })}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                Suggest a cluster name
-              </Text>
-              <ArrowRight size={16} color={t.onSurface} />
+              <View
+                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Tag size={18} color={t.primary} strokeWidth={1.5} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>
+                  Suggest a cluster name
+                </Text>
+                <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
+                  Propose a new name for everyone
+                </Text>
+              </View>
+              <ArrowRight size={16} color={t.onSurfaceVariant} />
             </Pressable>
           </View>
         </View>
@@ -258,6 +308,9 @@ export default function VotesScreen() {
                 <Pressable
                   key={m.id}
                   onPress={() => setTargetId(m.id)}
+                  accessibilityRole="radio"
+                  accessibilityLabel={m.display_name}
+                  accessibilityState={{ checked: active }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -286,6 +339,7 @@ export default function VotesScreen() {
             title="Start replacement vote"
             loadingTitle="Starting…"
             loading={startReplace.isPending}
+            tone="error"
             onPress={() => void confirmReplace()}
           />
         </View>
@@ -439,14 +493,20 @@ function ActiveVoteCard({
           <Pressable
             disabled={pending}
             onPress={() => onVote(vote.id, 'yes')}
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: pending ? 0.6 : 1 }}
+            accessibilityRole="button"
+            accessibilityLabel="Vote yes"
+            accessibilityState={{ disabled: pending }}
+            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', opacity: pending ? 0.6 : 1 }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Yes</Text>
           </Pressable>
           <Pressable
             disabled={pending}
             onPress={() => onVote(vote.id, 'no')}
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: pending ? 0.6 : 1 }}
+            accessibilityRole="button"
+            accessibilityLabel="Vote no"
+            accessibilityState={{ disabled: pending }}
+            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', opacity: pending ? 0.6 : 1 }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>No</Text>
           </Pressable>

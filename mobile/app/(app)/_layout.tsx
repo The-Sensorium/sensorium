@@ -145,6 +145,7 @@ export default function AppTabs() {
           strip of thread content visible underneath it. */}
       <Tabs.Screen name="posts/[postId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="settings/reports" options={{ href: null }} />
+      <Tabs.Screen name="settings/profile" options={{ href: null }} />
     </Tabs>
   )
 }

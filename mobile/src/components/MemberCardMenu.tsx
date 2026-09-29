@@ -71,7 +71,15 @@ export function MemberMenuPopover({
   const { left, top } = menuPosition(target.x, target.y, itemCount)
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      accessibilityViewIsModal
+    >
       <View style={{ flex: 1 }}>
         <Pressable
           onPress={onClose}

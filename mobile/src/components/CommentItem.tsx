@@ -1,9 +1,10 @@
 import { useState, type RefObject } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { CornerUpLeft, Flag, Heart, MessageSquare, Trash2 } from 'lucide-react-native'
+import { CornerUpLeft, Heart, MoreVertical } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { Avatar } from './Avatar'
 import { LinkifiedText } from './LinkifiedText'
+import { PostActionsSheet } from './PostActionsSheet'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
@@ -23,7 +24,6 @@ export function CommentItem({
   onLike,
   likeCount = 0,
   likedByMe = false,
-  replyCount,
   highlighted,
   innerRef,
 }: {
@@ -35,7 +35,6 @@ export function CommentItem({
   onLike?: (commentId: string) => void
   likeCount?: number
   likedByMe?: boolean
-  replyCount?: number
   highlighted?: boolean
   innerRef?: RefObject<View | null>
 }) {
@@ -43,6 +42,7 @@ export function CommentItem({
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const isMine = comment.author_id === userId
+  const [menuOpen, setMenuOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -81,12 +81,16 @@ export function CommentItem({
           // Highlight hugs only the comment body, not the author row or actions.
           // Border and padding are always rendered (transparent when idle) so
           // the ring flash never shifts surrounding layout.
+          // Bodies shift left by border (2) + padding (8) so the
+          // text starts flush with the header.
           <View
             style={{
               borderWidth: 2,
               borderColor: highlighted ? t.primary : 'transparent',
               borderRadius: 12,
-              padding: 8,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              marginLeft: -10,
             }}
           >
             {comment.content ? (
@@ -100,7 +104,8 @@ export function CommentItem({
             <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
           </View>
         ) : null}
-        <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        {/* Primary actions stay grouped near the content, overflow inline after Reply. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginLeft: -8 }}>
           {onLike ? (
             <Pressable
               accessibilityLabel="Like comment"
@@ -111,61 +116,57 @@ export function CommentItem({
                 onLike(comment.id)
               }}
               hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 8, minHeight: 44 }}
             >
               <Heart
-                size={16}
+                size={22}
                 color={likedByMe ? t.like : t.onSurfaceVariant}
                 strokeWidth={2}
                 fill={likedByMe ? t.like : 'transparent'}
               />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
                 {likeCount}
               </Text>
             </Pressable>
           ) : null}
-          {replyCount !== undefined ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <MessageSquare size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>{replyCount}</Text>
-            </View>
-          ) : null}
           {onReply ? (
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reply to comment"
               onPress={() => onReply(comment)}
               hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 8, minHeight: 44 }}
             >
-              <CornerUpLeft size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Reply</Text>
+              <CornerUpLeft size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Reply</Text>
             </Pressable>
           ) : null}
-          {isMine ? (
-            <Pressable
-              accessibilityLabel="Delete comment"
-              onPress={() => {
-                setDeleteError(null)
-                setConfirmOpen(true)
-              }}
-              hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
-            >
-              <Trash2 size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Delete</Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              accessibilityLabel="Report comment"
-              onPress={() => setReportOpen(true)}
-              hitSlop={8}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 12, paddingHorizontal: 8, minHeight: 44 }}
-            >
-              <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>Report</Text>
-            </Pressable>
-          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Comment actions"
+            onPress={() => setMenuOpen(true)}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 8, minHeight: 44 }}
+          >
+            <MoreVertical size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
         </View>
       </View>
+      <PostActionsSheet
+        open={menuOpen}
+        mine={isMine}
+        label="Comment actions"
+        onClose={() => setMenuOpen(false)}
+        onDelete={() => {
+          setMenuOpen(false)
+          setDeleteError(null)
+          setConfirmOpen(true)
+        }}
+        onReport={() => {
+          setMenuOpen(false)
+          setReportOpen(true)
+        }}
+      />
       {author ? (
         <ReportModal
           open={reportOpen}

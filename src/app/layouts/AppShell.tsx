@@ -4,7 +4,7 @@ import { Home, Newspaper, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../auth-context'
 import { BrandMark } from '../../components/BrandMark'
-import { ThemeToggle } from '../../components/theme-toggle'
+import { ProfileMenu } from '../../components/ProfileMenu'
 import { NotificationBell } from '../../components/NotificationBell'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
 import { RoutePending } from '../../components/RoutePending'
@@ -61,7 +61,7 @@ export function AppShell() {
           </nav>
           <div className="flex items-center gap-2">
             <SwitchRoleButton />
-            <ThemeToggle />
+            <ProfileMenu />
           </div>
         </div>
       </header>

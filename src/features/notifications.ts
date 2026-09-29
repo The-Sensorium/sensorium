@@ -10,7 +10,7 @@ export type NotificationType = Database['public']['Enums']['notification_type']
 export type MyNotification = Database['public']['Functions']['get_my_notifications']['Returns'][number]
 export type NotificationPrefs = NotificationPrefsRow
 
-/** The caller's notifications, newest first, already filtered by their prefs. Plain chat is excluded (unread lives on the cluster cards); only mentions and other events show here. Includes recent read history; only Mark all read clears the list. */
+/** The caller's notifications, newest first, already filtered by their prefs. Plain chat is excluded (unread lives on the cluster cards); only mentions and other events show here. Includes recent read history; only Clear all removes the list. */
 export function useMyNotifications(enabled = true) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -163,7 +163,7 @@ export function useMarkNotificationRead() {
   })
 }
 
-/** Clear all of the caller's notifications (deletes stored rows), plus chat in every cluster. */
+/** Mark all of the caller's notifications read (rows stay as read history), plus chat in every cluster. */
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient()
 
@@ -171,6 +171,24 @@ export function useMarkAllNotificationsRead() {
     mutationFn: async () => {
       const supabase = requireSupabase()
       const { error } = await supabase.rpc('mark_all_read')
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] })
+      void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-chat'] })
+    },
+  })
+}
+
+/** Permanently delete all of the caller's notifications, plus chat in every cluster. */
+export function useClearAllNotifications() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      const supabase = requireSupabase()
+      const { error } = await supabase.rpc('clear_all_notifications')
       if (error) throw error
     },
     onSuccess: () => {

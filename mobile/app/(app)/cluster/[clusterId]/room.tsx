@@ -668,8 +668,10 @@ export default function RoomScreen() {
     setDeleteError(null)
     try {
       await deleteMessage.mutateAsync(messageId)
+      successHaptic()
       setDeleteFor(null)
     } catch (e) {
+      errorHaptic()
       setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
@@ -794,21 +796,30 @@ export default function RoomScreen() {
   ) {
     return (
       <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
+        <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
-            accessibilityLabel="Back"
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
             onPress={() => {
               router.replace('/(app)/home')
             }}
-            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />
+            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+              Home
+            </Text>
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
+          <View style={{ flex: 1 }} />
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 88 }}
+          >
+            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface, textAlign: 'center' }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
               {cluster.data.name}
             </Text>
-            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
               Created cluster
             </Text>
           </View>
@@ -822,24 +833,33 @@ export default function RoomScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
+        <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
-            accessibilityLabel="Back"
+            accessibilityRole="button"
+            accessibilityLabel="Back to home"
             onPress={() => {
               // Deterministic parent, not history: with backBehavior="history"
               // a router.back() here could return to settings or signals if
               // that was the previous stop. The room always exits home.
               router.replace('/(app)/home')
             }}
-            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+            hitSlop={8}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={20} color={t.onSurface} strokeWidth={1.5} />
+            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+              Home
+            </Text>
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
+          <View style={{ flex: 1 }} />
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 88 }}
+          >
+            <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface, textAlign: 'center' }} numberOfLines={1} maxFontSizeMultiplier={1.4} accessibilityRole="header">
               {cluster.data.name}
             </Text>
-            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
               {onlineCount} of {memberCount} here
             </Text>
           </View>
@@ -1024,6 +1044,9 @@ export default function RoomScreen() {
               data={rows}
               keyExtractor={(r) => r.key}
               inverted
+              windowSize={7}
+              maxToRenderPerBatch={10}
+              removeClippedSubviews={false}
               keyboardShouldPersistTaps="handled"
               contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
               renderScrollComponent={renderScrollComponent}

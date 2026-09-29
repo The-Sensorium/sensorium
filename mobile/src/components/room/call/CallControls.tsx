@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Platform, Pressable, Text, View } from 'react-native'
+import { AccessibilityInfo, Platform, Pressable, Text, View } from 'react-native'
 import { useConnectionState, useLocalParticipant } from '@livekit/react-native'
 import { ConnectionState } from 'livekit-client'
 import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff, Volume2, VolumeX } from 'lucide-react-native'
@@ -50,20 +50,34 @@ export function CallControls({
   async function toggleMic() {
     const next = !micOn
     setMicOn(next)
-    await localParticipant.setMicrophoneEnabled(next).catch(() => setMicOn(!next))
+    try {
+      await localParticipant.setMicrophoneEnabled(next)
+      AccessibilityInfo.announceForAccessibility(next ? 'Microphone on' : 'Microphone muted')
+    } catch {
+      setMicOn(!next)
+    }
   }
 
   async function toggleCamera() {
     const next = !cameraOn
     setCameraOn(next)
-    await localParticipant.setCameraEnabled(next).catch(() => setCameraOn(!next))
+    try {
+      await localParticipant.setCameraEnabled(next)
+      AccessibilityInfo.announceForAccessibility(next ? 'Camera on' : 'Camera off')
+    } catch {
+      setCameraOn(!next)
+    }
   }
 
   async function toggleSpeaker() {
     const next = !speakerOn
     setSpeakerOn(next)
     const applied = await setSpeakerEnabledLive(next, Platform.OS)
-    if (!applied) setSpeakerOn(!next)
+    if (!applied) {
+      setSpeakerOn(!next)
+    } else {
+      AccessibilityInfo.announceForAccessibility(next ? 'Speaker on' : 'Speaker off')
+    }
   }
 
   const buttons = [
@@ -90,6 +104,8 @@ export function CallControls({
           <Pressable
             key={b.label}
             accessibilityLabel={b.label}
+            accessibilityHint={b.label === 'Mute' || b.label === 'Unmute' ? 'Double tap to toggle your microphone' : 'Double tap to toggle your camera'}
+            accessibilityState={{ selected: b.on, disabled: !live }}
             onPress={() => void b.onPress()}
             disabled={!live}
             style={{
@@ -107,7 +123,8 @@ export function CallControls({
         ))}
         <Pressable
           accessibilityLabel={speakerOn ? 'Speaker off' : 'Speaker on'}
-          accessibilityState={{ selected: speakerOn }}
+          accessibilityHint="Double tap to toggle the speaker"
+          accessibilityState={{ selected: speakerOn, disabled: !live }}
           onPress={() => void toggleSpeaker()}
           disabled={!live}
           style={{
@@ -151,7 +168,7 @@ export function CallControls({
               style={{
                 position: 'absolute',
                 top: 4,
-                right: 4,
+                end: 4,
                 minWidth: 18,
                 height: 18,
                 borderRadius: 9,

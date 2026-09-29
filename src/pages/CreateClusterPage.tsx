@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Loader2, Search, Users } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
 import { Avatar } from '../components/Avatar'
+import { Modal } from '../components/Modal'
 import { inviteErrorMessage, toErrorMessage } from '../lib/error'
 import {
   useCreateCluster,
@@ -26,6 +27,7 @@ export function CreateClusterPage() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string[]>([])
   const [capped, setCapped] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const trimmed = name.trim()
   const nameValid = trimmed.length >= 1 && trimmed.length <= NAME_LIMIT
@@ -268,7 +270,7 @@ export function CreateClusterPage() {
               type="button"
               data-e2e="create-cluster-send"
               disabled={create.isPending}
-              onClick={() => void send().catch(() => {})}
+              onClick={() => setConfirmOpen(true)}
               className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
             >
               {create.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
@@ -277,6 +279,38 @@ export function CreateClusterPage() {
           </div>
         </section>
       )}
+      <Modal open={confirmOpen} onClose={() => { if (!create.isPending) setConfirmOpen(false) }} title="Send invitations?">
+        <p className="mt-4 text-sm leading-6 text-on-surface-variant">
+          {selectedPeople.length === 1
+            ? `Invite ${selectedPeople[0]?.display_name ?? 'this member'} to “${trimmed}”? They’ll be notified right away.`
+            : `Invite ${selectedPeople.length} people to “${trimmed}”? They’ll all be notified right away.`}
+        </p>
+        {create.error && (
+          <p role="alert" className="mt-4 text-sm text-error">
+            {inviteErrorMessage(create.error, 'Could not send the invitations. Please try again.')}
+          </p>
+        )}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirmOpen(false)}
+            disabled={create.isPending}
+            className="inline-flex min-h-[44px] items-center rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            data-e2e="create-cluster-confirm"
+            disabled={create.isPending}
+            onClick={() => void send().catch(() => {})}
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+          >
+            {create.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            Send
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

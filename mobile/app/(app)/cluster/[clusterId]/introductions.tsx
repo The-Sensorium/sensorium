@@ -87,7 +87,7 @@ export default function IntroductionsScreen() {
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
         Introductions · {cluster.data.name}
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 28, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, fontSize: 24, lineHeight: 30, fontWeight: '600', color: t.onSurface }}>
         Tell your cluster who you are
       </Text>
       <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -131,7 +131,7 @@ export default function IntroductionsScreen() {
       ))}
 
       {error ? (
-        <Text style={{ fontSize: 14, color: t.error, marginBottom: 16 }}>{error}</Text>
+        <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ fontSize: 14, color: t.error, marginBottom: 16 }}>{error}</Text>
       ) : null}
 
       <PrimaryButton
@@ -139,6 +139,7 @@ export default function IntroductionsScreen() {
         loadingTitle="Saving…"
         loading={submit.isPending}
         disabled={!allAnswered}
+        quietDisabled
         onPress={() => void handleSubmit()}
       />
     </Screen>

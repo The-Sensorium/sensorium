@@ -11,21 +11,36 @@ export function PostActionsSheet({
   onEdit,
   onDelete,
   onReport,
+  label = 'Post actions',
 }: {
   open: boolean
   mine: boolean
   onClose: () => void
-  onEdit: () => void
+  onEdit?: () => void
   onDelete: () => void
   onReport: () => void
+  label?: string
 }) {
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
   return (
-    <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
+    <RNModal
+      visible={open}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      accessibilityViewIsModal
+    >
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
         <Pressable
-          onPress={() => {}}
+          accessibilityLabel="Dismiss menu"
+          onPress={onClose}
+          style={{ position: 'absolute', start: 0, end: 0, top: 0, bottom: 0 }}
+        />
+        <View
+          accessibilityLabel={label}
           style={{
             backgroundColor: t.surfaceLowest,
             borderTopLeftRadius: radii.xl,
@@ -47,9 +62,11 @@ export function PostActionsSheet({
           />
           {mine ? (
             <>
-              <SheetRow label="Edit" onPress={onEdit}>
-                <Pencil size={18} color={t.onSurface} strokeWidth={1.5} />
-              </SheetRow>
+              {onEdit ? (
+                <SheetRow label="Edit" onPress={onEdit}>
+                  <Pencil size={18} color={t.onSurface} strokeWidth={1.5} />
+                </SheetRow>
+              ) : null}
               <SheetRow label="Delete" danger onPress={onDelete}>
                 <Trash2 size={18} color={t.error} strokeWidth={1.5} />
               </SheetRow>
@@ -67,8 +84,8 @@ export function PostActionsSheet({
           >
             <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
           </Pressable>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </RNModal>
   )
 }
@@ -87,6 +104,7 @@ function SheetRow({
   const t = useTheme()
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14, minHeight: 48 }}

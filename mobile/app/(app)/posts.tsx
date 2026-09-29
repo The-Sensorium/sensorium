@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
+import { Newspaper } from 'lucide-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../src/auth-context'
 import { useClusterMembers, useMyClusters } from '../../src/features/matching'
@@ -53,10 +54,13 @@ export default function PostsFeedScreen() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const pull = usePullToRefresh([
     () => clusters.refetch(),
-    () => posts.refetch(),
-    () => members.refetch(),
-    () => likes.refetch(),
-    () => comments.refetch(),
+    // Never force-fetch the per-cluster queries while clusterless:
+    // refetch() on a disabled query runs its queryFn, which throws
+    // 'No cluster' and would surface as a feed error.
+    () => (clusterId ? posts.refetch() : Promise.resolve()),
+    () => (clusterId ? members.refetch() : Promise.resolve()),
+    () => (clusterId ? likes.refetch() : Promise.resolve()),
+    () => (clusterId ? comments.refetch() : Promise.resolve()),
     () => myMutes.refetch(),
   ])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
@@ -103,21 +107,28 @@ export default function PostsFeedScreen() {
   useEffect(() => {
     if (prevPostIdsKey.current === postIdsKey) return
     prevPostIdsKey.current = postIdsKey
+    if (!clusterId) return
     void refetchEngagement.current.likes()
     void refetchEngagement.current.comments()
-  }, [postIdsKey])
+  }, [postIdsKey, clusterId])
 
   const selected = (clusters.data ?? []).find((c) => c.cluster.id === selectedId)
   const hasMore =
     (posts.data?.length ?? 0) >= POSTS_PAGE_SIZE && loadEarlier.data?.hasMore !== false
   const inCluster = !clusters.isLoading && (clusters.data ?? []).length > 0
-  const feedLoading = clusters.isLoading || posts.isLoading || myMutes.isLoading || !selected
+  // Gate the per-cluster waits on membership: with no clusters selected is
+  // null forever, so including !selected unconditionally pins the skeleton.
+  const feedLoading = clusters.isLoading || (inCluster && (posts.isLoading || myMutes.isLoading || !selected))
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
       <FlatList
         data={inCluster && !posts.isLoading && !myMutes.isLoading ? sorted : []}
         keyExtractor={(post) => post.id}
+        windowSize={5}
+        initialNumToRender={6}
+        maxToRenderPerBatch={10}
+        removeClippedSubviews={false}
         renderItem={({ item: post }) => {
           const postMuted = isMutedAuthor(mutedSet, post.author_id)
           if (postMuted && !revealed.has(post.id)) {
@@ -171,7 +182,7 @@ export default function PostsFeedScreen() {
                       onPress={() => setSort(option)}
                       accessibilityRole="tab"
                       accessibilityState={{ selected: active }}
-                      hitSlop={4}
+                      hitSlop={8}
                       style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 10, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
                       <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', textTransform: 'capitalize', color: active ? t.primary : t.onSurfaceVariant }}>
@@ -191,7 +202,7 @@ export default function PostsFeedScreen() {
                     <Pressable
                       key={c.cluster.id}
                       onPress={() => setSelectedId(c.cluster.id)}
-                      hitSlop={4}
+                      hitSlop={8}
                       style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
                       <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>
@@ -208,23 +219,32 @@ export default function PostsFeedScreen() {
         ListEmptyComponent={
           feedLoading ? (
             <FeedSkeleton />
+          ) : clusters.isError ? (
+            <Card>
+              <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
+                Couldn’t load your clusters. Please try again.
+              </Text>
+            </Card>
+          ) : !inCluster ? (
+            <Card>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurfaceVariant }}>
+                You aren’t in a cluster yet. Join a matching mode to start sharing posts.
+              </Text>
+            </Card>
           ) : posts.isError || myMutes.isError ? (
             <Card>
               <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
                 Couldn’t load posts. Please try again.
               </Text>
             </Card>
-          ) : !inCluster ? (
-            <Card>
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurface }}>
-                You aren’t in a cluster yet. Join a matching mode to start sharing posts.
-              </Text>
-            </Card>
           ) : (
             <Card plain>
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', color: t.onSurface }}>
-                No posts in {selected?.cluster.name ?? 'this cluster'} yet. Share the first one.
-              </Text>
+              <View style={{ alignItems: 'center', padding: 16 }}>
+                <Newspaper size={28} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+                  No posts in {selected?.cluster.name ?? 'this cluster'} yet. Share the first one.
+                </Text>
+              </View>
             </Card>
           )
         }

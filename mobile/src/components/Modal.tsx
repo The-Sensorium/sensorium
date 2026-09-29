@@ -11,17 +11,28 @@ export function Modal({
   onClose,
   onShow,
   title,
+  bottomOffset = 16,
   children,
 }: {
   open: boolean
   onClose: () => void
   onShow?: () => void
   title: string
+  bottomOffset?: number
   children: ReactNode
 }) {
   const t = useTheme()
   return (
-    <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose} onShow={onShow}>
+    <RNModal
+      visible={open}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onShow={onShow}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      accessibilityViewIsModal
+    >
       {/* Backdrop and content are siblings: the backdrop Pressable closes on
           out-of-dialog taps only, while content taps never reach it. A nested
           Pressable would bubble content taps up to the backdrop close. */}
@@ -50,7 +61,7 @@ export function Modal({
             {/* Keyboard-aware scroll view from react-native-keyboard-controller:
                 scrolls the focused field above the keyboard on both platforms
                 via native contentInset (no layout thrash, no manual offsets). */}
-            <KeyboardAwareScrollView keyboardShouldPersistTaps="handled" bottomOffset={16}>
+            <KeyboardAwareScrollView keyboardShouldPersistTaps="handled" bottomOffset={bottomOffset}>
               {children}
             </KeyboardAwareScrollView>
           </SafeAreaView>

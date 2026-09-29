@@ -73,7 +73,12 @@ export function RaiseSignalModal({
             {error ? (
               <Text style={{ fontSize: 12, color: t.error }}>{error}</Text>
             ) : null}
-            <Pressable onPress={onClose} style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+            <Pressable
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel raising signal"
+              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}
+            >
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
                 Cancel
               </Text>

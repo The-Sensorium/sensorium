@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { requireSupabase } from '../../src/lib/supabase'
 import { getSignupEmail } from '../../src/lib/auth-storage'
@@ -14,7 +14,16 @@ export default function VerifyEmailScreen() {
   const t = useTheme()
   const [message, setMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
   const captcha = useCaptchaChallenge()
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setInterval(() => {
+      setCooldown((c) => Math.max(0, c - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [cooldown])
 
   async function doResend(captchaToken: string | null) {
     const email = await getSignupEmail()
@@ -36,6 +45,7 @@ export default function VerifyEmailScreen() {
       })
       if (error) throw error
       setMessage('We re-sent the confirmation email to your inbox.')
+      setCooldown(30)
     } catch {
       setMessage('Could not resend the email. Please try again.')
     } finally {
@@ -44,7 +54,7 @@ export default function VerifyEmailScreen() {
   }
 
   function resend() {
-    if (submitting) return
+    if (submitting || cooldown > 0) return
     if (!captcha.challengeUrl) {
       if (!captchaBypassAllowed()) {
         setMessage('Human verification is unavailable. Please update the app and try again.')
@@ -66,7 +76,13 @@ export default function VerifyEmailScreen() {
       title="Verify your email address"
       subtitle="We sent a confirmation link to your inbox. Tap it to activate your account, then sign in."
     >
-      <PrimaryButton title="Resend email" loadingTitle="Sending…" onPress={resend} loading={submitting} />
+      <PrimaryButton
+        title={cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend email'}
+        loadingTitle="Sending…"
+        onPress={resend}
+        loading={submitting}
+        disabled={cooldown > 0}
+      />
       {captcha.challengeUrl && captcha.sheetOpen ? (
         <CaptchaSheet
           key={captcha.sheetKey}
@@ -76,7 +92,11 @@ export default function VerifyEmailScreen() {
         />
       ) : null}
       {message ? (
-        <Text style={{ marginTop: 16, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}>
+        <Text
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          style={{ marginTop: 16, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}
+        >
           {message}
         </Text>
       ) : null}

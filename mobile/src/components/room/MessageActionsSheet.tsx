@@ -35,10 +35,23 @@ export function MessageActionsSheet({
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
   return (
-    <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
-        <Pressable
-          onPress={() => {}}
+    <RNModal
+      visible={open}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      accessibilityViewIsModal
+    >
+      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <Pressable
+        accessibilityLabel="Dismiss menu"
+        onPress={onClose}
+          style={{ position: 'absolute', start: 0, end: 0, top: 0, bottom: 0 }}
+      />
+        <View
+          accessibilityLabel="Message actions"
           style={{
             backgroundColor: t.surfaceLowest,
             borderTopLeftRadius: radii.xl,
@@ -124,8 +137,8 @@ export function MessageActionsSheet({
           >
             <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
           </Pressable>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </RNModal>
   )
 }
@@ -144,6 +157,7 @@ function SheetRow({
   const t = useTheme()
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14, minHeight: 48 }}

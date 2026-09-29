@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { requireSupabase } from '../../lib/supabase'
@@ -12,9 +12,19 @@ export function VerifyEmailPage() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [captchaFailed, setCaptchaFailed] = useState(false)
   const [widgetKey, setWidgetKey] = useState(0)
+  const [cooldown, setCooldown] = useState(0)
   const siteKey = turnstileSiteKey()
 
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const timer = setInterval(() => {
+      setCooldown((c) => Math.max(0, c - 1))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [cooldown])
+
   async function resend() {
+    if (submitting || cooldown > 0) return
     const email = sessionStorage.getItem('sensorium:signup-email')
     if (!email) {
       setMessage('We could not find your email. Please sign up again.')
@@ -34,6 +44,7 @@ export function VerifyEmailPage() {
       })
       if (error) throw error
       setMessage('We re-sent the confirmation email to your inbox.')
+      setCooldown(30)
     } catch {
       setMessage('Could not resend the email. Please try again.')
     } finally {
@@ -53,10 +64,10 @@ export function VerifyEmailPage() {
       <button
         type="button"
         onClick={resend}
-        disabled={submitting || Boolean(siteKey && !captchaToken)}
+        disabled={submitting || cooldown > 0 || Boolean(siteKey && !captchaToken)}
         className="mt-6 rounded-pill border border-outline-variant/60 px-6 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
       >
-        {submitting ? 'Sending…' : 'Resend email'}
+        {submitting ? 'Sending…' : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend email'}
       </button>
       <div className="mx-auto mt-4 max-w-xs text-left">
         <CaptchaSection

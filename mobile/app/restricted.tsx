@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link } from 'expo-router'
 import { goLogin } from '../src/lib/auth-navigation'
 import { AlertOctagon, LogOut, MailWarning, ShieldAlert } from 'lucide-react-native'
@@ -80,7 +81,7 @@ export default function RestrictedScreen() {
           >
             <ShieldAlert size={28} color={t.error} strokeWidth={1.5} />
           </View>
-          <Text style={{ marginTop: 16, fontSize: 22, fontWeight: '600', color: t.onSurface }}>
+          <Text accessibilityRole="header" style={{ marginTop: 16, fontSize: 22, fontWeight: '600', color: t.onSurface }}>
             {suspended ? 'Account suspended' : 'Account restricted'}
           </Text>
           <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, textAlign: 'center', color: t.onSurfaceVariant }}>
@@ -98,7 +99,7 @@ export default function RestrictedScreen() {
         <View style={{ marginTop: 24, gap: 12 }}>
           {error ? (
             <View style={{ backgroundColor: t.errorContainer, borderRadius: radii.md, padding: 12 }}>
-              <Text style={{ fontSize: 14, color: t.error }}>{error}</Text>
+              <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ fontSize: 14, color: t.error }}>{error}</Text>
             </View>
           ) : null}
 
@@ -117,8 +118,10 @@ export default function RestrictedScreen() {
                 onPress={() => void handleDelete()}
               />
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Keep my account"
                 onPress={() => setConfirming(false)}
-                style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center' }}
+                style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
               >
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
                   Keep my account
@@ -129,7 +132,9 @@ export default function RestrictedScreen() {
             <>
               <Link href="/appeal" asChild>
                 <Pressable
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 14 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={appealAvailable ? 'Review your appeal' : 'Appeal this decision'}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 14, minHeight: 48 }}
                 >
                   <MailWarning size={16} color={t.onPrimary} strokeWidth={1.5} />
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
@@ -139,8 +144,10 @@ export default function RestrictedScreen() {
               </Link>
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
                   onPress={() => void signOut()}
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 10 }}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44 }}
                 >
                   <LogOut size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
@@ -148,8 +155,10 @@ export default function RestrictedScreen() {
                   </Text>
                 </Pressable>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete my account"
                   onPress={() => setConfirming(true)}
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 10 }}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44 }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>
                     Delete my account

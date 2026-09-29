@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ActivityIndicator, Pressable, SafeAreaView, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { Link } from 'expo-router'
 import { Clock3, MailWarning } from 'lucide-react-native'
@@ -74,7 +75,7 @@ export default function AppealScreen() {
               <MailWarning size={24} color={t.primary} strokeWidth={1.5} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 22, fontWeight: '600', color: t.onSurface }}>
+              <Text accessibilityRole="header" style={{ fontSize: 22, fontWeight: '600', color: t.onSurface }}>
                 Appeal a decision
               </Text>
               <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
@@ -140,6 +141,8 @@ export default function AppealScreen() {
                 numberOfLines={6}
                 placeholder="Tell us what happened in your own words."
                 placeholderTextColor={t.onSurfaceVariant}
+                accessibilityLabel="Why should this be reconsidered"
+                returnKeyType="done"
                 style={{
                   marginTop: 8,
                   backgroundColor: t.surface,
@@ -161,12 +164,12 @@ export default function AppealScreen() {
 
               {error ? (
                 <View style={{ marginTop: 12, backgroundColor: t.errorContainer, borderRadius: radii.md, padding: 12 }}>
-                  <Text style={{ fontSize: 14, color: t.error }}>{error}</Text>
+                  <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" style={{ fontSize: 14, color: t.error }}>{error}</Text>
                 </View>
               ) : null}
               {success ? (
                 <View style={{ marginTop: 12, backgroundColor: t.surfaceContainer, borderRadius: radii.md, padding: 12 }}>
-                  <Text style={{ fontSize: 14, color: t.onSurface }}>{success}</Text>
+                  <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ fontSize: 14, color: t.onSurface }}>{success}</Text>
                 </View>
               ) : null}
 
@@ -174,6 +177,8 @@ export default function AppealScreen() {
                 <PrimaryButton
                   title="Submit appeal"
                   loading={submit.isPending}
+                  disabled={!details.trim()}
+                  quietDisabled
                   onPress={() => void handleSubmit()}
                 />
               </View>
@@ -187,8 +192,11 @@ export default function AppealScreen() {
         </View>
 
         <Link href="/restricted" asChild>
-          <Pressable style={{ marginTop: 24, alignItems: 'center', padding: 12 }}>
-            <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurfaceVariant }}>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel="Back to account status"
+            style={{ marginTop: 24, alignItems: 'center', padding: 12, minHeight: 44, justifyContent: 'center' }}
+          >            <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurfaceVariant }}>
               Back to account status
             </Text>
           </Pressable>

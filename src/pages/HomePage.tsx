@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, ArrowRight, Loader2, MailOpen, PartyPopper, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Loader2, MailOpen, Moon, PartyPopper, Sparkles, Sun } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useProfile } from '../lib/use-profile'
 import { useAuth } from '../app/auth-context'
@@ -33,7 +33,7 @@ import { toErrorMessage } from '../lib/error'
 
 const GET_STARTED_STEPS = [
   {
-    to: '/settings',
+    to: '/settings/profile',
     title: 'Set up your profile',
     desc: 'Add a photo, bio and status so your cluster knows who you are.',
   },
@@ -49,12 +49,12 @@ const GET_STARTED_STEPS = [
   },
 ] as const
 
-function daypartGreeting(): string {
+function daypart(): { label: string; Icon: typeof Sun } {
   const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'Good morning'
-  if (hour >= 12 && hour < 17) return 'Good afternoon'
-  if (hour >= 17 && hour < 23) return 'Good evening'
-  return 'Good night'
+  if (hour >= 5 && hour < 12) return { label: 'Good morning', Icon: Sun }
+  if (hour >= 12 && hour < 17) return { label: 'Good afternoon', Icon: Sun }
+  // Overnight stays "Good evening": "Good night" is a farewell, not a greeting.
+  return { label: 'Good evening', Icon: Moon }
 }
 
 export function HomePage() {
@@ -86,6 +86,7 @@ export function HomePage() {
   const confirmDecline = (invitations.data ?? []).find((i) => i.id === confirmDeclineId) ?? null
 
   const firstName = profile.data?.display_name?.split(' ')[0]
+  const { label: daypartLabel, Icon: DaypartIcon } = daypart()
   const inviteError =
     toErrorMessage(acceptInvite.error, '') ||
     toErrorMessage(declineInvite.error, '') ||
@@ -110,8 +111,9 @@ export function HomePage() {
         <h1 className="font-display text-3xl font-semibold text-on-surface">
           {firstName ? `Welcome, ${firstName}` : 'Home'}
         </h1>
-        <p className="mt-1 text-sm text-on-surface-variant">
-          {daypartGreeting()}
+        <p className="mt-1 flex items-center gap-1.5 text-sm text-on-surface-variant">
+          <DaypartIcon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+          {daypartLabel}
         </p>
       </header>
 

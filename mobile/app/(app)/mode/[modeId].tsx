@@ -33,7 +33,7 @@ export default function DiscoveryModeScreen() {
   if (!mode || !info) {
     return (
       <Screen>
-        <Text style={{ fontSize: 28, fontWeight: '600', color: t.onSurface }}>Clusters</Text>
+        <Text style={{ fontSize: 24, lineHeight: 30, fontWeight: '600', color: t.onSurface }}>Clusters</Text>
         <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
           That matching mode doesn’t exist.
         </Text>
@@ -74,7 +74,7 @@ export default function DiscoveryModeScreen() {
           </Text>
         </Pressable>
       </Link>
-      <Text style={{ marginTop: 4, fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+      <Text style={{ marginTop: 4, fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
         {info.label}
       </Text>
       <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 16 }}>

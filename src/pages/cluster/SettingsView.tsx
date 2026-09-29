@@ -5,6 +5,7 @@ import { CalendarDays, Compass, Loader2, LogOut, Tag, Users } from 'lucide-react
 import { useCluster } from '../../features/introductions'
 import { useClusterMembers } from '../../features/matching'
 import { useLeaveCluster } from '../../features/cluster'
+import { Modal } from '../../components/Modal'
 import { modeInfo, cooldownDaysForMode } from '../../lib/modes'
 import { CLUSTER_SIZE } from '../../lib/constants'
 import { toErrorMessage } from '../../lib/error'
@@ -32,10 +33,10 @@ export function SettingsView() {
     setLeaveError(null)
     try {
       await leave.mutateAsync(clusterId)
+      setConfirming(false)
       navigate('/home')
     } catch (err) {
       setLeaveError(toErrorMessage(err, 'Could not leave the cluster. Please try again.'))
-      setConfirming(false)
     }
   }
 
@@ -101,26 +102,7 @@ export function SettingsView() {
             </>
           )}
         </p>
-        {confirming ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void handleLeave()}
-              disabled={leave.isPending}
-              className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
-            >
-              {leave.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-              Confirm leave
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              className="min-h-[44px] rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
+        {confirming ? null : (
           <button
             type="button"
             onClick={() => setConfirming(true)}
@@ -130,10 +112,42 @@ export function SettingsView() {
             Leave cluster
           </button>
         )}
-        {leaveError && (
-          <p role="alert" className="mt-3 text-sm text-error">{leaveError}</p>
-        )}
       </div>
+      <Modal open={confirming} onClose={() => { if (!leave.isPending) setConfirming(false) }} title="Leave cluster?">
+        <p className="mt-4 text-sm leading-6 text-on-surface-variant">
+          {created ? (
+            <>Leaving frees your spot right away. There is no cooldown.</>
+          ) : (
+            <>
+              Leaving starts a {cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day
+              cooldown for this matching mode and triggers a replacement search so the cluster can stay
+              at 8.
+            </>
+          )}
+        </p>
+        {leaveError && (
+          <p role="alert" className="mt-4 text-sm text-error">{leaveError}</p>
+        )}
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            disabled={leave.isPending}
+            className="inline-flex min-h-[44px] items-center rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleLeave()}
+            disabled={leave.isPending}
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-pill bg-error px-5 py-3 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-60"
+          >
+            {leave.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+            Leave cluster
+          </button>
+        </div>
+      </Modal>
     </section>
   )
 }

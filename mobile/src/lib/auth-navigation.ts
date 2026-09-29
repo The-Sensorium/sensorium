@@ -6,7 +6,10 @@ import { router, type Href } from 'expo-router'
 // first keeps the back stack clean.
 export function resetTo(href: Href) {
   try {
-    if (router.canDismiss()) router.dismissAll()
+    // canDismiss can report true while the focused stack holds a single
+    // screen, where dismissAll logs an unhandled POP_TO_TOP warning. Only
+    // dismiss when there is actually something to pop.
+    if (router.canGoBack() && router.canDismiss()) router.dismissAll()
   } catch {
     // Dismiss is best effort; the replace below still moves the user.
   }

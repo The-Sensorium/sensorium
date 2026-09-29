@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller'
 import { useAuth } from '../auth-context'
 import { CommentItem } from './CommentItem'
@@ -12,6 +12,8 @@ import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../featur
 import { MutedHideBar, MutedPlaceholder } from './MutedPlaceholder'
 import { useTheme } from '../lib/use-theme'
 import type { ReplyTarget } from './comment-helpers'
+
+const VISIBLE_REPLIES = 3
 
 export function CommentThread({
   clusterId,
@@ -42,6 +44,15 @@ export function CommentThread({
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set())
+  function toggleThread(id: string) {
+    setExpandedThreads((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
   const [highlightId, setHighlightId] = useState<string | null>(deepLinkCommentId ?? null)
   const [deepLinkMissing, setDeepLinkMissing] = useState(false)
   const measureRaf = useRef<number | null>(null)
@@ -64,6 +75,29 @@ export function CommentThread({
       setHighlightId(deepLinkCommentId)
     }
   }, [deepLinkCommentId])
+
+  // A deep link into a collapsed reply must expand its thread first,
+  // otherwise the target view is never mounted and cannot be measured.
+  useEffect(() => {
+    if (!scrollTargetId) return
+    const byId = new Map(comments.map((c) => [c.id, c]))
+    const target = byId.get(scrollTargetId)
+    if (!target?.parent_comment_id) return
+    let root: PostComment | undefined = target
+    while (root?.parent_comment_id) {
+      const parent = byId.get(root.parent_comment_id)
+      if (!parent) return
+      root = parent
+    }
+    if (!root || root.parent_comment_id) return
+    const rootId = root.id
+    setExpandedThreads((prev) => {
+      if (prev.has(rootId)) return prev
+      const next = new Set(prev)
+      next.add(rootId)
+      return next
+    })
+  }, [scrollTargetId, comments])
 
   useEffect(() => {
     return () => {
@@ -150,7 +184,7 @@ export function CommentThread({
       if (measureRaf.current !== null) cancelAnimationFrame(measureRaf.current)
       if (retryTimer.current !== null) clearTimeout(retryTimer.current)
     }
-  }, [scrollTargetId, comments, scrollRef, contentRef, onDeepLinkHandled, mutedSet, revealed])
+  }, [scrollTargetId, comments, scrollRef, contentRef, onDeepLinkHandled, mutedSet, revealed, expandedThreads])
   const commentIds = comments.map((c) => c.id)
   const commentLikes = useClusterCommentLikes(clusterId)
   const toggleCommentLike = useToggleCommentLike(clusterId)
@@ -260,7 +294,6 @@ export function CommentThread({
                         onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                         likeCount={likesByComment.get(tc.id)?.count ?? 0}
                         likedByMe={likesByComment.get(tc.id)?.mine ?? false}
-                        replyCount={thread.length}
                         highlighted={highlightId === tc.id}
                         innerRef={scrollTargetId === tc.id ? targetRef : undefined}
                       />
@@ -268,7 +301,7 @@ export function CommentThread({
                   )}
                   {thread.length > 0 ? (
                     <View style={{ marginLeft: 44, paddingLeft: 16, borderLeftWidth: 1, borderLeftColor: t.outlineVariant, gap: 12 }}>
-                      {thread.map((r) => {
+                      {(expandedThreads.has(tc.id) ? thread : thread.slice(0, VISIBLE_REPLIES)).map((r) => {
                         const rMuted = isMutedAuthor(mutedSet, r.author_id)
                         if (rMuted && !revealed.has(r.id)) {
                           return (
@@ -307,6 +340,19 @@ export function CommentThread({
                           </View>
                         )
                       })}
+                      {thread.length > VISIBLE_REPLIES ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={expandedThreads.has(tc.id) ? 'Show fewer replies' : `View ${thread.length - VISIBLE_REPLIES} more replies`}
+                          onPress={() => toggleThread(tc.id)}
+                          hitSlop={8}
+                          style={{ alignSelf: 'flex-start', paddingVertical: 8, minHeight: 44, justifyContent: 'center' }}
+                        >
+                          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+                            {expandedThreads.has(tc.id) ? 'Show fewer' : `View ${thread.length - VISIBLE_REPLIES} more ${thread.length - VISIBLE_REPLIES === 1 ? 'reply' : 'replies'}`}
+                          </Text>
+                        </Pressable>
+                      ) : null}
                     </View>
                   ) : null}
                 </View>

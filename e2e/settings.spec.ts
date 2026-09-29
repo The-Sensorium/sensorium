@@ -31,18 +31,23 @@ test.describe('settings (seeded)', () => {
     await expect(page.getByRole('button', { name: 'Login' })).toBeVisible()
   })
 
-  test('renders the profile, status, preferences and account sections', async ({ page }) => {
+  test('renders the settings sections with profile on its own page', async ({ page }) => {
     await login(page)
     await page.goto('/settings')
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Profile' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Edit profile' })).toBeVisible()
     await expect(page.getByRole('region', { name: 'Notification preferences' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+
+    await page.goto('/settings/profile')
+    await expect(page.getByRole('heading', { name: 'Edit profile' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Profile' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Status' })).toBeVisible()
   })
 
   test('updates the display name and it persists after a reload', async ({ page }) => {
     await login(page)
-    await page.goto('/settings')
+    await page.goto('/settings/profile')
     const nameField = page.getByLabel('Display name')
     const original = (await nameField.inputValue()).trim() || 'You'
     const updated = `e2e ${Date.now()}`

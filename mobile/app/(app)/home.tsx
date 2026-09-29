@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, router, type Href } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, MailOpen, PartyPopper, Sparkles } from 'lucide-react-native'
+import { ArrowRight, MailOpen, Moon, PartyPopper, Sparkles, Sun } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
 import { useProfile } from '../../src/lib/use-profile'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
@@ -11,8 +11,8 @@ import { useClusterMembers, useMyClusters, useLatestClusterFormed } from '../../
 import { useCluster } from '../../src/features/introductions'
 import {
   useRecentClusterPosts,
-  usePostLikes,
-  usePostComments,
+  usePostLikesForPosts,
+  usePostCommentsForPosts,
   useTogglePostLike,
   type Post,
 } from '../../src/features/posts'
@@ -33,17 +33,17 @@ import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceh
 import { PostCard } from '../../src/components/PostCard'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
 
-function daypartGreeting(): string {
+function daypart(): { label: string; Icon: typeof Sun } {
   const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'Good morning'
-  if (hour >= 12 && hour < 17) return 'Good afternoon'
-  if (hour >= 17 && hour < 23) return 'Good evening'
-  return 'Good night'
+  if (hour >= 5 && hour < 12) return { label: 'Good morning', Icon: Sun }
+  if (hour >= 12 && hour < 17) return { label: 'Good afternoon', Icon: Sun }
+  // Overnight stays "Good evening": "Good night" is a farewell, not a greeting.
+  return { label: 'Good evening', Icon: Moon }
 }
 
 const GET_STARTED_STEPS: { to: Href; title: string; desc: string }[] = [
   {
-    to: '/(app)/settings',
+    to: '/(app)/settings/profile',
     title: 'Set up your profile',
     desc: 'Add a photo, bio and status so your cluster knows who you are.',
   },
@@ -130,6 +130,7 @@ export default function HomeScreen() {
   }
 
   const firstName = profile.data?.display_name?.split(' ')[0]
+  const { label: daypartLabel, Icon: DaypartIcon } = daypart()
   const inviteError =
     toErrorMessage(acceptInvite.error, '') || toErrorMessage(declineInvite.error, '') || null
   const loading = clusters.isLoading || invitations.isLoading
@@ -142,12 +143,15 @@ export default function HomeScreen() {
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
-      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+      <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
         {firstName ? `Welcome, ${firstName}` : 'Home'}
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 17, lineHeight: 22, color: t.onSurfaceVariant, marginBottom: 24 }}>
-        {daypartGreeting()}
-      </Text>
+      <View style={{ marginTop: 4, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <DaypartIcon size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+        <Text style={{ fontSize: 17, lineHeight: 22, color: t.onSurfaceVariant }}>
+          {daypartLabel}
+        </Text>
+      </View>
       <ErrorText message={pull.error} />
 
       <PushPermissionPrompt compact />
@@ -444,9 +448,34 @@ function RecentFromClusters({
   clusterNameById: Map<string, string>
 }) {
   const t = useTheme()
+  const auth = useAuth()
+  const selfId = auth.state === 'signedIn' ? auth.userId : null
   const recent = useRecentClusterPosts(clusterIds, 3)
   const myMutes = useMyMutes(clusterIds.length > 0)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
+  const recentPostIds = useMemo(
+    () => [...new Set((recent.data ?? []).map((p) => p.id))],
+    [recent.data],
+  )
+  const postLikes = usePostLikesForPosts(recentPostIds)
+  const postComments = usePostCommentsForPosts(recentPostIds)
+  const likesByPost = useMemo(() => {
+    const byPost = new Map<string, { count: number; mine: boolean }>()
+    for (const l of postLikes.data ?? []) {
+      const entry = byPost.get(l.post_id) ?? { count: 0, mine: false }
+      entry.count += 1
+      if (l.user_id === selfId) entry.mine = true
+      byPost.set(l.post_id, entry)
+    }
+    return byPost
+  }, [postLikes.data, selfId])
+  const commentsByPost = useMemo(() => {
+    const byPost = new Map<string, number>()
+    for (const c of postComments.data ?? []) {
+      byPost.set(c.post_id, (byPost.get(c.post_id) ?? 0) + 1)
+    }
+    return byPost
+  }, [postComments.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
@@ -492,6 +521,9 @@ function RecentFromClusters({
             muted={isMutedAuthor(mutedSet, post.author_id)}
             revealed={revealed.has(post.id)}
             onToggleMute={() => toggleReveal(post.id)}
+            likeCount={likesByPost.get(post.id)?.count ?? 0}
+            likedByMe={likesByPost.get(post.id)?.mine ?? false}
+            commentCount={commentsByPost.get(post.id) ?? 0}
           />
         ))
       )}
@@ -505,12 +537,18 @@ function RecentPostItem({
   muted,
   revealed,
   onToggleMute,
+  likeCount,
+  likedByMe,
+  commentCount,
 }: {
   post: Post
   clusterName: string | undefined
   muted: boolean
   revealed: boolean
   onToggleMute: () => void
+  likeCount: number
+  likedByMe: boolean
+  commentCount: number
 }) {
   const members = useClusterMembers(post.cluster_id)
 
@@ -536,6 +574,9 @@ function RecentPostItem({
         post={post}
         clusterName={clusterName}
         author={author}
+        likeCount={likeCount}
+        likedByMe={likedByMe}
+        commentCount={commentCount}
       />
     </View>
   )
@@ -545,15 +586,17 @@ function RecentPostEngagement({
   post,
   clusterName,
   author,
+  likeCount,
+  likedByMe,
+  commentCount,
 }: {
   post: Post
   clusterName: string | undefined
   author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  likeCount: number
+  likedByMe: boolean
+  commentCount: number
 }) {
-  const auth = useAuth()
-  const userId = auth.state === 'signedIn' ? auth.userId : null
-  const likes = usePostLikes(post.id)
-  const comments = usePostComments(post.cluster_id, post.id)
   const toggle = useTogglePostLike(post.cluster_id)
 
   return (
@@ -563,9 +606,9 @@ function RecentPostEngagement({
       clusterName={clusterName}
       compact
       author={author}
-      likeCount={(likes.data ?? []).length}
-      likedByMe={(likes.data ?? []).some((l) => l.user_id === userId)}
-      commentCount={comments.data?.length ?? 0}
+      likeCount={likeCount}
+      likedByMe={likedByMe}
+      commentCount={commentCount}
       onLike={(id) => void toggle.mutateAsync(id)}
     />
   )
