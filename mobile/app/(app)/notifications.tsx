@@ -4,7 +4,6 @@ import {
   AtSign,
   Bell,
   Flag,
-  Gavel,
   Heart,
   LockOpen,
   MailOpen,
@@ -14,11 +13,11 @@ import {
   MessageSquareWarning,
   MoreHorizontal,
   PartyPopper,
+  Scale,
   ShieldCheck,
   Trash2,
   UserPlus,
   Users,
-  Vote,
 } from 'lucide-react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -44,8 +43,8 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   message: MessageSquare,
   mention: AtSign,
   reaction: Heart,
-  vote_started: Vote,
-  vote_result: Gavel,
+  vote_started: Scale,
+  vote_result: Scale,
   cluster_formed: PartyPopper,
   invitation_received: MailOpen,
   signal_new: Megaphone,

@@ -34,9 +34,20 @@ function setup(overrides: Partial<Parameters<typeof VoteRow>[0]> = {}) {
 }
 
 describe('VoteRow', () => {
-  it('renders the vote title with its suggestion', () => {
+  it('renders the vote title without repeating its type', () => {
     setup()
-    expect(screen.getByText('Rename the cluster: Rename to "Beacon"')).toBeInTheDocument()
+    expect(screen.getByText('Rename to "Beacon"')).toBeInTheDocument()
+  })
+
+  it('shows the open status pill', () => {
+    setup()
+    expect(screen.getByText('Open')).toBeInTheDocument()
+  })
+
+  it('shows a closed pill without a countdown for closed votes', () => {
+    setup({ vote: { ...vote, status: 'closed' } })
+    expect(screen.getByText('Closed')).toBeInTheDocument()
+    expect(screen.queryByText(/Ends in/)).not.toBeInTheDocument()
   })
 
   it('links to the votes route', () => {

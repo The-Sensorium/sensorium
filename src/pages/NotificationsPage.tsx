@@ -4,7 +4,6 @@ import {
   AtSign,
   Bell,
   Flag,
-  Gavel,
   Heart,
   Loader2,
   LockOpen,
@@ -15,11 +14,11 @@ import {
   MessageSquareWarning,
   MoreHorizontal,
   PartyPopper,
+  Scale,
   ShieldCheck,
   Trash2,
   UserPlus,
   Users,
-  Vote,
 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { toErrorMessage } from '../lib/error'
@@ -40,8 +39,8 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   message: MessageSquare,
   mention: AtSign,
   reaction: Heart,
-  vote_started: Vote,
-  vote_result: Gavel,
+  vote_started: Scale,
+  vote_result: Scale,
   cluster_formed: PartyPopper,
   invitation_received: MailOpen,
   signal_new: Megaphone,

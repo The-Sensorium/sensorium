@@ -47,7 +47,7 @@ export function SignalRow({
               textClassName="text-[11px]"
             />
           ) : (
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-tertiary-container/25 text-tertiary">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-surface text-tertiary">
               <Megaphone className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
             </span>
           )}
@@ -56,10 +56,11 @@ export function SignalRow({
           <span className="block line-clamp-2 text-sm font-medium leading-5 text-on-surface">
             {signal.prompt}
           </span>
-          <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-on-surface-variant">
+          <span className="mt-1 block truncate text-xs text-on-surface-variant">
             {author?.display_name ?? 'Member'}
-            {isMine ? ' (you)' : ''} ·{' '}
-            {dateTimeFormatter.format(new Date(signal.created_at))} ·{' '}
+            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(signal.created_at))}
+          </span>
+          <span className="mt-0.5 block text-xs text-on-surface-variant">
             {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
           </span>
         </span>
