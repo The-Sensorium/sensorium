@@ -259,38 +259,36 @@ function SafetySection() {
       >
         My reports
       </Link>
-      <div className="mt-4">
-        {mutes.isLoading ? (
-          <p className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
-          </p>
-        ) : mutes.isError ? (
-          <p role="alert" className="rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
-            Couldn’t load your muted members. Please try again.
-          </p>
-        ) : muted.length === 0 ? (
-          <p className="rounded-xl bg-surface-container/50 px-4 py-3 text-sm text-on-surface-variant">
-            No muted members.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {muted.map((m) => (
-              <li key={m.muted_user_id} className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/60 px-4 py-2.5">
-                <span className="flex min-w-0 items-center gap-3">
-                  <Avatar
-                    name={m.display_name ?? 'Member'}
-                    src={m.avatar_url}
-                    className="h-8 w-8"
-                    textClassName="text-sm"
-                  />
-                  <span className="truncate text-sm text-on-surface">{m.display_name ?? 'Member'}</span>
-                </span>
-                <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {(mutes.isLoading || mutes.isError || muted.length > 0) && (
+        <div className="mt-4">
+          {mutes.isLoading ? (
+            <p className="flex items-center gap-2 text-sm text-on-surface-variant">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+            </p>
+          ) : mutes.isError ? (
+            <p role="alert" className="rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
+              Couldn’t load your muted members. Please try again.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {muted.map((m) => (
+                <li key={m.muted_user_id} className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/60 px-4 py-2.5">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Avatar
+                      name={m.display_name ?? 'Member'}
+                      src={m.avatar_url}
+                      className="h-8 w-8"
+                      textClassName="text-sm"
+                    />
+                    <span className="truncate text-sm text-on-surface">{m.display_name ?? 'Member'}</span>
+                  </span>
+                  <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </section>
   )
 }
