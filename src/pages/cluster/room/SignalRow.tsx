@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import type { ReactNode } from 'react'
-import { Megaphone } from 'lucide-react'
+import { ChevronRight, Megaphone } from 'lucide-react'
+import { cn } from '../../../lib/utils'
 import { DayDivider } from './DayDivider'
 import { dateTimeFormatter } from './format'
 import { Avatar } from '../../../components/Avatar'
@@ -35,9 +36,9 @@ export function SignalRow({
       {mutedBanner}
       <Link
         to={`/cluster/${clusterId}/signals/${signal.id}`}
-        className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-container px-3 py-2.5 transition-colors hover:border-outline/60"
+        className="my-1 flex items-center gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-container px-3 py-2.5 transition-colors hover:border-outline/60"
       >
-        <span className="mt-0.5 shrink-0">
+        <span className="shrink-0">
           {author?.avatar_url ? (
             <Avatar
               name={author?.display_name ?? 'Member'}
@@ -52,18 +53,21 @@ export function SignalRow({
           )}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block line-clamp-2 text-sm leading-5 text-on-surface">
+          <span className="block line-clamp-2 text-sm font-medium leading-5 text-on-surface">
             {signal.prompt}
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-on-surface-variant">
             {author?.display_name ?? 'Member'}
             {isMine ? ' (you)' : ''} ·{' '}
             {dateTimeFormatter.format(new Date(signal.created_at))} ·{' '}
-            <span className="font-medium text-on-surface-variant">
-              {SIGNAL_STATUS[signal.status].label}
-            </span>
-            <span>· {replyCount} replies</span>
+            {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
           </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          <span className={cn('rounded-pill px-2.5 py-0.5 text-xs font-medium', SIGNAL_STATUS[signal.status].className)}>
+            {SIGNAL_STATUS[signal.status].label}
+          </span>
+          <ChevronRight className="h-4 w-4 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
         </span>
       </Link>
     </li>

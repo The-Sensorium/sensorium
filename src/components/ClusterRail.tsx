@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router'
-import { Loader2, MessageCircle, MessageSquare, Scale } from 'lucide-react'
+import { Loader2, Megaphone, MessageSquare, Scale } from 'lucide-react'
 import { useClusterSignals, useSignalReplyCounts } from '../features/signals'
 import { useClusterVotes } from '../features/votes'
 import { CountdownTimer } from './CountdownTimer'
@@ -87,7 +87,7 @@ export function ClusterRail({
 
   return (
     <div className={cn('sticky space-y-4', stickyTop)}>
-      <RailCard title="Signals" icon={MessageCircle} count={activeSignals.length} to={`/cluster/${clusterId}/signals`}>
+      <RailCard title="Signals" icon={Megaphone} count={activeSignals.length} to={`/cluster/${clusterId}/signals`}>
         {signals.isLoading ? (
           <div className="flex items-center gap-2 text-sm text-on-surface-variant">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…

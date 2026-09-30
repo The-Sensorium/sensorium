@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { router, type Href } from 'expo-router'
-import { Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react-native'
+import { Megaphone, Menu, MessageSquare, Scale, Settings, Users } from 'lucide-react-native'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
@@ -10,7 +10,7 @@ export type ClusterSection = 'room' | 'members' | 'signals' | 'votes' | 'setting
 const SECTIONS: { key: ClusterSection; label: string; icon: typeof MessageSquare; href: (clusterId: string) => Href }[] = [
   { key: 'room', label: 'Room', icon: MessageSquare, href: (id) => ({ pathname: '/cluster/[clusterId]/room', params: { clusterId: id } }) },
   { key: 'members', label: 'Members', icon: Users, href: (id) => ({ pathname: '/cluster/[clusterId]/members', params: { clusterId: id } }) },
-  { key: 'signals', label: 'Signals', icon: MessageCircle, href: (id) => ({ pathname: '/cluster/[clusterId]/signals', params: { clusterId: id } }) },
+  { key: 'signals', label: 'Signals', icon: Megaphone, href: (id) => ({ pathname: '/cluster/[clusterId]/signals', params: { clusterId: id } }) },
   { key: 'votes', label: 'Votes', icon: Scale, href: (id) => ({ pathname: '/cluster/[clusterId]/votes', params: { clusterId: id } }) },
   { key: 'settings', label: 'Settings', icon: Settings, href: (id) => ({ pathname: '/cluster/[clusterId]/settings', params: { clusterId: id } }) },
 ]

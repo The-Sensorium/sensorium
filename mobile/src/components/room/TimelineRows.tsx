@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 import { Link } from 'expo-router'
-import { Megaphone, Scale } from 'lucide-react-native'
+import { ChevronRight, Megaphone, Scale } from 'lucide-react-native'
 import { DayDivider } from './DayDivider'
 import { dateTimeFormatter } from './format'
 import { Avatar } from '../Avatar'
@@ -43,6 +43,7 @@ export function SignalRow({
         style={{
           marginVertical: 4,
           flexDirection: 'row',
+          alignItems: 'center',
           gap: 10,
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.md,
@@ -50,7 +51,7 @@ export function SignalRow({
           paddingVertical: 10,
         }}
       >
-        <View style={{ marginTop: 2 }}>
+        <View>
           {author?.avatar_url ? (
             <Avatar name={author?.display_name ?? 'Member'} src={author.avatar_url} size={24} />
           ) : (
@@ -62,15 +63,21 @@ export function SignalRow({
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={2}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }} numberOfLines={2}>
             {signal.prompt}
           </Text>
           <Text style={{ marginTop: 4, fontSize: 12, color: t.onSurfaceVariant }}>
             {author?.display_name ?? 'Member'}
-            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(signal.created_at))} ·{' '}
-            <Text style={{ fontWeight: '600', color: t[SIGNAL_STATUS[signal.status].colorKey] }}>{SIGNAL_STATUS[signal.status].label}</Text>
-            {' '}· {replyCount} replies
+            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(signal.created_at))} · {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
           </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ backgroundColor: t.surface, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: '500', color: t[SIGNAL_STATUS[signal.status].colorKey] }}>
+              {SIGNAL_STATUS[signal.status].label}
+            </Text>
+          </View>
+          <ChevronRight size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
         </View>
       </Pressable>
       </Link>

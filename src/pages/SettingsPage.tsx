@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ChevronDown, ChevronRight, Loader2, LogOut, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { AlertTriangle, BellRing, Check, ChevronDown, ChevronRight, Loader2, LogOut, Monitor, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { useTheme, type ThemeMode } from '../lib/theme'
 import { useProfile } from '../lib/use-profile'
 import { toErrorMessage } from '../lib/error'
 import { useMyClusters } from '../features/matching'
@@ -54,6 +55,8 @@ export function SettingsPage() {
 
       <NotificationPreferences />
 
+      <AppearanceSection />
+
       <SafetySection />
 
       <section aria-label="Account" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
@@ -93,6 +96,50 @@ export function SettingsPage() {
     </div>
   )
 }
+
+function AppearanceSection() {
+  const { mode, setMode } = useTheme()
+  return (
+    <section aria-label="Appearance" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+      <div className="flex items-center gap-2">
+        <Sun className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+        <h2 className="font-display text-lg font-semibold text-on-surface">Appearance</h2>
+      </div>
+      <p className="mt-1 text-sm text-on-surface-variant">
+        Light, dark, or follow your system.
+      </p>
+      <div role="radiogroup" aria-label="Appearance" className="mt-4 space-y-1">
+        {appearanceOptions.map((opt) => {
+          const active = mode === opt.value
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              aria-label={opt.label}
+              onClick={() => setMode(opt.value)}
+              className={cn(
+                'flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                active ? 'bg-primary-container/15 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+              )}
+            >
+              <opt.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              <span className="min-w-0 flex-1 text-left font-semibold">{opt.label}</span>
+              {active && <Check className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />}
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+const appearanceOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'dark', label: 'Dark', icon: Moon },
+]
 
 function MfaRow() {
   const access = useMyAccess()
