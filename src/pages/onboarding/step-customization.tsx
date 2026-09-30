@@ -73,6 +73,8 @@ export function StepCustomization({ userId, draft, patch }: Props) {
             <img
               src={avatarSrc}
               alt="Your profile photo"
+              loading="lazy"
+              decoding="async"
               className="h-20 w-20 rounded-full object-cover ring-1 ring-outline-variant/70"
             />
           ) : (

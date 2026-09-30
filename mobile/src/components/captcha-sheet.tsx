@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Modal, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Linking from 'expo-linking'
@@ -24,6 +24,14 @@ export function CaptchaSheet({
   const [failed, setFailed] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const delivered = useRef(false)
+  const webviewRef = useRef<WebView>(null)
+
+  useEffect(() => {
+    const view = webviewRef.current
+    return () => {
+      view?.clearCache?.(true)
+    }
+  }, [reloadKey])
 
   let allowedOrigin: string | null = null
   try {
@@ -34,6 +42,14 @@ export function CaptchaSheet({
 
   function handleMessage(event: WebViewMessageEvent) {
     if (delivered.current) return
+    const messageOrigin = (() => {
+      try {
+        return new URL(event.nativeEvent.url).origin
+      } catch {
+        return null
+      }
+    })()
+    if (!allowedOrigin || messageOrigin !== allowedOrigin) return
     const token = parseChallengeToken(event.nativeEvent.data)
     if (token) {
       delivered.current = true
@@ -43,7 +59,7 @@ export function CaptchaSheet({
 
   function shouldStartLoad(event: { url: string }): boolean {
     if (allowedOrigin && isAllowedChallengeNavigation(event.url, allowedOrigin)) return true
-    if (!allowedOrigin) return true
+    if (!allowedOrigin) return false
     void Linking.openURL(event.url).catch(() => {})
     return false
   }
@@ -83,6 +99,7 @@ export function CaptchaSheet({
         <View style={{ flex: 1 }}>
           <WebView
             key={reloadKey}
+            ref={webviewRef}
             source={{ uri: challengeUrl }}
             onMessage={handleMessage}
             onShouldStartLoadWithRequest={shouldStartLoad}

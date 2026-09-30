@@ -121,6 +121,7 @@ export function PostMedia({  imageUrl,
           <img
             src={src}
             alt={alt ?? 'Shared media'}
+            decoding="async"
             onClick={(e) => e.stopPropagation()}
             className="max-h-[90dvh] max-w-full rounded-2xl object-contain shadow-lift"
           />

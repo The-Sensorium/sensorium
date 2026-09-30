@@ -100,6 +100,8 @@ export function InCallChat({
         ref={listRef}
         data={chatMessages}
         keyExtractor={(item) => item.id}
+        windowSize={5}
+        maxToRenderPerBatch={10}
         renderItem={({ item, index }) => {
           const prev = index > 0 ? chatMessages[index - 1] : undefined
           return <ChatRow item={item} showName={!prev || !isSameSender(prev, item)} />

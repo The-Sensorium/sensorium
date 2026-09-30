@@ -210,12 +210,12 @@ describe('posts', () => {
 
   it('usePostCountsForClusters merges counts across clusters', async () => {
     requireSupabaseMock.mockReturnValue({
-      rpc: vi.fn((fn: string, args: { p_cluster_id: string }) =>
+      rpc: vi.fn(() =>
         Promise.resolve({
-          data:
-            args.p_cluster_id === 'c1'
-              ? [{ post_id: 'p1', likes_count: 1, comments_count: 2 }]
-              : [{ post_id: 'p2', likes_count: 3, comments_count: 0 }],
+          data: [
+            { post_id: 'p1', likes_count: 1, comments_count: 2 },
+            { post_id: 'p2', likes_count: 3, comments_count: 0 },
+          ],
           error: null,
         }),
       ),
@@ -228,8 +228,7 @@ describe('posts', () => {
       ]),
     )
     const c = requireSupabaseMock.mock.results[0].value
-    expect(c.rpc).toHaveBeenCalledWith('get_post_counts', { p_cluster_id: 'c1' })
-    expect(c.rpc).toHaveBeenCalledWith('get_post_counts', { p_cluster_id: 'c2' })
+    expect(c.rpc).toHaveBeenCalledWith('get_post_counts_many', { p_cluster_ids: ['c1', 'c2'] })
   })
 
   it('usePostCountsForClusters dedupes clusters and stays idle when empty', async () => {

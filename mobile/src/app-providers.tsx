@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { AppState } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { supabase } from './lib/supabase'
+import { startSupabaseAutoRefresh, stopSupabaseAutoRefresh, supabase, teardownRealtime } from './lib/supabase'
 import { clearPushBadge, refreshPushToken, registerPushToken } from './lib/push'
 import { setupQueryFocusManager, setupQueryOnlineManager } from './lib/query-online'
 import { isPermanentQueryError } from './lib/query-retry'
@@ -53,6 +53,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
         void registerPushToken()
       } else {
         setAuth({ state: 'signedOut' })
+        void teardownRealtime()
         void clearPushBadge()
       }
     })
@@ -65,8 +66,18 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (auth.state !== 'signedIn') return
+    let lastRefresh = 0
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void refreshPushToken()
+      if (state === 'active') {
+        startSupabaseAutoRefresh()
+        const now = Date.now()
+        if (now - lastRefresh > 60_000) {
+          lastRefresh = now
+          void refreshPushToken()
+        }
+      } else {
+        stopSupabaseAutoRefresh()
+      }
     })
     return () => sub.remove()
   }, [auth])

@@ -238,10 +238,10 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           patchMessageInsert(queryClient, clusterId, payload.new as Message)
           // Plain chat writes no notification row and is excluded from the
           // badge; per-cluster unread lives in get_unread_chat_counts, so a
-          // new message must also bump the notification queries. Scoped here
+          // new message bumps only the unread-chat counts. Scoped here
           // on purpose: only viewers of this cluster (RLS + cluster_id
           // filter) refetch, instead of every client DB-wide.
-          void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+          void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-chat'] })
         },
       )
       .on(
@@ -588,7 +588,11 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           patchCallParticipants(queryClient, payload.old as { call_id: string; cluster_id: string })
         },
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('Cluster channel subscribe failed', clusterId, status, err)
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)

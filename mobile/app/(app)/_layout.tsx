@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { router, Tabs } from 'expo-router'
 import { Bell, Home, Newspaper, Settings, Users } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
-import { goLogin } from '../../src/lib/auth-navigation'
+import { goHome, goLogin } from '../../src/lib/auth-navigation'
 import { useNotificationsChannel, useUnreadCount } from '../../src/features/notifications'
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { useTheme } from '../../src/lib/use-theme'
@@ -11,11 +11,39 @@ import { pushClusterId } from '../../src/lib/push-suppress'
 import { badgeLabel } from '../../src/lib/tab-badge'
 import { pushDataToHref, type PushData } from '../../src/lib/notification-routing'
 
-function handlePushTap(data: PushData) {
-  const clusterId = pushClusterId(data)
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function sanitizePushData(data: PushData): PushData {
+  const out: PushData = {}
+  if (typeof data.kind === 'string' && data.kind.length <= 64) out.kind = data.kind
+  if (typeof data.clusterId === 'string' && UUID_RE.test(data.clusterId)) out.clusterId = data.clusterId
+  if (typeof data.postId === 'string' && UUID_RE.test(data.postId)) out.postId = data.postId
+  if (typeof data.commentId === 'string' && UUID_RE.test(data.commentId)) out.commentId = data.commentId
+  if (typeof data.messageId === 'string' && UUID_RE.test(data.messageId)) out.messageId = data.messageId
+  if (typeof data.signalId === 'string' && UUID_RE.test(data.signalId)) out.signalId = data.signalId
+  if (typeof data.newMemberId === 'string' && UUID_RE.test(data.newMemberId)) out.newMemberId = data.newMemberId
+  if (typeof data.v === 'number') out.v = data.v
+  return out
+}
+
+function handlePushTap(data: PushData, signedIn: boolean) {
+  if (!signedIn) {
+    goHome()
+    return
+  }
+  const clean = sanitizePushData(data)
+  const clusterId = pushClusterId(clean)
   if (clusterId) void clearClusterPushNotifications(clusterId)
-  const target = pushDataToHref(data)
-  if (target) router.push(target)
+  const target = pushDataToHref(clean)
+  if (!target) {
+    goHome()
+    return
+  }
+  try {
+    router.push(target)
+  } catch {
+    goHome()
+  }
 }
 
 export default function AppTabs() {
@@ -37,21 +65,22 @@ export default function AppTabs() {
     let disposed = false
     let unsubscribe: (() => void) | undefined
     void onPushResponse((data) => {
-      handlePushTap(data as PushData)
+      handlePushTap(data as PushData, auth.state === 'signedIn')
     }).then((fn) => {
       if (disposed) fn()
       else unsubscribe = fn
     })
     // A tap that cold-starts a terminated app is not delivered through the
-    // listener above; it must be read once at startup.
+    // listener above; it must be read once at startup. Wait for auth to leave
+    // loading so a signed-out tap falls back to home instead of a locked room.
     void getLaunchPushData().then((data) => {
-      if (!disposed && data) handlePushTap(data as PushData)
+      if (!disposed && data) handlePushTap(data as PushData, auth.state === 'signedIn')
     })
     return () => {
       disposed = true
       unsubscribe?.()
     }
-  }, [])
+  }, [auth.state])
   return (
     <Tabs
       // Hidden screens (room, post detail, profile…) are tab routes, not

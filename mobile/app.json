@@ -13,7 +13,9 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Camera is used for video during cluster calls.",
         "NSMicrophoneUsageDescription": "Microphone is used for audio during cluster calls.",
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       },
       "icon": {
         "light": "./assets/icon-light.png",
@@ -32,9 +34,7 @@
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "NOTIFICATIONS",
-        "ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
@@ -70,7 +70,8 @@
       "expo-web-browser",
       "@livekit/react-native-expo-plugin",
       "@config-plugins/react-native-webrtc",
-      "expo-image"
+      "expo-image",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

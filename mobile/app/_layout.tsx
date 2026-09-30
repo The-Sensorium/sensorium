@@ -25,6 +25,7 @@ void SplashScreen.preventAutoHideAsync()
 function useAuthDeepLinks() {
   useEffect(() => {
     async function consume(url: string) {
+      if (!/^sensorium:\/\//i.test(url) && !/^exp:\/\//i.test(url)) return
       try {
         const result = await handleAuthCallback(url)
         if (result === 'recovery') resetTo('/(auth)/reset-password')

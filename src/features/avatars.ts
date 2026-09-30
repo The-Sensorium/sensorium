@@ -1,8 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { requireSupabase } from '../lib/supabase'
 
-const AVATAR_TTL_SECONDS = 86400
+const AVATAR_TTL_SECONDS = 3600
 const AVATAR_STALE_MS = AVATAR_TTL_SECONDS * 1000 - 60_000 // refresh a minute before expiry
+
+const AVATAR_PATH_RE = /^(?:[A-Za-z0-9_.-]+\/)?[A-Za-z0-9_.-]+\.[a-z0-9]+$/
+
+function sanitizeAvatarPath(raw: string | null): string | null {
+  if (!raw) return null
+  if (raw.includes('..') || raw.includes('://')) return null
+  if (raw.split('/').length > 2) return null
+  if (!AVATAR_PATH_RE.test(raw)) return null
+  return raw
+}
 
 /** Extract the storage path from a stored avatar value (full URL or bare path). */
 export function avatarStoragePath(stored: string | null | undefined): string | null {
@@ -14,12 +24,12 @@ export function avatarStoragePath(stored: string | null | undefined): string | n
     // the real storage path (used verbatim by createSignedUrl) from them.
     const raw = stored.slice(idx + marker.length).split('?')[0].split('#')[0]
     try {
-      return decodeURIComponent(raw)
+      return sanitizeAvatarPath(decodeURIComponent(raw))
     } catch {
-      return raw
+      return sanitizeAvatarPath(raw)
     }
   }
-  return stored
+  return sanitizeAvatarPath(stored)
 }
 
 /** Delete an avatar object (owner scoped by the 0050 storage policy). */
@@ -48,6 +58,8 @@ export function useAvatarUrl(stored: string | null | undefined) {
       return data.signedUrl
     },
     staleTime: AVATAR_STALE_MS,
+    gcTime: AVATAR_TTL_SECONDS * 1000,
     refetchInterval: AVATAR_STALE_MS,
+    refetchIntervalInBackground: false,
   })
 }

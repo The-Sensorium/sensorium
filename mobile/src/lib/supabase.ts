@@ -1,8 +1,7 @@
 import 'react-native-url-polyfill/auto'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { AppState } from 'react-native'
 import type { Database } from './database.types'
+import { SecureStorageAdapter } from './secure-storage'
 
 export type { Database }
 export type MatchingMode = Database['public']['Enums']['matching_mode']
@@ -12,10 +11,11 @@ const anonKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
 function createSupabaseClient(url: string, anonKey: string) {
   if (!url.startsWith('http://') && !url.startsWith('https://')) return null
+  if (!anonKey || anonKey.length < 20) return null
   try {
     return createClient<Database>(url, anonKey, {
       auth: {
-        storage: AsyncStorage,
+        storage: SecureStorageAdapter,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
@@ -29,11 +29,20 @@ function createSupabaseClient(url: string, anonKey: string) {
 export const supabase: SupabaseClient<Database> | null =
   url && anonKey ? createSupabaseClient(url, anonKey) : null
 
-AppState.addEventListener('change', (state) => {
+export function startSupabaseAutoRefresh() {
   if (!supabase) return
-  if (state === 'active') void supabase.auth.startAutoRefresh()
-  else void supabase.auth.stopAutoRefresh()
-})
+  void supabase.auth.startAutoRefresh()
+}
+
+export function stopSupabaseAutoRefresh() {
+  if (!supabase) return
+  void supabase.auth.stopAutoRefresh()
+}
+
+export async function teardownRealtime() {
+  if (!supabase) return
+  await supabase.removeAllChannels().catch(() => undefined)
+}
 
 export function requireSupabase(): SupabaseClient<Database> {
   if (!supabase) {

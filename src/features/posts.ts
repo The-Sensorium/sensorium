@@ -185,6 +185,7 @@ export function useClusterPostLikes(clusterId: string | null) {
   return useQuery({
     queryKey: ['post-likes', clusterId ?? 'none'],
     enabled: clusterId !== null,
+    staleTime: 30_000,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
@@ -192,6 +193,7 @@ export function useClusterPostLikes(clusterId: string | null) {
         .from('post_likes')
         .select('post_id,user_id')
         .eq('cluster_id', clusterId)
+        .limit(2000)
       if (error) throw error
       return (data ?? []) as PostLike[]
     },
@@ -244,6 +246,7 @@ export function useClusterCommentLikes(clusterId: string | null) {
   return useQuery({
     queryKey: ['comment-likes', clusterId ?? 'none'],
     enabled: clusterId !== null,
+    staleTime: 30_000,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
@@ -251,6 +254,7 @@ export function useClusterCommentLikes(clusterId: string | null) {
         .from('comment_likes')
         .select('comment_id,user_id')
         .eq('cluster_id', clusterId)
+        .limit(2000)
       if (error) throw error
       return (data ?? []) as CommentLike[]
     },
@@ -298,6 +302,7 @@ export function useToggleCommentLike(clusterId: string | null) {
 export function useClusterPostComments(clusterId: string | null) {  return useQuery({
     queryKey: ['post-comments', clusterId ?? 'none', 'all'],
     enabled: clusterId !== null,
+    staleTime: 30_000,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
@@ -307,6 +312,7 @@ export function useClusterPostComments(clusterId: string | null) {  return useQu
         .eq('cluster_id', clusterId)
         .order('created_at', { ascending: true })
         .order('id', { ascending: true })
+        .limit(1000)
       if (error) throw error
       return ((data ?? []) as PostComment[]).sort(byOldest)
     },
@@ -362,27 +368,20 @@ export function usePostComments(clusterId: string | null, postId: string | null)
 export type PostCount = { post_id: string; likes_count: number; comments_count: number }
 
 /** Per-post engagement counts across several clusters. Profile pages list posts
- * from every visible cluster while usePostCounts covers one, so a single-cluster
- * lookup silently renders zeros for posts from other clusters. One
- * get_post_counts RPC per distinct cluster (fanned out in parallel), merged by
- * post_id. */
+ * from every visible cluster while usePostCounts covers one. One batch RPC
+ * for all distinct clusters, merged by post_id. */
 export function usePostCountsForClusters(clusterIds: string[]) {
   const ids = [...new Set(clusterIds.filter(Boolean))].sort()
   const key = ids.join(',')
   return useQuery({
     queryKey: ['post-counts', 'many', key],
     enabled: ids.length > 0,
+    staleTime: 30_000,
     queryFn: async () => {
       const supabase = requireSupabase()
-      const pages = await Promise.all(
-        ids.map((id) => supabase.rpc('get_post_counts', { p_cluster_id: id })),
-      )
-      const merged = new Map<string, PostCount>()
-      for (const { data, error } of pages) {
-        if (error) throw error
-        for (const row of (data ?? []) as PostCount[]) merged.set(row.post_id, row)
-      }
-      return [...merged.values()]
+      const { data, error } = await supabase.rpc('get_post_counts_many', { p_cluster_ids: ids })
+      if (error) throw error
+      return (data ?? []) as PostCount[]
     },
   })
 }
@@ -394,6 +393,7 @@ export function usePostCounts(clusterId: string | null, enabled = true) {
   return useQuery({
     queryKey: ['post-counts', clusterId ?? 'none'],
     enabled: enabled && clusterId !== null,
+    staleTime: 30_000,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
@@ -768,18 +768,26 @@ const POST_IMAGE_STALE_MS = POST_IMAGE_TTL_SECONDS * 1000 - 60_000
 /** Recover the storage path of a post image from a stored value (URL or bare path). */
 export function postImageStoragePath(stored: string | null | undefined): string | null {
   if (!stored) return null
-  if (!stored.includes('/')) return stored
+  if (stored.includes('..')) return null
+  const pathRe = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\.[a-z0-9]+$/
+  const sanitize = (raw: string | null): string | null => {
+    if (!raw) return null
+    if (raw.includes('..')) return null
+    if (!pathRe.test(raw)) return null
+    return raw
+  }
+  if (!stored.includes('/')) return sanitize(stored)
   const marker = '/posts-images/'
   const idx = stored.indexOf(marker)
   if (idx !== -1) {
     const raw = stored.slice(idx + marker.length).split('?')[0].split('#')[0]
     try {
-      return decodeURIComponent(raw)
+      return sanitize(decodeURIComponent(raw))
     } catch {
-      return raw
+      return sanitize(raw)
     }
   }
-  return stored
+  return sanitize(stored)
 }
 
 /** Delete a post-image object (member scoped by the 0075 storage policy). */
@@ -807,7 +815,9 @@ export function usePostImageUrl(path: string | null) {
       return data.signedUrl
     },
     staleTime: POST_IMAGE_STALE_MS,
+    gcTime: POST_IMAGE_TTL_SECONDS * 1000,
     refetchInterval: POST_IMAGE_STALE_MS,
+    refetchIntervalInBackground: false,
   })
 }
 

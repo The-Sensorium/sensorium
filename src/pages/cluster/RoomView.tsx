@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, Loader2 } from 'lucide-react'
@@ -46,7 +46,7 @@ import { notSeenByMembers, seenByMembers } from './room/seen-by'
 import { RaiseSignalModal } from './room/RaiseSignalModal'
 import { TypingBubble } from './room/TypingBubble'
 import { CallBanner } from './room/CallBanner'
-import { CallOverlay } from './room/CallOverlay'
+const CallOverlay = lazy(() => import('./room/CallOverlay').then((m) => ({ default: m.CallOverlay })))
 import { PreJoinDialog } from './room/PreJoinDialog'
 import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
 import { Modal } from '../../components/Modal'
@@ -1218,14 +1218,16 @@ export function RoomView() {
       </Modal>
 
       {inCall && activeCall.data && (
-        <CallOverlay
-          callId={activeCall.data.id}
-          micOnJoin={micOnJoin}
-          videoOnJoin={cameraOnJoin}
-          startedAt={activeCall.data.created_at}
-          expiresAt={activeCall.data.expires_at}
-          onHangUp={() => void handleHangUp(activeCall.data!.id)}
-        />
+        <Suspense fallback={null}>
+          <CallOverlay
+            callId={activeCall.data.id}
+            micOnJoin={micOnJoin}
+            videoOnJoin={cameraOnJoin}
+            startedAt={activeCall.data.created_at}
+            expiresAt={activeCall.data.expires_at}
+            onHangUp={() => void handleHangUp(activeCall.data!.id)}
+          />
+        </Suspense>
       )}
     </section>
   )

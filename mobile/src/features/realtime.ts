@@ -325,14 +325,24 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       })
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'message_reactions' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reactions',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchReaction(queryClient, payload.new as Reaction, 'insert')
         },
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'message_reactions' },
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'message_reactions',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchReaction(queryClient, payload.old as Reaction, 'delete')
         },
@@ -370,7 +380,12 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'signal_replies' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'signal_replies',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchSignalReply(queryClient, payload.new as SignalReply)
         },
@@ -491,12 +506,30 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           )
         },
       )
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_likes' }, (payload) => {
-        void patchPostLike(queryClient, payload.new as PostLikeRealtime, 'insert')
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_likes' }, (payload) => {
-        void patchPostLike(queryClient, payload.old as PostLikeRealtime, 'delete')
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'post_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          void patchPostLike(queryClient, payload.new as PostLikeRealtime, 'insert')
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'post_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          void patchPostLike(queryClient, payload.old as PostLikeRealtime, 'delete')
+        },
+      )
       .on(
         'postgres_changes',
         {
@@ -514,21 +547,36 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'post_comments' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'post_comments',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchPostComment(queryClient, payload.new as PostCommentRealtime)
         },
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'comment_likes' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'comment_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchCommentLike(queryClient, payload.new as CommentLikeRealtime, 'insert')
         },
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'comment_likes' },
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'comment_likes',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchCommentLike(queryClient, payload.old as CommentLikeRealtime, 'delete')
         },
@@ -559,26 +607,45 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'call_participants' },
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'call_participants',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchCallParticipants(queryClient, payload.new as { call_id: string })
         },
       )
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'call_participants' },
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'call_participants',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchCallParticipants(queryClient, payload.new as { call_id: string })
         },
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'call_participants' },
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'call_participants',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
         (payload) => {
           void patchCallParticipants(queryClient, payload.old as { call_id: string })
         },
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('Cluster channel subscribe failed', clusterId, status, err)
+        }
+      })
 
     entry.teardown = () => supabase.removeChannel(channel)
 

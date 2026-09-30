@@ -36,6 +36,7 @@ export function ImagePreviewDialog({
       <img
         src={src}
         alt={alt}
+        decoding="async"
         onClick={(e) => e.stopPropagation()}
         className="max-h-[90dvh] max-w-full rounded-2xl object-contain shadow-lift"
       />

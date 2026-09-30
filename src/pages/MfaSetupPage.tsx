@@ -173,7 +173,7 @@ export function MfaSetupPage() {
             ) : (
               <div className="space-y-4">
                 {enrollment.qrCode.startsWith('data:') && (
-                  <img src={enrollment.qrCode} alt="Authenticator QR code" className="mx-auto h-48 w-48" />
+                  <img src={enrollment.qrCode} alt="Authenticator QR code" decoding="async" className="mx-auto h-48 w-48" />
                 )}
                 <p className="text-sm leading-6 text-on-surface-variant">
                   Scan the code with your authenticator app, or enter this secret manually:

@@ -114,15 +114,17 @@ export function OnboardingPage() {
         )
       if (updateError) throw updateError
 
-      // 2. join each selected mode queue
-      const failed: string[] = []
-      for (const mode of draft.selectedModes) {
-        const { error: joinError } = await supabase.rpc('join_queue', {
-          p_mode: mode,
-          p_radius_km: draft.radiusKm ?? undefined,
-        })
-        if (joinError) failed.push(`${modeInfo(mode).label}: ${joinQueueErrorMessage(joinError, mode)}`)
-      }
+      // 2. join each selected mode queue (parallel; collect per-mode failures)
+      const joined = await Promise.all(
+        draft.selectedModes.map(async (mode) => {
+          const { error: joinError } = await supabase.rpc('join_queue', {
+            p_mode: mode,
+            p_radius_km: draft.radiusKm ?? undefined,
+          })
+          return joinError ? `${modeInfo(mode).label}: ${joinQueueErrorMessage(joinError, mode)}` : null
+        }),
+      )
+      const failed = joined.filter((m): m is string => m !== null)
 
       if (failed.length > 0) {
         setError(`Some queues couldn’t be joined yet: ${failed.join(' ')}`)

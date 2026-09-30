@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router'
 import { Loader2, MessageCircle, MessageSquare, Scale } from 'lucide-react'
 import { useClusterSignals, useSignalReplyCounts } from '../features/signals'
@@ -64,15 +65,25 @@ export function ClusterRail({
   const replyCounts = useSignalReplyCounts(clusterId)
   const votes = useClusterVotes(clusterId)
 
-  const replyCount = new Map<string, number>()
-  for (const r of replyCounts.data ?? []) {
-    replyCount.set(r.signal_id, r.reply_count)
-  }
+  const replyCount = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of replyCounts.data ?? []) {
+      map.set(r.signal_id, r.reply_count)
+    }
+    return map
+  }, [replyCounts.data])
 
-  const activeSignals = (signals.data ?? []).filter((s) => s.status !== 'resolved').slice(0, 3)
-  const openVotes = (votes.data ?? [])
-    .filter((v) => v.status === 'open' && v.type !== 'select_candidate')
-    .slice(0, 3)
+  const activeSignals = useMemo(
+    () => (signals.data ?? []).filter((s) => s.status !== 'resolved').slice(0, 3),
+    [signals.data],
+  )
+  const openVotes = useMemo(
+    () =>
+      (votes.data ?? [])
+        .filter((v) => v.status === 'open' && v.type !== 'select_candidate')
+        .slice(0, 3),
+    [votes.data],
+  )
 
   return (
     <div className={cn('sticky space-y-4', stickyTop)}>
