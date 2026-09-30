@@ -117,8 +117,10 @@ for building an installable APK without EAS.
 - OAuth and password-recovery redirects come back to the app's `sensorium://`
   deep link and are completed in `app/_layout.tsx` (`useAuthDeepLinks` +
   `Linking` listener, via `src/lib/google-auth.ts` `handleAuthCallback`).
-  `app/auth/callback.tsx` is only a redirect home. URL handling lives in
-  [`src/lib/deep-links.ts`](src/lib/deep-links.ts).
+  `app/auth/callback.tsx` replays the same handler as a cold-start backstop.
+  URL handling lives in [`src/lib/deep-links.ts`](src/lib/deep-links.ts).
+  Both PKCE (`code`, `token_hash`) and implicit hash (`access_token`) links
+  are accepted: supabase-js still defaults to the implicit flow.
 - The URL scheme (`sensorium`) and app id (`online.thesensorium.app`) are declared
   in [`app.json`](app.json). The Google provider must allow the mobile redirect in
   the Supabase dashboard.
