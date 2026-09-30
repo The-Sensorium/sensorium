@@ -8,6 +8,9 @@ export function authRedirect(path: string): string {
 }
 
 const consumedCodes = new Set<string>()
+const MAX_CONSUMED_CODES = 50
+
+const ALLOWED_OTP_TYPES = new Set(['signup', 'recovery', 'email_change', 'invite', 'magiclink'])
 
 function first(value: unknown): string | null {
   if (typeof value === 'string' && value) return value
@@ -37,6 +40,10 @@ export async function handleAuthCallback(url: string): Promise<AuthCallback | nu
   if (code) {
     if (consumedCodes.has(code)) return first(params.type) === 'recovery' ? 'recovery' : 'session'
     consumedCodes.add(code)
+    if (consumedCodes.size > MAX_CONSUMED_CODES) {
+      const oldest = consumedCodes.values().next().value
+      if (oldest) consumedCodes.delete(oldest)
+    }
     try {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) throw error
@@ -48,21 +55,20 @@ export async function handleAuthCallback(url: string): Promise<AuthCallback | nu
   }
 
   if (tokenHash && type) {
+    if (!ALLOWED_OTP_TYPES.has(type)) {
+      throw new Error('Unsupported link type.')
+    }
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type: type as 'signup',
+      type: type as 'signup' | 'recovery' | 'email_change' | 'invite' | 'magiclink',
     })
     if (error) throw error
     return type === 'recovery' ? 'recovery' : 'session'
   }
 
-  if (hash && pairs?.access_token && pairs?.refresh_token) {
-    const { error } = await supabase.auth.setSession({
-      access_token: pairs.access_token,
-      refresh_token: pairs.refresh_token,
-    })
-    if (error) throw error
-    return pairs.type === 'recovery' ? 'recovery' : 'session'
+  if (hasHashSession) {
+    console.warn('Deprecated implicit hash session link ignored. Use PKCE code links.')
+    return null
   }
 
   return null

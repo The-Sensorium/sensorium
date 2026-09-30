@@ -205,9 +205,12 @@ function SignOutConfirmModal({ open, onClose }: { open: boolean; onClose: () => 
     try {
       const supabase = requireSupabase()
       const { unregisterPushToken } = await import('../../src/lib/push')
+      const { teardownRealtime } = await import('../../src/lib/supabase')
       await unregisterPushToken()
       await supabase.auth.signOut()
+      await teardownRealtime()
       queryClient.clear()
+      onClose()
       goLogin()
     } catch {
       setError('Could not sign out. Please try again.')

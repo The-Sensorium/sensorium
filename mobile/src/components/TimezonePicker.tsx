@@ -64,6 +64,9 @@ export function TimezonePicker({
             data={filtered}
             keyExtractor={(z) => z}
             keyboardShouldPersistTaps="handled"
+            initialNumToRender={20}
+            maxToRenderPerBatch={20}
+            windowSize={7}
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => {

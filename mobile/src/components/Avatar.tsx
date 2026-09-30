@@ -14,6 +14,7 @@ export function Avatar({ name, src, size = 28 }: { name: string; src?: string | 
         style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: t.surfaceContainer }}
         contentFit="cover"
         cachePolicy="memory-disk"
+        recyclingKey={resolved}
         transition={200}
       />
     )

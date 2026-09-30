@@ -169,7 +169,9 @@ export function useMyPendingInvitations(enabled = true) {
   return useQuery({
     queryKey: ['my-invitations', userId ?? 'signed-out'],
     enabled: enabled && userId !== null,
+    staleTime: 30_000,
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_pending_invitations')

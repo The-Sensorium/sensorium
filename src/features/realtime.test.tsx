@@ -95,7 +95,7 @@ describe('useClusterChannel', () => {
     act(() => {
       handler?.({ new: { id: 'm2', created_at: '2026-01-02T00:00:00Z' } } as never)
     })
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread-chat'] })
   })
 
   it('refetches instead of dropping when the message cache is empty', () => {
@@ -107,7 +107,7 @@ describe('useClusterChannel', () => {
       handler?.({ new: { id: 'm9', created_at: '2026-01-02T00:00:00Z' } } as never)
     })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-messages', 'c1'] })
-    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['notifications', 'unread-chat'] })
     expect(queryClient.getQueryData(['cluster-messages', 'c1'])).toBeUndefined()
   })
 

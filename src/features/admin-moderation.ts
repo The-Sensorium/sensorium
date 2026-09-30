@@ -237,7 +237,9 @@ export function useAdminOpsHealth(enabled = true) {
   return useQuery({
     queryKey: ['moderation', 'ops-health'],
     enabled,
+    staleTime: 60_000,
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('get_admin_ops_health')

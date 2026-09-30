@@ -2,19 +2,16 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import { ArrowLeft, Clock, ImageMinus, ImagePlus, Save, UserRound } from 'lucide-react-native'
 import { useProfile } from '../../../src/lib/use-profile'
-import { requireSupabase } from '../../../src/lib/supabase'
 import { toErrorMessage } from '../../../src/lib/error'
 import { useUpdateProfile } from '../../../src/features/cluster'
-import { deleteAvatarObject } from '../../../src/features/avatars'
+import { deleteAvatarObject, uploadAvatar } from '../../../src/features/avatars'
 import { Avatar } from '../../../src/components/Avatar'
 import { Modal } from '../../../src/components/Modal'
 import { PronounField } from '../../../src/components/PronounField'
 import { TimezonePicker } from '../../../src/components/TimezonePicker'
 import { Field, PrimaryButton } from '../../../src/components/ui'
-import { readImageBytes } from '../../../src/lib/upload-image'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, Screen } from '../../../src/components/ui'
@@ -56,29 +53,10 @@ export default function EditProfileScreen() {
     }
     setAvatarUploading(true)
     try {
-      const supabase = requireSupabase()
-      const userId = profile.data?.id ?? 'me'
-      let uri = asset.uri
-      let outMime = mime
-      const maxDim = Math.max(asset.width ?? 0, asset.height ?? 0)
-      if (mime !== 'image/gif' && maxDim > 512) {
-        const out = await manipulateAsync(uri, [{ resize: { width: 512 } }], {
-          compress: 0.85,
-          format: SaveFormat.WEBP,
-        })
-        uri = out.uri
-        outMime = 'image/webp'
-      }
-      const ext = outMime === 'image/png' ? 'png' : outMime === 'image/gif' ? 'gif' : outMime === 'image/jpeg' ? 'jpg' : 'webp'
-      const path = `${userId}/${Date.now()}.${ext}`
-      const body = await readImageBytes(uri)
-      const { data, error } = await supabase.storage.from('avatars').upload(path, body, {
-        cacheControl: '31536000',
-        upsert: false,
-        contentType: outMime,
-      })
-      if (error) throw error
-      await updateProfile.mutateAsync({ avatar_url: data.path })
+      const userId = profile.data?.id
+      if (!userId) throw new Error('Profile not loaded yet.')
+      const path = await uploadAvatar(userId, asset.uri, mime, asset.width ?? 0, asset.height ?? 0)
+      await updateProfile.mutateAsync({ avatar_url: path })
       await deleteAvatarObject(profile.data?.avatar_url ?? null).catch(() => {})
     } catch (err) {
       setAvatarError(toErrorMessage(err, 'Couldn’t upload your photo.'))

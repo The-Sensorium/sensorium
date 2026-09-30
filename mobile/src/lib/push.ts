@@ -1,7 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 import { shouldSuppressPushBanner, getSuppressedPushCluster } from './push-suppress'
 import { supabase } from './supabase'
+
+const LAST_PUSH_TOKEN_KEY = 'sensorium:last-push-token'
 
 const projectId =
   Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId
@@ -37,14 +40,17 @@ async function notifications(): Promise<NotificationsModule | null> {
     if (Platform.OS === 'android') {
       const importance = mod.AndroidImportance?.HIGH ?? 4
       const def = mod.AndroidImportance?.DEFAULT ?? 3
-      await Promise.all([
+      const privateVisibility = mod.AndroidNotificationVisibility?.PRIVATE ?? 0
+      const publicVisibility = mod.AndroidNotificationVisibility?.PUBLIC ?? 1
+      cached = mod
+      void Promise.all([
         mod.setNotificationChannelAsync('messages', {
           name: 'Messages',
           description: 'New messages in your clusters',
           importance: def,
           sound: 'default',
           vibrationPattern: [0, 250, 250, 250],
-          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+          lockscreenVisibility: privateVisibility,
         }),
         mod.setNotificationChannelAsync('mentions', {
           name: 'Mentions',
@@ -52,7 +58,7 @@ async function notifications(): Promise<NotificationsModule | null> {
           importance,
           sound: 'default',
           vibrationPattern: [0, 250, 250, 250],
-          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+          lockscreenVisibility: privateVisibility,
         }),
         mod.setNotificationChannelAsync('invites', {
           name: 'Invites',
@@ -60,7 +66,7 @@ async function notifications(): Promise<NotificationsModule | null> {
           importance,
           sound: 'default',
           vibrationPattern: [0, 250, 250, 250],
-          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+          lockscreenVisibility: publicVisibility,
         }),
         mod.setNotificationChannelAsync('governance', {
           name: 'Governance',
@@ -68,9 +74,10 @@ async function notifications(): Promise<NotificationsModule | null> {
           importance: def,
           sound: 'default',
           vibrationPattern: [0, 250, 250, 250],
-          lockscreenVisibility: mod.AndroidNotificationVisibility?.PUBLIC ?? 1,
+          lockscreenVisibility: publicVisibility,
         }),
       ]).catch(() => undefined)
+      return cached
     }
     cached = mod
   } catch {
@@ -103,8 +110,12 @@ export async function registerPushToken(): Promise<PushPermissionStatus> {
     const token = (await mod.getExpoPushTokenAsync({ projectId })).data
     const { error } = await supabase.rpc('register_push_token', { p_expo_push_token: token })
     if (error) {
-      await supabase.rpc('register_push_token', { p_expo_push_token: token })
+      try {
+        await supabase.rpc('register_push_token', { p_expo_push_token: token })
+      } catch {
+      }
     }
+    await AsyncStorage.setItem(LAST_PUSH_TOKEN_KEY, token).catch(() => undefined)
     return 'granted'
   } catch {
     return 'undetermined'
@@ -124,8 +135,12 @@ export async function requestPushPermissionAndRegister(): Promise<PushPermission
     const token = (await mod.getExpoPushTokenAsync({ projectId })).data
     const { error } = await supabase.rpc('register_push_token', { p_expo_push_token: token })
     if (error) {
-      await supabase.rpc('register_push_token', { p_expo_push_token: token })
+      try {
+        await supabase.rpc('register_push_token', { p_expo_push_token: token })
+      } catch {
+      }
     }
+    await AsyncStorage.setItem(LAST_PUSH_TOKEN_KEY, token).catch(() => undefined)
     return 'granted'
   } catch {
     return 'undetermined'
@@ -141,10 +156,25 @@ export async function unregisterPushToken() {
     const mod = await notifications()
     if (!mod || !supabase) return
     try {
-      const token = (await mod.getExpoPushTokenAsync({ projectId })).data
-      await supabase.rpc('unregister_push_token', { p_expo_push_token: token })
+      const stored = await AsyncStorage.getItem(LAST_PUSH_TOKEN_KEY).catch(() => null)
+      const tokens = new Set<string>()
+      if (stored) tokens.add(stored)
+      if (projectId) {
+        try {
+          const live = (await mod.getExpoPushTokenAsync({ projectId })).data
+          if (live) tokens.add(live)
+        } catch {
+        }
+      }
+      for (const token of tokens) {
+        try {
+          await supabase.rpc('unregister_push_token', { p_expo_push_token: token })
+        } catch {
+        }
+      }
     } catch {
     }
+    await AsyncStorage.removeItem(LAST_PUSH_TOKEN_KEY).catch(() => undefined)
     await mod.setBadgeCountAsync(0).catch(() => undefined)
   } catch {
   }

@@ -56,6 +56,9 @@ function CountryField({ value, onChange }: { value: string; onChange: (code: str
             data={filtered}
             keyExtractor={(c) => c.code}
             keyboardShouldPersistTaps="handled"
+            initialNumToRender={20}
+            maxToRenderPerBatch={20}
+            windowSize={7}
             renderItem={({ item }) => (
               <Pressable
                 onPress={() => {
