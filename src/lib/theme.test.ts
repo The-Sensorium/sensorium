@@ -17,8 +17,8 @@ describe('theme', () => {
     vi.restoreAllMocks()
   })
 
-  it('getStoredMode defaults to light', () => {
-    expect(getStoredMode()).toBe('light')
+  it('getStoredMode defaults to system', () => {
+    expect(getStoredMode()).toBe('system')
   })
 
   it('getStoredMode returns a valid stored mode', () => {
@@ -28,14 +28,14 @@ describe('theme', () => {
 
   it('getStoredMode ignores invalid stored values', () => {
     localStorage.setItem(STORAGE_KEY, 'neon')
-    expect(getStoredMode()).toBe('light')
+    expect(getStoredMode()).toBe('system')
   })
 
   it('getStoredMode tolerates storage access errors', () => {
     const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('denied')
     })
-    expect(getStoredMode()).toBe('light')
+    expect(getStoredMode()).toBe('system')
     spy.mockRestore()
   })
 

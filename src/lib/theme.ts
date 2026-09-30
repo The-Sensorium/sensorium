@@ -27,7 +27,7 @@ export function getStoredMode(): ThemeMode {
   } catch {
     // ignore storage access errors
   }
-  return 'light'
+  return 'system'
 }
 
 export function systemPrefersDark(): boolean {

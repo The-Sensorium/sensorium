@@ -25,6 +25,11 @@ void SplashScreen.preventAutoHideAsync()
 function useAuthDeepLinks() {
   useEffect(() => {
     async function consume(url: string) {
+      if (!/^sensorium:\/\//i.test(url) && !/^exp:\/\//i.test(url)) return
+      // No path filter: OAuth callbacks must be handled here too. Cold starts
+      // and OS-delivered links never reach signInWithGoogle's
+      // openAuthSessionAsync result, and duplicate exchanges of the same
+      // single-use code are deduped inside handleAuthCallback.
       try {
         const result = await handleAuthCallback(url)
         if (result === 'recovery') resetTo('/(auth)/reset-password')

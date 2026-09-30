@@ -8,6 +8,7 @@ export function LinkifiedText({
   fontSize = 14,
   lineHeight = 20,
   color,
+  linkColor,
   numberOfLines,
   italic = false,
 }: {
@@ -15,6 +16,7 @@ export function LinkifiedText({
   fontSize?: number
   lineHeight?: number
   color?: string
+  linkColor?: string
   numberOfLines?: number
   italic?: boolean
 }) {
@@ -34,7 +36,7 @@ export function LinkifiedText({
             key={i}
             accessibilityRole="link"
             onPress={() => void Linking.openURL(part.href)}
-            style={{ color: t.primary, textDecorationLine: 'underline', fontWeight: '600' }}
+            style={{ color: linkColor ?? t.primary, textDecorationLine: 'underline', fontWeight: '600' }}
           >
             {part.value}
           </Text>

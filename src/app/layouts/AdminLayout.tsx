@@ -4,6 +4,7 @@ import { ChartColumn, Flag, LayoutDashboard, MessageSquareWarning, ScrollText, U
 import { useAuth } from '../auth-context'
 import { BrandMark } from '../../components/BrandMark'
 import { ProfileMenu } from '../../components/ProfileMenu'
+import { ThemeToggle } from '../../components/theme-toggle'
 import { SwitchRoleButton } from '../../components/SwitchRoleButton'
 import { RoutePending } from '../../components/RoutePending'
 import { StaffMobileNav, StaffNavigation, type StaffNavItem } from '../../components/StaffNavigation'
@@ -38,6 +39,7 @@ export function AdminLayout() {
           <StaffNavigation items={navItems} />
           <div className="flex items-center gap-2">
             <SwitchRoleButton />
+            <ThemeToggle />
             <ProfileMenu accountLinks={false} />
           </div>
         </div>

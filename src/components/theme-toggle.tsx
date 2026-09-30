@@ -40,7 +40,12 @@ export function ThemeToggle({ className }: { className?: string }) {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((openState) => !openState)}
-        className="flex h-9 w-9 items-center justify-center rounded-pill text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+        className={cn(
+          'grid h-9 w-9 cursor-pointer place-items-center rounded-full text-on-surface-variant transition-all hover:bg-surface-container hover:text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+          open
+            ? 'bg-surface-container text-on-surface ring-2 ring-primary/40 ring-offset-2 ring-offset-surface'
+            : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-2 hover:ring-offset-surface',
+        )}
       >
         <TriggerIcon className="h-5 w-5" strokeWidth={1.5} aria-hidden />
       </button>

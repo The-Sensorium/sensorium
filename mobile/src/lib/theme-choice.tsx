@@ -9,17 +9,17 @@ const STORAGE_KEY = 'sensorium:theme'
 const ThemeChoiceContext = createContext<{
   choice: ThemeChoice
   setChoice: (choice: ThemeChoice) => void
-}>({ choice: 'light', setChoice: () => {} })
+}>({ choice: 'system', setChoice: () => {} })
 
 export function ThemeChoiceProvider({ children }: { children: ReactNode }) {
-  // Light is the default (Sensorium's brand identity), matching web.
-  // A stored choice overrides this on launch; 'system' stays available
-  // in Settings > Appearance for users who want OS-following theme.
-  const [choice, setChoiceState] = useState<ThemeChoice>('light')
+  // System is the default so fresh installs follow the device theme.
+  // A stored choice overrides this on launch; Settings > Appearance
+  // keeps Light available for users who want the brand light theme.
+  const [choice, setChoiceState] = useState<ThemeChoice>('system')
   const [hydrated, setHydrated] = useState(false)
 
-  // Gated on hydration: applying 'light' before the stored value loads
-  // would flash returning 'system' users into forced light for a frame.
+  // Gated on hydration: applying the default before the stored value
+  // loads would flash returning users into the wrong theme for a frame.
   useEffect(() => {
     if (hydrated) Appearance.setColorScheme(choice === 'system' ? 'unspecified' : choice)
   }, [choice, hydrated])

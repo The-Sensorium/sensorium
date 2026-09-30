@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, Menu, MessageCircle, MessageSquare, Scale, Settings, Users } from 'lucide-react'
+import { ArrowLeft, Megaphone, Menu, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { modeInfo } from '../../lib/modes'
 import { useCluster, useMyMembership } from '../../features/introductions'
@@ -12,7 +12,7 @@ import { RoutePending } from '../../components/RoutePending'
 const SECTIONS = [
   { to: '', label: 'Room', icon: MessageSquare, end: true },
   { to: 'members', label: 'Members', icon: Users, end: false },
-  { to: 'signals', label: 'Signals', icon: MessageCircle, end: false },
+  { to: 'signals', label: 'Signals', icon: Megaphone, end: false },
   { to: 'votes', label: 'Votes', icon: Scale, end: false },
   { to: 'settings', label: 'Settings', icon: Settings, end: false },
 ]

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, ChevronDown, ChevronRight, Loader2, LogOut, Pencil, ShieldCheck, Trash2 } from 'lucide-react'
+import { AlertTriangle, BellRing, Check, ChevronDown, ChevronRight, Loader2, LogOut, Monitor, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { useTheme, type ThemeMode } from '../lib/theme'
 import { useProfile } from '../lib/use-profile'
 import { toErrorMessage } from '../lib/error'
 import { useMyClusters } from '../features/matching'
@@ -54,6 +55,8 @@ export function SettingsPage() {
 
       <NotificationPreferences />
 
+      <AppearanceSection />
+
       <SafetySection />
 
       <section aria-label="Account" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
@@ -93,6 +96,50 @@ export function SettingsPage() {
     </div>
   )
 }
+
+function AppearanceSection() {
+  const { mode, setMode } = useTheme()
+  return (
+    <section aria-label="Appearance" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+      <div className="flex items-center gap-2">
+        <Sun className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+        <h2 className="font-display text-lg font-semibold text-on-surface">Appearance</h2>
+      </div>
+      <p className="mt-1 text-sm text-on-surface-variant">
+        Light, dark, or follow your system.
+      </p>
+      <div role="radiogroup" aria-label="Appearance" className="mt-4 space-y-1">
+        {appearanceOptions.map((opt) => {
+          const active = mode === opt.value
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              aria-label={opt.label}
+              onClick={() => setMode(opt.value)}
+              className={cn(
+                'flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                active ? 'bg-primary-container/15 text-primary' : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+              )}
+            >
+              <opt.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              <span className="min-w-0 flex-1 text-left font-semibold">{opt.label}</span>
+              {active && <Check className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />}
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+const appearanceOptions: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'dark', label: 'Dark', icon: Moon },
+]
 
 function MfaRow() {
   const access = useMyAccess()
@@ -212,38 +259,36 @@ function SafetySection() {
       >
         My reports
       </Link>
-      <div className="mt-4">
-        {mutes.isLoading ? (
-          <p className="flex items-center gap-2 text-sm text-on-surface-variant">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
-          </p>
-        ) : mutes.isError ? (
-          <p role="alert" className="rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
-            Couldn’t load your muted members. Please try again.
-          </p>
-        ) : muted.length === 0 ? (
-          <p className="rounded-xl bg-surface-container/50 px-4 py-3 text-sm text-on-surface-variant">
-            No muted members.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {muted.map((m) => (
-              <li key={m.muted_user_id} className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/60 px-4 py-2.5">
-                <span className="flex min-w-0 items-center gap-3">
-                  <Avatar
-                    name={m.display_name ?? 'Member'}
-                    src={m.avatar_url}
-                    className="h-8 w-8"
-                    textClassName="text-sm"
-                  />
-                  <span className="truncate text-sm text-on-surface">{m.display_name ?? 'Member'}</span>
-                </span>
-                <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {(mutes.isLoading || mutes.isError || muted.length > 0) && (
+        <div className="mt-4">
+          {mutes.isLoading ? (
+            <p className="flex items-center gap-2 text-sm text-on-surface-variant">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+            </p>
+          ) : mutes.isError ? (
+            <p role="alert" className="rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
+              Couldn’t load your muted members. Please try again.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {muted.map((m) => (
+                <li key={m.muted_user_id} className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/60 px-4 py-2.5">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Avatar
+                      name={m.display_name ?? 'Member'}
+                      src={m.avatar_url}
+                      className="h-8 w-8"
+                      textClassName="text-sm"
+                    />
+                    <span className="truncate text-sm text-on-surface">{m.display_name ?? 'Member'}</span>
+                  </span>
+                  <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </section>
   )
 }

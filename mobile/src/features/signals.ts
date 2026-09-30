@@ -11,6 +11,7 @@ export function useClusterSignals(clusterId: string | null, enabled = true) {
   return useQuery({
     queryKey: ['cluster-signals', clusterId ?? 'none'],
     enabled: enabled && clusterId !== null,
+    staleTime: 30_000,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
@@ -19,6 +20,7 @@ export function useClusterSignals(clusterId: string | null, enabled = true) {
         .select('*')
         .eq('cluster_id', clusterId)
         .order('created_at', { ascending: false })
+        .limit(500)
       if (error) throw error
       return (data ?? []) as Signal[]
     },
@@ -37,6 +39,7 @@ export function useSignalReplies(
   return useQuery({
     queryKey: ['signal-replies', clusterId ?? 'none', signalId ?? 'all'],
     enabled: enabled && clusterId !== null,
+    staleTime: 30_000,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()
@@ -46,6 +49,7 @@ export function useSignalReplies(
           .select('*')
           .eq('signal_id', signalId)
           .order('created_at', { ascending: true })
+          .limit(500)
         if (error) throw error
         return (data ?? []) as SignalReply[]
       }
@@ -54,6 +58,7 @@ export function useSignalReplies(
         .select('*')
         .eq('cluster_id', clusterId)
         .order('created_at', { ascending: true })
+        .limit(1000)
       if (error) throw error
       return (data ?? []) as SignalReply[]
     },

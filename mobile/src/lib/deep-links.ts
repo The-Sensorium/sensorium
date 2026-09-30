@@ -7,7 +7,24 @@ export function authRedirect(path: string): string {
   return Linking.createURL(path)
 }
 
-const consumedCodes = new Set<string>()
+const inflightCodes = new Map<string, Promise<AuthCallback>>()
+const completedCodes = new Map<string, { result: AuthCallback; expires: number }>()
+const MAX_COMPLETED_CODES = 50
+const COMPLETED_TTL_MS = 10 * 60 * 1000
+
+function pruneCompletedCodes(): void {
+  const now = Date.now()
+  for (const [key, value] of completedCodes) {
+    if (value.expires <= now) completedCodes.delete(key)
+  }
+  while (completedCodes.size > MAX_COMPLETED_CODES) {
+    const oldest = completedCodes.keys().next().value
+    if (!oldest) break
+    completedCodes.delete(oldest)
+  }
+}
+
+const ALLOWED_OTP_TYPES = new Set(['signup', 'recovery', 'email_change', 'invite', 'magiclink'])
 
 function first(value: unknown): string | null {
   if (typeof value === 'string' && value) return value
@@ -35,34 +52,49 @@ export async function handleAuthCallback(url: string): Promise<AuthCallback | nu
 
   const supabase = requireSupabase()
   if (code) {
-    if (consumedCodes.has(code)) return first(params.type) === 'recovery' ? 'recovery' : 'session'
-    consumedCodes.add(code)
-    try {
+    pruneCompletedCodes()
+    const done = completedCodes.get(code)
+    if (done) return done.result
+    const ongoing = inflightCodes.get(code)
+    if (ongoing) return ongoing
+    const task = (async (): Promise<AuthCallback> => {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) throw error
-    } catch (err) {
-      consumedCodes.delete(code)
-      throw err
+      return first(params.type) === 'recovery' ? 'recovery' : 'session'
+    })()
+    inflightCodes.set(code, task)
+    try {
+      const result = await task
+      completedCodes.set(code, { result, expires: Date.now() + COMPLETED_TTL_MS })
+      return result
+    } finally {
+      inflightCodes.delete(code)
+      pruneCompletedCodes()
     }
-    return first(params.type) === 'recovery' ? 'recovery' : 'session'
   }
 
   if (tokenHash && type) {
+    if (!ALLOWED_OTP_TYPES.has(type)) {
+      throw new Error('Unsupported link type.')
+    }
     const { error } = await supabase.auth.verifyOtp({
       token_hash: tokenHash,
-      type: type as 'signup',
+      type: type as 'signup' | 'recovery' | 'email_change' | 'invite' | 'magiclink',
     })
     if (error) throw error
     return type === 'recovery' ? 'recovery' : 'session'
   }
 
-  if (hash && pairs?.access_token && pairs?.refresh_token) {
+  if (hasHashSession) {
+    // Implicit flow: supabase-js defaults to it and the email templates use
+    // ConfirmationURL, so OAuth and recovery links carry tokens in the hash.
+    // PKCE-only handling dropped these sessions entirely.
     const { error } = await supabase.auth.setSession({
-      access_token: pairs.access_token,
-      refresh_token: pairs.refresh_token,
+      access_token: pairs!.access_token,
+      refresh_token: pairs!.refresh_token,
     })
     if (error) throw error
-    return pairs.type === 'recovery' ? 'recovery' : 'session'
+    return pairs!.type === 'recovery' ? 'recovery' : 'session'
   }
 
   return null

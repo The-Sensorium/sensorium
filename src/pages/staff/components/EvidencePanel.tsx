@@ -231,7 +231,7 @@ function ReportedPost({
       {post.title && <p className="mt-2 text-sm font-semibold text-on-surface">{post.title}</p>}
       {post.content && <p className="mt-2 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{post.content}</p>}
       {imageSrc && (
-        <img src={imageSrc} alt="Reported post media" className="mt-2 max-h-64 rounded-lg object-cover" />
+        <img src={imageSrc} alt="Reported post media" loading="lazy" decoding="async" className="mt-2 max-h-64 rounded-lg object-cover" />
       )}
       <p className="mt-2 text-xs text-on-surface-variant">
         by {post.author_display_name ?? 'Unknown'} · {post.cluster_name ?? 'Unknown cluster'}
@@ -291,7 +291,7 @@ function ReportedComment({
       )}
       {comment.content && <p className="mt-2 rounded-md bg-surface-container/60 p-3 text-sm leading-6 text-on-surface">{comment.content}</p>}
       {imageSrc && (
-        <img src={imageSrc} alt="Reported comment media" className="mt-2 max-h-64 rounded-lg object-cover" />
+        <img src={imageSrc} alt="Reported comment media" loading="lazy" decoding="async" className="mt-2 max-h-64 rounded-lg object-cover" />
       )}
       <p className="mt-2 text-xs text-on-surface-variant">by {comment.author_display_name ?? 'Unknown'}</p>
       {((canAct && !hidden) || (canRestore && hidden)) && comment.id && !deleted ? (

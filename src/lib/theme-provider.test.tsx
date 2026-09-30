@@ -55,13 +55,13 @@ describe('ThemeProvider', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 
-  it('defaults to light mode when nothing is stored', () => {
+  it('defaults to system mode when nothing is stored', () => {
     render(
       <ThemeProvider>
         <Probe />
       </ThemeProvider>,
     )
-    expect(screen.getByRole('button')).toHaveTextContent('mode=light')
+    expect(screen.getByRole('button')).toHaveTextContent('mode=system resolved=light')
   })
 
   it('persists a mode change and updates the class', async () => {

@@ -73,7 +73,9 @@ export function useIntroProgress(clusterId: string | null, enabled = true) {
   return useQuery({
     queryKey: ['intro-progress', clusterId ?? 'none'],
     enabled: enabled && clusterId !== null,
+    staleTime: 10_000,
     refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       if (!clusterId) throw new Error('No cluster')
       const supabase = requireSupabase()

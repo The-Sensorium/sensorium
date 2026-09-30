@@ -85,6 +85,7 @@ export function AvatarViewer({
             <img
               src={resolved}
               alt={label}
+              decoding="async"
               onClick={(e) => e.stopPropagation()}
               className="max-h-[90dvh] max-w-full rounded-2xl object-contain shadow-lift"
             />

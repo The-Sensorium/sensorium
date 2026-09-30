@@ -330,18 +330,26 @@ const CHAT_IMAGE_STALE_MS = CHAT_IMAGE_TTL_SECONDS * 1000 - 60_000 // refresh a 
 /** Recover the storage path of a chat image from a stored value (URL or bare path). */
 export function chatImageStoragePath(stored: string | null | undefined): string | null {
   if (!stored) return null
-  if (!stored.includes('/')) return stored
+  if (stored.includes('..')) return null
+  const pathRe = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\.[a-z0-9]+$/
+  const sanitize = (raw: string | null): string | null => {
+    if (!raw) return null
+    if (raw.includes('..')) return null
+    if (!pathRe.test(raw)) return null
+    return raw
+  }
+  if (!stored.includes('/')) return sanitize(stored)
   const marker = '/chat-images/'
   const idx = stored.indexOf(marker)
   if (idx !== -1) {
     const raw = stored.slice(idx + marker.length).split('?')[0].split('#')[0]
     try {
-      return decodeURIComponent(raw)
+      return sanitize(decodeURIComponent(raw))
     } catch {
-      return raw
+      return sanitize(raw)
     }
   }
-  return stored
+  return sanitize(stored)
 }
 
 /** Delete a chat-image object (member scoped by the 0050 storage policy). */
@@ -367,7 +375,9 @@ export function useChatImageUrl(path: string) {
       return data.signedUrl
     },
     staleTime: CHAT_IMAGE_STALE_MS,
+    gcTime: CHAT_IMAGE_TTL_SECONDS * 1000,
     refetchInterval: CHAT_IMAGE_STALE_MS,
+    refetchIntervalInBackground: false,
   })
 }
 

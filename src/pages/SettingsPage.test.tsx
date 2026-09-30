@@ -3,6 +3,11 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SettingsPage } from './SettingsPage'
+import { ThemeContext } from '../lib/theme'
+
+const theme = vi.hoisted(() => ({
+  setMode: vi.fn(),
+}))
 
 const hooks = vi.hoisted(() => ({
   useProfile: vi.fn(),
@@ -61,7 +66,9 @@ function renderPage() {
   return render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter>
-        <SettingsPage />
+        <ThemeContext.Provider value={{ mode: 'system', resolved: 'light', setMode: theme.setMode }}>
+          <SettingsPage />
+        </ThemeContext.Provider>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -95,6 +102,15 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Ally')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Edit profile' })).toHaveAttribute('href', '/settings/profile')
     expect(screen.getByText('Settings')).toBeInTheDocument()
+  })
+
+  it('offers appearance options on the settings page', () => {
+    renderPage()
+    expect(screen.getByRole('radio', { name: 'Light' })).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('radio', { name: 'Dark' })).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(screen.getByRole('radio', { name: 'Dark' }))
+    expect(theme.setMode).toHaveBeenCalledWith('dark')
   })
 
   it('signs the user out', async () => {

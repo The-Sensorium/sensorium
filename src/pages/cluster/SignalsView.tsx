@@ -48,14 +48,17 @@ export function SignalsView() {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
 
-  const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
-  const replyCount = new Map<string, number>()
-  for (const r of replyCounts.data ?? []) {
-    replyCount.set(r.signal_id, r.reply_count)
-  }
+  const memberById = useMemo(() => new Map((members.data ?? []).map((m) => [m.id, m])), [members.data])
+  const replyCount = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of replyCounts.data ?? []) {
+      map.set(r.signal_id, r.reply_count)
+    }
+    return map
+  }, [replyCounts.data])
 
-  const active = (signals.data ?? []).filter((s) => s.status !== 'resolved')
-  const resolved = (signals.data ?? []).filter((s) => s.status === 'resolved')
+  const active = useMemo(() => (signals.data ?? []).filter((s) => s.status !== 'resolved'), [signals.data])
+  const resolved = useMemo(() => (signals.data ?? []).filter((s) => s.status === 'resolved'), [signals.data])
 
   async function handleRaise() {
     const trimmed = prompt.trim()

@@ -23,6 +23,7 @@ import {
 } from '../../src/features/votes'
 import { toErrorMessage } from '../../src/lib/error'
 import { radii } from '../../src/lib/theme-tokens'
+import { useResolvedScheme } from '../../src/lib/theme-choice'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { Modal } from '../../src/components/Modal'
@@ -61,6 +62,8 @@ const GET_STARTED_STEPS: { to: Href; title: string; desc: string }[] = [
 
 export default function HomeScreen() {
   const t = useTheme()
+  const scheme = useResolvedScheme()
+  const amber = scheme === 'dark' ? '#fbbf24' : '#f59e0b'
   const auth = useAuth()
   const profile = useProfile()
   const clusters = useMyClusters()
@@ -147,7 +150,7 @@ export default function HomeScreen() {
         {firstName ? `Welcome, ${firstName}` : 'Home'}
       </Text>
       <View style={{ marginTop: 4, marginBottom: 24, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <DaypartIcon size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+        <DaypartIcon size={16} color={amber} fill={amber} strokeWidth={1.5} />
         <Text style={{ fontSize: 17, lineHeight: 22, color: t.onSurfaceVariant }}>
           {daypartLabel}
         </Text>
