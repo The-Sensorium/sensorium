@@ -206,7 +206,7 @@ export function Composer({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
-            backgroundColor: t.surfaceLowest,
+            backgroundColor: t.surface,
             borderRadius: radii.md,
             paddingHorizontal: 12,
             paddingVertical: 8,
@@ -238,7 +238,7 @@ export function Composer({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
-            backgroundColor: t.surfaceLowest,
+            backgroundColor: t.surface,
             borderRadius: radii.md,
             paddingHorizontal: 12,
             paddingVertical: 8,
@@ -270,7 +270,7 @@ export function Composer({
         <View
           style={{
             alignSelf: 'flex-start',
-            backgroundColor: t.surfaceLowest,
+            backgroundColor: t.surface,
             borderRadius: radii.xl,
             padding: 4,
             marginBottom: 8,
@@ -312,7 +312,7 @@ export function Composer({
               maxWidth: '85%',
               marginBottom: 8,
               maxHeight: 216,
-              backgroundColor: t.surfaceLowest,
+              backgroundColor: t.surface,
               borderRadius: radii.xl,
             }}
           >
@@ -361,7 +361,7 @@ export function Composer({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 4,
-            backgroundColor: t.surfaceLowest,
+            backgroundColor: t.surface,
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.md,

@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 import { Link } from 'expo-router'
-import { Megaphone, Scale } from 'lucide-react-native'
+import { ChevronRight, Megaphone, Scale } from 'lucide-react-native'
 import { DayDivider } from './DayDivider'
 import { dateTimeFormatter } from './format'
 import { Avatar } from '../Avatar'
@@ -43,6 +43,7 @@ export function SignalRow({
         style={{
           marginVertical: 4,
           flexDirection: 'row',
+          alignItems: 'center',
           gap: 10,
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.md,
@@ -50,38 +51,41 @@ export function SignalRow({
           paddingVertical: 10,
         }}
       >
-        <View style={{ marginTop: 2 }}>
+        <View>
           {author?.avatar_url ? (
             <Avatar name={author?.display_name ?? 'Member'} src={author.avatar_url} size={24} />
           ) : (
             <View
-              style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.tertiaryContainer, alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' }}
             >
               <Megaphone size={14} color={t.tertiary} strokeWidth={2} />
             </View>
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={2}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }} numberOfLines={2}>
             {signal.prompt}
           </Text>
-          <Text style={{ marginTop: 4, fontSize: 12, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 4, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
             {author?.display_name ?? 'Member'}
-            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(signal.created_at))} ·{' '}
-            <Text style={{ fontWeight: '600', color: t[SIGNAL_STATUS[signal.status].colorKey] }}>{SIGNAL_STATUS[signal.status].label}</Text>
-            {' '}· {replyCount} replies
+            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(signal.created_at))}
           </Text>
+          <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }}>
+            {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ backgroundColor: t.surface, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: '500', color: t[SIGNAL_STATUS[signal.status].colorKey] }}>
+              {SIGNAL_STATUS[signal.status].label}
+            </Text>
+          </View>
+          <ChevronRight size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
         </View>
       </Pressable>
       </Link>
     </View>
   )
-}
-
-const VOTE_TYPE_LABEL: Record<Vote['type'], string> = {
-  replace_member: 'Replace a member',
-  change_name: 'Rename the cluster',
-  select_candidate: 'Choose a new member',
 }
 
 export function VoteRow({
@@ -106,6 +110,7 @@ export function VoteRow({
       : vote.type === 'replace_member'
         ? `Replace ${target?.display_name ?? 'a member'}`
         : 'Choose a new member'
+  const isOpen = vote.status === 'open'
   return (
     <View>
       {showDay ? <DayDivider iso={vote.created_at} /> : null}
@@ -117,6 +122,7 @@ export function VoteRow({
         style={{
           marginVertical: 4,
           flexDirection: 'row',
+          alignItems: 'center',
           gap: 10,
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.md,
@@ -125,19 +131,31 @@ export function VoteRow({
         }}
       >
         <View
-          style={{ marginTop: 2, width: 24, height: 24, borderRadius: 12, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' }}
+          style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' }}
         >
           <Scale size={14} color={t.primary} strokeWidth={2} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={2}>
-            {VOTE_TYPE_LABEL[vote.type]}: {title}
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }} numberOfLines={2}>
+            {title}
           </Text>
-          <Text style={{ marginTop: 4, fontSize: 12, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 4, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
             {initiator?.display_name ?? 'Member'}
-            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(vote.created_at))} · Ends in{' '}
-            <CountdownTimer deadline={vote.closes_at} />
+            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(vote.created_at))}
           </Text>
+          {isOpen ? (
+            <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }}>
+              Ends in <CountdownTimer deadline={vote.closes_at} />
+            </Text>
+          ) : null}
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ backgroundColor: t.surface, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: '500', color: isOpen ? t.primary : t.onSurfaceVariant }}>
+              {isOpen ? 'Open' : 'Closed'}
+            </Text>
+          </View>
+          <ChevronRight size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
         </View>
       </Pressable>
       </Link>

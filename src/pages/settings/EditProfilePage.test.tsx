@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { EditProfilePage } from './EditProfilePage'
 
@@ -57,12 +57,42 @@ describe('EditProfilePage', () => {
     })
   })
 
-  it('renders the profile display name and email with a back link', () => {
+  it('renders the profile display name and email with a back button', () => {
     renderPage()
     expect(screen.getByText('Ally')).toBeInTheDocument()
     expect(screen.getByText('ally@example.com')).toBeInTheDocument()
     expect(screen.getByText('Edit profile')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to settings' })).toHaveAttribute('href', '/settings')
+    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument()
+  })
+
+  it('falls back to settings when loaded directly', () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/settings/profile']}>
+          <Routes>
+            <Route path="/settings" element={<p>Settings page</p>} />
+            <Route path="/settings/profile" element={<EditProfilePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByText('Settings page')).toBeInTheDocument()
+  })
+
+  it('returns to the member profile when navigated from there', () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={['/profile/u1', '/settings/profile']} initialIndex={1}>
+          <Routes>
+            <Route path="/profile/:userId" element={<p>Member profile</p>} />
+            <Route path="/settings/profile" element={<EditProfilePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByText('Member profile')).toBeInTheDocument()
   })
 
   it('saves profile edits', async () => {

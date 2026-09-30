@@ -5,9 +5,12 @@ import { useTheme } from '../lib/use-theme'
 function labelFor(deadline: string, now: number): { text: string; expired: boolean } {
   const diff = new Date(deadline).getTime() - now
   if (diff <= 0) return { text: 'Expired', expired: true }
-  const d = Math.floor(diff / 86_400_000)
-  const h = Math.floor((diff % 86_400_000) / 3_600_000)
-  const m = Math.ceil((diff % 3_600_000) / 60_000)
+  // Ceil total minutes first so leftover seconds roll into the next
+  // minute, hour, or day instead of ever rendering a "60m" segment.
+  const totalMinutes = Math.ceil(diff / 60_000)
+  const d = Math.floor(totalMinutes / 1440)
+  const h = Math.floor((totalMinutes % 1440) / 60)
+  const m = totalMinutes % 60
   if (d > 0) return { text: `${d}d ${h}h ${m}m`, expired: false }
   if (h > 0) return { text: `${h}h ${m}m`, expired: false }
   return { text: `${m}m`, expired: false }

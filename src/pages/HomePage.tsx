@@ -112,7 +112,7 @@ export function HomePage() {
           {firstName ? `Welcome, ${firstName}` : 'Home'}
         </h1>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-on-surface-variant">
-          <DaypartIcon className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+          <DaypartIcon className="h-4 w-4 text-amber-500 dark:text-amber-400" strokeWidth={1.5} fill="currentColor" aria-hidden />
           {daypartLabel}
         </p>
       </header>

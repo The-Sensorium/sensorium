@@ -59,17 +59,13 @@ describe('ProfileMenu', () => {
     expect(screen.queryByRole('menu', { name: 'Account' })).not.toBeInTheDocument()
   })
 
-  it('lists appearance options in the menu', async () => {
+  it('keeps appearance options out of the crowded account menu', async () => {
     const user = userEvent.setup()
     renderMenu()
     await user.click(screen.getByRole('button', { name: 'Account menu for Ally' }))
     for (const label of ['Light', 'System', 'Dark']) {
-      expect(screen.getByRole('menuitemradio', { name: label })).toBeInTheDocument()
+      expect(screen.queryByRole('menuitemradio', { name: label })).not.toBeInTheDocument()
     }
-    expect(screen.getByRole('menuitemradio', { name: 'System' })).toHaveAttribute(
-      'aria-checked',
-      'true',
-    )
   })
 
   it('hides account links in the minimal variant', async () => {
@@ -87,6 +83,5 @@ describe('ProfileMenu', () => {
     expect(screen.queryByRole('menuitem', { name: 'Edit profile' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitemradio', { name: 'Dark' })).toBeInTheDocument()
   })
 })

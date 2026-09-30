@@ -70,6 +70,8 @@ export function MessageItem({
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
   const gifUrl = message.content?.startsWith('gif:') ? message.content.slice(4) : null
+  const hasMedia = Boolean(message.image_url) || Boolean(gifUrl)
+  const toneMine = mine && !hasMedia
   // The quote jumps to the original message, but only when there is a real,
   // visible parent to land on (deleted, muted-hidden, and unfetched parents
   // render fallback text and stay inert).
@@ -137,7 +139,7 @@ export function MessageItem({
             onLongPress={isEditing ? undefined : onToggleMenu}
             delayLongPress={350}
             style={{
-              backgroundColor: isEditing ? t.surfaceLowest : t.surfaceContainer,
+              backgroundColor: isEditing ? t.surfaceLowest : toneMine ? t.primary : t.surfaceContainer,
               borderRadius: 16,
               borderBottomRightRadius: mine ? 4 : 16,
               borderBottomLeftRadius: mine ? 16 : 4,
@@ -158,7 +160,7 @@ export function MessageItem({
                   end: -2,
                   bottom: -2,
                   borderWidth: 2,
-                  borderColor: t.primary,
+                  borderColor: toneMine ? t.onSurface : t.primary,
                   borderRadius: 18,
                 }}
               />
@@ -173,18 +175,18 @@ export function MessageItem({
                   flexDirection: 'row',
                   alignItems: 'flex-start',
                   gap: 6,
-                  backgroundColor: t.surface,
+                  backgroundColor: toneMine ? 'rgba(0,0,0,0.15)' : t.surface,
                   borderRadius: radii.md,
                   paddingHorizontal: 10,
                   paddingVertical: 6,
                 }}
               >
-                <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+                <CornerUpLeft size={14} color={toneMine ? t.onPrimary : t.onSurfaceVariant} strokeWidth={1.5} />
                 <View style={{ flexShrink: 1, flexGrow: 0 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: toneMine ? t.onPrimary : t.onSurfaceVariant }}>
                     {replyParent?.authorName ?? 'Member'}
                   </Text>
-                  <Text style={{ fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
+                  <Text style={{ fontSize: 12, color: toneMine ? t.onPrimary : t.onSurfaceVariant, opacity: toneMine ? 0.8 : 1 }} numberOfLines={2}>
                     {replyParent?.preview ?? 'message'}
                   </Text>
                 </View>
@@ -245,25 +247,25 @@ export function MessageItem({
                   />
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}>
-                    <ShieldOff size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                    <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                    <ShieldOff size={16} color={toneMine ? t.onPrimary : t.onSurfaceVariant} strokeWidth={1.5} />
+                    <Text style={{ fontSize: 12, color: toneMine ? t.onPrimary : t.onSurfaceVariant }}>
                       This image was hidden by moderation.
                     </Text>
                   </View>
                 )}
                 {message.content?.trim() ? (
                   <View style={{ marginTop: 6 }}>
-                    <MentionText content={message.content} members={members} />
+                    <MentionText content={message.content} members={members} mine={toneMine} />
                   </View>
                 ) : null}
               </>
             ) : gifUrl ? (
               <MessageGif src={gifUrl} onLongPress={isEditing ? undefined : onToggleMenu} />
             ) : (
-              <MentionText content={message.content ?? ''} members={members} />
+              <MentionText content={message.content ?? ''} members={members} mine={mine} />
             )}
             {!isEditing && message.edited_at ? (
-              <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}> (edited)</Text>
+              <Text style={{ fontSize: 12, color: toneMine ? t.onPrimary : t.onSurfaceVariant }}> (edited)</Text>
             ) : null}
           </Pressable>
 

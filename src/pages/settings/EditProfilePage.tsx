@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { ArrowLeft, Clock, ImageMinus, ImagePlus, Loader2, Save, UserRound } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { useProfile } from '../../lib/use-profile'
@@ -15,6 +15,8 @@ import { timeZoneList } from '../../lib/timezones'
 
 export function EditProfilePage() {
   useDocumentTitle('Edit profile')
+  const navigate = useNavigate()
+  const { key } = useLocation()
   const profile = useProfile()
   const [name, setName] = useState(profile.data?.display_name ?? '')
   const [bio, setBio] = useState(profile.data?.bio ?? '')
@@ -70,12 +72,13 @@ export function EditProfilePage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-6 pt-2">
-      <Link
-        to="/settings"
+      <button
+        type="button"
+        onClick={() => (key === 'default' ? navigate('/settings', { replace: true }) : navigate(-1))}
         className="-ml-3 inline-flex items-center gap-2 self-start rounded-lg px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-container/15 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back to settings
-      </Link>
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back
+      </button>
 
       <header>
         <h1 className="font-display text-3xl font-semibold text-on-surface">Edit profile</h1>

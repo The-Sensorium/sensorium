@@ -80,13 +80,13 @@ export default function EditProfileScreen() {
           else router.replace('/(app)/settings')
         }}
         accessibilityRole="button"
-        accessibilityLabel="Back to settings"
+        accessibilityLabel="Back"
         hitSlop={8}
         style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 12, minHeight: 48, paddingRight: 16, marginBottom: 12 }}
       >
         <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
-          Back to settings
+          Back
         </Text>
       </Pressable>
       <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface, marginBottom: 16 }} accessibilityRole="header">

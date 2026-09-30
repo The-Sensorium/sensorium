@@ -75,8 +75,8 @@ export default function SettingsScreen() {
       </Link>
 
       <NotificationPreferences />
-      <SafetySection />
       <AppearanceSection />
+      <SafetySection />
 
       <Card>
         <View style={{ marginBottom: 4 }}>
@@ -326,34 +326,32 @@ function SafetySection() {
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>My reports</Text>
           </Pressable>
         </Link>
-        <View style={{ marginTop: 16 }}>
-          {mutes.isLoading ? (
-            <LoadingView />
-          ) : mutes.isError ? (
-            <Text style={{ fontSize: 14, color: t.error }}>
-              Couldn’t load your muted members. Please try again.
-            </Text>
-          ) : muted.length === 0 ? (
-            <View style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.md, padding: 16 }}>
-              <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>No muted members.</Text>
-            </View>
-          ) : (
-            muted.map((m) => (
-              <View
-                key={m.muted_user_id}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.md, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 8 }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                  <Avatar name={m.display_name ?? 'Member'} src={m.avatar_url} size={32} />
-                  <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
-                    {m.display_name ?? 'Member'}
-                  </Text>
+        {(mutes.isLoading || mutes.isError || muted.length > 0) && (
+          <View style={{ marginTop: 16 }}>
+            {mutes.isLoading ? (
+              <LoadingView />
+            ) : mutes.isError ? (
+              <Text style={{ fontSize: 14, color: t.error }}>
+                Couldn’t load your muted members. Please try again.
+              </Text>
+            ) : (
+              muted.map((m) => (
+                <View
+                  key={m.muted_user_id}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.md, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 8 }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                    <Avatar name={m.display_name ?? 'Member'} src={m.avatar_url} size={32} />
+                    <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
+                      {m.display_name ?? 'Member'}
+                    </Text>
+                  </View>
+                  <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
                 </View>
-                <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
-              </View>
-            ))
-          )}
-        </View>
+              ))
+            )}
+          </View>
+        )}
       </View>
     </Card>
   )

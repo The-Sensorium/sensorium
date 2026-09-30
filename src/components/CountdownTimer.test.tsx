@@ -26,4 +26,14 @@ describe('CountdownTimer', () => {
     render(<CountdownTimer deadline={new Date(Date.now() + 10 * MINUTE_MS).toISOString()} />)
     expect(screen.getByText(/^\d+m$/)).toBeInTheDocument()
   })
+
+  it('rolls leftover seconds into the next hour instead of showing 60m', () => {
+    render(<CountdownTimer deadline={new Date(Date.now() + HOUR_MS - 1000).toISOString()} />)
+    expect(screen.getByText('1h 0m')).toBeInTheDocument()
+  })
+
+  it('rolls leftover seconds into the next day instead of showing 24h 60m', () => {
+    render(<CountdownTimer deadline={new Date(Date.now() + DAY_MS - 1000).toISOString()} />)
+    expect(screen.getByText('1d 0h 0m')).toBeInTheDocument()
+  })
 })

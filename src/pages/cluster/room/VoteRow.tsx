@@ -1,15 +1,9 @@
 import { Link } from 'react-router'
-import { Scale } from 'lucide-react'
+import { ChevronRight, Scale } from 'lucide-react'
 import { DayDivider } from './DayDivider'
 import { dateTimeFormatter } from './format'
 import { CountdownTimer } from '../../../components/CountdownTimer'
 import type { Vote } from '../../../features/votes'
-
-const VOTE_TYPE_LABEL: Record<Vote['type'], string> = {
-  replace_member: 'Replace a member',
-  change_name: 'Rename the cluster',
-  select_candidate: 'Choose a new member',
-}
 
 export function VoteRow({
   vote,
@@ -32,26 +26,42 @@ export function VoteRow({
       : vote.type === 'replace_member'
         ? `Replace ${target?.display_name ?? 'a member'}`
         : 'Choose a new member'
+  const isOpen = vote.status === 'open'
   return (
     <li>
       {showDay && <DayDivider iso={vote.created_at} />}
       <Link
         to={`/cluster/${clusterId}/votes`}
-        className="my-1 flex items-start gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-container px-3 py-2.5 transition-colors hover:border-outline/60"
+        className="my-1 flex items-center gap-2.5 rounded-xl border border-outline-variant/40 bg-surface-container px-3 py-2.5 transition-colors hover:border-outline/60"
       >
-        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
           <Scale className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block line-clamp-2 text-sm leading-5 text-on-surface">
-            {VOTE_TYPE_LABEL[vote.type]}: {title}
+          <span className="block line-clamp-2 text-sm font-medium leading-5 text-on-surface">
+            {title}
           </span>
-          <span className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-on-surface-variant">
+          <span className="mt-1 block truncate text-xs text-on-surface-variant">
             {initiator?.display_name ?? 'Member'}
-            {isMine ? ' (you)' : ''} ·{' '}
-            {dateTimeFormatter.format(new Date(vote.created_at))} · Ends in{' '}
-            <CountdownTimer deadline={vote.closes_at} />
+            {isMine ? ' (you)' : ''} · {dateTimeFormatter.format(new Date(vote.created_at))}
           </span>
+          {isOpen ? (
+            <span className="mt-0.5 block text-xs text-on-surface-variant">
+              Ends in <CountdownTimer deadline={vote.closes_at} />
+            </span>
+          ) : null}
+        </span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          <span
+            className={
+              isOpen
+                ? 'rounded-pill bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary'
+                : 'rounded-pill bg-surface-container px-2.5 py-0.5 text-xs font-medium text-on-surface-variant'
+            }
+          >
+            {isOpen ? 'Open' : 'Closed'}
+          </span>
+          <ChevronRight className="h-4 w-4 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
         </span>
       </Link>
     </li>

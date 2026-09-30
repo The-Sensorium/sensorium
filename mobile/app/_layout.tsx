@@ -26,6 +26,10 @@ function useAuthDeepLinks() {
   useEffect(() => {
     async function consume(url: string) {
       if (!/^sensorium:\/\//i.test(url) && !/^exp:\/\//i.test(url)) return
+      // OAuth callback is owned by signInWithGoogle via the
+      // openAuthSessionAsync result. Handling it here too would exchange
+      // the single-use PKCE code twice.
+      if (/\/auth\/callback/i.test(url)) return
       try {
         const result = await handleAuthCallback(url)
         if (result === 'recovery') resetTo('/(auth)/reset-password')
