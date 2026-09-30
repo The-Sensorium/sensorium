@@ -55,7 +55,7 @@ mobile/
 │  ├─ appeal.tsx           # restricted-account appeal
 │  ├─ restricted.tsx       # suspended/banned landing
 │  ├─ index.tsx, privacy-policy.tsx, terms.tsx
-│  └─ auth/callback.tsx    # OAuth / recovery deep-link landing (redirects home; handled in _layout)
+│  └─ auth/callback.tsx    # OAuth / recovery deep-link landing (cold-start backstop, replays handleAuthCallback; warm links handled in _layout)
 ├─ src/
 │  ├─ components/          # shared + feature UI (room/, call/, posts, onboarding)
 │  ├─ features/            # data hooks (TanStack Query) - mirrors web modules
@@ -113,12 +113,18 @@ for building an installable APK without EAS.
 ## Auth and deep links
 
 - **Email/password** and **Google OAuth** through Supabase Auth.
+- Sessions persist in Expo SecureStore via a chunked storage adapter
+  ([`src/lib/secure-storage.ts`](src/lib/secure-storage.ts)); non-secret flags
+  (signup email, theme choice, intro dismissals, last push token) stay in
+  AsyncStorage.
 - Email/password and resend flows carry a Turnstile `captchaToken` when the project enforces bot protection: the app opens a `CaptchaSheet` WebView on the web `/auth/mobile-challenge` page (`EXPO_PUBLIC_WEB_URL`) and submits the posted token. Empty URL means verification is skipped (local dev only); release builds fail closed with an explicit error.
 - OAuth and password-recovery redirects come back to the app's `sensorium://`
   deep link and are completed in `app/_layout.tsx` (`useAuthDeepLinks` +
   `Linking` listener, via `src/lib/google-auth.ts` `handleAuthCallback`).
-  `app/auth/callback.tsx` is only a redirect home. URL handling lives in
-  [`src/lib/deep-links.ts`](src/lib/deep-links.ts).
+  `app/auth/callback.tsx` replays the same handler as a cold-start backstop.
+  URL handling lives in [`src/lib/deep-links.ts`](src/lib/deep-links.ts).
+  Both PKCE (`code`, `token_hash`) and implicit hash (`access_token`) links
+  are accepted: supabase-js still defaults to the implicit flow.
 - The URL scheme (`sensorium`) and app id (`online.thesensorium.app`) are declared
   in [`app.json`](app.json). The Google provider must allow the mobile redirect in
   the Supabase dashboard.
@@ -141,6 +147,8 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
   sign-in; it is refreshed on foreground and removed on sign-out
   ([`src/lib/push.ts`](src/lib/push.ts)).
 - Android channels: `messages`, `mentions`, `invites`, `governance`.
+  `messages` and `mentions` use private lockscreen visibility; `invites` and
+  `governance` stay public.
 - Cold-start taps are routed via `getLaunchPushData()` in
   [`src/lib/push.ts`](src/lib/push.ts); warm taps via a response
   listener. Push-to-route mapping lives in

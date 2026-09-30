@@ -86,8 +86,15 @@ export async function handleAuthCallback(url: string): Promise<AuthCallback | nu
   }
 
   if (hasHashSession) {
-    console.warn('Deprecated implicit hash session link ignored. Use PKCE code links.')
-    return null
+    // Implicit flow: supabase-js defaults to it and the email templates use
+    // ConfirmationURL, so OAuth and recovery links carry tokens in the hash.
+    // PKCE-only handling dropped these sessions entirely.
+    const { error } = await supabase.auth.setSession({
+      access_token: pairs!.access_token,
+      refresh_token: pairs!.refresh_token,
+    })
+    if (error) throw error
+    return pairs!.type === 'recovery' ? 'recovery' : 'session'
   }
 
   return null
