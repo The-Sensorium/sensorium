@@ -110,7 +110,10 @@ export async function registerPushToken(): Promise<PushPermissionStatus> {
     const token = (await mod.getExpoPushTokenAsync({ projectId })).data
     const { error } = await supabase.rpc('register_push_token', { p_expo_push_token: token })
     if (error) {
-      await supabase.rpc('register_push_token', { p_expo_push_token: token }).catch(() => undefined)
+      try {
+        await supabase.rpc('register_push_token', { p_expo_push_token: token })
+      } catch {
+      }
     }
     await AsyncStorage.setItem(LAST_PUSH_TOKEN_KEY, token).catch(() => undefined)
     return 'granted'
@@ -132,7 +135,10 @@ export async function requestPushPermissionAndRegister(): Promise<PushPermission
     const token = (await mod.getExpoPushTokenAsync({ projectId })).data
     const { error } = await supabase.rpc('register_push_token', { p_expo_push_token: token })
     if (error) {
-      await supabase.rpc('register_push_token', { p_expo_push_token: token }).catch(() => undefined)
+      try {
+        await supabase.rpc('register_push_token', { p_expo_push_token: token })
+      } catch {
+      }
     }
     await AsyncStorage.setItem(LAST_PUSH_TOKEN_KEY, token).catch(() => undefined)
     return 'granted'
@@ -161,7 +167,10 @@ export async function unregisterPushToken() {
         }
       }
       for (const token of tokens) {
-        await supabase.rpc('unregister_push_token', { p_expo_push_token: token }).catch(() => undefined)
+        try {
+          await supabase.rpc('unregister_push_token', { p_expo_push_token: token })
+        } catch {
+        }
       }
     } catch {
     }
