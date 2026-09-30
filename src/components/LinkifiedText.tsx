@@ -2,7 +2,7 @@ import { parseLinks } from '../lib/links'
 import { cn } from '../lib/utils'
 
 /** Renders plain text with external http(s)/www URLs as safe new-tab links. */
-export function LinkifiedText({ text, className }: { text: string; className?: string }) {
+export function LinkifiedText({ text, className, tone = 'default' }: { text: string; className?: string; tone?: 'default' | 'on-primary' }) {
   const parts = parseLinks(text)
   const nodes = parts.map((part, i) =>
     part.type === 'text' ? (
@@ -14,7 +14,11 @@ export function LinkifiedText({ text, className }: { text: string; className?: s
         target="_blank"
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
-        className={cn('font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary')}
+        className={cn(
+          tone === 'on-primary'
+            ? 'font-medium text-on-primary underline decoration-on-primary/50 underline-offset-2'
+            : 'font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary',
+        )}
       >
         {part.value}
       </a>

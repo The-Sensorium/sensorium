@@ -198,10 +198,12 @@ export function MessageItem({
               isEditing
                 ? 'rounded-2xl border border-outline-variant/60 bg-surface p-2'
                 : cn(
-                    'rounded-2xl bg-surface-container px-4 py-2.5 text-sm leading-relaxed text-on-surface shadow-soft',
+                    'rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-soft',
                     'whitespace-pre-wrap break-words',
-                    mine ? 'rounded-br-md' : 'rounded-bl-md',
-                    highlighted && 'ring-2 ring-primary',
+                    mine
+                      ? 'rounded-br-md bg-primary text-on-primary'
+                      : 'rounded-bl-md bg-surface-container text-on-surface',
+                    highlighted && (mine ? 'ring-2 ring-on-surface' : 'ring-2 ring-primary'),
                   )
             }
           >
@@ -213,34 +215,37 @@ export function MessageItem({
                   onClick={() => {
                     if (replyParentId && onJumpToReply) onJumpToReply(replyParentId)
                   }}
-                  className="group mb-1.5 flex w-full cursor-pointer items-start gap-1.5 rounded-xl bg-surface-container/50 px-2.5 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-primary-container/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                  className={cn(
+                    'group mb-1.5 flex w-full cursor-pointer items-start gap-1.5 rounded-xl px-2.5 py-1.5 text-left text-xs leading-tight transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                    mine ? 'bg-black/15 hover:bg-black/25' : 'bg-surface-container/50 hover:bg-primary-container/15',
+                  )}
                 >
                   <CornerUpLeft
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-on-surface-variant"
+                    className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', mine ? 'text-on-primary/80' : 'text-on-surface-variant')}
                     strokeWidth={1.5}
                     aria-hidden
                   />
                   <div className="min-w-0">
-                    <span className="font-semibold text-on-surface-variant group-hover:text-primary">
+                    <span className={cn('font-semibold', mine ? 'text-on-primary' : 'text-on-surface-variant group-hover:text-primary')}>
                       {replyParent?.authorName ?? 'Member'}
                     </span>{' '}
-                    <span className="text-on-surface-variant/80 group-hover:text-primary">
+                    <span className={cn(mine ? 'text-on-primary/80' : 'text-on-surface-variant/80 group-hover:text-primary')}>
                       {replyParent?.preview ?? 'message'}
                     </span>
                   </div>
                 </button>
               ) : (
-                <div className="mb-1.5 flex items-start gap-1.5 rounded-xl bg-surface-container/50 px-2.5 py-1.5 text-xs leading-tight">
+                <div className={cn('mb-1.5 flex items-start gap-1.5 rounded-xl px-2.5 py-1.5 text-xs leading-tight', mine ? 'bg-black/15' : 'bg-surface-container/50')}>
                   <CornerUpLeft
-                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-on-surface-variant"
+                    className={cn('mt-0.5 h-3.5 w-3.5 shrink-0', mine ? 'text-on-primary/80' : 'text-on-surface-variant')}
                     strokeWidth={1.5}
                     aria-hidden
                   />
                   <div className="min-w-0">
-                    <span className="font-semibold text-on-surface-variant">
+                    <span className={cn('font-semibold', mine ? 'text-on-primary' : 'text-on-surface-variant')}>
                       {replyParent?.authorName ?? 'Member'}
                     </span>{' '}
-                    <span className="text-on-surface-variant/80">
+                    <span className={cn(mine ? 'text-on-primary/80' : 'text-on-surface-variant/80')}>
                       {replyParent?.preview ?? 'message'}
                     </span>
                   </div>
@@ -291,14 +296,14 @@ export function MessageItem({
                 {message.moderation_status === 'approved' ? (
                   <MessageImage path={message.image_url} alt="Shared image" />
                 ) : (
-                  <span className="flex items-center gap-2 rounded-xl bg-surface-container/50 px-4 py-3 text-xs text-on-surface-variant">
+                  <span className={cn('flex items-center gap-2 rounded-xl px-4 py-3 text-xs', mine ? 'bg-black/15 text-on-primary' : 'bg-surface-container/50 text-on-surface-variant')}>
                     <ShieldOff className="h-4 w-4" strokeWidth={1.5} aria-hidden />
                     This image was hidden by moderation.
                   </span>
                 )}
                 {message.content?.trim() ? (
                   <div className="mt-1.5">
-                    <MentionText content={message.content} members={members} clusterId={clusterId} />
+                    <MentionText content={message.content} members={members} clusterId={clusterId} mine={mine} />
                   </div>
                 ) : null}
               </>
@@ -309,6 +314,7 @@ export function MessageItem({
                 content={message.content ?? ''}
                 members={members}
                 clusterId={clusterId}
+                mine={mine}
               />
             )}
             {!isEditing && message.edited_at && (

@@ -7,8 +7,22 @@ export function authRedirect(path: string): string {
   return Linking.createURL(path)
 }
 
-const consumedCodes = new Set<string>()
-const MAX_CONSUMED_CODES = 50
+const inflightCodes = new Map<string, Promise<AuthCallback>>()
+const completedCodes = new Map<string, { result: AuthCallback; expires: number }>()
+const MAX_COMPLETED_CODES = 50
+const COMPLETED_TTL_MS = 10 * 60 * 1000
+
+function pruneCompletedCodes(): void {
+  const now = Date.now()
+  for (const [key, value] of completedCodes) {
+    if (value.expires <= now) completedCodes.delete(key)
+  }
+  while (completedCodes.size > MAX_COMPLETED_CODES) {
+    const oldest = completedCodes.keys().next().value
+    if (!oldest) break
+    completedCodes.delete(oldest)
+  }
+}
 
 const ALLOWED_OTP_TYPES = new Set(['signup', 'recovery', 'email_change', 'invite', 'magiclink'])
 
@@ -38,20 +52,25 @@ export async function handleAuthCallback(url: string): Promise<AuthCallback | nu
 
   const supabase = requireSupabase()
   if (code) {
-    if (consumedCodes.has(code)) return first(params.type) === 'recovery' ? 'recovery' : 'session'
-    consumedCodes.add(code)
-    if (consumedCodes.size > MAX_CONSUMED_CODES) {
-      const oldest = consumedCodes.values().next().value
-      if (oldest) consumedCodes.delete(oldest)
-    }
-    try {
+    pruneCompletedCodes()
+    const done = completedCodes.get(code)
+    if (done) return done.result
+    const ongoing = inflightCodes.get(code)
+    if (ongoing) return ongoing
+    const task = (async (): Promise<AuthCallback> => {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) throw error
-    } catch (err) {
-      consumedCodes.delete(code)
-      throw err
+      return first(params.type) === 'recovery' ? 'recovery' : 'session'
+    })()
+    inflightCodes.set(code, task)
+    try {
+      const result = await task
+      completedCodes.set(code, { result, expires: Date.now() + COMPLETED_TTL_MS })
+      return result
+    } finally {
+      inflightCodes.delete(code)
+      pruneCompletedCodes()
     }
-    return first(params.type) === 'recovery' ? 'recovery' : 'session'
   }
 
   if (tokenHash && type) {

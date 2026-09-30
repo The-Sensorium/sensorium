@@ -21,5 +21,10 @@ export async function signInWithGoogle(): Promise<'success' | 'cancelled'> {
   if (res.type !== 'success') return 'cancelled'
   const result = await handleAuthCallback(res.url)
   if (!result) throw new Error('Google sign-in did not complete.')
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  if (!sessionData.session) {
+    throw new Error('Google sign-in completed but no session was established. Please try again.')
+  }
   return 'success'
 }

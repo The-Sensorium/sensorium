@@ -831,7 +831,7 @@ export default function RoomScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.background }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.surfaceLowest }}>
       <View style={{ flex: 1 }}>
         <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
@@ -1235,7 +1235,7 @@ export default function RoomScreen() {
         <KeyboardStickyView
           offset={{ closed: 0, opened: bottom }}
           style={{
-            backgroundColor: t.background,
+            backgroundColor: t.surfaceLowest,
             paddingHorizontal: 12,
             paddingTop: 8,
             paddingBottom: 8 + bottom,
