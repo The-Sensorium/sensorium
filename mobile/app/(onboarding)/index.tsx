@@ -9,7 +9,7 @@ import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { requireSupabase } from '../../src/lib/supabase'
 import { modeInfo } from '../../src/lib/modes'
 import { joinQueueErrorMessage, toErrorMessage } from '../../src/lib/error'
-import { resolveOnboardingState } from '../../src/lib/home-gating'
+import { isProfileMissingError, resolveOnboardingState } from '../../src/lib/home-gating'
 import { profileKey, useProfile } from '../../src/lib/use-profile'
 import {
   EMPTY_DRAFT,
@@ -47,10 +47,12 @@ export default function OnboardingScreen() {
 
   // Fail closed like the web RequireOnboarded guard: a transient profile
   // fetch error must keep an onboarded user off this form (see home-gating tests).
+  const profileMissing = !profile.data && isProfileMissingError(profile.error)
   const completed =
     resolveOnboardingState({
       isLoading: profile.isLoading,
       isError: profile.isError,
+      profileMissing,
       onboardingCompletedAt: profile.data?.onboarding_completed_at,
     }) === 'complete'
 
@@ -67,7 +69,7 @@ export default function OnboardingScreen() {
     )
   }
 
-  if (profile.isError && !profile.data) {
+  if (profile.isError && !profile.data && !profileMissing) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ padding: 24, width: '100%', maxWidth: 400 }}>

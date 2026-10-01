@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../auth-context'
 import { requireSupabase, type Database } from './supabase'
+import { resolveProfileData } from './home-gating'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -23,8 +24,7 @@ export function useProfile() {
         .select('*')
         .eq('id', userId)
         .maybeSingle()
-      if (error) throw error
-      return data
+      return resolveProfileData(data, error)
     },
   })
 }
