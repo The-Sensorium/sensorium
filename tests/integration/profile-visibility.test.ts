@@ -79,7 +79,7 @@ describe('profile visibility by role', () => {
     clusterIds.push(clusterId)
 
     const authed = await u.client.rpc('get_my_clusters')
-    expect((authed.data ?? []).some((row) => row.id === clusterId)).toBe(true)
+    expect((authed.data ?? []).some((row: { id: string }) => row.id === clusterId)).toBe(true)
 
     // get_my_clusters is security definer and PUBLIC keeps EXECUTE by default,
     // so anon runs it but auth.uid() is null: an EMPTY SUCCESS with no error,
