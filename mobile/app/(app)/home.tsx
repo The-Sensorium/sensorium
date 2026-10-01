@@ -22,7 +22,7 @@ import {
   useDeclineInvitation,
 } from '../../src/features/votes'
 import { toErrorMessage } from '../../src/lib/error'
-import { homeListError, resolveOnboardingState, shouldShowFresh } from '../../src/lib/home-gating'
+import { homeListError, isProfileMissingError, resolveOnboardingState, shouldShowFresh } from '../../src/lib/home-gating'
 import { radii } from '../../src/lib/theme-tokens'
 import { useResolvedScheme } from '../../src/lib/theme-choice'
 import { useTheme } from '../../src/lib/use-theme'
@@ -113,9 +113,11 @@ export default function HomeScreen() {
 
   // Fail closed like the web RequireMemberShell guard: a transient profile
   // fetch error must not look like "not onboarded" (see home-gating tests).
+  const profileMissing = !profile.data && isProfileMissingError(profile.error)
   const onboardingState = resolveOnboardingState({
     isLoading: profile.isLoading,
     isError: profile.isError,
+    profileMissing,
     onboardingCompletedAt: profile.data?.onboarding_completed_at,
   })
 
