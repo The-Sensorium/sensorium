@@ -9,6 +9,7 @@ import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { requireSupabase } from '../../src/lib/supabase'
 import { modeInfo } from '../../src/lib/modes'
 import { joinQueueErrorMessage, toErrorMessage } from '../../src/lib/error'
+import { isProfileMissingError, resolveOnboardingState } from '../../src/lib/home-gating'
 import { profileKey, useProfile } from '../../src/lib/use-profile'
 import {
   EMPTY_DRAFT,
@@ -44,7 +45,16 @@ export default function OnboardingScreen() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const completed = !profile.isLoading && !!profile.data?.onboarding_completed_at
+  // Fail closed like the web RequireOnboarded guard: a transient profile
+  // fetch error must keep an onboarded user off this form (see home-gating tests).
+  const profileMissing = !profile.data && isProfileMissingError(profile.error)
+  const completed =
+    resolveOnboardingState({
+      isLoading: profile.isLoading,
+      isError: profile.isError,
+      profileMissing,
+      onboardingCompletedAt: profile.data?.onboarding_completed_at,
+    }) === 'complete'
 
   useEffect(() => {
     if (auth.state !== 'signedIn') goLogin()
@@ -55,6 +65,24 @@ export default function OnboardingScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={t.primary} />
+      </SafeAreaView>
+    )
+  }
+
+  if (profile.isError && !profile.data && !profileMissing) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ padding: 24, width: '100%', maxWidth: 400 }}>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>
+            Couldn’t load your profile
+          </Text>
+          <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
+            Something went wrong while checking your account. Please try again.
+          </Text>
+          <View style={{ marginTop: 16 }}>
+            <PrimaryButton title="Try Again" onPress={() => void profile.refetch()} />
+          </View>
+        </View>
       </SafeAreaView>
     )
   }
