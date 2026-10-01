@@ -116,10 +116,16 @@ export function PostCard({
                 </Text>
               ) : null}
             </View>
-            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>
-              {formatPostTimestamp(post.created_at)}
-              {post.edited_at ? ' · edited' : null}
-            </Text>
+            <View style={{ flexShrink: 0, alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>
+                {formatPostTimestamp(post.created_at)}
+              </Text>
+              {post.edited_at ? (
+                <Text style={{ fontSize: 12, lineHeight: 16, fontStyle: 'italic', color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>
+                  edited
+                </Text>
+              ) : null}
+            </View>
           </View>
           {post.title ? (
             <Text
