@@ -22,6 +22,7 @@ import {
   useDeclineInvitation,
 } from '../../src/features/votes'
 import { toErrorMessage } from '../../src/lib/error'
+import { homeListError, resolveOnboardingState, shouldShowFresh } from '../../src/lib/home-gating'
 import { radii } from '../../src/lib/theme-tokens'
 import { useResolvedScheme } from '../../src/lib/theme-choice'
 import { useTheme } from '../../src/lib/use-theme'
@@ -110,24 +111,48 @@ export default function HomeScreen() {
     () => queryClient.refetchQueries({ queryKey: ['cluster-members'] }),
   ])
 
+  // Fail closed like the web RequireMemberShell guard: a transient profile
+  // fetch error must not look like "not onboarded" (see home-gating tests).
+  const onboardingState = resolveOnboardingState({
+    isLoading: profile.isLoading,
+    isError: profile.isError,
+    onboardingCompletedAt: profile.data?.onboarding_completed_at,
+  })
+
   useEffect(() => {
-    if (
-      auth.state === 'signedIn' &&
-      !profile.isLoading &&
-      !profile.data?.onboarding_completed_at
-    ) {
+    if (auth.state === 'signedIn' && onboardingState === 'incomplete') {
       router.replace('/(onboarding)')
     }
-  }, [auth.state, profile.isLoading, profile.data])
+  }, [auth.state, onboardingState])
 
   const clusterNameById = useMemo(
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
   )
-  if (profile.isLoading || !profile.data?.onboarding_completed_at) {
+  if (profile.isLoading || onboardingState === 'incomplete') {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator />
+      </SafeAreaView>
+    )
+  }
+
+  if (onboardingState === 'error') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ padding: 24, width: '100%', maxWidth: 400 }}>
+          <Card>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>
+              Couldn’t load your profile
+            </Text>
+            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
+              Something went wrong while checking your account. Please try again.
+            </Text>
+            <View style={{ marginTop: 16 }}>
+              <PrimaryButton title="Try Again" onPress={() => void profile.refetch()} />
+            </View>
+          </Card>
+        </View>
       </SafeAreaView>
     )
   }
@@ -136,13 +161,24 @@ export default function HomeScreen() {
   const { label: daypartLabel, Icon: DaypartIcon } = daypart()
   const inviteError =
     toErrorMessage(acceptInvite.error, '') || toErrorMessage(declineInvite.error, '') || null
-  const loading = clusters.isLoading || invitations.isLoading
+  const loading = clusters.isLoading || invitations.isLoading || formed.isLoading
   const hasClusters = (clusters.data?.length ?? 0) > 0
   const hasInvites = (invitations.data?.length ?? 0) > 0
-  const isFresh = !loading && !hasClusters && !hasInvites && !formed.data
-  const listError =
-    (clusters.isError ? 'Couldn’t load your clusters.' : '') ||
-    (invitations.isError ? 'Couldn’t load your invitations.' : '')
+  // Never mistake a list fetch error for a fresh account: errors show the
+  // listError card above, not the get-started steps below.
+  const listFailed = clusters.isError || invitations.isError || formed.isError
+  const isFresh = shouldShowFresh({
+    loading,
+    listFailed,
+    hasClusters,
+    hasInvites,
+    hasFormed: formed.data != null,
+  })
+  const listError = homeListError({
+    clustersError: clusters.isError,
+    invitationsError: invitations.isError,
+    formedError: formed.isError,
+  })
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
