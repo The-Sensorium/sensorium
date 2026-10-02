@@ -95,6 +95,8 @@ belong here - the anon/publishable key is the only credential the app holds.
 | `EXPO_PUBLIC_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`) |
 | `EXPO_PUBLIC_GEOCODING_ENDPOINT` | no | Optional geocoding override used by local mode |
 | `EXPO_PUBLIC_WEB_URL` | yes for device builds | Web app origin hosting `/auth/mobile-challenge` (`https://preview.thesensorium.online` staging, `https://www.thesensorium.online` production). Powers the in-app human-verification sheet for auth; empty means verification is skipped (local dev only) |
+| `EXPO_PUBLIC_SENTRY_DSN` | yes for device builds | Sentry DSN for crash reporting (`@sentry/react-native`, initialized in `app/_layout.tsx`); empty means reporting is disabled (local dev only). Sourcemap upload during builds additionally needs `SENTRY_AUTH_TOKEN` plus the Sentry org/project |
+| `EXPO_PUBLIC_APP_ENV` | yes for device builds | Build flavor (`staging` / `production`), reported as the Sentry environment; unset means `development` |
 
 ## Scripts
 
@@ -109,6 +111,11 @@ belong here - the anon/publishable key is the only credential the app holds.
 
 There is also a local APK helper at [`scripts/android-build.ps1`](scripts/android-build.ps1)
 for building an installable APK without EAS.
+
+`react-native-keyboard-controller` is pinned outside the Expo SDK version
+(`expo.install.exclude` in [`package.json`](package.json)): the project tracks
+the 1.22.x line (SDK 57 pins 1.21.9), so `expo install --fix` flagging the
+drift is expected - do not "fix" it back.
 
 ## Auth and deep links
 
