@@ -28,6 +28,7 @@ interface AuthStub {
   resetPasswordForEmail: ReturnType<typeof vi.fn>
   resend: ReturnType<typeof vi.fn>
   updateUser: ReturnType<typeof vi.fn>
+  signOut: ReturnType<typeof vi.fn>
 }
 
 function stubClient(overrides: Partial<AuthStub> = {}): {
@@ -41,6 +42,7 @@ function stubClient(overrides: Partial<AuthStub> = {}): {
     resetPasswordForEmail: vi.fn(async () => ({ data: null, error: null })),
     resend: vi.fn(async () => ({ data: null, error: null })),
     updateUser: vi.fn(async () => ({ data: null, error: null })),
+    signOut: vi.fn(async () => ({ data: null, error: null })),
     ...overrides,
   }
   return { client: { auth }, auth }
@@ -376,5 +378,32 @@ describe('ResetPasswordPage', () => {
     await user.click(screen.getByRole('button', { name: 'Update password' }))
 
     await waitFor(() => expect(auth.updateUser).toHaveBeenCalledWith({ password: 'newpassword123' }))
+  })
+
+  it('revokes other sessions after a password change but keeps this one', async () => {
+    const { client, auth } = stubClient()
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<ResetPasswordPage />)
+    await user.type(screen.getByLabelText('New Password'), 'newpassword123')
+    await user.click(screen.getByRole('button', { name: 'Update password' }))
+
+    await waitFor(() => expect(auth.signOut).toHaveBeenCalledWith({ scope: 'others' }))
+  })
+
+  it('surfaces revocation failures instead of reporting success', async () => {
+    const { client, auth } = stubClient({
+      signOut: vi.fn(async () => ({ data: null, error: new Error('revocation failed') })),
+    })
+    requireSupabaseMock.mockReturnValue(client as never)
+    const user = userEvent.setup()
+
+    renderRoute(<ResetPasswordPage />)
+    await user.type(screen.getByLabelText('New Password'), 'newpassword123')
+    await user.click(screen.getByRole('button', { name: 'Update password' }))
+
+    await waitFor(() => expect(auth.signOut).toHaveBeenCalledWith({ scope: 'others' }))
+    expect(screen.getByText('revocation failed')).toBeInTheDocument()
   })
 })

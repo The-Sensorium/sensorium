@@ -113,10 +113,9 @@ for building an installable APK without EAS.
 ## Auth and deep links
 
 - **Email/password** and **Google OAuth** through Supabase Auth.
-- Sessions persist in Expo SecureStore via a chunked storage adapter
-  ([`src/lib/secure-storage.ts`](src/lib/secure-storage.ts)); non-secret flags
-  (signup email, theme choice, intro dismissals, last push token) stay in
-  AsyncStorage.
+- Sessions persist in `expo-sqlite/localStorage` (see `src/lib/supabase.ts`,
+  per the Expo Supabase guide); non-secret flags (signup email, theme choice,
+  intro dismissals, last push token) stay in AsyncStorage.
 - Email/password and resend flows carry a Turnstile `captchaToken` when the project enforces bot protection: the app opens a `CaptchaSheet` WebView on the web `/auth/mobile-challenge` page (`EXPO_PUBLIC_WEB_URL`) and submits the posted token. Empty URL means verification is skipped (local dev only); release builds fail closed with an explicit error.
 - OAuth and password-recovery redirects come back to the app's `sensorium://`
   deep link and are completed in `app/_layout.tsx` (`useAuthDeepLinks` +

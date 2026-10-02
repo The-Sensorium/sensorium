@@ -24,6 +24,10 @@ export function ResetPasswordPage() {
       const supabase = requireSupabase()
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
+      // Lock out every other session (mobile, other browsers) now that the
+      // password changed; this session stays alive to finish the flow.
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' })
+      if (signOutError) throw signOutError
       setDone(true)
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))
