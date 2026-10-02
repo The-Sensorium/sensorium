@@ -65,6 +65,12 @@
   /* like - stays red in both modes, independent of error */
   --color-like: #ba1a1a;
 
+  /* chat - outgoing bubble only, scoped to MessageItem/MentionText.
+     Outgoing mentions reuse the existing on-primary token (white semibold
+     underline, no pill). Light keeps the terracotta outgoing;
+     dark uses the navy override below. */
+  --color-chat-outgoing: #aa4d2c;
+
   /* typography */
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -148,6 +154,9 @@
 
   /* like - luminous red on dark so the heart keeps its light-mode identity */
   --color-like: #e5484d;
+
+  /* chat - dark override: navy outgoing. Outgoing mentions stay on-primary. */
+  --color-chat-outgoing: #344fa3;
 
   /* elevation - deeper + neutral in dark */
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);

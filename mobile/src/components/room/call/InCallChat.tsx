@@ -41,13 +41,13 @@ function ChatRow({ item, showName }: { item: InCallMessage; showName: boolean })
       <View
         style={{
           maxWidth: '80%',
-          backgroundColor: mine ? t.primary : t.surfaceContainer,
+          backgroundColor: mine ? t.chatOutgoing : t.surfaceContainer,
           borderRadius: radii.lg,
           paddingHorizontal: 12,
           paddingVertical: 8,
         }}
       >
-        <Text style={{ fontSize: 14, color: mine ? '#fff' : t.onSurface }}>{item.message}</Text>
+        <Text style={{ fontSize: 14, color: mine ? t.onPrimary : t.onSurface }}>{item.message}</Text>
       </View>
     </View>
   )
