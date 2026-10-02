@@ -1044,7 +1044,9 @@ export default function RoomScreen() {
               data={rows}
               keyExtractor={(r) => r.key}
               inverted
-              windowSize={7}
+              // RN default; a smaller window starves the far end of this
+              // inverted list and flashes rows on every offset jitter.
+              windowSize={21}
               maxToRenderPerBatch={10}
               removeClippedSubviews={false}
               keyboardShouldPersistTaps="handled"
