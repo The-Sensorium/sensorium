@@ -60,12 +60,12 @@ function setup(overrides: Partial<Parameters<typeof MessageItem>[0]> = {}) {
     onReport: vi.fn(),
   }
   const props = { ...base, ...overrides }
-  render(
+  const view = render(
     <MemoryRouter>
       <MessageItem {...props} />
     </MemoryRouter>,
   )
-  return { props }
+  return { props, ...view }
 }
 
 describe('MessageItem', () => {
@@ -88,6 +88,13 @@ describe('MessageItem', () => {
   it('labels the current user message as You', () => {
     setup({ mine: true })
     expect(screen.getByText('You')).toBeInTheDocument()
+  })
+
+  it('uses the outgoing bubble tone for my messages and surface for others', () => {
+    const mine = setup({ mine: true })
+    expect(mine.container.querySelector('.bg-chat-outgoing')).not.toBeNull()
+    const theirs = setup({ mine: false })
+    expect(theirs.container.querySelector('.bg-chat-outgoing')).toBeNull()
   })
 
   it('groups reactions and shows a count', () => {

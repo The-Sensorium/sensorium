@@ -33,6 +33,7 @@ colors:
   error-container: '#ffdad6'
   on-error-container: '#93000a'
   like: '#ba1a1a'
+  chat-outgoing: '#AA4D2C'
   primary-fixed: '#ffdbd0'
   primary-fixed-dim: '#ffb59e'
   on-primary-fixed: '#3a0b00'
@@ -95,6 +96,7 @@ colors-dark:
   error-container: '#93000a'
   on-error-container: '#ffdad6'
   like: '#e5484d'
+  chat-outgoing: '#344FA3'
 typography:
   display:
     fontFamily: Plus Jakarta Sans

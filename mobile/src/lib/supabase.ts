@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto'
+import 'expo-sqlite/localStorage/install'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
-import { SecureStorageAdapter } from './secure-storage'
 
 export type { Database }
 export type MatchingMode = Database['public']['Enums']['matching_mode']
@@ -15,7 +15,7 @@ function createSupabaseClient(url: string, anonKey: string) {
   try {
     return createClient<Database>(url, anonKey, {
       auth: {
-        storage: SecureStorageAdapter,
+        storage: localStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,

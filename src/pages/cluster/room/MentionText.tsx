@@ -16,9 +16,7 @@ export function MentionText({
   mine?: boolean
 }) {
   const parts = parseMentions(content, members)
-  const chip = mine
-    ? 'bg-on-primary/25 text-on-primary'
-    : 'bg-primary/10 text-primary'
+  const incomingChip = 'bg-primary/10 text-primary'
   return (
     <span>
       {parts.map((part, i) =>
@@ -27,27 +25,43 @@ export function MentionText({
         ) : part.type === 'everyone' ? (
           <span key={i}>
             {part.prefix}
-            <span
-              title={part.name}
-              className={cn('rounded-sm px-1 py-0.5 font-medium', chip)}
-            >
-              @{part.name}
-            </span>
+            {mine ? (
+              <span
+                title={part.name}
+                className="font-semibold text-on-primary underline decoration-on-primary/50 underline-offset-2"
+              >
+                @{part.name}
+              </span>
+            ) : (
+              <span title={part.name} className={cn('rounded-sm px-1 py-0.5 font-medium', incomingChip)}>
+                @{part.name}
+              </span>
+            )}
           </span>
         ) : (
           <span key={i}>
             {part.prefix}
-            <Link
-              to={`/profile/${part.id}?cluster=${clusterId}`}
-              title={part.name}
-              className={cn(
-                'rounded-sm px-1 py-0.5 font-medium transition-colors',
-                chip,
-                mine ? 'hover:bg-on-primary/40' : 'hover:bg-primary/20',
-              )}
-            >
-              @{part.name}
-            </Link>
+            {mine ? (
+              <Link
+                to={`/profile/${part.id}?cluster=${clusterId}`}
+                title={part.name}
+                className="font-semibold text-on-primary underline decoration-on-primary/50 underline-offset-2 transition-colors hover:opacity-80"
+              >
+                @{part.name}
+              </Link>
+            ) : (
+              <Link
+                to={`/profile/${part.id}?cluster=${clusterId}`}
+                title={part.name}
+                className={cn(
+                  'rounded-sm px-1 py-0.5 font-medium transition-colors',
+                  incomingChip,
+                  'hover:bg-primary/20',
+                )}
+              >
+                @{part.name}
+              </Link>
+            )}
           </span>
         ),
       )}

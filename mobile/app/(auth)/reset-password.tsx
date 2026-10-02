@@ -21,6 +21,10 @@ export default function ResetPasswordScreen() {
       const supabase = requireSupabase()
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
+      // Same as web: a new password locks out every other session, while
+      // this one stays alive to finish the flow.
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' })
+      if (signOutError) throw signOutError
       router.replace('/(auth)/login')
     } catch (err) {
       setError(toErrorMessage(err, 'Something went wrong.'))

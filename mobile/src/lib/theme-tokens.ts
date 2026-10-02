@@ -26,6 +26,7 @@ export const colors = {
   onError: '#ffffff',
   errorContainer: '#ffdad6',
   like: '#ba1a1a',
+  chatOutgoing: '#AA4D2C',
   background: '#fff8f6',
   onBackground: '#211a17',
   shadowColor: '#9d3d1c',
@@ -59,6 +60,8 @@ export const darkColors: Record<keyof typeof colors, string> = {
   onError: '#690005',
   errorContainer: '#93000a',
   like: '#e5484d',
+  // Mobile-only dark outgoing tone; web uses #3F64C4 (see docs/DESIGN.md).
+  chatOutgoing: '#3568C9',
   background: '#181818',
   onBackground: '#fcf9f2',
   shadowColor: '#000000',
