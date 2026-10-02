@@ -60,7 +60,8 @@ export const darkColors: Record<keyof typeof colors, string> = {
   onError: '#690005',
   errorContainer: '#93000a',
   like: '#e5484d',
-  chatOutgoing: '#344FA3',
+  // Mobile-only dark outgoing tone; web uses #3F64C4 (see docs/DESIGN.md).
+  chatOutgoing: '#3568C9',
   background: '#181818',
   onBackground: '#fcf9f2',
   shadowColor: '#000000',
