@@ -49,7 +49,14 @@ async function openSection(page: Page, name: string) {
 test.describe('cluster room (seeded Aurora)', () => {
   test('renders the presence strip and the composer', async ({ page }) => {
     await openRoom(page)
-    await expect(page.getByRole('heading', { name: /In the cluster now/i })).toBeVisible()
+    if (isDesktop(page)) {
+      await expect(page.getByRole('heading', { name: /In the cluster now/i })).toBeVisible()
+    } else {
+      // Mobile shows the compact native-style avatar pill instead.
+      await expect(page.getByRole('link', { name: /View all members/i })).toBeVisible()
+      // Immersive chat hides the global bottom nav on small screens.
+      await expect(page.locator('[data-bottom-nav]')).toBeHidden()
+    }
     await expect(page.getByRole('combobox', { name: 'Message' })).toBeVisible()
   })
 

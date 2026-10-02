@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { CornerUpLeft, Flag, Heart, Loader2, MessageSquare, Trash2 } from 'lucide-react'
+import { CornerUpLeft, Flag, Heart, Loader2, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
 import { LinkifiedText } from './LinkifiedText'
@@ -27,7 +27,6 @@ export function CommentItem({
   onLike,
   likeCount = 0,
   likedByMe = false,
-  replyCount,
   mutedBanner,
   highlighted,
 }: {
@@ -39,7 +38,6 @@ export function CommentItem({
   onLike?: (commentId: string) => void
   likeCount?: number
   likedByMe?: boolean
-  replyCount?: number
   mutedBanner?: ReactNode
   highlighted?: boolean
 }) {
@@ -108,11 +106,6 @@ export function CommentItem({
               />
               {likeCount}
             </button>
-          )}
-          {replyCount !== undefined && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant">
-              <MessageSquare className="h-4 w-4" strokeWidth={1.5} aria-hidden /> {replyCount}
-            </span>
           )}
           {onReply && (
             <button
