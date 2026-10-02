@@ -433,8 +433,15 @@ describe('RoomView timeline', () => {
 
   it('renders the presence strip with member links and counts', () => {
     renderRoom()
+    // Desktop card keeps the full heading; mobile shows the compact pill.
     expect(screen.getByText('1 of 3 here')).toBeInTheDocument()
-    expect(screen.getByTitle('Bo')).toHaveAttribute('href', '/profile/u2?cluster=c1')
+    expect(screen.getByText('1/3')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /View all members/i })).toHaveAttribute(
+      'href',
+      '/cluster/c1/members',
+    )
+    const boLinks = screen.getAllByTitle('Bo')
+    expect(boLinks[0]).toHaveAttribute('href', '/profile/u2?cluster=c1')
   })
 
   it('links the presence strip heading to the members page', () => {

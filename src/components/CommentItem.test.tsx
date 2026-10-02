@@ -83,7 +83,7 @@ describe('CommentItem', () => {
     expect(screen.queryByRole('button', { name: 'Delete comment' })).not.toBeInTheDocument()
   })
 
-  it('shows a like count and a reply count', () => {
+  it('shows a like count', () => {
     const comment = fixture()
     vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
     vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
@@ -96,11 +96,9 @@ describe('CommentItem', () => {
         onLike={vi.fn()}
         likeCount={4}
         likedByMe
-        replyCount={2}
       />,
     )
     expect(screen.getByText('4')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
   })
 
   it('invokes onLike when the heart is clicked', () => {
