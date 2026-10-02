@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, Loader2 } from 'lucide-react'
+import { ArrowDown, ChevronRight, Loader2, Users } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../app/auth-context'
@@ -855,13 +855,12 @@ export function RoomView() {
   }, [typingKey, typingMembers.length])
 
   return (
-    <section aria-label="The room" className="flex min-h-0 flex-1 flex-col gap-4 lg:h-full">
-      {/* Presence strip - a quiet row of faces. Pinned above the scroll
-       surface (like mobile's fixed row) so it stays visible while reading
-       instead of scrolling away with the timeline. */}
+    <section aria-label="The room" className="flex min-h-0 flex-1 flex-col gap-2 lg:h-full lg:gap-4">
+      {/* Presence strip - desktop keeps the full "who's here" card; mobile
+        uses the compact native-style avatar pill below. */}
       <section
         aria-label="Who is in the cluster"
-        className="shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft max-lg:[html.keyboard-open_&]:hidden"
+        className="hidden shrink-0 rounded-2xl border border-outline-variant/60 bg-surface px-4 py-3 shadow-soft lg:block"
       >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h2 className="font-display text-sm font-semibold text-on-surface">
@@ -903,6 +902,50 @@ export function RoomView() {
             })}
           </ul>
         </div>
+      </section>
+      {/* Compact member strip - mobile only, mirrors the native app: a slim
+        horizontal avatar pill that links to members. Hidden while the iOS
+        keyboard is open so the composer docks above the keys. */}
+      <section
+        aria-label="Who is in the cluster"
+        className="shrink-0 lg:hidden max-lg:[html.keyboard-open_&]:hidden"
+      >
+        <Link
+          to="members"
+          aria-label={`View all members, ${onlineCount} of ${memberCount} here`}
+          className="flex items-center gap-2 overflow-hidden rounded-full border border-outline-variant/60 bg-surface py-1.5 pl-3 pr-2 shadow-soft"
+        >
+          <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
+            {(members.data ?? []).slice(0, 8).map((m) => {
+              const isMe = m.id === userId
+              return (
+                <span
+                  key={m.id}
+                  title={`${m.display_name}${isMe ? ' (you)' : ''}`}
+                  className="relative block shrink-0 p-[2px]"
+                >
+                  <Avatar
+                    name={m.display_name}
+                    src={m.avatar_url}
+                    className={cn('h-6 w-6', isMe && 'ring-2 ring-primary')}
+                    textClassName="text-[10px]"
+                  />
+                  {isOnlineNow(online, m.id, userId) ? (
+                    <span
+                      className="absolute bottom-[1px] right-[1px] h-2 w-2 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
+                      aria-hidden
+                    />
+                  ) : null}
+                </span>
+              )
+            })}
+          </span>
+          <span className="flex shrink-0 items-center gap-1 text-xs text-on-surface-variant">
+            <Users className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+            {onlineCount}/{memberCount}
+            <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+          </span>
+        </Link>
       </section>
       {activeCall.data && !inCall && (
         <CallBanner
@@ -1102,7 +1145,7 @@ export function RoomView() {
             setPinned(true)
             setNewCount(0)
           }}
-          className="fixed bottom-[calc(var(--bottom-nav-offset)+6.5rem)] left-1/2 z-20 inline-flex min-h-[48px] -translate-x-1/2 items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
+          className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-1/2 z-20 inline-flex min-h-[48px] -translate-x-1/2 items-center gap-1.5 rounded-pill border border-outline-variant/60 bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
         >
           <ArrowDown className="h-4 w-4" strokeWidth={2} aria-hidden />
           {newCount} new message{newCount === 1 ? '' : 's'}

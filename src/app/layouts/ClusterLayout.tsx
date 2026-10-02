@@ -3,9 +3,10 @@ import { NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-rout
 import { ArrowLeft, Megaphone, Menu, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { modeInfo } from '../../lib/modes'
+import { useAuth } from '../auth-context'
 import { useCluster, useMyMembership } from '../../features/introductions'
 import { useClusterMembers } from '../../features/matching'
-import { useClusterChannel } from '../../features/realtime'
+import { useClusterChannel, isOnlineNow, usePresence } from '../../features/realtime'
 import { ClusterRail } from '../../components/ClusterRail'
 import { RoutePending } from '../../components/RoutePending'
 
@@ -21,12 +22,24 @@ export function ClusterLayout() {
   const { clusterId = '' } = useParams()
   const { pathname, key } = useLocation()
   const navigate = useNavigate()
-  const isRoom = pathname === `/cluster/${clusterId}`
-  const isSettings = pathname === `/cluster/${clusterId}/settings`
+  // Trailing slash must not change the route identity: AppShell's immersive
+  // regex already accepts an optional slash, so normalize here too. Otherwise
+  // `/cluster/abc/` would hide the global chrome but render the non-room
+  // header (half-immersive page).
+  const normalizedPath = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+  const isRoom = normalizedPath === `/cluster/${clusterId}`
+  const isSettings = normalizedPath === `/cluster/${clusterId}/settings`
 
   const cluster = useCluster(clusterId)
   const membership = useMyMembership(clusterId)
   const members = useClusterMembers(clusterId)
+  const auth = useAuth()
+  const selfId = auth.state === 'signedIn' ? auth.userId : null
+  // Presence count for the compact mobile room header (mirrors the native
+  // app's "X of Y here" subtitle). Shared channel, no extra subscription.
+  const { online } = usePresence(isRoom ? clusterId : null)
+  const memberCount = (members.data ?? []).length
+  const onlineCount = (members.data ?? []).filter((m) => isOnlineNow(online, m.id, selfId)).length
   const [sectionsOpen, setSectionsOpen] = useState(false)
 
   // One Postgres-Changes subscription for the whole cluster shell keeps the room,
@@ -57,9 +70,22 @@ export function ClusterLayout() {
     !pending && (!cluster.data || !membership.data)
 
   if (unavailable) {
+    // Immersive surfaces hide the global chrome on mobile, so this state
+    // needs its own way out (stale deep link, revoked access). No global
+    // nav is rendered above us here.
     return (
-      <div className="mx-auto max-w-xl rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center text-sm text-on-surface-variant">
-        This cluster isn’t available to you.
+      <div className="mx-auto w-full max-w-xl space-y-4">
+        <button
+          type="button"
+          aria-label="Back to Home"
+          onClick={() => navigate('/home')}
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full px-2 py-2 text-[15px] font-semibold text-primary transition-colors hover:bg-surface-container"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Home
+        </button>
+        <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center text-sm text-on-surface-variant">
+          This cluster isn’t available to you.
+        </div>
       </div>
     )
   }
@@ -77,8 +103,8 @@ export function ClusterLayout() {
   const membersUnknown = members.isPending
   const createdPending =
     isCreated === true && (membersUnknown || confirmedCount < 3) && !members.isError
-  const onMembersTab = pathname === `/cluster/${clusterId}/members`
-  const onSettingsTab = pathname === `/cluster/${clusterId}/settings`
+  const onMembersTab = normalizedPath === `/cluster/${clusterId}/members`
+  const onSettingsTab = normalizedPath === `/cluster/${clusterId}/settings`
   const locked = createdPending && !onMembersTab && !onSettingsTab
 
   const ModeIcon = cluster.data ? modeInfo(cluster.data.matching_mode).icon : null
@@ -88,7 +114,7 @@ export function ClusterLayout() {
       className={cn(
         'mx-auto w-full max-w-6xl',
         isRoom
-          ? 'flex h-[calc(100dvh_-_5.5rem_-_var(--bottom-nav-offset))] flex-col gap-4 max-lg:[html.keyboard-open_&]:h-[calc(var(--vv-h,100dvh)-5.5rem)] lg:h-[calc(100dvh_-_7.5rem)]'
+          ? 'flex h-[calc(100dvh-1rem)] flex-col gap-2 max-lg:[html.keyboard-open_&]:h-[calc(var(--vv-h,100dvh)-1rem)] lg:h-[calc(100dvh_-_7.5rem)] lg:gap-4'
           : 'space-y-4',
       )}
     >
@@ -99,17 +125,40 @@ export function ClusterLayout() {
           isRoom ? 'shrink-0 lg:static' : 'sticky top-16',
         )}
       >
-        <div className="flex items-center gap-2 py-3">
+        <div className={cn('flex items-center gap-2', isRoom ? 'py-2 lg:py-3' : 'py-3')}>
           <button
             type="button"
-            aria-label="Go back"
-            onClick={() => (key === 'default' ? navigate('/clusters', { replace: true }) : navigate(-1))}
-            className="grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+            aria-label={isRoom ? 'Back to Home' : 'Go back'}
+            // The room promises "Home" (visible text on mobile, accessible
+            // name everywhere): go to a deterministic parent like the native
+            // room, which always exits home. Other sections keep history-back
+            // with a clusters fallback for direct loads.
+            onClick={() => {
+              if (isRoom) {
+                navigate('/home')
+              } else if (key === 'default') {
+                navigate('/clusters', { replace: true })
+              } else {
+                navigate(-1)
+              }
+            }}
+            className={cn(
+              'flex h-11 min-h-[44px] w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface',
+              isRoom && 'max-lg:w-auto max-lg:gap-1.5 max-lg:px-2 max-lg:text-primary max-lg:hover:text-primary',
+            )}
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+            {isRoom && (
+              <span className="text-[15px] font-semibold lg:hidden">Home</span>
+            )}
           </button>
-          <div className="min-w-0 flex-1">
-            <p className="hidden items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary sm:flex">
+          <div className={cn('min-w-0 flex-1', isRoom && 'max-lg:text-center')}>
+            <p
+              className={cn(
+                'hidden items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary',
+                isRoom ? 'lg:flex' : 'sm:flex',
+              )}
+            >
               {cluster.data?.origin === 'created' ? (
                 <span className="truncate">Created cluster</span>
               ) : ModeIcon && cluster.data ? (
@@ -128,6 +177,11 @@ export function ClusterLayout() {
                 <span className="inline-block h-5 w-40 animate-pulse rounded bg-surface-container" aria-hidden />
               )}
             </h1>
+            {isRoom && (
+              <p className="truncate text-xs text-on-surface-variant lg:hidden">
+                {onlineCount} of {memberCount} here
+              </p>
+            )}
           </div>
           {/* Mobile-only sections menu: the chat keeps the whole band to itself
               and the other sections live behind this menu. Desktop keeps the

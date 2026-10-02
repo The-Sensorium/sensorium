@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import { Home, Newspaper, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../auth-context'
@@ -32,6 +32,14 @@ export function AppShell() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   useNotificationsChannel(userId)
+  const { pathname } = useLocation()
+  // Immersive mobile surfaces: the room (`/cluster/:id` index only, not
+  // members/signals/votes/settings) and post detail (`/posts/:postId`) hide
+  // the global chrome on small screens so content gets the full viewport.
+  // Desktop keeps all chrome.
+  const isMobileChat = /^\/cluster\/[^/]+\/?$/.test(pathname)
+  const isMobilePostDetail = /^\/posts\/[^/]+\/?$/.test(pathname)
+  const isImmersive = isMobileChat || isMobilePostDetail
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -41,8 +49,14 @@ export function AppShell() {
       >
         Skip to content
       </a>
-      {/* Top nav - slim bar mobile (brand + theme), full nav desktop (md+) */}
-      <header className="sticky top-0 z-40 border-b border-outline-variant/60 bg-surface/90 backdrop-blur">
+      {/* Top nav - slim bar mobile (brand + theme), full nav desktop (md+).
+          Hidden on small screens for immersive surfaces only. */}
+      <header
+        className={cn(
+          'sticky top-0 z-40 border-b border-outline-variant/60 bg-surface/90 backdrop-blur',
+          isImmersive && 'max-lg:hidden',
+        )}
+      >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
           <NavLink to="/home" className="flex items-center gap-2">
             <BrandMark size={40} />
@@ -68,18 +82,30 @@ export function AppShell() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-6 pb-24 pt-6 overscroll-contain md:pb-8">
+      {/* Main content - immersive surfaces trim mobile padding to give the
+          content the full viewport once the global chrome is hidden. */}
+      <main
+        id="main-content"
+        className={cn(
+          'mx-auto w-full max-w-6xl flex-1 overscroll-contain',
+          isImmersive
+            ? 'px-6 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 md:pb-8 lg:pt-6'
+            : 'px-6 pb-24 pt-6 md:pb-8',
+        )}
+      >
         <Suspense fallback={<RoutePending />}>
           <Outlet />
         </Suspense>
       </main>
 
-      {/* Bottom nav - mobile only. Its height must match --bottom-nav-offset
+      {/* Bottom nav - mobile only, hidden for immersive surfaces. Its height must match --bottom-nav-offset
        (reserved in index.css) so sticky/fixed page furniture sits flush on it. */}
       <nav
         data-bottom-nav
-        className="fixed inset-x-0 bottom-0 z-20 h-[var(--bottom-nav-offset)] border-t border-outline-variant/60 bg-surface/95 backdrop-blur transition-[transform,visibility] duration-200 motion-reduce:transition-none lg:hidden"
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-20 h-[var(--bottom-nav-offset)] border-t border-outline-variant/60 bg-surface/95 backdrop-blur transition-[transform,visibility] duration-200 motion-reduce:transition-none lg:hidden',
+          isImmersive && 'hidden',
+        )}
       >
         <ul className="mx-auto flex h-full max-w-6xl items-center justify-around">
           {navItems.map((item) => (

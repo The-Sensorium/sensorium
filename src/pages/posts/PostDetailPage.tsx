@@ -60,17 +60,38 @@ export function PostDetailPage() {
   )
 
   if (post.isLoading || myMutes.isLoading) {
+    // Immersive detail hides the global chrome on mobile, so keep the local
+    // Back visible in every state (loading, missing) - otherwise a stale
+    // deep link strands the user with no navigation.
     return (
-      <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+      <div className="mx-auto w-full max-w-2xl space-y-4">
+        <button
+          type="button"
+          onClick={goBack}
+          className="inline-flex items-center gap-2 rounded-pill px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-container/15 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back
+        </button>
+        <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
+        </div>
       </div>
     )
   }
 
   if (!post.data) {
     return (
-      <div className="mx-auto max-w-xl rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center text-sm text-on-surface-variant">
-        This post isn’t available to you.
+      <div className="mx-auto w-full max-w-2xl space-y-4">
+        <button
+          type="button"
+          onClick={goBack}
+          className="inline-flex items-center gap-2 rounded-pill px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-container/15 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Back
+        </button>
+        <div className="mx-auto max-w-xl rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center text-sm text-on-surface-variant">
+          This post isn’t available to you.
+        </div>
       </div>
     )
   }

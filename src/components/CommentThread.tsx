@@ -327,14 +327,14 @@ export function CommentThread({
               </p>
             )}
           </div>
-          <div className="mt-2 flex items-center gap-1.5">
-            <div className="relative flex items-center gap-1.5">
+          <div className="mt-2 flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-2">
+            <div className="relative flex min-w-0 flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 aria-label="Attach image"
                 onClick={() => fileRef.current?.click()}
                 className={cn(
-                  'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors',
+                  'inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-pill px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4',
                   file
                     ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
                     : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -352,7 +352,7 @@ export function CommentThread({
                   setGifOpen((o) => !o)
                 }}
                 className={cn(
-                  'inline-flex min-h-[44px] items-center gap-1.5 rounded-pill px-4 py-2.5 text-sm font-semibold transition-colors',
+                  'inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-pill px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4',
                   gif
                     ? 'bg-primary-container/15 text-primary hover:bg-primary-container/25'
                     : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
@@ -375,7 +375,7 @@ export function CommentThread({
             <button
               type="submit"
               disabled={!hasContent || create.isPending}
-              className="ml-auto inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+              className="ml-auto inline-flex max-w-full min-h-[48px] shrink-0 items-center gap-2 rounded-pill bg-primary px-4 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60 sm:px-5"
             >
               {create.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -444,7 +444,6 @@ export function CommentThread({
                     onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                     likeCount={likesByComment.get(tc.id)?.count ?? 0}
                     likedByMe={likesByComment.get(tc.id)?.mine ?? false}
-                    replyCount={thread.length}
                     highlighted={highlightId === tc.id}
                     mutedBanner={
                       tcMuted ? (
