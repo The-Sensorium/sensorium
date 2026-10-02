@@ -157,7 +157,7 @@ let geo = readFileSync(from('geo.ts'), 'utf8')
   const Location = await import('expo-location')
   const { status } = await Location.requestForegroundPermissionsAsync()
   if (status !== 'granted') throw new Error('Location permission was denied.')
-  const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
+  const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
   return { lat: pos.coords.latitude, lng: pos.coords.longitude }
 }`,
   )
