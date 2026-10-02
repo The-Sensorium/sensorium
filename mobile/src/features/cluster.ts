@@ -101,7 +101,10 @@ export function useLoadEarlierMessages(clusterId: string | null) {
         return [...byId.values()].sort(byCreatedIdAsc)
       })
       const added = older.filter((m) => !current.some((c) => c.id === m.id)).length
-      return { added, hasMore: added === CHAT_PAGE_SIZE }
+      // A full page means older history may remain, but only when it made
+      // progress: the inclusive cursor can return the same full page twice
+      // when many rows share a timestamp, and that must read as exhausted.
+      return { added, hasMore: older.length === CHAT_PAGE_SIZE && added > 0 }
     },
   })
 }

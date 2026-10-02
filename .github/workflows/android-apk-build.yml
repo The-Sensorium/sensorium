@@ -44,11 +44,16 @@ jobs:
       run:
         working-directory: mobile
     env:
+      EXPO_PUBLIC_APP_ENV: ${{ inputs.environment }}
       EXPO_PUBLIC_SUPABASE_URL: ${{ vars[format('EXPO_PUBLIC_SUPABASE_URL_{0}', inputs.environment)] }}
       EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars[format('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY_{0}', inputs.environment)] }}
       EXPO_PUBLIC_KLIPY_APP_KEY: ${{ vars[format('EXPO_PUBLIC_KLIPY_APP_KEY_{0}', inputs.environment)] }}
       EXPO_PUBLIC_KLIPY_ENDPOINT: ${{ vars[format('EXPO_PUBLIC_KLIPY_ENDPOINT_{0}', inputs.environment)] }}
       EXPO_PUBLIC_WEB_URL: ${{ vars[format('EXPO_PUBLIC_WEB_URL_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars[format('EXPO_PUBLIC_SENTRY_DSN_{0}', inputs.environment)] }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,6 +78,26 @@ jobs:
         working-directory: mobile
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > google-services.json
+        shell: bash
+
+      - name: Check Sentry config
+        # Device builds without a DSN/org/project silently ship unreadable
+        # crash reports (or none at all). Fail fast instead of discovering it
+        # on the first beta crash. A missing auth token only blocks sourcemap
+        # upload, so it warns loudly but still builds.
+        run: |
+          fail=""
+          [ -n "$EXPO_PUBLIC_SENTRY_DSN" ] || fail="$fail EXPO_PUBLIC_SENTRY_DSN_${{ inputs.environment }}"
+          [ -n "$SENTRY_ORG" ] || fail="$fail SENTRY_ORG"
+          [ -n "$SENTRY_PROJECT" ] || fail="$fail SENTRY_PROJECT"
+          if [ -n "$fail" ]; then
+            echo "Missing required Sentry config:$fail"
+            echo "Set the repo variables (and rerun), or the beta ships blind."
+            exit 1
+          fi
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::warning::SENTRY_AUTH_TOKEN secret is not set. The build will succeed but sourcemaps will not upload, so stack traces will be unreadable."
+          fi
         shell: bash
 
       - name: Prebuild Android project
