@@ -204,7 +204,7 @@ export function MessageItem({
                     'whitespace-pre-wrap break-words',
                     mine ? 'rounded-br-md' : 'rounded-bl-md',
                     toneMine
-                      ? 'bg-primary text-on-primary'
+                      ? 'bg-chat-outgoing text-on-primary'
                       : 'bg-surface-container text-on-surface',
                     highlighted && (toneMine ? 'ring-2 ring-on-surface' : 'ring-2 ring-primary'),
                   )

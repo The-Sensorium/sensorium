@@ -918,7 +918,7 @@ export function RoomView() {
       <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
       {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
       the timeline scrolls inside the container and the page never moves. */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl bg-surface-lowest px-3 py-2">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl bg-background px-3 py-2">
         {messages.isLoading || myMutes.isLoading ? (
           <div role="status" aria-label="Loading the room" className="space-y-2">
             <div className="flex items-center gap-2 text-sm text-on-surface-variant">

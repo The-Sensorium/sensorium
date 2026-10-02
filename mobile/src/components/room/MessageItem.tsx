@@ -139,7 +139,7 @@ export function MessageItem({
             onLongPress={isEditing ? undefined : onToggleMenu}
             delayLongPress={350}
             style={{
-              backgroundColor: isEditing ? t.surfaceLowest : toneMine ? t.primary : t.surfaceContainer,
+              backgroundColor: isEditing ? t.surfaceLowest : toneMine ? t.chatOutgoing : t.surfaceContainer,
               borderRadius: 16,
               borderBottomRightRadius: mine ? 4 : 16,
               borderBottomLeftRadius: mine ? 16 : 4,

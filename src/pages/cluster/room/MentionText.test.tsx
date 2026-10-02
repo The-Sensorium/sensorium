@@ -9,10 +9,10 @@ const members: MentionMember[] = [
   { id: 'u3', display_name: 'Casey' },
 ]
 
-function setup(content: string) {
+function setup(content: string, mine = false) {
   return render(
     <MemoryRouter>
-      <MentionText content={content} members={members} clusterId="c1" />
+      <MentionText content={content} members={members} clusterId="c1" mine={mine} />
     </MemoryRouter>,
   )
 }
@@ -47,5 +47,21 @@ describe('MentionText', () => {
     const external = screen.getByRole('link', { name: 'https://example.com/a' })
     expect(external).toHaveAttribute('href', 'https://example.com/a')
     expect(external).toHaveAttribute('target', '_blank')
+  })
+
+  it('renders outgoing mentions white, semibold and underlined with no pill', () => {
+    const { container } = setup('Hi @everyone and @Casey', true)
+    const everyone = screen.getByText('@everyone')
+    expect(everyone.tagName).not.toBe('A')
+    expect(everyone).toHaveClass('text-on-primary')
+    expect(everyone).toHaveClass('font-semibold')
+    expect(everyone).toHaveClass('underline')
+    expect(everyone.className).not.toContain('bg-')
+    const link = screen.getByRole('link', { name: '@Casey' })
+    expect(link).toHaveAttribute('href', '/profile/u3?cluster=c1')
+    expect(link).toHaveClass('text-on-primary')
+    expect(link).toHaveClass('underline')
+    expect(link.className).not.toContain('bg-')
+    expect(container.querySelector('.bg-primary\\/10')).toBeNull()
   })
 })

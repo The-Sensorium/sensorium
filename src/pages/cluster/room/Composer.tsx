@@ -210,7 +210,7 @@ export function Composer({
   const actionsButton =
     'grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container disabled:opacity-60'
   const sendButton =
-    'grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full bg-surface-container transition-colors disabled:opacity-60'
+    'grid h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 place-items-center rounded-full bg-primary text-on-primary transition-colors hover:bg-primary-container disabled:opacity-40'
 
   return (
     <>
@@ -434,10 +434,7 @@ export function Composer({
           type="submit"
           disabled={!draft.trim() || pending || uploading}
           aria-label="Send message"
-          className={cn(
-            sendButton,
-            draft.trim() ? 'text-primary' : 'text-on-surface-variant',
-          )}
+          className={sendButton}
         >
           {pending ? (
             <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
