@@ -20,6 +20,7 @@ import { colors, darkColors } from '../src/lib/theme-tokens'
 import { useResolvedScheme } from '../src/lib/theme-choice'
 import { handleAuthCallback } from '../src/lib/deep-links'
 import { goHome, resetTo } from '../src/lib/auth-navigation'
+import { isLiveKitAbortReasonNoise } from '../src/lib/sentry-noise'
 
 void SplashScreen.preventAutoHideAsync()
 
@@ -29,6 +30,9 @@ if (sentryDsn) {
     dsn: sentryDsn,
     environment: process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
     tracesSampleRate: 0,
+    beforeSend(event) {
+      return isLiveKitAbortReasonNoise(event) ? null : event
+    },
   })
 }
 
