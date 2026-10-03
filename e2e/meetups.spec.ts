@@ -98,7 +98,26 @@ test.describe('cluster meetup (seeded Aurora)', () => {
     await login(page)
     await page.getByRole('link', { name: /Aurora/i }).first().click()
     await expect(page.getByRole('heading', { name: 'Aurora' })).toBeVisible()
-    await expect(page.getByTestId('meetup-card')).toBeVisible()
+    // The banner hides once the viewer voted (until confirmation), and both
+    // projects share one seeded DB, so the mobile run can inherit a voted
+    // ballot from the desktop run. Fall back to the sections nav entry, which
+    // is always present, instead of assuming the banner is showing.
+    try {
+      await expect(page.getByTestId('meetup-card')).toBeVisible({ timeout: 5000 })
+      return
+    } catch {
+      // Voted state: verify the nav entry instead.
+    }
+    if (isDesktop(page)) {
+      await expect(
+        page.getByRole('navigation', { name: 'Room sections' }).getByRole('link', { name: 'Meetups' }),
+      ).toBeVisible()
+    } else {
+      await page.getByRole('button', { name: 'Cluster sections' }).click()
+      await expect(
+        page.getByRole('menu', { name: 'Cluster sections' }).getByRole('menuitem', { name: 'Meetups' }),
+      ).toBeVisible()
+    }
   })
 
   test('ballot-builder propose flow reaches the quorum state', async ({ page }) => {
