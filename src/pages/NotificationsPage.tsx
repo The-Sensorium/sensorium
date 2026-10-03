@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import {
   AtSign,
   Bell,
+  CalendarDays,
   Flag,
   Heart,
   Loader2,
@@ -19,7 +20,6 @@ import {
   Trash2,
   UserPlus,
   Users,
-  Video,
 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { toErrorMessage } from '../lib/error'
@@ -53,11 +53,11 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   post_like: Heart,
   report_new: Flag,
   appeal_new: MessageSquareWarning,
-  meetup_invite: Video,
-  meetup_confirmed: Video,
-  meetup_reminder_24h: Video,
-  meetup_reminder_15m: Video,
-  meetup_starting: Video,
+  meetup_invite: CalendarDays,
+  meetup_confirmed: CalendarDays,
+  meetup_reminder_24h: CalendarDays,
+  meetup_reminder_15m: CalendarDays,
+  meetup_starting: CalendarDays,
 }
 
 export function NotificationsPage() {
