@@ -280,8 +280,9 @@ one time, changeable until voting closes. The first time to reach 3 votes on the
 same slot becomes the meetup, and everyone is notified.
 
 Join opens 10 minutes before the start, with reminders at 24 hours, 15 minutes,
-and at start time. Joining checks the member in. After the meetup, members can
-leave feedback on how it went.
+and at start time. Joining checks the member in. During the call the meetup
+reads as live with its end time; after the scheduled end it reads as finished.
+Proposing the next meetup unlocks once expiry completes the old row.
 
 The proposer can withdraw the proposal while voting is still open. A proposal
 that never reaches quorum expires, and the cluster can propose again. Only one

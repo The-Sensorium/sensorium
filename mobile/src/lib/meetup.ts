@@ -5,6 +5,8 @@ export const MEETUP_ENABLED = true
 export const MEETUP_QUORUM = 3
 /** Join opens 10 minutes before the confirmed start. */
 export const MEETUP_JOIN_LEAD_MS = 10 * 60 * 1000
+/** Live UI lingers past the scheduled end for a lingering call. */
+export const MEETUP_END_GRACE_MS = 10 * 60 * 1000
 /** A custom slot must be at least 3h out (keeps the voting window valid) and within 7 days. */
 export const MEETUP_CUSTOM_SLOT_MIN_LEAD_MS = 3 * 3600_000
 export const MEETUP_CUSTOM_SLOT_MAX_AHEAD_MS = 7 * 24 * 3600_000
@@ -101,6 +103,27 @@ export function canJoinMeetup(startsAt: string | null, now = Date.now()): boolea
   const start = new Date(startsAt).getTime()
   if (Number.isNaN(start)) return false
   return now >= start - MEETUP_JOIN_LEAD_MS && now <= start + 2 * 3600_000
+}
+
+/** Live from start until the scheduled end plus grace. Null or invalid never live. */
+export function isLive(
+  startsAt: string | null | undefined,
+  endsAt: string | null | undefined,
+  now = Date.now(),
+): boolean {
+  if (!startsAt || !endsAt) return false
+  const start = new Date(startsAt).getTime()
+  const end = new Date(endsAt).getTime()
+  if (Number.isNaN(start) || Number.isNaN(end)) return false
+  return now >= start && now <= end + MEETUP_END_GRACE_MS
+}
+
+/** Ended once past the scheduled end plus grace. Null or invalid never ended. */
+export function hasEnded(endsAt: string | null | undefined, now = Date.now()): boolean {
+  if (!endsAt) return false
+  const end = new Date(endsAt).getTime()
+  if (Number.isNaN(end)) return false
+  return now > end + MEETUP_END_GRACE_MS
 }
 
 /**
