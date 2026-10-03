@@ -11,6 +11,7 @@ import {
   useCheckInMeetup,
   useClusterMeetups,
   useMeetupState,
+  useRsvpMeetup,
   useSubmitMeetupFeedback,
   useVoteMeetupSlot,
   type Meetup,
@@ -24,6 +25,7 @@ import { errorHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen, SecondaryButton } from '../../../../src/components/ui'
+import { Avatar } from '../../../../src/components/Avatar'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 import { getSuppressedPushCluster, setSuppressedPushCluster } from '../../../../src/lib/push-suppress'
@@ -83,7 +85,7 @@ export default function MeetupsScreen() {
           <ProposeCard clusterId={clusterId} />
         </View>
       ) : (
-        <MeetupDetail key={active.id} clusterId={clusterId} meetup={active} memberCount={(members.data ?? []).length} />
+        <MeetupDetail key={active.id} clusterId={clusterId} meetup={active} members={(members.data ?? [])} />
       )}
     </Screen>
   )
@@ -116,7 +118,16 @@ function ProposeCard({ clusterId }: { clusterId: string }) {
   )
 }
 
-function MeetupDetail({ clusterId, meetup, memberCount }: { clusterId: string; meetup: Meetup; memberCount: number }) {
+function MeetupDetail({
+  clusterId,
+  meetup,
+  members,
+}: {
+  clusterId: string
+  meetup: Meetup
+  members: Array<{ id: string; display_name: string | null; avatar_url: string | null }>
+}) {
+  const memberCount = members.length
   const t = useTheme()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -124,6 +135,7 @@ function MeetupDetail({ clusterId, meetup, memberCount }: { clusterId: string; m
   const vote = useVoteMeetupSlot(clusterId, meetup.id)
   const cancel = useCancelMeetup(clusterId, meetup.id)
   const checkIn = useCheckInMeetup(clusterId, meetup.id)
+  const rsvp = useRsvpMeetup(clusterId, meetup.id)
   const startCall = useStartCall(clusterId)
   const joinCall = useJoinCall(clusterId)
   const activeCall = useActiveCall(clusterId)
@@ -132,6 +144,8 @@ function MeetupDetail({ clusterId, meetup, memberCount }: { clusterId: string; m
   const [selected, setSelected] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [declineOpen, setDeclineOpen] = useState(false)
+  const [joinOpen, setJoinOpen] = useState(false)
   const [joining, setJoining] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [rating, setRating] = useState<'loved' | 'nice' | 'not_for_me' | null>(null)
@@ -251,21 +265,109 @@ function MeetupDetail({ clusterId, meetup, memberCount }: { clusterId: string; m
   }
 
   if (row.status === 'confirmed' || row.status === 'starting' || row.status === 'active') {
+    const joiningCount =
+      detail.going_user_ids !== undefined && detail.going_user_ids !== null
+        ? Math.max(detail.going_count, detail.checked_in_count)
+        : detail.votes_cast
+    const iAmIn = detail.my_rsvp === 'going'
+    const memberById = new Map(members.map((m) => [m.id, m]))
+    // Avatars follow the live going list (same data as the count). Pre-0183
+    // backends omit going_user_ids, so fall back to confirmed-slot voters.
+    const joiningIds =
+      detail.going_user_ids !== undefined && detail.going_user_ids !== null
+        ? detail.going_user_ids
+        : (row.confirmed_slot_id ? detail.voters.filter((v) => v.slot_id === row.confirmed_slot_id) : []).map(
+            (v) => v.user_id,
+          )
+    const joiningMembers = joiningIds
+      .map((id) => memberById.get(id))
+      .filter((m): m is (typeof members)[number] => m !== undefined)
+    const shownJoining = joiningMembers.slice(0, 5)
+    const joiningOverflow = Math.max(0, joiningCount - shownJoining.length)
+
+    async function handleConfirmJoinRsvp() {
+      setError(null)
+      try {
+        await mutateWithRetry(() => rsvp.mutateAsync('going'))
+        successHaptic()
+        setJoinOpen(false)
+      } catch (e) {
+        errorHaptic()
+        setJoinOpen(false)
+        setError(toErrorMessage(e, 'Could not update your RSVP. Try again.'))
+      }
+    }
+
+    async function handleConfirmDecline() {
+      setError(null)
+      try {
+        await mutateWithRetry(() => rsvp.mutateAsync('declined'))
+        successHaptic()
+        setDeclineOpen(false)
+      } catch (e) {
+        errorHaptic()
+        setDeclineOpen(false)
+        setError(toErrorMessage(e, 'Could not update your RSVP. Try again.'))
+      }
+    }
+
     return (
       <View style={{ gap: 16 }}>
         <Card>
           <View style={{ alignItems: 'center' }}>
             <CalendarDays size={30} color={t.primary} strokeWidth={1.5} />
           </View>
-          <Text style={{ marginTop: 12, fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>Your cluster meetup is set</Text>
-          <Text style={{ marginTop: 8, fontSize: 22, lineHeight: 30, fontWeight: '700', color: t.onSurface, textAlign: 'center' }}>
+          <Text style={{ marginTop: 10, fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>Your cluster meetup is set</Text>
+          <Text style={{ marginTop: 6, fontSize: 22, lineHeight: 30, fontWeight: '700', color: t.onSurface, textAlign: 'center' }}>
             {row.starts_at ? formatSlotCompact24(row.starts_at) : ''}
           </Text>
-          <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
-            {pluralize(detail.votes_cast, 'member joining', 'members joining')}
+          {shownJoining.length > 0 ? (
+            <View
+              style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+              accessibilityRole="image"
+              accessibilityLabel={pluralize(joiningCount, 'member joining', 'members joining')}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {shownJoining.map((m, i) => (
+                  <View
+                    key={m.id}
+                    style={{
+                      marginLeft: i === 0 ? 0 : -8,
+                      borderWidth: 2,
+                      borderColor: t.surface,
+                      borderRadius: 16,
+                    }}
+                  >
+                    <Avatar name={m.display_name ?? ''} src={m.avatar_url} size={28} />
+                  </View>
+                ))}
+                {joiningOverflow > 0 ? (
+                  <View
+                    style={{
+                      marginLeft: -8,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: t.surfaceContainer,
+                      borderWidth: 2,
+                      borderColor: t.surface,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, lineHeight: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+                      +{joiningOverflow}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+          <Text style={{ marginTop: 3, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
+            {pluralize(joiningCount, 'member joining', 'members joining')}
           </Text>
           {row.starts_at ? (
-            <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <View style={{ marginTop: 3, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <Clock size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
               <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                 Starts in <CountdownTimer deadline={row.starts_at} />
@@ -273,17 +375,65 @@ function MeetupDetail({ clusterId, meetup, memberCount }: { clusterId: string; m
             </View>
           ) : null}
           {row.starts_at ? (
-            <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
+            <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
               Times are shown in your local time.
             </Text>
           ) : null}
           <ErrorText message={error} />
-          <View style={{ marginTop: 12 }}>
-            <PrimaryButton title="Join Meetup" loading={joining} disabled={!joinable} onPress={() => void handleJoin()} />
-          </View>
-          {!joinable ? (
+          {!iAmIn ? (
+            hasVoted ? (
+              <View style={{ marginTop: 10 }}>
+                <PrimaryButton title="Count me in" loading={rsvp.isPending} onPress={() => setJoinOpen(true)} />
+              </View>
+            ) : (
+              <View style={{ marginTop: 10, gap: 8, backgroundColor: t.surfaceContainer, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.lg, padding: 10 }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface, textAlign: 'center' }}>
+                  {"Didn't vote? You can still join us."}
+                </Text>
+                <PrimaryButton title="Count me in" loading={rsvp.isPending} onPress={() => setJoinOpen(true)} />
+              </View>
+            )
+          ) : (
+            <View style={{ marginTop: 8, alignItems: 'center' }}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={rsvp.isPending}
+                hitSlop={8}
+                onPress={() => setDeclineOpen(true)}
+                style={{ minHeight: 44, justifyContent: 'center', opacity: rsvp.isPending ? 0.5 : 1 }}
+              >
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary, textAlign: 'center', textDecorationLine: 'underline' }}>
+                  I can’t make it
+                </Text>
+              </Pressable>
+            </View>
+          )}
+          <Modal open={declineOpen} onClose={() => setDeclineOpen(false)} title="Can’t make it?">
+            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
+              You’ll be removed from the meetup. The meetup time won’t change.
+            </Text>
+            <View style={{ marginTop: 16, gap: 8 }}>
+              <PrimaryButton title="I can’t make it" tone="error" loading={rsvp.isPending} onPress={() => void handleConfirmDecline()} />
+              <SecondaryButton title="Keep me in" onPress={() => setDeclineOpen(false)} />
+            </View>
+          </Modal>
+          <Modal open={joinOpen} onClose={() => setJoinOpen(false)} title="Count me in?">
+            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
+              You’ll be added to the meetup. We’ll remind you before it starts.
+            </Text>
+            <View style={{ marginTop: 16, gap: 8 }}>
+              <PrimaryButton title="Count me in" loading={rsvp.isPending} onPress={() => void handleConfirmJoinRsvp()} />
+              <SecondaryButton title="Cancel" onPress={() => setJoinOpen(false)} />
+            </View>
+          </Modal>
+          {iAmIn ? (
+            <View style={{ marginTop: 10 }}>
+              <PrimaryButton title="Join Meetup" loading={joining} disabled={!joinable} onPress={() => void handleJoin()} />
+            </View>
+          ) : null}
+          {!joinable && iAmIn ? (
             <View>
-              <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
+              <Text style={{ marginTop: 6, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
                 Join opens {MEETUP_JOIN_LEAD_MS / 60000} minutes before it starts.
               </Text>
               <Text style={{ marginTop: 2, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
@@ -299,7 +449,7 @@ function MeetupDetail({ clusterId, meetup, memberCount }: { clusterId: string; m
         </Card>
         <FeedbackSheet
           open={feedbackOpen}
-          joinedCount={detail.checked_in_count || detail.votes_cast}
+          joinedCount={joiningCount}
           rating={rating}
           pending={submitFeedback.isPending}
           error={error}

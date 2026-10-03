@@ -22,8 +22,10 @@ export interface MeetupState {
   meetup: Meetup
   slots: MeetupSlotWithCount[]
   my_slot_id: string | null
+  my_rsvp?: 'going' | 'maybe' | 'declined' | null
   votes_cast: number
   going_count: number
+  going_user_ids?: string[] | null
   checked_in_count: number
   my_feedback: MeetupFeedback | null
   voters: MeetupVoter[]
