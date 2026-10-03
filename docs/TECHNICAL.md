@@ -88,6 +88,7 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `introductions.ts` | the five-question shared intro checklist (optional, never gates access) |
 | `cluster.ts` | cluster data, realtime chat, chat-image signed URLs, message send/edit/delete/reactions |
 | `cluster-calls.ts` | cluster call state (active call, participants), start/join/leave mutations, LiveKit token fetch |
+| `meetups.ts` | cluster meetup proposals, slot voting, confirmation, join/check-in, reminders, feedback |
 | `realtime.ts` | shared realtime subscription plumbing |
 | `signals.ts` | request-for-help threads |
 | `votes.ts` | governance votes (replace member, rename) and replacement invitations |
@@ -157,6 +158,17 @@ Calls are audio/video rooms scoped to a cluster, backed by LiveKit, on both the 
 - **Tokens**: `create-call-token` (Edge Function) verifies membership and mints a short-lived LiveKit token. The client never holds the LiveKit API secret; the secret lives only in the function environment.
 - **Realtime**: `calls` / `call_participants` changes are published so the cluster's "ringing" banner and participant list update live.
 - **Clients**: web renders the call UI inside the cluster room (`@livekit/components-react`); mobile has a hand-built call screen (`mobile/app/(app)/cluster/[clusterId]/call.tsx`, `@livekit/react-native`).
+
+### Cluster meetups
+
+Meetups are cluster-scoped scheduled gatherings, one active per cluster, on both the web SPA and the Expo app.
+
+- **Schema (0171)**: `meetups` (status lifecycle `voting` / `confirmed` / `starting` / `active` / `completed` / `cancelled`, `confirmed_slot_id`, `starts_at`, `ends_at`, idempotent reminder flags, `cancelled_reason`), `meetup_slots`, `meetup_votes` (one row per member per meetup, changeable by upsert), `meetup_rsvps` (attendance via `checked_in_at`), and `meetup_feedback`.
+- **Proposal and quorum (0172, 0175, 0177-0180)**: `create_meetup` takes 2-5 slots (each at least 3h out and within 7 days) with voting closing at least 1h before the earliest slot; only the creator can withdraw while voting. `vote_meetup_slot` upserts the caller's vote and confirms inline once a slot reaches quorum (3), fanning out `meetup_confirmed`. `rsvp_meetup` / `check_in_meetup` track attendance; `submit_meetup_feedback` opens at start (or on check-in) and closes 7 days after the end.
+- **Expiry and reminders (0173)**: `expire_meetups` (every 5m) cancels quorum-less ballots and completes past meetups; `pump_meetup_reminders` (every minute) sends `meetup_reminder_24h`, flips to `starting` with `meetup_reminder_15m`, and emits `meetup_starting` at start.
+- **Realtime**: `meetups` (cluster-scoped) plus the child tables publish changes; clients invalidate the meetup queries.
+- **Notifications**: invite, confirmation, and reminder types route through a dedicated `meetups` preference column (0181; existing rows inherit their `votes` value). The center deep-links meetup rows to `/cluster/:id/meetups`.
+- **Clients**: joining starts (or joins) a normal cluster `calls` row via the existing call RPCs, so no new WebRTC code exists. Web renders `MeetupsView` plus a dismissible room banner (`MeetupCard`); mobile mirrors both, with its own `realtime.ts` pin and 24-hour slot formatting. See `docs/archive/CLUSTER_MEETUP_PLAN.md` for the original design.
 
 ### Chat read receipts
 
@@ -234,6 +246,7 @@ Notifications tab.
 - **Notification deep links (0162)**: `create_post_comment` adds `comment_id` to both `post_comment` payloads (`post_id` plus the new row id). No RLS, prefs, badge, push, or email change; pre-migration rows fall back to post top.
 - **Muted-author suppression (0163)**: `send_message` skips `mention` rows (direct and `@everyone`) for recipients who muted the sender; `fn_notify_reaction`, `create_post_comment`, and `toggle_post_like` skip their rows the same way; `fan_out_push_for_message` skips plain-chat pushes to recipients who muted the author. History stays visible and unmuting restores future delivery only. No schema, RLS, prefs, badge, or frontend change; verified no separate member-activity email trigger exists (outbound email stays moderation/appeals/staff only).
 - **Shorter cooldowns (0167)**: `fn_cooldown_interval` returns 7 days for date modes and 3 days for `local` and `open_mix` (was 30 and 7). All writers read the function, so `leave_cluster`, vote-removal, and moderation paths move together; web and mobile `cooldownDaysForMode` plus join error copy mirror it.
+- **Cluster meetups (0171-0181)**: the `meetups` / `meetup_slots` / `meetup_votes` / `meetup_rsvps` / `meetup_feedback` schema, proposal/vote/RSVP/check-in/feedback RPCs with quorum-3 inline confirmation, creator-only withdrawal, realtime publications, the `expire_meetups` / `pump_meetup_reminders` crons, server-side slot-window enforcement (0179-0180), and the dedicated `meetups` notification preference with a votes backfill (0181). See the Cluster meetups subsection above.
 
 Every table has **Row Level Security enabled**. The frontend never writes tables directly except through Postgres RPC functions or RLS-permitted inserts. Privileged operations live in `security definer` functions guarded by grants, not by trusting the caller.
 

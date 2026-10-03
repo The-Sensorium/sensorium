@@ -1,6 +1,6 @@
 # Cluster Meetup Implementation Plan
 
-Status: approved for implementation on `feature/cluster-meetup`, targeting `develop`.
+Status: shipped to `develop` (was approved for implementation on `feature/cluster-meetup`). This is a design record; current behavior lives in the core docs and the code, which take precedence where they disagree.
 Scope: web SPA + Expo mobile + Supabase backend, end to end. No calendar integration in v1.
 
 ## 1. Goal

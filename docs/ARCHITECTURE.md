@@ -44,7 +44,7 @@ The repository is organized so the frontend and backend live side by side, with 
 | `src/app/` | The app skeleton: router, providers, auth context, access guards, and page layouts. |
 | `src/pages/` | One component per route/page, composed from shared and feature components. |
 | `src/components/` | Reusable UI: avatars, modals, cards, pickers, navigation chrome. |
-| `src/features/` | Domain logic: matching, cluster, cluster-calls, introductions, signals, votes, notifications, moderation, admin-moderation, admin-accounts, metrics, appeals, posts, discovery, access, avatars, mentions, gifs, realtime. One module per domain, with its hooks and tests. |
+| `src/features/` | Domain logic: matching, cluster, cluster-calls, introductions, signals, votes, meetups, notifications, moderation, admin-moderation, admin-accounts, metrics, appeals, posts, discovery, access, avatars, mentions, gifs, realtime. One module per domain, with its hooks and tests. |
 | `src/lib/` | Shared utilities: the typed Supabase client, availability, modes, theme, geo/country data, image helpers, device, error handling, query retry, Turnstile, document-title/online/profile hooks, and constants. |
 | `mobile/` | The Expo/React Native Android app. Its own router (`app/`) and mirrors of the shared feature modules (`src/features/`). Member-only; staff surfaces stay web-only. |
 | `supabase/migrations/` | The entire database schema as ordered SQL files (the single source of truth for the backend). |
@@ -68,7 +68,7 @@ flowchart TD
     C --> D[Matching Queue]
     D --> E[Cluster Formation]
     E --> F[Open Cluster]
-    F --> G[Chat, Calls, Signals, Posts, Notifications, Governance, Settings]
+    F --> G[Chat, Calls, Signals, Posts, Notifications, Governance, Meetups, Settings]
     F --> H[Introductions Checklist]
 ```
 
@@ -77,7 +77,7 @@ flowchart TD
 - **Onboarding**: profile setup before the user can enter queues.
 - **Matching Queue**: the user opts into up to six matching modes; each queues them separately.
 - **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed - and opens immediately.
-- **Open Cluster**: members get chat, audio/video calls, availability, Signals, posts, votes, and notifications from formation. No locks, no deadlines, no removal for unfinished intros.
+- **Open Cluster**: members get chat, audio/video calls, availability, Signals, posts, votes, meetups, and notifications from formation. No locks, no deadlines, no removal for unfinished intros.
 - **Introductions Checklist**: a shared five-question intro stays answerable at any time as an optional in-cluster checklist (progress nudge, never a gate).
 - **Restriction & Appeal**: a moderated suspension/ban shows on the restricted-account screen, where the member may open one in-app appeal (`/appeal`). Admins review the queue (`/admin/appeals`) and decide; the outcome emails the appellant and lifts the restriction when accepted.
 

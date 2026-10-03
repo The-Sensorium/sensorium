@@ -81,19 +81,24 @@ jobs:
         shell: bash
 
       - name: Check Sentry config
-        # Device builds without a DSN/org/project silently ship unreadable
-        # crash reports (or none at all). Fail fast instead of discovering it
-        # on the first beta crash. A missing auth token only blocks sourcemap
-        # upload, so it warns loudly but still builds.
+        # Production must never ship blind: fail fast on missing Sentry config
+        # instead of discovering it on the first crash. Staging is single-tester
+        # and Sentry-optional, so a missing config only warns and the build
+        # proceeds without crash reporting (the app skips Sentry.init without
+        # a DSN). A missing auth token only blocks sourcemap upload, so it
+        # warns loudly but still builds.
         run: |
           fail=""
           [ -n "$EXPO_PUBLIC_SENTRY_DSN" ] || fail="$fail EXPO_PUBLIC_SENTRY_DSN_${{ inputs.environment }}"
           [ -n "$SENTRY_ORG" ] || fail="$fail SENTRY_ORG"
           [ -n "$SENTRY_PROJECT" ] || fail="$fail SENTRY_PROJECT"
           if [ -n "$fail" ]; then
-            echo "Missing required Sentry config:$fail"
-            echo "Set the repo variables (and rerun), or the beta ships blind."
-            exit 1
+            if [ "${{ inputs.environment }}" = "production" ]; then
+              echo "Missing required Sentry config:$fail"
+              echo "Set the repo variables (and rerun), or production ships blind."
+              exit 1
+            fi
+            echo "::warning::Sentry is not configured for ${{ inputs.environment }} ($fail ). This build ships without crash reporting."
           fi
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
             echo "::warning::SENTRY_AUTH_TOKEN secret is not set. The build will succeed but sourcemaps will not upload, so stack traces will be unreadable."
