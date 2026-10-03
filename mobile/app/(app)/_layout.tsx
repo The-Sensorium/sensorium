@@ -22,6 +22,7 @@ function sanitizePushData(data: PushData): PushData {
   if (typeof data.messageId === 'string' && UUID_RE.test(data.messageId)) out.messageId = data.messageId
   if (typeof data.signalId === 'string' && UUID_RE.test(data.signalId)) out.signalId = data.signalId
   if (typeof data.newMemberId === 'string' && UUID_RE.test(data.newMemberId)) out.newMemberId = data.newMemberId
+  if (typeof data.meetupId === 'string' && UUID_RE.test(data.meetupId)) out.meetupId = data.meetupId
   if (typeof data.v === 'number') out.v = data.v
   return out
 }
@@ -165,6 +166,8 @@ export default function AppTabs() {
       <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/meetups" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/meetups/new" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="profile/[userId]" options={{ href: null }} />
       {/* No tab bar on post detail (Instagram pattern): the sticky comment

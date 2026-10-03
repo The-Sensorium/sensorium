@@ -641,6 +641,24 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
           void patchCallParticipants(queryClient, payload.old as { call_id: string })
         },
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetups', filter: `cluster_id=eq.${clusterId}` }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['cluster-meetups', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['meetup-state'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetup_slots' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['cluster-meetups', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['meetup-state'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetup_votes' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['cluster-meetups', clusterId] })
+        void queryClient.invalidateQueries({ queryKey: ['meetup-state'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetup_rsvps' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['meetup-state'] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetup_feedback' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['meetup-state'] })
+      })
       .subscribe((status, err) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('Cluster channel subscribe failed', clusterId, status, err)

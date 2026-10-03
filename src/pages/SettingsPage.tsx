@@ -330,6 +330,7 @@ function NotificationPreferences() {
       mentions: false,
       reactions: false,
       votes: false,
+      meetups: false,
       invitations: false,
       signals: false,
       post_comment: false,

@@ -589,6 +589,251 @@ export type Database = {
           },
         ]
       }
+      meetup_feedback: {
+        Row: {
+          created_at: string
+          meet_again: string | null
+          meetup_id: string
+          rating: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          meet_again?: string | null
+          meetup_id: string
+          rating: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          meet_again?: string | null
+          meetup_id?: string
+          rating?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_feedback_meetup_id_fkey"
+            columns: ["meetup_id"]
+            isOneToOne: false
+            referencedRelation: "meetups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetup_rsvps: {
+        Row: {
+          checked_in_at: string | null
+          created_at: string
+          meetup_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          created_at?: string
+          meetup_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          created_at?: string
+          meetup_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_rsvps_meetup_id_fkey"
+            columns: ["meetup_id"]
+            isOneToOne: false
+            referencedRelation: "meetups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_rsvps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetup_slots: {
+        Row: {
+          created_at: string
+          created_by: string
+          ends_at: string
+          id: string
+          meetup_id: string
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          ends_at: string
+          id?: string
+          meetup_id: string
+          starts_at: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          ends_at?: string
+          id?: string
+          meetup_id?: string
+          starts_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_slots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_slots_meetup_id_fkey"
+            columns: ["meetup_id"]
+            isOneToOne: false
+            referencedRelation: "meetups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetup_votes: {
+        Row: {
+          created_at: string
+          meetup_id: string
+          slot_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          meetup_id: string
+          slot_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          meetup_id?: string
+          slot_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetup_votes_meetup_id_fkey"
+            columns: ["meetup_id"]
+            isOneToOne: false
+            referencedRelation: "meetups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_votes_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "meetup_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetup_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetups: {
+        Row: {
+          call_id: string | null
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          cluster_id: string
+          completed_at: string | null
+          confirmed_slot_id: string | null
+          created_at: string
+          created_by: string
+          ends_at: string | null
+          id: string
+          reminder_15m_sent_at: string | null
+          reminder_24h_sent_at: string | null
+          started_at: string | null
+          starts_at: string | null
+          status: Database["public"]["Enums"]["meetup_status"]
+          voting_closes_at: string
+          week_label: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          cluster_id: string
+          completed_at?: string | null
+          confirmed_slot_id?: string | null
+          created_at?: string
+          created_by: string
+          ends_at?: string | null
+          id?: string
+          reminder_15m_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
+          started_at?: string | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["meetup_status"]
+          voting_closes_at: string
+          week_label?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          cluster_id?: string
+          completed_at?: string | null
+          confirmed_slot_id?: string | null
+          created_at?: string
+          created_by?: string
+          ends_at?: string | null
+          id?: string
+          reminder_15m_sent_at?: string | null
+          reminder_24h_sent_at?: string | null
+          started_at?: string | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["meetup_status"]
+          voting_closes_at?: string
+          week_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetups_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetups_cluster_id_fkey"
+            columns: ["cluster_id"]
+            isOneToOne: false
+            referencedRelation: "clusters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           cluster_id: string
@@ -997,6 +1242,7 @@ export type Database = {
         Row: {
           cluster_id: string
           invitations: boolean
+          meetups: boolean
           mentions: boolean
           messages: boolean
           post_comment: boolean
@@ -1009,6 +1255,7 @@ export type Database = {
         Insert: {
           cluster_id: string
           invitations?: boolean
+          meetups?: boolean
           mentions?: boolean
           messages?: boolean
           post_comment?: boolean
@@ -1021,6 +1268,7 @@ export type Database = {
         Update: {
           cluster_id?: string
           invitations?: boolean
+          meetups?: boolean
           mentions?: boolean
           messages?: boolean
           post_comment?: boolean
@@ -2127,6 +2375,8 @@ export type Database = {
         Args: { p_invitation_id: string }
         Returns: undefined
       }
+      cancel_meetup: { Args: { p_meetup_id: string }; Returns: undefined }
+      check_in_meetup: { Args: { p_meetup_id: string }; Returns: undefined }
       check_intro_deadlines: { Args: never; Returns: undefined }
       check_rate_limit: {
         Args: { p_action: string; p_limit: number; p_window: string }
@@ -2196,6 +2446,15 @@ export type Database = {
         Returns: string
       }
       create_invitation: { Args: { p_round_id: string }; Returns: undefined }
+      create_meetup: {
+        Args: {
+          p_cluster_id: string
+          p_slots: Json
+          p_voting_closes_at: string
+          p_week_label?: string
+        }
+        Returns: string
+      }
       create_post: {
         Args: {
           p_cluster_id: string
@@ -2267,6 +2526,7 @@ export type Database = {
       }
       escape_like_pattern: { Args: { p_input: string }; Returns: string }
       expire_invitations: { Args: never; Returns: undefined }
+      expire_meetups: { Args: never; Returns: undefined }
       fn_candidate_eligible: {
         Args: {
           p_cluster_id: string
@@ -2408,6 +2668,34 @@ export type Database = {
           name: string
         }[]
       }
+      get_cluster_meetups: {
+        Args: { p_cluster_id: string }
+        Returns: {
+          call_id: string | null
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          cluster_id: string
+          completed_at: string | null
+          confirmed_slot_id: string | null
+          created_at: string
+          created_by: string
+          ends_at: string | null
+          id: string
+          reminder_15m_sent_at: string | null
+          reminder_24h_sent_at: string | null
+          started_at: string | null
+          starts_at: string | null
+          status: Database["public"]["Enums"]["meetup_status"]
+          voting_closes_at: string
+          week_label: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meetups"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_clusters_by_mode: {
         Args: { p_mode: Database["public"]["Enums"]["matching_mode"] }
         Returns: {
@@ -2467,6 +2755,7 @@ export type Database = {
           prompt: string
         }[]
       }
+      get_meetup_state: { Args: { p_meetup_id: string }; Returns: Json }
       get_member_profiles: {
         Args: { p_cluster_id: string }
         Returns: {
@@ -2971,6 +3260,10 @@ export type Database = {
         Returns: undefined
       }
       is_account_active: { Args: { p_user_id?: string }; Returns: boolean }
+      is_account_active_internal: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       is_active_member: { Args: { p_cluster_id: string }; Returns: boolean }
       is_mentioned: {
         Args: { p_content: string; p_display_name: string }
@@ -3118,6 +3411,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      meetup_quorum: { Args: never; Returns: number }
       moderation_priority_for_severity: {
         Args: { p_severity: Database["public"]["Enums"]["moderation_severity"] }
         Returns: number
@@ -3151,6 +3445,7 @@ export type Database = {
         Returns: undefined
       }
       progress_replacements: { Args: never; Returns: undefined }
+      pump_meetup_reminders: { Args: never; Returns: undefined }
       pump_outbound_emails: { Args: never; Returns: undefined }
       pump_push_notifications: { Args: never; Returns: undefined }
       raise_signal: {
@@ -3238,6 +3533,10 @@ export type Database = {
         Returns: undefined
       }
       rollup_daily_metrics: { Args: { p_day?: string }; Returns: undefined }
+      rsvp_meetup: {
+        Args: { p_meetup_id: string; p_status: string }
+        Returns: undefined
+      }
       search_accounts: {
         Args: { p_query: string }
         Returns: {
@@ -3299,6 +3598,10 @@ export type Database = {
         Args: { p_answers: Json; p_cluster_id: string }
         Returns: undefined
       }
+      submit_meetup_feedback: {
+        Args: { p_meet_again?: string; p_meetup_id: string; p_rating: string }
+        Returns: undefined
+      }
       toggle_comment_like: {
         Args: { p_comment_id: string }
         Returns: undefined
@@ -3310,6 +3613,10 @@ export type Database = {
       toggle_post_like: { Args: { p_post_id: string }; Returns: undefined }
       unregister_push_token: {
         Args: { p_expo_push_token: string }
+        Returns: undefined
+      }
+      vote_meetup_slot: {
+        Args: { p_meetup_id: string; p_slot_id: string }
         Returns: undefined
       }
       vote_on: {
@@ -3333,6 +3640,14 @@ export type Database = {
         | "local"
         | "open_mix"
         | "generation"
+      meetup_status:
+        | "proposed"
+        | "voting"
+        | "confirmed"
+        | "starting"
+        | "active"
+        | "completed"
+        | "cancelled"
       moderation_action_type:
         | "report_claimed"
         | "report_released"
@@ -3379,6 +3694,11 @@ export type Database = {
         | "post_like"
         | "report_new"
         | "appeal_new"
+        | "meetup_invite"
+        | "meetup_confirmed"
+        | "meetup_reminder_24h"
+        | "meetup_reminder_15m"
+        | "meetup_starting"
       outbound_email_template:
         | "message-hidden"
         | "warning-issued"
@@ -3548,6 +3868,15 @@ export const Constants = {
         "open_mix",
         "generation",
       ],
+      meetup_status: [
+        "proposed",
+        "voting",
+        "confirmed",
+        "starting",
+        "active",
+        "completed",
+        "cancelled",
+      ],
       moderation_action_type: [
         "report_claimed",
         "report_released",
@@ -3595,6 +3924,11 @@ export const Constants = {
         "post_like",
         "report_new",
         "appeal_new",
+        "meetup_invite",
+        "meetup_confirmed",
+        "meetup_reminder_24h",
+        "meetup_reminder_15m",
+        "meetup_starting",
       ],
       outbound_email_template: [
         "message-hidden",

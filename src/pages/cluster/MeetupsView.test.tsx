@@ -1,0 +1,390 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
+import { MeetupsView } from './MeetupsView'
+
+const hooks = vi.hoisted(() => ({
+  useAuth: vi.fn(),
+  useClusterMembers: vi.fn(),
+  useClusterMeetups: vi.fn(),
+  useMeetupState: vi.fn(),
+  useCreateMeetup: vi.fn(),
+  useVoteMeetupSlot: vi.fn(),
+  useCancelMeetup: vi.fn(),
+  useCheckInMeetup: vi.fn(),
+  useSubmitMeetupFeedback: vi.fn(),
+  useActiveCall: vi.fn(),
+  useJoinCall: vi.fn(),
+  useStartCall: vi.fn(),
+  useLeaveCall: vi.fn(),
+  useAvatarUrl: vi.fn(),
+}))
+
+vi.mock('react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router')>()
+  return { ...actual, useParams: () => ({ clusterId: 'c1' }) }
+})
+vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
+vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
+vi.mock('../../features/cluster-calls', () => ({
+  useActiveCall: hooks.useActiveCall,
+  useJoinCall: hooks.useJoinCall,
+  useStartCall: hooks.useStartCall,
+  useLeaveCall: hooks.useLeaveCall,
+}))
+vi.mock('../../features/meetups', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../features/meetups')>()
+  return {
+    ...actual,
+    useClusterMeetups: hooks.useClusterMeetups,
+    useMeetupState: hooks.useMeetupState,
+    useCreateMeetup: hooks.useCreateMeetup,
+    useVoteMeetupSlot: hooks.useVoteMeetupSlot,
+    useCancelMeetup: hooks.useCancelMeetup,
+    useCheckInMeetup: hooks.useCheckInMeetup,
+    useSubmitMeetupFeedback: hooks.useSubmitMeetupFeedback,
+  }
+})
+vi.mock('../../components/CountdownTimer', () => ({
+  CountdownTimer: () => <span>2h 0m</span>,
+}))
+
+const members = [
+  { id: 'u1', display_name: 'Ally', avatar_url: null },
+  { id: 'u2', display_name: 'Bo', avatar_url: null },
+  { id: 'u3', display_name: 'Cy', avatar_url: null },
+]
+
+function callStubs() {
+  hooks.useActiveCall.mockReturnValue({ data: null })
+  hooks.useJoinCall.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
+  hooks.useStartCall.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
+  hooks.useLeaveCall.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
+}
+
+function votingState() {
+  return {
+    meetup: {
+      id: 'm1',
+      cluster_id: 'c1',
+      created_by: 'u2',
+      status: 'voting',
+      voting_closes_at: '2026-10-10T00:00:00.000Z',
+      starts_at: null,
+      confirmed_slot_id: null,
+    },
+    slots: [
+      { id: 's1', starts_at: '2026-10-11T19:00:00.000Z', ends_at: '2026-10-11T20:00:00.000Z', vote_count: 2 },
+      { id: 's2', starts_at: '2026-10-12T19:00:00.000Z', ends_at: '2026-10-12T20:00:00.000Z', vote_count: 1 },
+    ],
+    my_slot_id: null,
+    votes_cast: 3,
+    going_count: 0,
+    checked_in_count: 0,
+    my_feedback: null,
+    voters: [
+      { slot_id: 's1', user_id: 'u1' },
+      { slot_id: 's1', user_id: 'u2' },
+      { slot_id: 's2', user_id: 'u3' },
+    ],
+    quorum: 3,
+  }
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  hooks.useClusterMembers.mockReturnValue({ data: members, isPending: false })
+  hooks.useCreateMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue('m1'), isPending: false })
+  hooks.useVoteMeetupSlot.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
+  hooks.useCancelMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
+  hooks.useCheckInMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
+  hooks.useSubmitMeetupFeedback.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
+  hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1', email: 'a@b.test' })
+  hooks.useAvatarUrl.mockReturnValue({ data: null })
+  callStubs()
+})
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <MeetupsView />
+    </MemoryRouter>,
+  )
+}
+
+describe('MeetupsView', () => {
+  it('shows the propose card linking to the ballot builder', () => {
+    hooks.useClusterMeetups.mockReturnValue({ data: [], isPending: false, isError: false })
+    renderPage()
+    expect(screen.getByText('Cluster Meetup')).toBeTruthy()
+    const link = screen.getByRole('link', { name: 'Propose a time' })
+    expect(link.getAttribute('href')).toBe('/cluster/c1/meetups/new')
+  })
+
+  it('shows the voting ballot with slot counts and submits a vote', async () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'voting' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({ data: votingState(), isPending: false, isError: false })
+    const vote = vi.fn().mockResolvedValue(undefined)
+    hooks.useVoteMeetupSlot.mockReturnValue({ mutateAsync: vote, isPending: false })
+    renderPage()
+    expect(screen.getByText('When should we meet?')).toBeTruthy()
+    expect(screen.getByText('Choose a time that works for you.')).toBeTruthy()
+    const options = screen.getAllByRole('radio')
+    fireEvent.click(options[0])
+    fireEvent.click(screen.getByText('Submit vote'))
+    await waitFor(() => expect(vote).toHaveBeenCalledWith('s1'))
+  })
+
+  it('shows quorum copy after voting', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'voting' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: { ...votingState(), my_slot_id: 's1' },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Finding a time')).toBeTruthy()
+    expect(screen.getByText('3 of 3 members have voted')).toBeTruthy()
+    expect(screen.getByText('A meetup is set when 3 people choose the same time.')).toBeTruthy()
+    expect(screen.getByText('Your pick')).toBeTruthy()
+    expect(screen.getByText('Change my vote')).toBeTruthy()
+    expect(screen.getByText('Back to room')).toBeTruthy()
+  })
+
+  it('confirms the vote right after submitting', async () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'voting' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({ data: votingState(), isPending: false, isError: false })
+    const vote = vi.fn().mockResolvedValue(undefined)
+    hooks.useVoteMeetupSlot.mockReturnValue({ mutateAsync: vote, isPending: false })
+    renderPage()
+    fireEvent.click(screen.getAllByRole('radio')[0])
+    fireEvent.click(screen.getByText('Submit vote'))
+    await waitFor(() => expect(vote).toHaveBeenCalledWith('s1'))
+    expect(screen.queryByText(/Vote counted/)).toBeNull()
+  })
+
+  it('opens edit mode with submit change and keep options', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'voting' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: { ...votingState(), my_slot_id: 's1' },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    fireEvent.click(screen.getByText('Change my vote'))
+    expect(screen.getByText('Choose a new time for the meetup.')).toBeTruthy()
+    expect(screen.getByText('Update my vote')).toBeTruthy()
+    expect(screen.getByText('Keep my current vote')).toBeTruthy()
+    fireEvent.click(screen.getByText('Keep my current vote'))
+    expect(screen.getByText('Finding a time')).toBeTruthy()
+  })
+
+  it('shows the confirmed state with a join button', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        votes_cast: 5,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Your cluster meetup is set')).toBeTruthy()
+    expect(screen.getByText('5 members joining')).toBeTruthy()
+    const join = screen.getByText('Join Meetup')
+    expect(join).toBeTruthy()
+    expect(join.closest('button')?.disabled).toBe(false)
+  })
+
+  it('disables joining far out with the merged timing copy', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        votes_cast: 3,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Your cluster meetup is set')).toBeTruthy()
+    expect(screen.getByText('3 members joining')).toBeTruthy()
+    expect(screen.getByText('Join Meetup').closest('button')?.disabled).toBe(true)
+    expect(screen.getByText(/Join opens 10 minutes before it starts\. We’ll remind you\./)).toBeTruthy()
+    expect(screen.queryByText('Leave feedback')).toBeNull()
+    expect(screen.getByText('Times are shown in your local time.')).toBeTruthy()
+  })
+
+  it('shows Leave feedback once the meetup has started', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'starting' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'starting',
+          starts_at: new Date(Date.now() - 60_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        votes_cast: 3,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Your cluster meetup is set')).toBeTruthy()
+    expect(screen.getByText('Leave feedback')).toBeTruthy()
+  })
+
+  it('shows the completed return state', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'completed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: { id: 'm1', cluster_id: 'c1', status: 'completed', starts_at: '2026-10-04T19:00:00.000Z', confirmed_slot_id: 's1', voting_closes_at: null },
+        checked_in_count: 5,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('You met this week')).toBeTruthy()
+  })
+
+  it('shows withdraw only to the creator while voting', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'voting' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({ data: votingState(), isPending: false, isError: false })
+    renderPage()
+    expect(screen.queryByText('Withdraw proposal')).toBeNull()
+  })
+
+  it('shows withdraw to the creator while voting', () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u2', email: 'a@b.test' })
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'voting' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({ data: votingState(), isPending: false, isError: false })
+    renderPage()
+    expect(screen.getByText('Withdraw proposal')).toBeTruthy()
+  })
+
+  it('hides withdraw after confirmation even for the creator', () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u2', email: 'a@b.test' })
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          created_by: 'u2',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        votes_cast: 5,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Your cluster meetup is set')).toBeTruthy()
+    expect(screen.queryByText('Withdraw proposal')).toBeNull()
+  })
+
+  it('hides the expired banner for a withdrawn proposal', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'cancelled', cancelled_reason: 'withdrawn' }],
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.queryByText('This meetup expired')).toBeNull()
+    expect(screen.getByText('Cluster Meetup')).toBeTruthy()
+  })
+
+  it('shows the expired state with a re-propose path', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'cancelled', cancelled_reason: 'expired' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: { id: 'm1', cluster_id: 'c1', status: 'cancelled', starts_at: null, confirmed_slot_id: null, voting_closes_at: '2026-10-01T00:00:00.000Z' },
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('This meetup expired')).toBeTruthy()
+  })
+})

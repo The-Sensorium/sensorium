@@ -19,6 +19,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  Video,
 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { toErrorMessage } from '../lib/error'
@@ -52,6 +53,11 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   post_like: Heart,
   report_new: Flag,
   appeal_new: MessageSquareWarning,
+  meetup_invite: Video,
+  meetup_confirmed: Video,
+  meetup_reminder_24h: Video,
+  meetup_reminder_15m: Video,
+  meetup_starting: Video,
 }
 
 export function NotificationsPage() {

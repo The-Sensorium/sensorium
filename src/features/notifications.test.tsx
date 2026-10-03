@@ -106,6 +106,13 @@ describe('notificationTarget', () => {
     expect(notificationTarget(n('vote_started', 'c1'))?.to).toContain('/votes')
   })
 
+  it('links meetup notifications to the meetups view', () => {
+    for (const type of ['meetup_invite', 'meetup_confirmed', 'meetup_reminder_24h', 'meetup_reminder_15m', 'meetup_starting'] as Array<MyNotification['type']>) {
+      expect(notificationTarget(n(type, 'c1'))).toEqual({ to: '/cluster/c1/meetups' })
+    }
+    expect(notificationTarget(n('meetup_confirmed', null))).toBeNull()
+  })
+
   it('links new-member-joined replacement notices to the joiner profile', () => {
     const joined = {
       ...n('replacement', 'c1'),
@@ -170,8 +177,9 @@ describe('timeAgo', () => {
 
 describe('pref constants', () => {
   it('exposes the full toggle set and labels', () => {
-    expect(PREF_TOGGLES).toHaveLength(8)
+    expect(PREF_TOGGLES).toHaveLength(9)
     expect(PREF_LABELS.votes).toBe('Votes & replacements')
+    expect(PREF_LABELS.meetups).toBe('Meetups')
   })
 })
 
