@@ -1,4 +1,4 @@
-import { MEETUP_MAX_SLOTS, MEETUP_QUORUM, customRowToISO, defaultCustomStart, formatPillDate, formatSlot, formatSlotCompact24, formatSlotDay, formatSlotDot, formatSlotForMember, formatSlotShort, formatSlotShortDot, hasQuorum, hasStarted, isCustomSlotValid, nextSevenMidnights, pluralize, previewSlotMembers, winningSlot, canJoinMeetup } from './meetup'
+import { MEETUP_END_GRACE_MS, MEETUP_MAX_SLOTS, MEETUP_QUORUM, customRowToISO, defaultCustomStart, formatPillDate, formatSlot, formatSlotCompact24, formatSlotDay, formatSlotDot, formatSlotForMember, formatSlotShort, formatSlotShortDot, hasEnded, hasQuorum, hasStarted, isCustomSlotValid, isLive, nextSevenMidnights, pluralize, previewSlotMembers, winningSlot, canJoinMeetup } from './meetup'
 import { describe, expect, it } from 'vitest'
 
 describe('meetup helpers', () => {
@@ -37,6 +37,28 @@ describe('meetup helpers', () => {
     expect(canJoinMeetup('2026-10-11T19:00:00.000Z', start - 9 * 60_000)).toBe(true)
     expect(canJoinMeetup('2026-10-11T19:00:00.000Z', start + 3 * 3600_000)).toBe(false)
     expect(canJoinMeetup(null)).toBe(false)
+  })
+
+  it('reports live only between start and end plus grace', () => {
+    const start = new Date('2026-10-11T19:00:00.000Z').getTime()
+    const end = new Date('2026-10-11T20:00:00.000Z').toISOString()
+    const startIso = new Date(start).toISOString()
+    expect(isLive(startIso, end, start - 1000)).toBe(false)
+    expect(isLive(startIso, end, start + 5 * 60_000)).toBe(true)
+    expect(isLive(startIso, end, start + 65 * 60_000)).toBe(true)
+    expect(isLive(startIso, end, start + 60 * 60_000 + MEETUP_END_GRACE_MS + 1000)).toBe(false)
+    expect(isLive(null, end)).toBe(false)
+    expect(isLive(startIso, null)).toBe(false)
+    expect(isLive('bogus', end)).toBe(false)
+  })
+
+  it('reports ended only past end plus grace', () => {
+    const end = new Date('2026-10-11T20:00:00.000Z')
+    expect(hasEnded(end.toISOString(), end.getTime() - 1000)).toBe(false)
+    expect(hasEnded(end.toISOString(), end.getTime() + MEETUP_END_GRACE_MS - 1000)).toBe(false)
+    expect(hasEnded(end.toISOString(), end.getTime() + MEETUP_END_GRACE_MS + 1000)).toBe(true)
+    expect(hasEnded(null)).toBe(false)
+    expect(hasEnded('bogus')).toBe(false)
   })
 
   it('allows 4 suggested plus one custom slot', () => {

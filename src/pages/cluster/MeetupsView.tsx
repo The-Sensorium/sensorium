@@ -4,7 +4,7 @@ import { CalendarDays, Check, Clock, Loader2, Users } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { cn } from '../../lib/utils'
 import { rateLimitMessage, toErrorMessage } from '../../lib/error'
-import { MEETUP_ENABLED, MEETUP_JOIN_LEAD_MS, MEETUP_QUORUM, canJoinMeetup, formatSlotDot, formatSlotShortDot, hasStarted, pluralize } from '../../lib/meetup'
+import { MEETUP_ENABLED, MEETUP_JOIN_LEAD_MS, MEETUP_QUORUM, canJoinMeetup, formatSlotDot, formatSlotShortDot, hasEnded, hasStarted, isLive, pluralize } from '../../lib/meetup'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
 import { useActiveCall, useJoinCall, useStartCall, useLeaveCall } from '../../features/cluster-calls'
@@ -19,7 +19,6 @@ import {
 import { CountdownTimer } from '../../components/CountdownTimer'
 import { Avatar } from '../../components/Avatar'
 import { Modal } from '../../components/Modal'
-import { FeedbackModal } from './meetups/FeedbackModal'
 import { PreJoinDialog } from './room/PreJoinDialog'
 const CallOverlay = lazy(() => import('./room/CallOverlay').then((m) => ({ default: m.CallOverlay })))
 
@@ -145,7 +144,6 @@ function MeetupDetail({
   const [preJoin, setPreJoin] = useState(false)
   const [micOnJoin, setMicOnJoin] = useState(true)
   const [cameraOnJoin, setCameraOnJoin] = useState(false)
-  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [declineOpen, setDeclineOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(false)
@@ -216,7 +214,6 @@ function MeetupDetail({
     } finally {
       setInCall(false)
       setCallId(null)
-      setFeedbackOpen(true)
     }
   }
 
@@ -240,22 +237,18 @@ function MeetupDetail({
   if (meetup.status === 'completed') {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+        <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 text-center shadow-soft">
           <p className="font-display text-lg font-semibold text-on-surface">You met this week</p>
           <p className="mt-0.5 text-sm text-on-surface-variant">
             {pluralize(detail.checked_in_count, 'member', 'members')} joined your Cluster Meetup.
           </p>
-          {!detail.my_feedback && (
-            <button
-              type="button"
-              onClick={() => setFeedbackOpen(true)}
-              className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
-            >
-              Share feedback
-            </button>
-          )}
+          <Link
+            to={`/cluster/${clusterId}/meetups/new`}
+            className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
+            Propose a time for next week
+          </Link>
         </div>
-        <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} clusterId={clusterId} meetupId={meetupId} joinedCount={detail.checked_in_count} />
       </div>
     )
   }
@@ -263,6 +256,32 @@ function MeetupDetail({
   if (meetup.status === 'confirmed' || meetup.status === 'starting' || meetup.status === 'active') {
     const confirmed = detail.slots.find((s) => s.id === meetup.confirmed_slot_id) ?? null
     const startsAt = meetup.starts_at ?? confirmed?.starts_at ?? null
+    const endsAt = meetup.ends_at ?? confirmed?.ends_at ?? null
+    const started = hasStarted(startsAt)
+    const endsValid = endsAt ? !Number.isNaN(new Date(endsAt).getTime()) : false
+    const live = isLive(startsAt, endsAt) || (started && !endsValid && canJoinMeetup(startsAt))
+    const ended = hasEnded(endsAt)
+    const endsLabel = endsAt
+      ? new Date(endsAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+      : null
+    // propose stays hidden here: create_meetup rejects with meetup_active
+    // until expire_meetups completes this row, then the propose card appears.
+    // Stay on the live card while a call may still be up: local overlay, a
+    // live cluster call (other tab/device), or an open rejoin window.
+    if (ended && !inCall && !activeCall.data?.id && !canJoinMeetup(startsAt)) {
+      return (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 text-center shadow-soft">
+            <CalendarDays className="mx-auto h-8 w-8 text-primary" strokeWidth={1.5} aria-hidden />
+            <p className="mt-2 font-display text-lg font-semibold text-on-surface">You met this week</p>
+            <p className="mt-0.5 text-sm text-on-surface-variant">
+              {pluralize(detail.checked_in_count, 'member', 'members')} joined your Cluster Meetup.
+            </p>
+            <p className="mt-0.5 text-sm text-on-surface-variant">This meetup has ended.</p>
+          </div>
+        </div>
+      )
+    }
     const overlayCallId = callId ?? activeCall.data?.id ?? null
     const overlayStartedAt = activeCall.data?.created_at ?? new Date().toISOString()
     const joiningCount =
@@ -334,14 +353,22 @@ function MeetupDetail({
             </div>
           )}
           <p className="mt-1 text-sm text-on-surface-variant">{pluralize(joiningCount, 'member joining', 'members joining')}</p>
-          {startsAt && (
+          {live ? (
+            <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-on-surface-variant">
+              <Clock className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              <span>
+                <span className="font-semibold text-primary">Live now</span>
+                {endsLabel ? ` - ends ${endsLabel}` : ''}
+              </span>
+            </p>
+          ) : startsAt && !started ? (
             <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-on-surface-variant">
               <Clock className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
               <span>
                 Starts in <CountdownTimer deadline={startsAt} />
               </span>
             </p>
-          )}
+          ) : null}
           {startsAt && (
             <p className="mt-1 text-center text-xs text-on-surface-variant">Times are shown in your local time.</p>
           )}
@@ -375,7 +402,7 @@ function MeetupDetail({
                 </button>
               </div>
             )
-          ) : (
+          ) : started ? null : (
             <div className="mt-2 text-center">
               <button
                 type="button"
@@ -448,15 +475,6 @@ function MeetupDetail({
               Join opens {MEETUP_JOIN_LEAD_MS / 60000} minutes before it starts. We’ll remind you.
             </p>
           )}
-          {hasStarted(startsAt) && (
-            <button
-              type="button"
-              onClick={() => setFeedbackOpen(true)}
-              className="mt-2 min-h-[44px] w-full rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
-            >
-              Leave feedback
-            </button>
-          )}
         </div>
         <PreJoinDialog
           open={preJoin}
@@ -480,7 +498,6 @@ function MeetupDetail({
             />
           )}
         </Suspense>
-        <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} clusterId={clusterId} meetupId={meetupId} joinedCount={joiningCount} />
       </div>
     )
   }

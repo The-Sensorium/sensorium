@@ -156,21 +156,3 @@ export function useCheckInMeetup(clusterId: string | null, meetupId: string | nu
   })
 }
 
-export function useSubmitMeetupFeedback(clusterId: string | null, meetupId: string | null) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ rating, meetAgain }: { rating: 'loved' | 'nice' | 'not_for_me'; meetAgain?: 'yes' | 'maybe' | null }) => {
-      if (!meetupId) throw new Error('No meetup')
-      const supabase = requireSupabase()
-      const { error } = await supabase.rpc('submit_meetup_feedback', {
-        p_meetup_id: meetupId,
-        p_rating: rating,
-        p_meet_again: meetAgain ?? undefined,
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      if (clusterId) invalidateMeetup(queryClient, clusterId, meetupId ?? undefined)
-    },
-  })
-}

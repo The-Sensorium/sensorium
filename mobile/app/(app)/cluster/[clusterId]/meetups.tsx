@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { CalendarDays, Check, Clock, Users } from 'lucide-react-native'
@@ -12,7 +12,6 @@ import {
   useClusterMeetups,
   useMeetupState,
   useRsvpMeetup,
-  useSubmitMeetupFeedback,
   useVoteMeetupSlot,
   type Meetup,
 } from '../../../../src/features/meetups'
@@ -29,7 +28,7 @@ import { Avatar } from '../../../../src/components/Avatar'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 import { getSuppressedPushCluster, setSuppressedPushCluster } from '../../../../src/lib/push-suppress'
-import { MEETUP_ENABLED, MEETUP_JOIN_LEAD_MS, MEETUP_QUORUM, canJoinMeetup, formatSlotCompact24, hasStarted, pluralize } from '../../../../src/lib/meetup'
+import { MEETUP_ENABLED, MEETUP_JOIN_LEAD_MS, MEETUP_QUORUM, canJoinMeetup, formatSlotCompact24, hasEnded, hasStarted, isLive, pluralize } from '../../../../src/lib/meetup'
 
 const ACTIVE_STATUSES = ['proposed', 'voting', 'confirmed', 'starting', 'active']
 
@@ -139,7 +138,6 @@ function MeetupDetail({
   const startCall = useStartCall(clusterId)
   const joinCall = useJoinCall(clusterId)
   const activeCall = useActiveCall(clusterId)
-  const submitFeedback = useSubmitMeetupFeedback(clusterId, meetup.id)
 
   const [selected, setSelected] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -147,25 +145,6 @@ function MeetupDetail({
   const [declineOpen, setDeclineOpen] = useState(false)
   const [joinOpen, setJoinOpen] = useState(false)
   const [joining, setJoining] = useState(false)
-  const [feedbackOpen, setFeedbackOpen] = useState(false)
-  const [rating, setRating] = useState<'loved' | 'nice' | 'not_for_me' | null>(null)
-  // A dismissed sheet restarts fresh; a stale rating would mis-submit.
-  useEffect(() => {
-    if (feedbackOpen) {
-      setRating(null)
-      setError(null)
-    }
-  }, [feedbackOpen])
-  // Set before pushing the call screen; on return focus opens feedback once.
-  const expectFeedbackRef = useRef(false)
-  useFocusEffect(
-    useCallback(() => {
-      if (expectFeedbackRef.current) {
-        expectFeedbackRef.current = false
-        setFeedbackOpen(true)
-      }
-    }, []),
-  )
   useEffect(() => {
     setSelected(null)
   }, [meetup.id])
@@ -176,6 +155,8 @@ function MeetupDetail({
   const row = detail.meetup
   const mySlot = selected ?? detail.my_slot_id
   const joinable = row.starts_at ? canJoinMeetup(row.starts_at) : false
+  const endsValid = row.ends_at ? !Number.isNaN(new Date(row.ends_at).getTime()) : false
+  const live = isLive(row.starts_at, row.ends_at) || (hasStarted(row.starts_at) && !endsValid && canJoinMeetup(row.starts_at))
   const isCreator = userId !== null && row.created_by === userId
   const hasVoted = detail.my_slot_id !== null
   const showBallot = !hasVoted || editing
@@ -213,7 +194,6 @@ function MeetupDetail({
         // Attendance is best-effort; the call join already succeeded.
       }
       successHaptic()
-      expectFeedbackRef.current = true
       router.push({ pathname: '/cluster/[clusterId]/call', params: { clusterId, callId } })
     } catch (e) {
       errorHaptic()
@@ -223,48 +203,45 @@ function MeetupDetail({
     }
   }
 
-  async function handleFeedback(meetAgain: 'yes' | 'maybe') {
-    if (!rating) return
-    setError(null)
-    try {
-      await mutateWithRetry(() => submitFeedback.mutateAsync({ rating, meetAgain }))
-      successHaptic()
-      setFeedbackOpen(false)
-    } catch (err) {
-      errorHaptic()
-      setError(toErrorMessage(err, 'Could not save your feedback'))
-    }
-  }
-
   if (row.status === 'completed') {
     return (
       <View style={{ gap: 16 }}>
         <Card>
-          <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface }}>You met this week</Text>
-          <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>You met this week</Text>
+          <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
             {pluralize(detail.checked_in_count, 'member', 'members')} joined your Cluster Meetup.
           </Text>
-          {!detail.my_feedback && (
-            <View style={{ marginTop: 12 }}>
-              <SecondaryButton title="Share feedback" onPress={() => setFeedbackOpen(true)} />
-            </View>
-          )}
+          <View style={{ marginTop: 12 }}>
+            <PrimaryButton title="Propose a time for next week" onPress={() => router.push({ pathname: '/cluster/[clusterId]/meetups/new', params: { clusterId } })} />
+          </View>
         </Card>
-        <FeedbackSheet
-          open={feedbackOpen}
-          joinedCount={detail.checked_in_count}
-          rating={rating}
-          pending={submitFeedback.isPending}
-          error={error}
-          onRating={setRating}
-          onSubmit={(choice) => void handleFeedback(choice)}
-          onClose={() => setFeedbackOpen(false)}
-        />
       </View>
     )
   }
 
   if (row.status === 'confirmed' || row.status === 'starting' || row.status === 'active') {
+    // propose stays hidden here: create_meetup rejects with meetup_active
+    // until expire_meetups completes this row, then the propose card appears.
+    // Stay on the live card while a call may still be up: a live cluster
+    // call (other screen/device) or an open rejoin window.
+    if (hasEnded(row.ends_at) && !activeCall.data?.id && !canJoinMeetup(row.starts_at)) {
+      return (
+        <View style={{ gap: 16 }}>
+          <Card>
+            <View style={{ alignItems: 'center' }}>
+              <CalendarDays size={30} color={t.primary} strokeWidth={1.5} />
+            </View>
+            <Text style={{ marginTop: 10, fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>You met this week</Text>
+            <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
+              {pluralize(detail.checked_in_count, 'member', 'members')} joined your Cluster Meetup.
+            </Text>
+            <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
+              This meetup has ended.
+            </Text>
+          </Card>
+        </View>
+      )
+    }
     const joiningCount =
       detail.going_user_ids !== undefined && detail.going_user_ids !== null
         ? Math.max(detail.going_count, detail.checked_in_count)
@@ -366,7 +343,15 @@ function MeetupDetail({
           <Text style={{ marginTop: 3, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
             {pluralize(joiningCount, 'member joining', 'members joining')}
           </Text>
-          {row.starts_at ? (
+          {live ? (
+            <View style={{ marginTop: 3, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Clock size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+                <Text style={{ fontWeight: '600', color: t.primary }}>Live now</Text>
+                {row.ends_at ? ` - ends ${new Date(row.ends_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}` : ''}
+              </Text>
+            </View>
+          ) : row.starts_at && !hasStarted(row.starts_at) ? (
             <View style={{ marginTop: 3, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <Clock size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
               <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
@@ -393,7 +378,7 @@ function MeetupDetail({
                 <PrimaryButton title="Count me in" loading={rsvp.isPending} onPress={() => setJoinOpen(true)} />
               </View>
             )
-          ) : (
+          ) : hasStarted(row.starts_at) ? null : (
             <View style={{ marginTop: 8, alignItems: 'center' }}>
               <Pressable
                 accessibilityRole="button"
@@ -441,22 +426,7 @@ function MeetupDetail({
               </Text>
             </View>
           ) : null}
-          {hasStarted(row.starts_at) ? (
-            <View style={{ marginTop: 12 }}>
-              <SecondaryButton title="Leave feedback" onPress={() => setFeedbackOpen(true)} />
-            </View>
-          ) : null}
         </Card>
-        <FeedbackSheet
-          open={feedbackOpen}
-          joinedCount={joiningCount}
-          rating={rating}
-          pending={submitFeedback.isPending}
-          error={error}
-          onRating={setRating}
-          onSubmit={(choice) => void handleFeedback(choice)}
-          onClose={() => setFeedbackOpen(false)}
-        />
       </View>
     )
   }
@@ -698,86 +668,4 @@ function CancelRow({ clusterId, meetupId, onError }: { clusterId: string; meetup
   )
 }
 
-function FeedbackSheet({
-  open,
-  joinedCount,
-  rating,
-  pending,
-  error,
-  onRating,
-  onSubmit,
-  onClose,
-}: {
-  open: boolean
-  joinedCount: number
-  rating: 'loved' | 'nice' | 'not_for_me' | null
-  pending: boolean
-  error: string | null
-  onRating: (r: 'loved' | 'nice' | 'not_for_me') => void
-  onSubmit: (meetAgain: 'yes' | 'maybe') => void
-  onClose: () => void
-}) {
-  const t = useTheme()
-  const ratings: Array<{ value: 'loved' | 'nice' | 'not_for_me'; label: string }> = [
-    { value: 'loved', label: 'Loved it' },
-    { value: 'nice', label: 'It was nice' },
-    { value: 'not_for_me', label: 'Not really for me' },
-  ]
-  return (
-    <Modal open={open} onClose={onClose} title="That was your Cluster Meetup">
-      <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-        {pluralize(joinedCount, 'member', 'members')} joined. How was it?
-      </Text>
-      <ErrorText message={error} />
-      <View style={{ marginTop: 12, gap: 8 }}>
-        {ratings.map((r) => {
-          const on = rating === r.value
-          return (
-            <Pressable
-              key={r.value}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: on }}
-              onPress={() => onRating(r.value)}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
-                borderWidth: 1,
-                borderColor: on ? t.primary : t.outlineVariant,
-                backgroundColor: on ? `${t.primaryContainer}33` : 'transparent',
-                borderRadius: radii.md,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                minHeight: 48,
-              }}
-            >
-              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: on ? '600' : '400', color: t.onSurface }}>{r.label}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
-      <Text style={{ marginTop: 16, fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
-        Meet again next week?
-      </Text>
-      {!rating ? (
-        <Text style={{ marginTop: 4, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
-          Pick a rating above first.
-        </Text>
-      ) : null}
-      <View style={{ marginTop: 8 }}>
-        <PrimaryButton
-          title="Yes, let us meet again"
-          loading={pending}
-          disabled={!rating}
-          onPress={() => onSubmit('yes')}
-        />
-      </View>
-      <View style={{ marginTop: 8 }}>
-        <SecondaryButton title="Maybe next time" disabled={!rating || pending} onPress={() => onSubmit('maybe')} />
-      </View>
-      <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
-        You can always skip a week.
-      </Text>
-    </Modal>
-  )
-}
+

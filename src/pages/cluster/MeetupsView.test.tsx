@@ -13,7 +13,6 @@ const hooks = vi.hoisted(() => ({
   useCancelMeetup: vi.fn(),
   useCheckInMeetup: vi.fn(),
   useRsvpMeetup: vi.fn(),
-  useSubmitMeetupFeedback: vi.fn(),
   useActiveCall: vi.fn(),
   useJoinCall: vi.fn(),
   useStartCall: vi.fn(),
@@ -45,7 +44,6 @@ vi.mock('../../features/meetups', async (importOriginal) => {
     useCancelMeetup: hooks.useCancelMeetup,
     useCheckInMeetup: hooks.useCheckInMeetup,
     useRsvpMeetup: hooks.useRsvpMeetup,
-    useSubmitMeetupFeedback: hooks.useSubmitMeetupFeedback,
   }
 })
 vi.mock('../../components/CountdownTimer', () => ({
@@ -104,7 +102,6 @@ beforeEach(() => {
   hooks.useCancelMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
   hooks.useCheckInMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
   hooks.useRsvpMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
-  hooks.useSubmitMeetupFeedback.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
   hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1', email: 'a@b.test' })
   hooks.useAvatarUrl.mockReturnValue({ data: null })
   callStubs()
@@ -270,7 +267,7 @@ describe('MeetupsView', () => {
     expect(screen.getByText('Times are shown in your local time.')).toBeTruthy()
   })
 
-  it('shows Leave feedback once the meetup has started', () => {
+  it('shows Live now instead of Starts in Expired once started', () => {
     hooks.useClusterMeetups.mockReturnValue({
       data: [{ id: 'm1', status: 'starting' }],
       isPending: false,
@@ -284,6 +281,7 @@ describe('MeetupsView', () => {
           cluster_id: 'c1',
           status: 'starting',
           starts_at: new Date(Date.now() - 60_000).toISOString(),
+          ends_at: new Date(Date.now() + 50 * 60_000).toISOString(),
           confirmed_slot_id: 's1',
           voting_closes_at: '2026-10-10T00:00:00.000Z',
         },
@@ -295,7 +293,73 @@ describe('MeetupsView', () => {
     })
     renderPage()
     expect(screen.getByText('Your cluster meetup is set')).toBeTruthy()
-    expect(screen.getByText('Leave feedback')).toBeTruthy()
+    expect(screen.getByText(/Live now/)).toBeTruthy()
+    expect(screen.queryByText('Leave feedback')).toBeNull()
+    expect(screen.queryByText('Share feedback')).toBeNull()
+  })
+
+  it('shows the ended You met state after end plus grace', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'active' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'active',
+          starts_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
+          ends_at: new Date(Date.now() - 20 * 60_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        votes_cast: 3,
+        checked_in_count: 3,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('You met this week')).toBeTruthy()
+    expect(screen.getByText('This meetup has ended.')).toBeTruthy()
+    expect(screen.queryByText('Join Meetup')).toBeNull()
+    expect(screen.queryByText('Propose a time for next week')).toBeNull()
+  })
+
+  it('keeps Join for rejoin while the join window is still open', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'active' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'active',
+          starts_at: new Date(Date.now() - 90 * 60_000).toISOString(),
+          ends_at: new Date(Date.now() - 30 * 60_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        my_rsvp: 'going',
+        votes_cast: 3,
+        checked_in_count: 2,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Your cluster meetup is set')).toBeTruthy()
+    expect(screen.getByText('Join Meetup')).toBeTruthy()
+    expect(screen.queryByText('You met this week')).toBeNull()
   })
 
   it('shows the completed return state', () => {
