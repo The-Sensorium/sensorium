@@ -248,6 +248,7 @@ export type PrefToggle =
   | 'mentions'
   | 'reactions'
   | 'votes'
+  | 'meetups'
   | 'invitations'
   | 'signals'
   | 'post_comment'
@@ -258,6 +259,7 @@ export const PREF_TOGGLES: PrefToggle[] = [
   'mentions',
   'reactions',
   'votes',
+  'meetups',
   'invitations',
   'signals',
   'post_comment',
@@ -269,6 +271,7 @@ export const PREF_LABELS: Record<PrefToggle, string> = {
   mentions: 'Mentions',
   reactions: 'Reactions',
   votes: 'Votes & replacements',
+  meetups: 'Meetups',
   invitations: 'Invitations',
   signals: 'Signals',
   post_comment: 'Comments & replies',
@@ -459,6 +462,12 @@ export function notificationTarget(
     case 'vote_started':
     case 'vote_result':
       return clusterId ? { to: `/cluster/${clusterId}/votes` } : null
+    case 'meetup_invite':
+    case 'meetup_confirmed':
+    case 'meetup_reminder_24h':
+    case 'meetup_reminder_15m':
+    case 'meetup_starting':
+      return clusterId ? { to: `/cluster/${clusterId}/meetups` } : null
     case 'replacement': {
       const newMemberId = typeof payload.new_member_id === 'string' ? payload.new_member_id : null
       if (newMemberId) {

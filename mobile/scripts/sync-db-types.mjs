@@ -26,7 +26,7 @@ planCopy(from('database.types.ts'), to('database.types.ts'))
 for (const f of ['availability.ts', 'countries.ts', 'constants.ts', 'error.ts', 'utils.ts', 'query-retry.ts', 'timezones.ts', 'links.ts']) {
   planCopy(from(f), to(f))
 }
-for (const f of ['matching.ts', 'discovery.ts', 'introductions.ts', 'votes.ts', 'signals.ts', 'moderation.ts', 'mentions.ts', 'access.ts', 'appeals.ts', 'created-clusters.ts']) {
+for (const f of ['matching.ts', 'discovery.ts', 'introductions.ts', 'votes.ts', 'signals.ts', 'moderation.ts', 'mentions.ts', 'access.ts', 'appeals.ts', 'created-clusters.ts', 'meetups.ts']) {
   const src = readFileSync(join(root, 'src', 'features', f), 'utf8').replaceAll(
     "from '../app/auth-context'",
     "from '../auth-context'",

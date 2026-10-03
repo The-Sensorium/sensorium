@@ -54,6 +54,7 @@ import { useClusterChannel, usePresence } from '../../../../src/features/realtim
 import { useDismissKeyboardOnBlur } from '../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
+import { MeetupEntry } from '../../../../src/components/meetups/MeetupEntry'
 import { type Gif } from '../../../../src/features/gifs'
 import { MessageItem } from '../../../../src/components/room/MessageItem'
 import { MessageInfoModal } from '../../../../src/components/room/MessageInfoModal'
@@ -868,6 +869,10 @@ export default function RoomScreen() {
 
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
+        </View>
+
+        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+          <MeetupEntry clusterId={clusterId} />
         </View>
 
         {activeCall.data && (

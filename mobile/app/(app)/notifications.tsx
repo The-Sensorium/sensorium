@@ -18,6 +18,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  Video,
 } from 'lucide-react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -56,6 +57,11 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   post_like: Heart,
   report_new: Flag,
   appeal_new: MessageSquareWarning,
+  meetup_invite: Video,
+  meetup_confirmed: Video,
+  meetup_reminder_24h: Video,
+  meetup_reminder_15m: Video,
+  meetup_starting: Video,
 }
 
 export default function NotificationsScreen() {

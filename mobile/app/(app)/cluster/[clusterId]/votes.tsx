@@ -144,7 +144,7 @@ export default function VotesScreen() {
   if (votes.isLoading || counts.isLoading || members.isLoading) {
     return (
       <Screen>
-        <ClusterSectionHeader title="Votes" clusterId={clusterId} section="votes" />
+        <ClusterSectionHeader title="Governance" clusterId={clusterId} section="votes" />
         <LoadingView label="Loading votes…" />
       </Screen>
     )
@@ -155,7 +155,7 @@ export default function VotesScreen() {
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
-      <ClusterSectionHeader title="Votes" clusterId={clusterId} section="votes" />
+      <ClusterSectionHeader title="Governance" clusterId={clusterId} section="votes" />
       <ErrorText message={pull.error} />
       {createdPending ? (
         <CreatedPendingGate clusterId={clusterId} confirmedCount={(members.data ?? []).length} loading={members.isPending} />

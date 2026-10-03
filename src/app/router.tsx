@@ -48,6 +48,8 @@ const MembersView = lazy(() => import('../pages/cluster/MembersView').then((m) =
 const SignalsView = lazy(() => import('../pages/cluster/SignalsView').then((m) => ({ default: m.SignalsView })))
 const SignalDetailPage = lazy(() => import('../pages/cluster/SignalDetailPage').then((m) => ({ default: m.SignalDetailPage })))
 const VotesView = lazy(() => import('../pages/cluster/VotesView').then((m) => ({ default: m.VotesView })))
+const MeetupsView = lazy(() => import('../pages/cluster/MeetupsView').then((m) => ({ default: m.MeetupsView })))
+const MeetupsNewView = lazy(() => import('../pages/cluster/MeetupsNewView').then((m) => ({ default: m.MeetupsNewView })))
 const SettingsView = lazy(() => import('../pages/cluster/SettingsView').then((m) => ({ default: m.SettingsView })))
 const OnboardingPage = lazy(() => import('../pages/onboarding/OnboardingPage').then((m) => ({ default: m.OnboardingPage })))
 const SessionRolePage = lazy(() => import('../pages/SessionRolePage').then((m) => ({ default: m.SessionRolePage })))
@@ -212,6 +214,8 @@ export function AppRouter() {
               <Route path="signals" element={<SignalsView />} />
               <Route path="signals/:signalId" element={<SignalDetailPage />} />
               <Route path="votes" element={<VotesView />} />
+              <Route path="meetups" element={<MeetupsView />} />
+              <Route path="meetups/new" element={<MeetupsNewView />} />
               <Route path="settings" element={<SettingsView />} />
             </Route>
             <Route path="/cluster/:clusterId/introductions" element={<IntroductionsPage />} />

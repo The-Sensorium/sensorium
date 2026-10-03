@@ -10,6 +10,7 @@ export type PushData = {
   messageId?: string
   signalId?: string
   newMemberId?: string
+  meetupId?: string
 }
 
 export function mobileTarget(n: MyNotification): Href | null {
@@ -36,6 +37,9 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
   }
   if (data.clusterId && data.kind && data.kind.startsWith('vote')) {
     return { pathname: '/cluster/[clusterId]/votes', params: { clusterId: data.clusterId } }
+  }
+  if (data.clusterId && data.kind && data.kind.startsWith('meetup')) {
+    return { pathname: '/cluster/[clusterId]/meetups', params: { clusterId: data.clusterId } }
   }
   if (data.clusterId && data.kind === 'replacement') {
     if (data.newMemberId) {
@@ -85,6 +89,9 @@ export function appPathToHref(to: string): Href | null {
     }
     if (tail[0] === 'votes') {
       return { pathname: '/cluster/[clusterId]/votes', params: { clusterId } }
+    }
+    if (tail[0] === 'meetups') {
+      return { pathname: '/cluster/[clusterId]/meetups', params: { clusterId } }
     }
     if (tail[0] === 'introductions') {
       return { pathname: '/cluster/[clusterId]/introductions', params: { clusterId } }
