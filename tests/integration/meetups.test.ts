@@ -335,4 +335,78 @@ describe('cluster meetups RLS + RPC', () => {
     const { data: row } = await admin.from('meetups').select('status').eq('id', meetupId).single()
     expect(row?.status).toBe('confirmed')
   })
+
+  it('winning voters seed as going and a non-voter can still RSVP in', async () => {
+    const { members, clusterId } = await wireCluster()
+    const meetupId = await createMeetup(members[0], clusterId)
+    const { data: slots } = await admin.from('meetup_slots').select('id').eq('meetup_id', meetupId).order('starts_at')
+    const first = (slots as Array<{ id: string }>)[0].id
+    for (const m of [members[0], members[1], members[2]]) {
+      await m.client.rpc('vote_meetup_slot', { p_meetup_id: meetupId, p_slot_id: first })
+    }
+
+    const { data: seeded } = await admin.from('meetup_rsvps').select('user_id').eq('meetup_id', meetupId).eq('status', 'going')
+    expect((seeded ?? []).map((r) => r.user_id).sort()).toEqual([members[0].id, members[1].id, members[2].id].sort())
+
+    const { error } = await members[3].client.rpc('rsvp_meetup', { p_meetup_id: meetupId, p_status: 'going' })
+    expect(error).toBeNull()
+
+    const { data: state, error: stateErr } = await members[3].client.rpc('get_meetup_state', { p_meetup_id: meetupId })
+    expect(stateErr).toBeNull()
+    const typed = state as { going_count: number; my_rsvp: string; my_slot_id: null; going_user_ids: string[] }
+    expect(typed.going_count).toBe(4)
+    expect(typed.my_rsvp).toBe('going')
+    expect(typed.my_slot_id).toBeNull()
+    expect([...typed.going_user_ids].sort()).toEqual(members.map((m) => m.id).sort())
+  })
+
+  it('declining removes the member from the going list in get_meetup_state', async () => {
+    const { members, clusterId } = await wireCluster()
+    const meetupId = await createMeetup(members[0], clusterId)
+    const { data: slots } = await admin.from('meetup_slots').select('id').eq('meetup_id', meetupId).order('starts_at')
+    const first = (slots as Array<{ id: string }>)[0].id
+    for (const m of [members[0], members[1], members[2]]) {
+      await m.client.rpc('vote_meetup_slot', { p_meetup_id: meetupId, p_slot_id: first })
+    }
+
+    const { error } = await members[2].client.rpc('rsvp_meetup', { p_meetup_id: meetupId, p_status: 'declined' })
+    expect(error).toBeNull()
+
+    const { data, error: stateErr } = await members[0].client.rpc('get_meetup_state', { p_meetup_id: meetupId })
+    expect(stateErr).toBeNull()
+    const typed = data as { going_count: number; going_user_ids: string[] }
+    expect(typed.going_count).toBe(2)
+    expect([...typed.going_user_ids].sort()).toEqual([members[0].id, members[1].id].sort())
+  })
+
+  it('checking in then declining clears the check-in from attendance', async () => {
+    const { members, clusterId } = await wireCluster()
+    const meetupId = await createMeetup(members[0], clusterId)
+    const { data: slots } = await admin.from('meetup_slots').select('id').eq('meetup_id', meetupId).order('starts_at')
+    const first = (slots as Array<{ id: string }>)[0].id
+    for (const m of [members[0], members[1], members[2]]) {
+      await m.client.rpc('vote_meetup_slot', { p_meetup_id: meetupId, p_slot_id: first })
+    }
+
+    const { error: check } = await members[0].client.rpc('check_in_meetup', { p_meetup_id: meetupId })
+    expect(check).toBeNull()
+    const { error: decline } = await members[0].client.rpc('rsvp_meetup', { p_meetup_id: meetupId, p_status: 'declined' })
+    expect(decline).toBeNull()
+
+    const { data: rsvp } = await admin
+      .from('meetup_rsvps')
+      .select('status, checked_in_at')
+      .eq('meetup_id', meetupId)
+      .eq('user_id', members[0].id)
+      .single()
+    expect(rsvp?.status).toBe('declined')
+    expect(rsvp?.checked_in_at).toBeNull()
+
+    const { data, error: stateErr } = await members[1].client.rpc('get_meetup_state', { p_meetup_id: meetupId })
+    expect(stateErr).toBeNull()
+    const typed = data as { going_count: number; checked_in_count: number; going_user_ids: string[] }
+    expect(typed.going_count).toBe(2)
+    expect(typed.checked_in_count).toBe(0)
+    expect([...typed.going_user_ids].sort()).toEqual([members[1].id, members[2].id].sort())
+  })
 })

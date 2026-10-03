@@ -12,6 +12,7 @@ const hooks = vi.hoisted(() => ({
   useVoteMeetupSlot: vi.fn(),
   useCancelMeetup: vi.fn(),
   useCheckInMeetup: vi.fn(),
+  useRsvpMeetup: vi.fn(),
   useSubmitMeetupFeedback: vi.fn(),
   useActiveCall: vi.fn(),
   useJoinCall: vi.fn(),
@@ -43,6 +44,7 @@ vi.mock('../../features/meetups', async (importOriginal) => {
     useVoteMeetupSlot: hooks.useVoteMeetupSlot,
     useCancelMeetup: hooks.useCancelMeetup,
     useCheckInMeetup: hooks.useCheckInMeetup,
+    useRsvpMeetup: hooks.useRsvpMeetup,
     useSubmitMeetupFeedback: hooks.useSubmitMeetupFeedback,
   }
 })
@@ -79,8 +81,10 @@ function votingState() {
       { id: 's2', starts_at: '2026-10-12T19:00:00.000Z', ends_at: '2026-10-12T20:00:00.000Z', vote_count: 1 },
     ],
     my_slot_id: null,
+    my_rsvp: null,
     votes_cast: 3,
     going_count: 0,
+    going_user_ids: [],
     checked_in_count: 0,
     my_feedback: null,
     voters: [
@@ -99,6 +103,7 @@ beforeEach(() => {
   hooks.useVoteMeetupSlot.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
   hooks.useCancelMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
   hooks.useCheckInMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
+  hooks.useRsvpMeetup.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
   hooks.useSubmitMeetupFeedback.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false })
   hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1', email: 'a@b.test' })
   hooks.useAvatarUrl.mockReturnValue({ data: null })
@@ -214,7 +219,10 @@ describe('MeetupsView', () => {
           voting_closes_at: '2026-10-10T00:00:00.000Z',
         },
         my_slot_id: 's1',
+        my_rsvp: 'going',
         votes_cast: 5,
+        // No going_user_ids: exercises the pre-0183 votes_cast fallback.
+        going_user_ids: undefined,
       },
       isPending: false,
       isError: false,
@@ -245,7 +253,10 @@ describe('MeetupsView', () => {
           voting_closes_at: '2026-10-10T00:00:00.000Z',
         },
         my_slot_id: 's1',
+        my_rsvp: 'going',
         votes_cast: 3,
+        // No going_user_ids: exercises the pre-0183 votes_cast fallback.
+        going_user_ids: undefined,
       },
       isPending: false,
       isError: false,
@@ -386,5 +397,221 @@ describe('MeetupsView', () => {
     })
     renderPage()
     expect(screen.getByText('This meetup expired')).toBeTruthy()
+  })
+
+  it('lets a non-voter count themselves in after confirmation', async () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: null,
+        my_rsvp: null,
+        votes_cast: 3,
+        going_count: 3,
+      },
+      isPending: false,
+      isError: false,
+    })
+    const rsvp = vi.fn().mockResolvedValue(undefined)
+    hooks.useRsvpMeetup.mockReturnValue({ mutateAsync: rsvp, isPending: false })
+    renderPage()
+    expect(screen.getByText("Didn't vote? You can still join us.")).toBeTruthy()
+    fireEvent.click(screen.getByText('Count me in'))
+    expect(screen.getByText('Count me in?')).toBeTruthy()
+    expect(screen.getByText('You’ll be added to the meetup. We’ll remind you before it starts.')).toBeTruthy()
+    fireEvent.click(screen.getByText('Cancel'))
+    expect(rsvp).not.toHaveBeenCalled()
+    expect(screen.queryByText('Count me in?')).toBeNull()
+    fireEvent.click(screen.getByText('Count me in'))
+    const confirms = screen.getAllByText('Count me in')
+    fireEvent.click(confirms[confirms.length - 1])
+    await waitFor(() => expect(rsvp).toHaveBeenCalledWith('going'))
+  })
+
+  it('counts RSVPs instead of raw votes once going rows exist', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: null,
+        my_rsvp: 'going',
+        votes_cast: 3,
+        going_count: 5,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('5 members joining')).toBeTruthy()
+    expect(screen.queryByText('You’re in')).toBeNull()
+    expect(screen.getByText('I can’t make it')).toBeTruthy()
+  })
+
+  it('confirms declining through a dialog that keeps the meetup time', async () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        my_rsvp: 'going',
+        votes_cast: 3,
+        going_count: 3,
+      },
+      isPending: false,
+      isError: false,
+    })
+    const rsvp = vi.fn().mockResolvedValue(undefined)
+    hooks.useRsvpMeetup.mockReturnValue({ mutateAsync: rsvp, isPending: false })
+    renderPage()
+    fireEvent.click(screen.getByText('I can’t make it'))
+    expect(screen.getByText('Can’t make it?')).toBeTruthy()
+    expect(screen.getByText('You’ll be removed from the meetup. The meetup time won’t change.')).toBeTruthy()
+    fireEvent.click(screen.getByText('Keep me in'))
+    expect(rsvp).not.toHaveBeenCalled()
+    expect(screen.queryByText('Can’t make it?')).toBeNull()
+    fireEvent.click(screen.getByText('I can’t make it'))
+    const confirms = screen.getAllByText('I can’t make it')
+    fireEvent.click(confirms[confirms.length - 1])
+    await waitFor(() => expect(rsvp).toHaveBeenCalledWith('declined'))
+  })
+
+  it('shows a bare Count me in button after leaving, with no explainers', async () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        my_rsvp: 'declined',
+        votes_cast: 3,
+        going_count: 2,
+      },
+      isPending: false,
+      isError: false,
+    })
+    const rsvp = vi.fn().mockResolvedValue(undefined)
+    hooks.useRsvpMeetup.mockReturnValue({ mutateAsync: rsvp, isPending: false })
+    renderPage()
+    expect(screen.queryByText("Didn't vote? You can still join us.")).toBeNull()
+    expect(screen.queryByText('The time is set. Count yourself in.')).toBeNull()
+    expect(screen.queryByText('Join Meetup')).toBeNull()
+    fireEvent.click(screen.getByText('Count me in'))
+    const confirms = screen.getAllByText('Count me in')
+    fireEvent.click(confirms[confirms.length - 1])
+    await waitFor(() => expect(rsvp).toHaveBeenCalledWith('going'))
+  })
+
+  it('shows joining avatars from the live going list', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        going_user_ids: ['u1', 'u2', 'u3'],
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        my_rsvp: 'going',
+        votes_cast: 3,
+        going_count: 3,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    const row = screen.getByLabelText('3 members joining')
+    expect(row.textContent).toContain('A')
+    expect(row.textContent).toContain('B')
+    expect(row.textContent).toContain('C')
+  })
+
+  it('drops a decliner face from the avatar row while keeping the count', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'confirmed' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        going_user_ids: ['u1', 'u2'],
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's2',
+        my_rsvp: 'declined',
+        votes_cast: 3,
+        going_count: 2,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('2 members joining')).toBeTruthy()
+    const row = screen.getByLabelText('2 members joining')
+    expect(row.textContent).toContain('A')
+    expect(row.textContent).toContain('B')
+    expect(row.textContent).not.toContain('C')
   })
 })

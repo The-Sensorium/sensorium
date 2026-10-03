@@ -13,9 +13,11 @@ import {
   useCheckInMeetup,
   useClusterMeetups,
   useMeetupState,
+  useRsvpMeetup,
   useVoteMeetupSlot,
 } from '../../features/meetups'
 import { CountdownTimer } from '../../components/CountdownTimer'
+import { Avatar } from '../../components/Avatar'
 import { Modal } from '../../components/Modal'
 import { FeedbackModal } from './meetups/FeedbackModal'
 import { PreJoinDialog } from './room/PreJoinDialog'
@@ -86,7 +88,7 @@ export function MeetupsView() {
 
   return (
     <section aria-label="Cluster meetup" className="space-y-5">
-      <MeetupDetail key={active.id} clusterId={clusterId} meetupId={active.id} memberCount={(members.data ?? []).length} />
+      <MeetupDetail key={active.id} clusterId={clusterId} meetupId={active.id} members={members.data ?? []} />
     </section>
   )
 }
@@ -114,13 +116,23 @@ function ProposeCard({ clusterId }: { clusterId: string }) {
   )
 }
 
-function MeetupDetail({ clusterId, meetupId, memberCount }: { clusterId: string; meetupId: string; memberCount: number }) {
+function MeetupDetail({
+  clusterId,
+  meetupId,
+  members,
+}: {
+  clusterId: string
+  meetupId: string
+  members: Array<{ id: string; display_name: string | null; avatar_url: string | null }>
+}) {
+  const memberCount = members.length
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const state = useMeetupState(meetupId)
   const vote = useVoteMeetupSlot(clusterId, meetupId)
   const cancel = useCancelMeetup(clusterId, meetupId)
   const checkIn = useCheckInMeetup(clusterId, meetupId)
+  const rsvp = useRsvpMeetup(clusterId, meetupId)
   const startCall = useStartCall(clusterId)
   const joinCall = useJoinCall(clusterId)
   const leaveCall = useLeaveCall(clusterId)
@@ -135,6 +147,8 @@ function MeetupDetail({ clusterId, meetupId, memberCount }: { clusterId: string;
   const [cameraOnJoin, setCameraOnJoin] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [declineOpen, setDeclineOpen] = useState(false)
+  const [joinOpen, setJoinOpen] = useState(false)
   const [editing, setEditing] = useState(false)
 
   if (state.isPending) {
@@ -251,15 +265,75 @@ function MeetupDetail({ clusterId, meetupId, memberCount }: { clusterId: string;
     const startsAt = meetup.starts_at ?? confirmed?.starts_at ?? null
     const overlayCallId = callId ?? activeCall.data?.id ?? null
     const overlayStartedAt = activeCall.data?.created_at ?? new Date().toISOString()
+    const joiningCount =
+      detail.going_user_ids !== undefined && detail.going_user_ids !== null
+        ? Math.max(detail.going_count, detail.checked_in_count)
+        : detail.votes_cast
+    const iAmIn = detail.my_rsvp === 'going'
+    const memberById = new Map(members.map((m) => [m.id, m]))
+    // Avatars follow the live going list (same data as the count). Pre-0183
+    // backends omit going_user_ids, so fall back to confirmed-slot voters.
+    const joiningIds =
+      detail.going_user_ids !== undefined && detail.going_user_ids !== null
+        ? detail.going_user_ids
+        : (meetup.confirmed_slot_id ? detail.voters.filter((v) => v.slot_id === meetup.confirmed_slot_id) : []).map(
+            (v) => v.user_id,
+          )
+    const joiningMembers = joiningIds
+      .map((id) => memberById.get(id))
+      .filter((m): m is (typeof members)[number] => m !== undefined)
+    const shownJoining = joiningMembers.slice(0, 5)
+    const joiningOverflow = Math.max(0, joiningCount - shownJoining.length)
+
+    async function handleConfirmJoinRsvp() {
+      setError(null)
+      try {
+        await rsvp.mutateAsync('going')
+        setJoinOpen(false)
+      } catch (e) {
+        setJoinOpen(false)
+        setError(toErrorMessage(e, 'Could not update your RSVP. Try again.'))
+      }
+    }
+
+    async function handleConfirmDecline() {
+      setError(null)
+      try {
+        await rsvp.mutateAsync('declined')
+        setDeclineOpen(false)
+      } catch (e) {
+        setDeclineOpen(false)
+        setError(toErrorMessage(e, 'Could not update your RSVP. Try again.'))
+      }
+    }
+
     return (
       <div className="space-y-4">
-        <div data-e2e="meetup-confirmed" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 text-center shadow-soft">
+        <div data-e2e="meetup-confirmed" className="rounded-2xl border border-outline-variant/60 bg-surface px-5 py-4 text-center shadow-soft">
           <CalendarDays className="mx-auto h-8 w-8 text-primary" strokeWidth={1.5} aria-hidden />
-          <p className="mt-3 font-display text-lg font-semibold text-on-surface">Your cluster meetup is set</p>
-          <p className="mt-2 text-xl font-semibold text-on-surface">
+          <p className="mt-2 font-display text-lg font-semibold text-on-surface">Your cluster meetup is set</p>
+          <p className="mt-1 text-xl font-semibold text-on-surface">
             {startsAt ? formatSlotDot(startsAt) : ''}
           </p>
-          <p className="mt-1 text-sm text-on-surface-variant">{pluralize(detail.votes_cast, 'member joining', 'members joining')}</p>
+          {shownJoining.length > 0 && (
+            <div
+              className="mt-2 flex items-center justify-center"
+              role="img"
+              aria-label={pluralize(joiningCount, 'member joining', 'members joining')}
+            >
+              <div className="flex -space-x-2">
+                {shownJoining.map((m) => (
+                  <Avatar key={m.id} name={m.display_name ?? ''} src={m.avatar_url} className="h-7 w-7 ring-2 ring-surface" />
+                ))}
+                {joiningOverflow > 0 && (
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface-container text-[11px] font-semibold text-on-surface-variant ring-2 ring-surface">
+                    +{joiningOverflow}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          <p className="mt-1 text-sm text-on-surface-variant">{pluralize(joiningCount, 'member joining', 'members joining')}</p>
           {startsAt && (
             <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-on-surface-variant">
               <Clock className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
@@ -269,24 +343,108 @@ function MeetupDetail({ clusterId, meetupId, memberCount }: { clusterId: string;
             </p>
           )}
           {startsAt && (
-            <p className="mt-2 text-center text-xs text-on-surface-variant">Times are shown in your local time.</p>
+            <p className="mt-1 text-center text-xs text-on-surface-variant">Times are shown in your local time.</p>
           )}
           {error && (
-            <p role="alert" className="mt-3 rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-left text-sm text-error">
+            <p role="alert" className="mt-2 rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-left text-sm text-error">
               {error}
             </p>
           )}
-          <button
-            type="button"
-            data-e2e="meetup-join"
-            disabled={!joinable || startCall.isPending || joinCall.isPending}
-            onClick={() => setPreJoin(true)}
-            className="mt-4 min-h-[48px] w-full rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
-          >
-            Join Meetup
-          </button>
-          {!joinable && (
-            <p className="mt-2 text-center text-xs text-on-surface-variant">
+          {!iAmIn ? (
+            hasVoted ? (
+              <button
+                type="button"
+                data-e2e="meetup-rsvp-join"
+                disabled={rsvp.isPending}
+                onClick={() => setJoinOpen(true)}
+                className="mt-2 min-h-[44px] w-full rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+              >
+                Count me in
+              </button>
+            ) : (
+              <div className="mt-2 rounded-xl border border-outline-variant/60 bg-surface-container px-4 py-2.5">
+                <p className="text-sm text-on-surface">Didn&apos;t vote? You can still join us.</p>
+                <button
+                  type="button"
+                  data-e2e="meetup-rsvp-join"
+                  disabled={rsvp.isPending}
+                  onClick={() => setJoinOpen(true)}
+                  className="mt-2 min-h-[44px] w-full rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+                >
+                  Count me in
+                </button>
+              </div>
+            )
+          ) : (
+            <div className="mt-2 text-center">
+              <button
+                type="button"
+                data-e2e="meetup-rsvp-decline"
+                disabled={rsvp.isPending}
+                onClick={() => setDeclineOpen(true)}
+                className="mt-1 min-h-[44px] px-5 py-1.5 text-center text-base font-semibold text-primary underline underline-offset-4 transition-opacity hover:opacity-80 disabled:opacity-50"
+              >
+                I can’t make it
+              </button>
+            </div>
+          )}
+          <Modal open={declineOpen} onClose={() => setDeclineOpen(false)} title="Can’t make it?">
+            <p className="pt-2 text-sm text-on-surface-variant">You’ll be removed from the meetup. The meetup time won’t change.</p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                data-e2e="meetup-rsvp-decline-cancel"
+                onClick={() => setDeclineOpen(false)}
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+              >
+                Keep me in
+              </button>
+              <button
+                type="button"
+                data-e2e="meetup-rsvp-decline-confirm"
+                disabled={rsvp.isPending}
+                onClick={() => void handleConfirmDecline()}
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill bg-error px-5 py-2.5 text-sm font-semibold text-on-error transition-colors hover:opacity-90 disabled:opacity-50"
+              >
+                {rsvp.isPending ? 'Saving…' : 'I can’t make it'}
+              </button>
+            </div>
+          </Modal>
+          <Modal open={joinOpen} onClose={() => setJoinOpen(false)} title="Count me in?">
+            <p className="pt-2 text-sm text-on-surface-variant">You’ll be added to the meetup. We’ll remind you before it starts.</p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                data-e2e="meetup-rsvp-join-cancel"
+                onClick={() => setJoinOpen(false)}
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-e2e="meetup-rsvp-join-confirm"
+                disabled={rsvp.isPending}
+                onClick={() => void handleConfirmJoinRsvp()}
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-50"
+              >
+                {rsvp.isPending ? 'Saving…' : 'Count me in'}
+              </button>
+            </div>
+          </Modal>
+          {iAmIn && (
+            <button
+              type="button"
+              data-e2e="meetup-join"
+              disabled={!joinable || startCall.isPending || joinCall.isPending}
+              onClick={() => setPreJoin(true)}
+              className="mt-3 min-h-[48px] w-full rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+            >
+              Join Meetup
+            </button>
+          )}
+          {iAmIn && !joinable && (
+            <p className="mt-1.5 text-center text-xs text-on-surface-variant">
               Join opens {MEETUP_JOIN_LEAD_MS / 60000} minutes before it starts. We’ll remind you.
             </p>
           )}
@@ -294,7 +452,7 @@ function MeetupDetail({ clusterId, meetupId, memberCount }: { clusterId: string;
             <button
               type="button"
               onClick={() => setFeedbackOpen(true)}
-              className="mt-3 min-h-[44px] w-full rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+              className="mt-2 min-h-[44px] w-full rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
             >
               Leave feedback
             </button>
@@ -322,7 +480,7 @@ function MeetupDetail({ clusterId, meetupId, memberCount }: { clusterId: string;
             />
           )}
         </Suspense>
-        <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} clusterId={clusterId} meetupId={meetupId} joinedCount={detail.checked_in_count || detail.votes_cast} />
+        <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} clusterId={clusterId} meetupId={meetupId} joinedCount={joiningCount} />
       </div>
     )
   }
