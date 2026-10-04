@@ -167,10 +167,27 @@ describe('cluster meetups RLS + RPC', () => {
 
     const { data: notes } = await admin
       .from('notifications')
-      .select('id')
+      .select('id,title,body')
       .eq('type', 'meetup_confirmed')
       .eq('cluster_id', clusterId)
     expect((notes ?? []).length).toBeGreaterThanOrEqual(4)
+    for (const n of notes ?? []) {
+      expect(n.title).toBe('Your Cluster Meetup is set')
+      expect(n.body).toBe('See the time and RSVP.')
+    }
+
+    const { error: pumpErr } = await admin.rpc('pump_meetup_reminders')
+    expect(pumpErr).toBeNull()
+    const { data: reminders } = await admin
+      .from('notifications')
+      .select('title,body')
+      .eq('type', 'meetup_reminder_24h')
+      .eq('cluster_id', clusterId)
+    expect((reminders ?? []).length).toBeGreaterThanOrEqual(4)
+    for (const n of reminders ?? []) {
+      expect(n.title).toBe('Cluster Meetup tomorrow')
+      expect(n.body).toBe('Check the time and get ready.')
+    }
   })
 
   it('a member can change their vote before quorum', async () => {
