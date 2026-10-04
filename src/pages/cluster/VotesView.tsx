@@ -31,7 +31,7 @@ const VOTE_TYPE_LABEL: Record<GovernableVoteType, string> = {
 }
 
 export function VotesView() {
-  useDocumentTitle('Votes')
+  useDocumentTitle('Governance')
   const { clusterId = '' } = useParams()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -128,7 +128,7 @@ export function VotesView() {
   const closedVotes = (votes.data ?? []).filter((v) => v.status === 'closed' && v.type !== 'select_candidate')
 
   return (
-    <section aria-label="Votes" className="space-y-5">
+    <section aria-label="Governance" className="space-y-5">
       {voteError && (
         <p role="alert" className="rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
           {voteError}

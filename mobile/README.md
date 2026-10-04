@@ -2,9 +2,9 @@
 
 The **Android** companion app for Sensorium, built with Expo / React Native and
 `expo-router`. It ships the member experience - auth and onboarding, matching,
-clusters, realtime chat, audio/video calls, posts, signals, votes, notifications,
-profile/settings, reporting, and appeals. The **moderator and admin workspaces are
-web-only** and have no mobile equivalent.
+clusters, realtime chat, audio/video calls, posts, signals, votes, meetups,
+notifications, profile/settings, reporting, and appeals. The **moderator and
+admin workspaces are web-only** and have no mobile equivalent.
 
 It shares the web app's Supabase backend and accounts 1:1: the same project, the
 same schema/RLS/RPC functions, and the same private storage buckets. There is no
@@ -51,7 +51,7 @@ mobile/
 │  ├─ (app)/               # member shell
 │  │  ├─ home.tsx, posts.tsx, clusters.tsx, notifications.tsx, settings.tsx
 │  │  ├─ cluster-created.tsx, mode/, posts/, profile/, queue/, settings/
-│  │  └─ cluster/[clusterId]/   # room, members, signals (+ signals/[signalId]), votes, settings, call, introductions, waiting
+│  │  └─ cluster/[clusterId]/   # room, members, meetups (+ meetups/new), signals (+ signals/[signalId]), votes, settings, call, introductions, waiting
 │  ├─ appeal.tsx           # restricted-account appeal
 │  ├─ restricted.tsx       # suspended/banned landing
 │  ├─ index.tsx, privacy-policy.tsx, terms.tsx
@@ -160,7 +160,9 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
   listener. Push-to-route mapping lives in
   [`src/lib/notification-routing.ts`](src/lib/notification-routing.ts).
   A `replacement` push carrying `newMemberId` (new-member-joined) opens the
-  joiner's profile; other governance pushes land on the votes tab.
+  joiner's profile; other governance pushes land on the votes tab. Meetup
+  pushes (invite, confirmation, reminders) ride the `governance` channel and
+  land on the meetups tab.
 - Push is a no-op in Expo Go and on web (guarded by `Constants.appOwnership`).
 - Server delivery, preferences, and the outbox worker are documented in
   [`../docs/TECHNICAL.md`](../docs/TECHNICAL.md).
@@ -175,7 +177,7 @@ the input assumptions).
 Generated from web:
 
 - `src/lib/`: `database.types.ts`, `availability.ts`, `countries.ts`, `constants.ts`, `error.ts`, `utils.ts`, `query-retry.ts`, `modes.ts` (icon import adapted), `geo.ts` (geolocation adapted to `expo-location`)
-- `src/features/`: `matching.ts`, `discovery.ts`, `introductions.ts`, `votes.ts`, `signals.ts`, `moderation.ts`, `mentions.ts`, `access.ts`, `appeals.ts`, `notifications.ts`, `gifs.ts`, `cluster.ts`, `posts.ts` (image-upload calls are rewritten to use React Native upload helpers)
+- `src/features/`: `matching.ts`, `discovery.ts`, `introductions.ts`, `votes.ts`, `signals.ts`, `moderation.ts`, `mentions.ts`, `access.ts`, `appeals.ts`, `notifications.ts`, `gifs.ts`, `cluster.ts`, `posts.ts`, `meetups.ts`. Image-upload calls in `cluster.ts` / `posts.ts` are rewritten to use React Native upload helpers.
 
 Everything else is hand-written for mobile. Notable exceptions to keep an eye on:
 

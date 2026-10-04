@@ -459,6 +459,17 @@ export function formatMemberTime(now: Date, tz: string): string {
   }).format(now)
 }
 
+/**
+ * Zero-padded variant ("07:10 AM") for aligned time columns. formatMemberTime
+ * stays unpadded to match its mockup ("7:06 AM"). The pad is applied with a
+ * plain string rewrite instead of hour:'2-digit' because Hermes (React
+ * Native) silently ignores that option on device while browsers honor it.
+ */
+export function formatMemberTimePadded(now: Date, tz: string): string {
+  const s = formatMemberTime(now, tz)
+  return s.replace(/^(\d)(:\d{2}\s?[AP]M)$/i, '0$1$2')
+}
+
 export function getMemberHour(now: Date, tz: string): number | null {
   if (!isValidTimeZone(tz)) return null
   try {
@@ -483,4 +494,170 @@ export function isMemberDaytime(now: Date, tz: string): boolean | null {
   const hour = getMemberHour(now, tz)
   if (hour == null) return null
   return hour >= 6 && hour < 20
+}
+
+/**
+ * Daypart of a member-local instant: day (6am-8pm), late (8pm-midnight), or
+ * early (midnight-6am). Null without a usable hour. Splits the old
+ * day/night boolean so late-night and early-morning read correctly.
+ */
+export function getDayPeriod(now: Date, tz: string): 'day' | 'late' | 'early' | null {
+  const hour = getMemberHour(now, tz)
+  if (hour == null) return null
+  if (hour >= 6 && hour < 20) return 'day'
+  return hour >= 20 ? 'late' : 'early'
+}
+
+/** Parsed yyyy-mm-dd + hh:mm wall time, or null on bad shape or impossible date. */
+function parseDayTime(
+  day: string,
+  time: string,
+): { y: number; mo: number; d: number; h: number; mi: number } | null {
+  const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
+  const tm = /^(\d{2}):(\d{2})$/.exec(time)
+  if (!dm || !tm) return null
+  const y = Number(dm[1])
+  const mo = Number(dm[2])
+  const d = Number(dm[3])
+  const h = Number(tm[1])
+  const mi = Number(tm[2])
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null
+  const check = new Date(Date.UTC(y, mo - 1, d))
+  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) {
+    return null
+  }
+  return { y, mo, d, h, mi }
+}
+
+/**
+ * Zone offset at a UTC instant in ms (wall clock minus UTC). Null when the
+ * zone is invalid or unformattable. The hour-24 edge mirrors getMemberHour.
+ */
+function zoneOffsetMs(timeZone: string, utcMs: number): number | null {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).formatToParts(new Date(utcMs))
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+    const asUtc = Date.UTC(
+      Number(get('year')),
+      Number(get('month')) - 1,
+      Number(get('day')),
+      Number(get('hour')) % 24,
+      Number(get('minute')),
+      Number(get('second')),
+    )
+    if (Number.isNaN(asUtc)) return null
+    return asUtc - utcMs
+  } catch {
+    return null
+  }
+}
+
+function wallPartsInZone(
+  utcMs: number,
+  timeZone: string,
+): { y: number; mo: number; d: number; h: number; mi: number } | null {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).formatToParts(new Date(utcMs))
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+    const out = {
+      y: Number(get('year')),
+      mo: Number(get('month')),
+      d: Number(get('day')),
+      h: Number(get('hour')) % 24,
+      mi: Number(get('minute')),
+    }
+    if (Object.values(out).some((n) => Number.isNaN(n))) return null
+    return out
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Interpret yyyy-mm-dd + hh:mm wall time in the given IANA zone as a UTC ISO
+ * instant, or null. Rejects bad shapes, impossible dates, invalid zones, and
+ * nonexistent wall times (e.g. 02:30 on spring-forward Sunday). Ambiguous
+ * wall times (fall-back hour) resolve to one valid occurrence.
+ */
+export function zonedTimeToISO(day: string, time: string, timeZone: string): string | null {
+  if (!isValidTimeZone(timeZone)) return null
+  const p = parseDayTime(day, time)
+  if (!p) return null
+  const guess = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi)
+  const off1 = zoneOffsetMs(timeZone, guess)
+  if (off1 === null) return null
+  const off2 = zoneOffsetMs(timeZone, guess - off1)
+  if (off2 === null) return null
+  const refined = guess - off2
+  const back = wallPartsInZone(refined, timeZone)
+  if (!back || back.y !== p.y || back.mo !== p.mo || back.d !== p.d || back.h !== p.h || back.mi !== p.mi) {
+    return null
+  }
+  return new Date(refined).toISOString()
+}
+
+/** yyyy-mm-dd of a UTC instant in the given zone, or null when unrenderable. */
+export function zonedDateInput(iso: string, timeZone: string): string | null {
+  if (!isValidTimeZone(timeZone)) return null
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return null
+  const back = wallPartsInZone(at.getTime(), timeZone)
+  if (!back) return null
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${back.y}-${pad(back.mo)}-${pad(back.d)}`
+}
+
+/** hh:mm (24h) of a UTC instant in the given zone, or null when unrenderable. */
+export function zonedTimeInput(iso: string, timeZone: string): string | null {
+  if (!isValidTimeZone(timeZone)) return null
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return null
+  const back = wallPartsInZone(at.getTime(), timeZone)
+  if (!back) return null
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(back.h)}:${pad(back.mi)}`
+}
+
+/**
+ * Full slot label ("Saturday, Oct 3 at 7:00 PM" shape) rendered in the given
+ * zone, or null when unrenderable. Same shape as the device-local formatSlot.
+ */
+export function formatSlotInZone(iso: string, timeZone: string): string | null {
+  if (!isValidTimeZone(timeZone)) return null
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return null
+  try {
+    const date = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    }).format(at)
+    const time = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(at)
+    return `${date} at ${time}`
+  } catch {
+    return null
+  }
 }

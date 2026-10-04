@@ -188,7 +188,7 @@ Step 5
 Cluster is created per mode, independently. A user may have one cluster created while still waiting in another mode's queue.
 
 Step 6
-Cluster opens immediately with full access: profiles, chat, calls, Signals, posts, votes, and notifications.
+Cluster opens immediately with full access: profiles, chat, calls, Signals, posts, votes, meetups, and notifications.
 
 Step 7
 Each member may answer 5 introduction questions at any time (optional checklist; never blocks access and never removes members).
@@ -270,6 +270,23 @@ message". A member who joined *after* the message was sent is listed under "Not
 seen yet" for it permanently - they were never present to read it. The dialog
 updates live while open as members read, and each read time stays frozen at first
 read.
+
+---
+## Cluster Meetups
+
+A way for the cluster to get together in real time, over a call or in person.
+Any member proposes 2 to 5 times for the coming week, and each member votes for
+one time, changeable until voting closes. The first time to reach 3 votes on the
+same slot becomes the meetup, and everyone is notified.
+
+Join opens 10 minutes before the start, with reminders at 24 hours, 15 minutes,
+and at start time. Joining checks the member in. During the call the meetup
+reads as live with its end time; after the scheduled end it reads as finished.
+Proposing the next meetup unlocks once expiry completes the old row.
+
+The proposer can withdraw the proposal while voting is still open. A proposal
+that never reaches quorum expires, and the cluster can propose again. Only one
+meetup is active per cluster at a time.
 
 ---
 ## Status System

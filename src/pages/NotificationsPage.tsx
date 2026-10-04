@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import {
   AtSign,
   Bell,
+  CalendarDays,
   Flag,
   Heart,
   Loader2,
@@ -34,6 +35,25 @@ import {
   type MyNotification,
   type NotificationType,
 } from '../features/notifications'
+import { useMyClusters } from '../features/matching'
+
+const MEETUP_TYPES: ReadonlySet<NotificationType> = new Set([
+  'meetup_invite',
+  'meetup_confirmed',
+  'meetup_reminder_24h',
+  'meetup_reminder_15m',
+  'meetup_starting',
+])
+
+/** Cluster name for meetup rows so members in several clusters know which one. */
+export function meetupClusterName(
+  n: MyNotification,
+  clusters: Map<string, string>,
+): string | null {
+  if (!MEETUP_TYPES.has(n.type)) return null
+  if (!n.cluster_id) return null
+  return clusters.get(n.cluster_id) ?? null
+}
 
 const ICONS: Record<NotificationType, typeof Bell> = {
   message: MessageSquare,
@@ -52,6 +72,11 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   post_like: Heart,
   report_new: Flag,
   appeal_new: MessageSquareWarning,
+  meetup_invite: CalendarDays,
+  meetup_confirmed: CalendarDays,
+  meetup_reminder_24h: CalendarDays,
+  meetup_reminder_15m: CalendarDays,
+  meetup_starting: CalendarDays,
 }
 
 export function NotificationsPage() {
@@ -70,6 +95,10 @@ export function NotificationsPage() {
   const items = notifications.data ?? []
   const unread = items.filter((n) => n.read_at === null).length
   const visible = filter === 'unread' ? items.filter((n) => n.read_at === null) : items
+  const clusters = useMyClusters(items.some((n) => MEETUP_TYPES.has(n.type)))
+  const clusterNames = new Map(
+    (clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name] as const),
+  )
 
   useEffect(() => {
     if (!menuOpen) return
@@ -244,6 +273,8 @@ export function NotificationsPage() {
         <ul className="space-y-2">
           {visible.map((n) => {
             const Icon = ICONS[n.type] ?? Bell
+            const clusterName = meetupClusterName(n, clusterNames)
+            const body = clusterName ? (n.body ? `${clusterName} · ${n.body}` : clusterName) : n.body
             return (
               <li key={n.id}>
                 <button
@@ -271,8 +302,8 @@ export function NotificationsPage() {
                       <span className="truncate text-sm font-semibold text-on-surface">{n.title}</span>
                       <span className="shrink-0 text-xs text-on-surface-variant">{timeAgo(n.created_at)}</span>
                     </span>
-                    {n.body ? (
-                      <span className="mt-0.5 block truncate text-sm text-on-surface-variant">{n.body}</span>
+                    {body ? (
+                      <span className="mt-0.5 block truncate text-sm text-on-surface-variant">{body}</span>
                     ) : null}
                   </span>
                   {n.read_at === null ? (

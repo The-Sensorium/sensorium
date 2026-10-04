@@ -74,23 +74,28 @@ export default function CallScreen() {
     router.back()
   }, [])
 
-  // Single exit path for leaving deliberately: hang-up control, LiveKit
-  // disconnect, and expiry route through here. Leaving does not end the call
-  // for others; the server ends it when the last participant leaves. The
-  // screen only navigates when focused: a disconnect that fires while
-  // minimized must release the seat without yanking navigation.
-  const finishCall = useCallback(() => {
-    if (leftRef.current) return
-    leftRef.current = true
-    if (focusedRef.current) exitToRoom()
-    void leaveCall.mutateAsync(callId).catch(() => {})
-  }, [callId, exitToRoom, leaveCall])
-
   // Calls are audio-first on mobile: the PreJoin sheet starts the camera off
   // and narrows the join instead of blocking it when permissions are denied.
   const [joined, setJoined] = useState(false)
   const [micOn, setMicOn] = useState(true)
   const [cameraOn, setCameraOn] = useState(false)
+
+  // Single exit path for leaving deliberately: hang-up control, LiveKit
+  // disconnect, and expiry route through here. Leaving does not end the call
+  // for others; the server ends it when the last participant leaves. The
+  // screen only navigates when focused: a disconnect that fires while
+  // minimized must release the seat without yanking navigation.
+  // Resetting joined unmounts the LiveKit session immediately (mirroring
+  // web's setInCall(false)): tab routes stay mounted in the background, so
+  // waiting for the roster refetch to unmount would keep the media connection
+  // alive and remote clients would keep a muted, no-network ghost tile.
+  const finishCall = useCallback(() => {
+    if (leftRef.current) return
+    leftRef.current = true
+    setJoined(false)
+    if (focusedRef.current) exitToRoom()
+    void leaveCall.mutateAsync(callId).catch(() => {})
+  }, [callId, exitToRoom, leaveCall])
 
   function handleJoinCall(choices: PreJoinChoices) {
     setMicOn(choices.mic)

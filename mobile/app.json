@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sensorium",
     "slug": "sensorium",
-    "version": "0.0.21",
+    "version": "0.0.22",
     "orientation": "portrait",
     "scheme": "sensorium",
     "userInterfaceStyle": "automatic",
@@ -29,7 +29,7 @@
         "backgroundColor": "#fef8f7"
       },
       "package": "online.thesensorium.app",
-      "versionCode": 21,
+      "versionCode": 22,
       "softwareKeyboardLayoutMode": "resize",
       "allowBackup": false,
       "predictiveBackGestureEnabled": true,

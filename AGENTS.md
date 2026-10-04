@@ -8,7 +8,7 @@ Sensorium: React 19 SPA (Vite + TypeScript + Tailwind v4 + TanStack Query) with 
 - `npm run lint` — oxlint. No autofix script; keep it clean by hand.
 - `npm test` — unit/component Vitest (jsdom), matches `src/**/*.{test,spec}.{ts,tsx}`. Run one file with `npm test <path>`.
 - `npm run test:coverage` — unit suite + a **hard v8 coverage gate** in `vite.config.ts` (lines 34%, functions 33%, branches 20%). CI fails on regression; never lower the thresholds.
-- `npm run test:integration` — uses `vitest.integration.config.ts` (Node env, sequential, 20s timeouts). Matches `tests/integration/**/*.test.ts` only. **Requires `supabase start`.** Runs RLS/RPC/`security definer` behavior against the live stack.
+- `npm run test:integration` — uses `vitest.integration.config.ts` (Node env, sequential, 20s timeouts). Matches `tests/integration/**/*.test.ts` only. **Requires `supabase start`.** Runs RLS/RPC/`security definer` behavior against the live stack. Run against a fresh `supabase db reset` with no seed: `seed:demo` queues and staff roles break the matching and staff suites' assumptions.
 - `npm run test:e2e` — Playwright under `e2e/`. Requires `supabase start` + `npm run seed:demo` + `npx playwright install chromium`. The config starts the Vite dev server itself; tests select by the `data-e2e` attribute.
 - `npm run seed:demo` — idempotent; writes `.env` automatically (URL + anon key from `supabase status`) and creates the demo account `diya@demo.example` / `sensor123` in cluster "Aurora".
 

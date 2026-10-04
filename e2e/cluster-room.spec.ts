@@ -142,9 +142,9 @@ test.describe('cluster room (seeded Aurora)', () => {
     await expect(page.getByText(/No signals yet/)).toBeVisible()
   })
 
-  test('votes section renders its empty state', async ({ page }) => {
-    await openSection(page, 'Votes')
-    await expect(page.getByLabel('Votes').getByText('No open votes right now.')).toBeVisible()
+  test('governance section renders its empty state', async ({ page }) => {
+    await openSection(page, 'Governance')
+    await expect(page.getByLabel('Governance').getByText('No open votes right now.')).toBeVisible()
   })
 
   test('settings shows cluster details', async ({ page }) => {

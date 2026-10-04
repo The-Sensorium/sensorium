@@ -10,7 +10,7 @@ const howItWorks = [
   { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose.', icon: UserPlus },
   { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.', icon: Users },
   { step: '04', title: 'Complete Introductions', body: 'Introduce yourself with five questions, whenever you are ready.', icon: MessageSquareText },
-  { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and grow together.', icon: HeartHandshake },
+  { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and meet up with your cluster.', icon: HeartHandshake },
 ]
 
 const faqs = [
