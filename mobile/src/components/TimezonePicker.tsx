@@ -40,7 +40,7 @@ export function TimezonePicker({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
-          backgroundColor: t.surface,
+          backgroundColor: t.surfaceContainer,
           borderWidth: 1,
           borderColor: t.outlineVariant,
           borderRadius: radii.md,
