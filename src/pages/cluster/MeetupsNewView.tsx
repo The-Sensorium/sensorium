@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Avatar } from '../../components/Avatar'
-import { CalendarDays, CalendarPlus, Clock, Globe, Loader2, Moon, MoreVertical, Plus, Sun, Trash2 } from 'lucide-react'
+import { CalendarDays, CalendarPlus, ChevronDown, Clock, Globe, Loader2, Moon, MoreVertical, Plus, Sun, Trash2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { rateLimitMessage } from '../../lib/error'
 import { MEETUP_ENABLED, MEETUP_MAX_SLOTS, MEETUP_SLOT_LENGTH_MS, defaultCustomStart, formatPillDate, isCustomSlotValid, previewSlotMembers } from '../../lib/meetup'
@@ -151,7 +151,7 @@ function PillInput({
       <span className="sr-only">{label}</span>
       <span
         aria-hidden
-        className="flex min-h-[48px] items-center gap-2.5 rounded-pill border border-outline-variant/60 bg-surface px-4 transition-colors peer-focus-visible:border-primary"
+        className="flex min-h-[48px] items-center gap-2.5 rounded-pill border border-outline-variant/60 bg-surface-container px-4 transition-colors peer-focus-visible:border-primary"
       >
         {icon}
         {display ? (
@@ -284,27 +284,37 @@ export function MeetupsNewView() {
             <Globe className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
             Meeting timezone
           </span>
-          <select
-            aria-label="Meeting timezone"
-            value={activeZone}
-            onChange={(e) => {
-              setTouched(true)
-              setZoneOverride(e.target.value)
-            }}
-            className="mt-1 w-full rounded-xl border border-outline-variant/60 bg-surface px-3 py-2.5 text-sm text-on-surface outline-none transition-colors focus:border-primary"
-          >
-            {zones.map((z) => (
-              <option key={z} value={z}>
-                {z}
-              </option>
-            ))}
-          </select>
+          <div className="relative mt-1">
+            <select
+              aria-label="Meeting timezone"
+              value={activeZone}
+              onChange={(e) => {
+                setTouched(true)
+                setZoneOverride(e.target.value)
+              }}
+              className="w-full appearance-none rounded-xl border border-outline-variant/60 bg-surface-container py-2.5 pl-3 pr-10 text-sm text-on-surface outline-none transition-colors focus:border-primary"
+            >
+              {zones.map((z) => (
+                <option key={z} value={z}>
+                  {z}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant"
+              strokeWidth={1.5}
+              aria-hidden
+            />
+          </div>
         </div>
         <div className="mt-4 space-y-4">
           {rows.map((row, index) => {
             const iso = zonedTimeToISO(row.day, row.time, activeZone)
             const valid = iso ? isCustomSlotValid(iso) : false
-            const dayLabel = iso ? formatPillDate(new Date(iso), true, activeZone) : null
+            const dayParts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(row.day)
+            const dayLabel = dayParts
+              ? formatPillDate(new Date(Number(dayParts[1]), Number(dayParts[2]) - 1, Number(dayParts[3]), 12), true)
+              : null
             const timeDate = row.time ? new Date(`2000-01-01T${row.time}:00`) : null
             const timeLabel =
               timeDate && !Number.isNaN(timeDate.getTime())

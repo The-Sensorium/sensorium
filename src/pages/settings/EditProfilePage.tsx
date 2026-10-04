@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { ArrowLeft, Clock, ImageMinus, ImagePlus, Loader2, Save, UserRound } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Clock, ImageMinus, ImagePlus, Loader2, Save, UserRound } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { useProfile } from '../../lib/use-profile'
 import { requireSupabase } from '../../lib/supabase'
@@ -234,19 +234,26 @@ export function EditProfilePage() {
             void updateProfile.mutateAsync({ timezone: timezone || null })
           }}
         >
-          <select
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            aria-label="Timezone"
-            className="w-full appearance-none rounded-pill border border-outline-variant/60 bg-surface-container px-4 py-2.5 text-base leading-6 text-on-surface focus:border-primary focus:outline-none sm:text-sm"
-          >
-            <option value="">Not set</option>
-            {zones.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              aria-label="Timezone"
+              className="w-full appearance-none rounded-pill border border-outline-variant/60 bg-surface-container py-2.5 pl-4 pr-10 text-base leading-6 text-on-surface focus:border-primary focus:outline-none sm:text-sm"
+            >
+              <option value="">Not set</option>
+              {zones.map((tz) => (
+                <option key={tz} value={tz}>
+                  {tz}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-on-surface-variant"
+              strokeWidth={1.5}
+              aria-hidden
+            />
+          </div>
           <button
             type="submit"
             disabled={updateProfile.isPending || (timezone || '') === (profile.data?.timezone ?? '')}

@@ -64,6 +64,7 @@ function PickerPill({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+        backgroundColor: t.surfaceContainer,
         borderWidth: 1,
         borderColor: t.outlineVariant,
         borderRadius: radii.pill,
@@ -153,21 +154,22 @@ export default function NewMeetupScreen() {
     setRows(updater)
   }
 
-  function closePicker(_event: unknown, selected?: Date) {
-    if (selected && picker) {
-      const index = picker.index
-      if (picker.mode === 'date') {
-        changeRows((cur) => cur.map((row, i) => (i === index ? { ...row, day: selected } : row)))
-      } else {
-        changeRows((cur) => cur.map((row, i) => (i === index ? { ...row, time: selected } : row)))
-      }
-    }
+  function handlePickerValueChange(_event: unknown, selected: Date) {
+    const current = picker
     setPicker(null)
+    if (!selected || !current) return
+    const index = current.index
+    if (current.mode === 'date') {
+      changeRows((cur) => cur.map((row, i) => (i === index ? { ...row, day: selected } : row)))
+    } else {
+      changeRows((cur) => cur.map((row, i) => (i === index ? { ...row, time: selected } : row)))
+    }
   }
 
   function openMenu(index: number, e: GestureResponderEvent) {
     const { pageX, pageY } = e.nativeEvent
     const { width } = Dimensions.get('window')
+    setPicker(null)
     setMenu({
       index,
       x: typeof pageX === 'number' ? pageX : width - 40,
@@ -230,7 +232,7 @@ export default function NewMeetupScreen() {
                 <View
                   key={index}
                   testID="meetup-custom-row"
-                  style={{ gap: 8, borderRadius: radii.md, backgroundColor: t.surfaceContainer, padding: 14 }}
+                  style={{ gap: 8, borderRadius: radii.md, backgroundColor: t.surfaceLow, borderWidth: 1, borderColor: t.outlineVariant, padding: 14 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
@@ -251,13 +253,13 @@ export default function NewMeetupScreen() {
                       icon={<CalendarDays size={18} color={t.onSurfaceVariant} strokeWidth={1.5} />}
                       label={dayLabel}
                       muted={!row.day}
-                      onPress={() => setPicker({ index, mode: 'date' })}
+                      onPress={() => { setMenu(null); setPicker({ index, mode: 'date' }) }}
                     />
                     <PickerPill
                       icon={<Clock size={18} color={t.onSurfaceVariant} strokeWidth={1.5} />}
                       label={timeLabel}
                       muted={!row.time}
-                      onPress={() => setPicker({ index, mode: 'time' })}
+                      onPress={() => { setMenu(null); setPicker({ index, mode: 'time' }) }}
                     />
                   </View>
                   {picked && !valid ? (
@@ -337,12 +339,13 @@ export default function NewMeetupScreen() {
           ) : null}
           {picker ? (
             <DateTimePicker
-              value={new Date()}
+              value={(picker.mode === 'date' ? rows[picker.index]?.day : rows[picker.index]?.time) ?? new Date()}
               mode={picker.mode}
               display="default"
               minimumDate={picker.mode === 'date' ? new Date() : undefined}
               maximumDate={picker.mode === 'date' ? maxDay : undefined}
-              onValueChange={closePicker}
+              onValueChange={handlePickerValueChange}
+              onDismiss={() => setPicker(null)}
             />
           ) : null}
           <ErrorText message={error} />
@@ -416,6 +419,7 @@ export default function NewMeetupScreen() {
                 onPress={() => {
                   const index = menu.index
                   setMenu(null)
+                  setPicker(null)
                   changeRows((cur) => cur.filter((_, i) => i !== index))
                 }}
                 disabled={rows.length <= 1}
