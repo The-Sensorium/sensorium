@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AccessibilityInfo, Platform, Pressable, Text, View } from 'react-native'
-import { useConnectionState, useLocalParticipant } from '@livekit/react-native'
+import { useConnectionState, useLocalParticipant, useRoomContext } from '@livekit/react-native'
 import { ConnectionState } from 'livekit-client'
 import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff, Volume2, VolumeX } from 'lucide-react-native'
 import { hasExternalAudioOutputLive, setSpeakerEnabledLive } from '../../../lib/call-audio'
@@ -28,6 +28,7 @@ export function CallControls({
   const t = useTheme()
   const scheme = useResolvedScheme()
   const { localParticipant } = useLocalParticipant()
+  const room = useRoomContext()
   const connection = useConnectionState()
   const live = connection === ConnectionState.Connected
   const [micOn, setMicOn] = useState(initialMicOn)
@@ -67,6 +68,17 @@ export function CallControls({
     } catch {
       setCameraOn(!next)
     }
+  }
+
+  // Hang-up must disconnect LiveKit explicitly: the call screen lives in a
+  // tab navigator that keeps routes mounted, so relying on unmount alone
+  // leaves the media connection alive in the background and remote clients
+  // keep a muted, no-network ghost tile until the server times it out.
+  // Fire-and-forget so a stalled disconnect never blocks leaving; the parent
+  // releases the server seat and unmounts the session regardless.
+  function handleHangUp() {
+    void room?.disconnect()?.catch(() => {})
+    onHangUp()
   }
 
   async function toggleSpeaker() {
@@ -186,7 +198,7 @@ export function CallControls({
         </View>
         <Pressable
           accessibilityLabel="Hang up"
-          onPress={onHangUp}
+          onPress={handleHangUp}
           style={{
             width: 56,
             height: 56,
