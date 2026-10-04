@@ -185,7 +185,7 @@ describe('cluster meetups RLS + RPC', () => {
       .eq('cluster_id', clusterId)
     expect((reminders ?? []).length).toBeGreaterThanOrEqual(4)
     for (const n of reminders ?? []) {
-      expect(n.title).toBe('Cluster Meetup tomorrow')
+      expect(n.title).toBe('Cluster Meetup coming up')
       expect(n.body).toBe('Check the time and get ready.')
     }
   })
