@@ -5,7 +5,7 @@ import { router } from 'expo-router'
 import { CalendarDays, X } from 'lucide-react-native'
 import { useAuth } from '../../auth-context'
 import { useClusterMeetups, useMeetupState } from '../../features/meetups'
-import { MEETUP_ENABLED, formatSlotCompact24, metThisWeek } from '../../lib/meetup'
+import { MEETUP_ENABLED, formatSlotCompact24, hasEnded, metThisWeek } from '../../lib/meetup'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 
@@ -66,6 +66,10 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
   if (meetups.isPending || meetups.isError) return null
   const active = rows.find((m) => ACTIVE_STATUSES.includes(m.status)) ?? null
   const lastDone = rows.find((m) => m.status === 'completed') ?? null
+  // Past the scheduled end the meetup reads as finished: no banner, even
+  // before the expiry cron completes the row. A lingering call hides the
+  // banner already via callLive.
+  if (active && hasEnded(active.ends_at)) return null
 
   // The list carries no per-user vote info. While the vote state is still
   // loading the banner stays neutral ("View") so voters never see a stale

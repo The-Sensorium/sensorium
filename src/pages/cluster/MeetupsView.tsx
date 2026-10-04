@@ -234,6 +234,12 @@ function MeetupDetail({
     )
   }
 
+  const overlayCallId = callId ?? activeCall.data?.id ?? null
+  const overlayStartedAt = activeCall.data?.created_at ?? new Date().toISOString()
+  const overlayExpiresAt =
+    (activeCall.data as { expires_at?: string } | undefined)?.expires_at ??
+    new Date(Date.now() + 30 * 60_000).toISOString()
+
   if (meetup.status === 'completed') {
     return (
       <div className="space-y-4">
@@ -261,14 +267,19 @@ function MeetupDetail({
     const endsValid = endsAt ? !Number.isNaN(new Date(endsAt).getTime()) : false
     const live = isLive(startsAt, endsAt) || (started && !endsValid && canJoinMeetup(startsAt))
     const ended = hasEnded(endsAt)
+    // A call that outlasts the schedule stays rejoinable: local overlay or a
+    // live cluster call (other tab/device).
+    const callLive = inCall || Boolean(activeCall.data?.id)
     const endsLabel = endsAt
       ? new Date(endsAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
       : null
     // propose stays hidden here: create_meetup rejects with meetup_active
     // until expire_meetups completes this row, then the propose card appears.
-    // Stay on the live card while a call may still be up: local overlay, a
-    // live cluster call (other tab/device), or an open rejoin window.
-    if (ended && !inCall && !activeCall.data?.id && !canJoinMeetup(startsAt)) {
+    // Stay on the live card while a call may still be up. Past the end with
+    // no live call, read as finished even inside the start-based join window,
+    // so Join never lingers after the meetup ended. While the call query is
+    // still loading, hold the live card so a live call never flashes as ended.
+    if (ended && !callLive && !activeCall.isPending) {
       return (
         <div className="space-y-4">
           <div className="rounded-2xl border border-outline-variant/60 bg-surface p-5 text-center shadow-soft">
@@ -282,8 +293,6 @@ function MeetupDetail({
         </div>
       )
     }
-    const overlayCallId = callId ?? activeCall.data?.id ?? null
-    const overlayStartedAt = activeCall.data?.created_at ?? new Date().toISOString()
     const joiningCount =
       detail.going_user_ids !== undefined && detail.going_user_ids !== null
         ? Math.max(detail.going_count, detail.checked_in_count)
@@ -359,6 +368,13 @@ function MeetupDetail({
               <span>
                 <span className="font-semibold text-primary">Live now</span>
                 {endsLabel ? ` - ends ${endsLabel}` : ''}
+              </span>
+            </p>
+          ) : callLive && started ? (
+            <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-on-surface-variant">
+              <Clock className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              <span>
+                <span className="font-semibold text-primary">Live now</span> - call still live
               </span>
             </p>
           ) : startsAt && !started ? (
@@ -493,7 +509,7 @@ function MeetupDetail({
               micOnJoin={micOnJoin}
               videoOnJoin={cameraOnJoin}
               startedAt={overlayStartedAt}
-              expiresAt={(activeCall.data as { expires_at?: string } | undefined)?.expires_at ?? new Date(Date.now() + 30 * 60_000).toISOString()}
+              expiresAt={overlayExpiresAt}
               onHangUp={() => void handleHangUp(overlayCallId)}
             />
           )}

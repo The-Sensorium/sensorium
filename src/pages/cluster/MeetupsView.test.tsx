@@ -298,7 +298,7 @@ describe('MeetupsView', () => {
     expect(screen.queryByText('Share feedback')).toBeNull()
   })
 
-  it('shows the ended You met state after end plus grace', () => {
+  it('shows the ended You met state after the end', () => {
     hooks.useClusterMeetups.mockReturnValue({
       data: [{ id: 'm1', status: 'active' }],
       isPending: false,
@@ -330,12 +330,79 @@ describe('MeetupsView', () => {
     expect(screen.queryByText('Propose a time for next week')).toBeNull()
   })
 
-  it('keeps Join for rejoin while the join window is still open', () => {
+  it('keeps Join for rejoin while a call is still live past the end', () => {
     hooks.useClusterMeetups.mockReturnValue({
       data: [{ id: 'm1', status: 'active' }],
       isPending: false,
       isError: false,
     })
+    hooks.useActiveCall.mockReturnValue({ data: { id: 'call-1' } })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'active',
+          starts_at: new Date(Date.now() - 90 * 60_000).toISOString(),
+          ends_at: new Date(Date.now() - 30 * 60_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        my_rsvp: 'going',
+        votes_cast: 3,
+        checked_in_count: 2,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('Your cluster meetup is set')).toBeTruthy()
+    expect(screen.getByText('Join Meetup')).toBeTruthy()
+    expect(screen.getByText(/call still live/)).toBeTruthy()
+    expect(screen.queryByText('You met this week')).toBeNull()
+  })
+
+  it('shows the ended state past the end with no live call, even inside the join window', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'active' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({
+      data: {
+        ...votingState(),
+        meetup: {
+          id: 'm1',
+          cluster_id: 'c1',
+          status: 'active',
+          starts_at: new Date(Date.now() - 90 * 60_000).toISOString(),
+          ends_at: new Date(Date.now() - 30 * 60_000).toISOString(),
+          confirmed_slot_id: 's1',
+          voting_closes_at: '2026-10-10T00:00:00.000Z',
+        },
+        my_slot_id: 's1',
+        my_rsvp: 'going',
+        votes_cast: 3,
+        checked_in_count: 2,
+      },
+      isPending: false,
+      isError: false,
+    })
+    renderPage()
+    expect(screen.getByText('You met this week')).toBeTruthy()
+    expect(screen.getByText('This meetup has ended.')).toBeTruthy()
+    expect(screen.queryByText('Join Meetup')).toBeNull()
+  })
+
+  it('holds the live card while the call query is still loading past the end', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [{ id: 'm1', status: 'active' }],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useActiveCall.mockReturnValue({ data: undefined, isPending: true })
     hooks.useMeetupState.mockReturnValue({
       data: {
         ...votingState(),
