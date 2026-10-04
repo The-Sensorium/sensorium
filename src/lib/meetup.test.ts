@@ -1,4 +1,4 @@
-import { MEETUP_END_GRACE_MS, MEETUP_MAX_SLOTS, MEETUP_QUORUM, customRowToISO, defaultCustomStart, formatPillDate, formatSlot, formatSlotCompact24, formatSlotDay, formatSlotDot, formatSlotForMember, formatSlotShort, formatSlotShortDot, hasEnded, hasQuorum, hasStarted, isCustomSlotValid, isLive, nextSevenMidnights, pluralize, previewSlotMembers, winningSlot, canJoinMeetup } from './meetup'
+import { MEETUP_END_GRACE_MS, MEETUP_MAX_SLOTS, MEETUP_QUORUM, customRowToISO, defaultCustomStart, formatPillDate, formatSlot, formatSlotCompact24, formatSlotDay, formatSlotDot, formatSlotForMember, formatSlotShort, formatSlotShortDot, hasEnded, hasQuorum, hasStarted, isCustomSlotValid, isLive, metThisWeek, nextSevenMidnights, pluralize, previewSlotMembers, winningSlot, canJoinMeetup } from './meetup'
 import { describe, expect, it } from 'vitest'
 
 describe('meetup helpers', () => {
@@ -185,5 +185,16 @@ describe('meetup helpers', () => {
     expect(formatSlotForMember('2026-10-03T19:00:00.000Z', null)).toBeNull()
     expect(formatSlotForMember('2026-10-03T19:00:00.000Z', 'Bogus/Zone')).toBeNull()
     expect(formatSlotForMember('bogus', 'Europe/Lisbon')).toBeNull()
+  })
+
+  it('keeps the propose banner quiet for a week after completion', () => {
+    const now = Date.now()
+    const twoDaysAgo = new Date(now - 2 * 24 * 3600_000).toISOString()
+    const eightDaysAgo = new Date(now - 8 * 24 * 3600_000).toISOString()
+    expect(metThisWeek(twoDaysAgo, twoDaysAgo, now)).toBe(true)
+    expect(metThisWeek(eightDaysAgo, eightDaysAgo, now)).toBe(false)
+    expect(metThisWeek(null, twoDaysAgo, now)).toBe(true)
+    expect(metThisWeek(null, null, now)).toBe(false)
+    expect(metThisWeek('bogus', twoDaysAgo, now)).toBe(false)
   })
 })

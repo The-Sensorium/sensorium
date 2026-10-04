@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { CalendarDays, X } from 'lucide-react'
 import { useAuth } from '../../../app/auth-context'
-import { MEETUP_ENABLED, formatSlotShortDot } from '../../../lib/meetup'
+import { MEETUP_ENABLED, formatSlotShortDot, metThisWeek } from '../../../lib/meetup'
 import { useClusterMeetups, useMeetupState } from '../../../features/meetups'
 
 function dismissalKey(userId: string, clusterId: string) {
@@ -19,16 +19,23 @@ function readDismissedMeetup(userId: string | null, clusterId: string): string |
 }
 
 /** Quiet entry point rendered in the room above the composer. Hidden when the flag is off. */
-export function MeetupCard({ clusterId }: { clusterId: string }) {
+export function MeetupCard({ clusterId, callLive = false }: { clusterId: string; callLive?: boolean }) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
-  const meetups = useClusterMeetups(MEETUP_ENABLED ? clusterId : null)
+  const meetups = useClusterMeetups(MEETUP_ENABLED && clusterId ? clusterId : null)
   const rows = MEETUP_ENABLED ? (meetups.data ?? []) : []
   const voting = rows.find((m) => m.status === 'voting') ?? null
   const voteState = useMeetupState(voting ? voting.id : null)
   const [dismissedId, setDismissedId] = useState<string | null>(() => readDismissedMeetup(userId, clusterId))
+  // The room reuses this component across clusters without remounting, so
+  // reload the per-cluster dismissal whenever the cluster (or user) changes.
+  // Otherwise cluster A's dismissal would leak into cluster B and vice versa.
+  useEffect(() => {
+    setDismissedId(readDismissedMeetup(userId, clusterId))
+  }, [userId, clusterId])
 
-  if (!MEETUP_ENABLED) return null
+  if (!MEETUP_ENABLED || !clusterId) return null
+  if (callLive) return null
   if (meetups.isPending) {
     return (
       <div className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft" aria-label="Cluster meetup loading">
@@ -38,14 +45,17 @@ export function MeetupCard({ clusterId }: { clusterId: string }) {
   }
   const active = rows.find((m) => ['proposed', 'voting', 'confirmed', 'starting', 'active'].includes(m.status))
   const lastDone = rows.find((m) => m.status === 'completed')
-  if (active && active.id === dismissedId) return null
+  // The empty propose id carries the cluster so a dismissal in one cluster
+  // can never match another cluster's banner, even with a stale state.
+  const bannerId = active ? active.id : `propose:${clusterId}:${lastDone?.id ?? 'none'}`
+  if (bannerId === dismissedId) return null
+  if (!active && lastDone && metThisWeek(lastDone.completed_at, lastDone.ends_at)) return null
 
   function dismiss() {
-    if (!active) return
-    setDismissedId(active.id)
+    setDismissedId(bannerId)
     if (userId) {
       try {
-        localStorage.setItem(dismissalKey(userId, clusterId), active.id)
+        localStorage.setItem(dismissalKey(userId, clusterId), bannerId)
       } catch {
         // Private mode: dismissal lasts for this session only.
       }
@@ -79,9 +89,7 @@ export function MeetupCard({ clusterId }: { clusterId: string }) {
               : active.starts_at
                 ? formatSlotShortDot(active.starts_at)
                 : 'A meetup is being planned.'
-            : lastDone
-              ? 'You met this week.'
-              : 'Meet the people behind the messages.'}
+            : 'Meet the people behind the messages.'}
         </p>
       </div>
       <Link
@@ -90,16 +98,14 @@ export function MeetupCard({ clusterId }: { clusterId: string }) {
       >
         {active ? (active.status === 'voting' ? (showVotePrompt ? 'Vote' : 'View') : 'View') : 'Propose a time'}
       </Link>
-      {active && (
-        <button
-          type="button"
-          aria-label="Dismiss meetup banner"
-          onClick={dismiss}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
-        >
-          <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-        </button>
-      )}
+      <button
+        type="button"
+        aria-label="Dismiss meetup banner"
+        onClick={dismiss}
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+      >
+        <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+      </button>
     </div>
   )
 }

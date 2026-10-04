@@ -960,7 +960,7 @@ export function RoomView() {
         />
       )}
       <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
-      <MeetupCard clusterId={clusterId} />
+      <MeetupCard key={`meetup-${clusterId}`} clusterId={clusterId} callLive={Boolean(activeCall.data)} />
       {/* Scroll surface: the room is a fixed-height band (mobile and desktop) so
       the timeline scrolls inside the container and the page never moves. */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl bg-background px-3 py-2">

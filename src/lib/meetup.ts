@@ -1,4 +1,6 @@
-/** Cluster Meetup beta flag and shared pure helpers. Single switch to disable the flow. */
+/** Cluster Meetup beta flag and shared pure helpers. Single switch to disable the flow.
+ * Hand-mirrored in mobile/src/lib/meetup.ts (not covered by sync-db-types.mjs):
+ * keep both copies identical when editing. */
 import { formatMemberTimePadded, getDayPeriod, isValidTimeZone } from './timezones'
 
 export const MEETUP_ENABLED = true
@@ -14,6 +16,8 @@ export const MEETUP_CUSTOM_SLOT_MAX_AHEAD_MS = 7 * 24 * 3600_000
 export const MEETUP_MAX_SLOTS = 5
 /** Custom meetup calls last one hour, like the suggested slots. */
 export const MEETUP_SLOT_LENGTH_MS = 3600_000
+/** After a meetup completes, the room propose banner stays hidden for a week. */
+export const MEETUP_PROPOSE_HIDE_MS = 7 * 24 * 3600_000
 
 export type MeetupStatus =
   | 'proposed'
@@ -124,6 +128,19 @@ export function hasEnded(endsAt: string | null | undefined, now = Date.now()): b
   const end = new Date(endsAt).getTime()
   if (Number.isNaN(end)) return false
   return now > end + MEETUP_END_GRACE_MS
+}
+
+/** True when a completed meetup is still within the post-meetup quiet week. */
+export function metThisWeek(
+  completedAt: string | null | undefined,
+  endsAt: string | null | undefined,
+  now = Date.now(),
+): boolean {
+  const raw = completedAt ?? endsAt ?? null
+  if (!raw) return false
+  const at = new Date(raw).getTime()
+  if (Number.isNaN(at)) return false
+  return now >= at && now - at < MEETUP_PROPOSE_HIDE_MS
 }
 
 /**

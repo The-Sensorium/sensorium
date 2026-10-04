@@ -872,7 +872,7 @@ export default function RoomScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-          <MeetupEntry clusterId={clusterId} />
+          <MeetupEntry key={`meetup-${clusterId}`} clusterId={clusterId} callLive={Boolean(activeCall.data)} />
         </View>
 
         {activeCall.data && (
