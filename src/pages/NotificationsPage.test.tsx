@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { NotificationsPage } from './NotificationsPage'
+import { NotificationsPage, meetupClusterName } from './NotificationsPage'
 import type { MyNotification } from '../features/notifications'
 
 const hooks = vi.hoisted(() => ({
@@ -24,6 +24,9 @@ vi.mock('../features/notifications', async (importOriginal) => {
     useClearAllNotifications: () => hooks.clearAll,
   }
 })
+vi.mock('../features/matching', () => ({
+  useMyClusters: () => ({ data: [], isLoading: false, isError: false }),
+}))
 
 function row(overrides: Partial<MyNotification> & { id: string }): MyNotification {
   return {
@@ -132,6 +135,17 @@ describe('NotificationsPage filter', () => {
     render(<NotificationsPage />)
 
     expect(screen.queryByRole('button', { name: 'All' })).toBeNull()
+  })
+})
+
+describe('meetupClusterName', () => {
+  it('returns the cluster name for meetup rows only', () => {
+    const names = new Map([['c1', 'Open Mix Cluster']])
+    expect(
+      meetupClusterName(row({ id: 'm1', type: 'meetup_confirmed', cluster_id: 'c1' }), names),
+    ).toBe('Open Mix Cluster')
+    expect(meetupClusterName(row({ id: 'm2', type: 'meetup_confirmed', cluster_id: 'c9' }), names)).toBeNull()
+    expect(meetupClusterName(row({ id: 'm3', type: 'mention', cluster_id: 'c1' }), names)).toBeNull()
   })
 })
 

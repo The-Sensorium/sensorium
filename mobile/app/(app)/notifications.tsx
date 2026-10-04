@@ -3,6 +3,7 @@ import { router } from 'expo-router'
 import {
   AtSign,
   Bell,
+  CalendarDays,
   Flag,
   Heart,
   LockOpen,
@@ -18,7 +19,6 @@ import {
   Trash2,
   UserPlus,
   Users,
-  Video,
 } from 'lucide-react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -31,6 +31,7 @@ import {
   type NotificationType,
 } from '../../src/features/notifications'
 import { mobileTarget } from '../../src/lib/notification-routing'
+import { useMyClusters } from '../../src/features/matching'
 import { toErrorMessage } from '../../src/lib/error'
 import { radii, shadowShape, spacing } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
@@ -39,6 +40,14 @@ import { Modal } from '../../src/components/Modal'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { ActivityIndicator, FlatList, Modal as RNModal, Pressable, RefreshControl, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+const MEETUP_TYPES: ReadonlySet<NotificationType> = new Set([
+  'meetup_invite',
+  'meetup_confirmed',
+  'meetup_reminder_24h',
+  'meetup_reminder_15m',
+  'meetup_starting',
+])
 
 const ICONS: Record<NotificationType, typeof Bell> = {
   message: MessageSquare,
@@ -57,11 +66,11 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   post_like: Heart,
   report_new: Flag,
   appeal_new: MessageSquareWarning,
-  meetup_invite: Video,
-  meetup_confirmed: Video,
-  meetup_reminder_24h: Video,
-  meetup_reminder_15m: Video,
-  meetup_starting: Video,
+  meetup_invite: CalendarDays,
+  meetup_confirmed: CalendarDays,
+  meetup_reminder_24h: CalendarDays,
+  meetup_reminder_15m: CalendarDays,
+  meetup_starting: CalendarDays,
 }
 
 export default function NotificationsScreen() {
@@ -83,6 +92,14 @@ export default function NotificationsScreen() {
   const unread = items.filter((n) => n.read_at === null).length
   const visible = filter === 'unread' ? items.filter((n) => n.read_at === null) : items
   const markAllDisabled = items.length === 0 || markAll.isPending
+  const clusters = useMyClusters(items.some((n) => MEETUP_TYPES.has(n.type)))
+  const clusterNames = new Map(
+    (clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name] as const),
+  )
+  function clusterNameFor(n: MyNotification): string | null {
+    if (!MEETUP_TYPES.has(n.type) || !n.cluster_id) return null
+    return clusterNames.get(n.cluster_id) ?? null
+  }
 
   function handleClick(n: MyNotification) {
     if (n.read_at === null) {
@@ -111,7 +128,9 @@ export default function NotificationsScreen() {
         initialNumToRender={10}
         maxToRenderPerBatch={10}
         removeClippedSubviews={false}
-        renderItem={({ item }) => <NotificationRow item={item} onPress={() => handleClick(item)} />}
+        renderItem={({ item }) => (
+          <NotificationRow item={item} clusterName={clusterNameFor(item)} onPress={() => handleClick(item)} />
+        )}
         ListHeaderComponent={
           <>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 16 }}>
@@ -296,10 +315,19 @@ export default function NotificationsScreen() {
   )
 }
 
-function NotificationRow({ item, onPress }: { item: MyNotification; onPress: () => void }) {
+function NotificationRow({
+  item,
+  clusterName,
+  onPress,
+}: {
+  item: MyNotification
+  clusterName: string | null
+  onPress: () => void
+}) {
   const t = useTheme()
   const Icon = ICONS[item.type] ?? Bell
   const isUnread = item.read_at === null
+  const body = clusterName ? (item.body ? `${clusterName} · ${item.body}` : clusterName) : item.body
   return (
     <Pressable
       onPress={onPress}
@@ -326,9 +354,9 @@ function NotificationRow({ item, onPress }: { item: MyNotification; onPress: () 
           </Text>
           <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} maxFontSizeMultiplier={1.4}>{timeAgo(item.created_at)}</Text>
         </View>
-        {item.body ? (
+        {body ? (
           <Text style={{ marginTop: 2, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }} numberOfLines={2}>
-            {item.body}
+            {body}
           </Text>
         ) : null}
       </View>

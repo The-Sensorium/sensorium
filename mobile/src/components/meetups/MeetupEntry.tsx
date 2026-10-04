@@ -5,7 +5,7 @@ import { router } from 'expo-router'
 import { CalendarDays, X } from 'lucide-react-native'
 import { useAuth } from '../../auth-context'
 import { useClusterMeetups, useMeetupState } from '../../features/meetups'
-import { MEETUP_ENABLED, formatSlotCompact24 } from '../../lib/meetup'
+import { MEETUP_ENABLED, formatSlotCompact24, metThisWeek } from '../../lib/meetup'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 
@@ -20,7 +20,7 @@ function dismissalKey(userId: string, clusterId: string) {
 }
 
 /** Quiet entry point at the top of the room. Hidden when the flag is off. */
-export function MeetupEntry({ clusterId }: { clusterId: string }) {
+export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string; callLive?: boolean }) {
   const t = useTheme()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -30,18 +30,39 @@ export function MeetupEntry({ clusterId }: { clusterId: string }) {
   const voteState = useMeetupState(voting ? voting.id : null)
   const key = userId ? dismissalKey(userId, clusterId) : null
   const [dismissedId, setDismissedId] = useState<string | null>(() => (key ? dismissedCache.get(key) ?? null : null))
+  // The room reuses this component across clusters without remounting, so
+  // always sync to the current cluster's dismissal. Otherwise one cluster's
+  // dismissal would leak into another cluster's banner and vice versa.
   useEffect(() => {
-    if (!key || dismissedCache.has(key)) return
+    if (!key) {
+      setDismissedId(null)
+      return
+    }
+    const cached = dismissedCache.get(key)
+    if (cached !== undefined) {
+      setDismissedId(cached)
+      return
+    }
+    let cancelled = false
     void AsyncStorage.getItem(key)
       .then((value) => {
+        if (cancelled) return
         if (typeof value === 'string' && value) {
           dismissedCache.set(key, value)
           setDismissedId(value)
+        } else {
+          setDismissedId(null)
         }
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (!cancelled) setDismissedId(null)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [key])
   if (!MEETUP_ENABLED) return null
+  if (callLive) return null
   if (meetups.isPending || meetups.isError) return null
   const active = rows.find((m) => ACTIVE_STATUSES.includes(m.status)) ?? null
   const lastDone = rows.find((m) => m.status === 'completed') ?? null
@@ -52,14 +73,17 @@ export function MeetupEntry({ clusterId }: { clusterId: string }) {
   // Voters get no banner at all until the meetup is confirmed.
   const voteResolved = voting === null || voteState.data !== undefined || voteState.isError
   const showVotePrompt = voting !== null && voteResolved && voteState.data?.my_slot_id == null
-  if (active && active.id === dismissedId) return null
+  // The empty propose id carries the cluster so a dismissal in one cluster
+  // can never match another cluster's banner, even with a stale state.
+  const bannerId = active ? active.id : `propose:${clusterId}:${lastDone?.id ?? 'none'}`
+  if (bannerId === dismissedId) return null
+  if (!active && lastDone && metThisWeek(lastDone.completed_at, lastDone.ends_at)) return null
 
   function dismiss() {
-    if (!active) return
-    setDismissedId(active.id)
+    setDismissedId(bannerId)
     if (key) {
-      dismissedCache.set(key, active.id)
-      void AsyncStorage.setItem(key, active.id).catch(() => undefined)
+      dismissedCache.set(key, bannerId)
+      void AsyncStorage.setItem(key, bannerId).catch(() => undefined)
     }
   }
   if (voting !== null && voteResolved && !showVotePrompt) return null
@@ -72,9 +96,7 @@ export function MeetupEntry({ clusterId }: { clusterId: string }) {
       : active.starts_at
         ? formatSlotCompact24(active.starts_at)
         : 'A meetup is being planned.'
-    : lastDone
-      ? 'You met this week.'
-      : 'Meet the people behind the messages.'
+    : 'Meet the people behind the messages.'
   const cta = active ? (active.status === 'voting' ? (showVotePrompt ? 'Vote' : 'View') : 'View') : 'Propose a time'
 
   return (
@@ -126,17 +148,15 @@ export function MeetupEntry({ clusterId }: { clusterId: string }) {
       >
         <Text style={{ color: t.onPrimary, fontSize: 14, fontWeight: '600' }}>{cta}</Text>
       </Pressable>
-      {active ? (
-        <Pressable
-          accessibilityLabel="Dismiss meetup banner"
-          accessibilityRole="button"
-          onPress={dismiss}
-          hitSlop={8}
-          style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <X size={18} color={t.onSurfaceVariant} strokeWidth={1.5} />
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityLabel="Dismiss meetup banner"
+        accessibilityRole="button"
+        onPress={dismiss}
+        hitSlop={8}
+        style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <X size={18} color={t.onSurfaceVariant} strokeWidth={1.5} />
+      </Pressable>
     </View>
   )
 }
