@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { CalendarDays, X } from 'lucide-react'
 import { useAuth } from '../../../app/auth-context'
-import { MEETUP_ENABLED, formatSlotShortDot, metThisWeek } from '../../../lib/meetup'
+import { MEETUP_ENABLED, formatSlotShortDot, hasEnded, metThisWeek } from '../../../lib/meetup'
 import { useClusterMeetups, useMeetupState } from '../../../features/meetups'
 
 function dismissalKey(userId: string, clusterId: string) {
@@ -45,6 +45,10 @@ export function MeetupCard({ clusterId, callLive = false }: { clusterId: string;
   }
   const active = rows.find((m) => ['proposed', 'voting', 'confirmed', 'starting', 'active'].includes(m.status))
   const lastDone = rows.find((m) => m.status === 'completed')
+  // Past the scheduled end the meetup reads as finished: no banner, even
+  // before the expiry cron completes the row. A lingering call hides the
+  // banner already via callLive.
+  if (active && hasEnded(active.ends_at)) return null
   // The empty propose id carries the cluster so a dismissal in one cluster
   // can never match another cluster's banner, even with a stale state.
   const bannerId = active ? active.id : `propose:${clusterId}:${lastDone?.id ?? 'none'}`

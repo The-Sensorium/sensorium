@@ -106,6 +106,24 @@ describe('MeetupCard dismissal', () => {
     expect(screen.queryByText('Cluster Meetup')).toBeNull()
   })
 
+  it('hides the banner once the meetup has ended, even before expiry completes it', () => {
+    hooks.useClusterMeetups.mockReturnValue({
+      data: [
+        {
+          id: 'm1',
+          status: 'confirmed',
+          starts_at: new Date(Date.now() - 90 * 60_000).toISOString(),
+          ends_at: new Date(Date.now() - 30 * 60_000).toISOString(),
+        },
+      ],
+      isPending: false,
+      isError: false,
+    })
+    hooks.useMeetupState.mockReturnValue({ data: null, isPending: false, isError: false })
+    renderCard()
+    expect(screen.queryByText('Cluster Meetup')).toBeNull()
+  })
+
   it('hides the propose banner during the quiet week after completion', () => {
     const completedAt = new Date(Date.now() - 2 * 24 * 3600_000).toISOString()
     hooks.useClusterMeetups.mockReturnValue({
