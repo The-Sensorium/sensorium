@@ -281,6 +281,92 @@ describe('cluster meetups RLS + RPC', () => {
     expect(row?.cancelled_reason).toBe('expired')
   })
 
+  it('expire_meetups completes a confirmed meetup once ends_at passes, unlocking the next proposal', async () => {
+    const { members, clusterId } = await wireCluster()
+    const meetupId = await createMeetup(members[0], clusterId)
+    const { data: slots } = await admin.from('meetup_slots').select('id').eq('meetup_id', meetupId).order('starts_at')
+    const first = (slots as Array<{ id: string }>)[0].id
+    for (const m of [members[0], members[1], members[2]]) {
+      await m.client.rpc('vote_meetup_slot', { p_meetup_id: meetupId, p_slot_id: first })
+    }
+    await admin
+      .from('meetups')
+      .update({
+        starts_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
+        ends_at: new Date(Date.now() - 60_000).toISOString(),
+      })
+      .eq('id', meetupId)
+    const { error } = await admin.rpc('expire_meetups')
+    expect(error).toBeNull()
+    const { data: row } = await admin.from('meetups').select('status,completed_at').eq('id', meetupId).single()
+    expect(row?.status).toBe('completed')
+    expect(row?.completed_at).not.toBeNull()
+
+    const closes = new Date(Date.now() + 3600_000).toISOString()
+    const { error: next } = await members[0].client.rpc('create_meetup', {
+      p_cluster_id: clusterId,
+      p_slots: [slot(5), slot(7)],
+      p_voting_closes_at: closes,
+    })
+    expect(next).toBeNull()
+  })
+
+  it('expire_meetups waits while a cluster call is still live', async () => {
+    const { members, clusterId } = await wireCluster()
+    const meetupId = await createMeetup(members[0], clusterId)
+    const { data: slots } = await admin.from('meetup_slots').select('id').eq('meetup_id', meetupId).order('starts_at')
+    const first = (slots as Array<{ id: string }>)[0].id
+    for (const m of [members[0], members[1], members[2]]) {
+      await m.client.rpc('vote_meetup_slot', { p_meetup_id: meetupId, p_slot_id: first })
+    }
+    await admin
+      .from('meetups')
+      .update({
+        starts_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
+        ends_at: new Date(Date.now() - 60_000).toISOString(),
+      })
+      .eq('id', meetupId)
+
+    const { data: callId, error: callErr } = await members[0].client.rpc('start_call', { p_cluster_id: clusterId })
+    expect(callErr).toBeNull()
+    const { error } = await admin.rpc('expire_meetups')
+    expect(error).toBeNull()
+    const { data: held } = await admin.from('meetups').select('status').eq('id', meetupId).single()
+    expect(held?.status).toBe('confirmed')
+
+    const { error: leaveErr } = await members[0].client.rpc('leave_call', { p_call_id: callId as string })
+    expect(leaveErr).toBeNull()
+    const { error: again } = await admin.rpc('expire_meetups')
+    expect(again).toBeNull()
+    const { data: done } = await admin.from('meetups').select('status').eq('id', meetupId).single()
+    expect(done?.status).toBe('completed')
+  })
+
+  it('expire_meetups ignores a live call row past its own expiry', async () => {
+    const { members, clusterId } = await wireCluster()
+    const meetupId = await createMeetup(members[0], clusterId)
+    const { data: slots } = await admin.from('meetup_slots').select('id').eq('meetup_id', meetupId).order('starts_at')
+    const first = (slots as Array<{ id: string }>)[0].id
+    for (const m of [members[0], members[1], members[2]]) {
+      await m.client.rpc('vote_meetup_slot', { p_meetup_id: meetupId, p_slot_id: first })
+    }
+    await admin
+      .from('meetups')
+      .update({
+        starts_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
+        ends_at: new Date(Date.now() - 60_000).toISOString(),
+      })
+      .eq('id', meetupId)
+
+    const { data: callId, error: callErr } = await members[0].client.rpc('start_call', { p_cluster_id: clusterId })
+    expect(callErr).toBeNull()
+    await admin.from('calls').update({ expires_at: new Date(Date.now() - 1000).toISOString() }).eq('id', callId as string)
+    const { error } = await admin.rpc('expire_meetups')
+    expect(error).toBeNull()
+    const { data: row } = await admin.from('meetups').select('status').eq('id', meetupId).single()
+    expect(row?.status).toBe('completed')
+  })
+
   it('only the creator can withdraw while voting', async () => {
     const { members, clusterId } = await wireCluster()
     const meetupId = await createMeetup(members[0], clusterId)

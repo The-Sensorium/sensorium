@@ -1,4 +1,4 @@
-import { MEETUP_END_GRACE_MS, MEETUP_MAX_SLOTS, MEETUP_QUORUM, customRowToISO, defaultCustomStart, formatPillDate, formatSlot, formatSlotCompact24, formatSlotDay, formatSlotDot, formatSlotForMember, formatSlotShort, formatSlotShortDot, hasEnded, hasQuorum, hasStarted, isCustomSlotValid, isLive, metThisWeek, nextSevenMidnights, pluralize, previewSlotMembers, winningSlot, canJoinMeetup } from './meetup'
+import { MEETUP_MAX_SLOTS, MEETUP_QUORUM, customRowToISO, defaultCustomStart, formatPillDate, formatSlot, formatSlotCompact24, formatSlotDay, formatSlotDot, formatSlotForMember, formatSlotShort, formatSlotShortDot, hasEnded, hasQuorum, hasStarted, isCustomSlotValid, isLive, metThisWeek, nextSevenMidnights, pluralize, previewSlotMembers, winningSlot, canJoinMeetup } from './meetup'
 import { describe, expect, it } from 'vitest'
 
 describe('meetup helpers', () => {
@@ -39,24 +39,24 @@ describe('meetup helpers', () => {
     expect(canJoinMeetup(null)).toBe(false)
   })
 
-  it('reports live only between start and end plus grace', () => {
+  it('reports live only between start and end', () => {
     const start = new Date('2026-10-11T19:00:00.000Z').getTime()
     const end = new Date('2026-10-11T20:00:00.000Z').toISOString()
     const startIso = new Date(start).toISOString()
     expect(isLive(startIso, end, start - 1000)).toBe(false)
     expect(isLive(startIso, end, start + 5 * 60_000)).toBe(true)
-    expect(isLive(startIso, end, start + 65 * 60_000)).toBe(true)
-    expect(isLive(startIso, end, start + 60 * 60_000 + MEETUP_END_GRACE_MS + 1000)).toBe(false)
+    expect(isLive(startIso, end, start + 60 * 60_000)).toBe(true)
+    expect(isLive(startIso, end, start + 60 * 60_000 + 1000)).toBe(false)
     expect(isLive(null, end)).toBe(false)
     expect(isLive(startIso, null)).toBe(false)
     expect(isLive('bogus', end)).toBe(false)
   })
 
-  it('reports ended only past end plus grace', () => {
+  it('reports ended once past the end', () => {
     const end = new Date('2026-10-11T20:00:00.000Z')
     expect(hasEnded(end.toISOString(), end.getTime() - 1000)).toBe(false)
-    expect(hasEnded(end.toISOString(), end.getTime() + MEETUP_END_GRACE_MS - 1000)).toBe(false)
-    expect(hasEnded(end.toISOString(), end.getTime() + MEETUP_END_GRACE_MS + 1000)).toBe(true)
+    expect(hasEnded(end.toISOString(), end.getTime())).toBe(false)
+    expect(hasEnded(end.toISOString(), end.getTime() + 1000)).toBe(true)
     expect(hasEnded(null)).toBe(false)
     expect(hasEnded('bogus')).toBe(false)
   })

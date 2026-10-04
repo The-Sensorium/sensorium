@@ -157,6 +157,8 @@ function MeetupDetail({
   const joinable = row.starts_at ? canJoinMeetup(row.starts_at) : false
   const endsValid = row.ends_at ? !Number.isNaN(new Date(row.ends_at).getTime()) : false
   const live = isLive(row.starts_at, row.ends_at) || (hasStarted(row.starts_at) && !endsValid && canJoinMeetup(row.starts_at))
+  // A call that outlasts the schedule stays rejoinable.
+  const callLive = Boolean(activeCall.data?.id)
   const isCreator = userId !== null && row.created_by === userId
   const hasVoted = detail.my_slot_id !== null
   const showBallot = !hasVoted || editing
@@ -223,8 +225,12 @@ function MeetupDetail({
     // propose stays hidden here: create_meetup rejects with meetup_active
     // until expire_meetups completes this row, then the propose card appears.
     // Stay on the live card while a call may still be up: a live cluster
-    // call (other screen/device) or an open rejoin window.
-    if (hasEnded(row.ends_at) && !activeCall.data?.id && !canJoinMeetup(row.starts_at)) {
+    // call (other screen/device) that members can still rejoin. Past the end
+    // with no live call, read as finished even inside the start-based join
+    // window, so Join never lingers after the meetup ended. While the call
+    // query is still loading, hold the live card so a live call never
+    // flashes as ended.
+    if (hasEnded(row.ends_at) && !callLive && !activeCall.isPending) {
       return (
         <View style={{ gap: 16 }}>
           <Card>
@@ -349,6 +355,14 @@ function MeetupDetail({
               <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                 <Text style={{ fontWeight: '600', color: t.primary }}>Live now</Text>
                 {row.ends_at ? ` - ends ${new Date(row.ends_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}` : ''}
+              </Text>
+            </View>
+          ) : callLive && hasStarted(row.starts_at) ? (
+            <View style={{ marginTop: 3, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Clock size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+                <Text style={{ fontWeight: '600', color: t.primary }}>Live now</Text>
+                {' - call still live'}
               </Text>
             </View>
           ) : row.starts_at && !hasStarted(row.starts_at) ? (
