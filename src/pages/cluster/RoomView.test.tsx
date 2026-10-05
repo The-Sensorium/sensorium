@@ -452,6 +452,55 @@ describe('RoomView timeline', () => {
     )
   })
 
+  it('colors presence dots by manual status', () => {
+    hooks.members = {
+      data: hooks.members.data.map((m) =>
+        m.id === 'u2' ? { ...m, manual_status: 'busy' } : m,
+      ),
+      isLoading: false,
+    } as typeof hooks.members
+    hooks.presence = {
+      online: new Set<string>(['u2']),
+      typing: new Set<string>(),
+      signalTyping: vi.fn(),
+      resetTyping: vi.fn(),
+    }
+    const { container } = renderRoom()
+    expect(container.querySelector('.bg-red-500')).not.toBeNull()
+  })
+
+  it('shows invisible members exactly like offline members in the strip', () => {
+    hooks.members = {
+      data: hooks.members.data.map((m) => ({ ...m, manual_status: 'invisible' })),
+      isLoading: false,
+    } as typeof hooks.members
+    hooks.presence = {
+      online: new Set<string>(['u1', 'u2', 'u3']),
+      typing: new Set<string>(),
+      signalTyping: vi.fn(),
+      resetTyping: vi.fn(),
+    }
+    const { container } = renderRoom()
+    expect(
+      container.querySelector('.bg-emerald-500,.bg-amber-500,.bg-red-500,.bg-gray-400'),
+    ).toBeNull()
+  })
+
+  it('excludes invisible members from the here count', () => {
+    hooks.members = {
+      data: hooks.members.data.map((m) => ({ ...m, manual_status: 'invisible' })),
+      isLoading: false,
+    } as typeof hooks.members
+    hooks.presence = {
+      online: new Set<string>(['u1', 'u2', 'u3']),
+      typing: new Set<string>(),
+      signalTyping: vi.fn(),
+      resetTyping: vi.fn(),
+    }
+    renderRoom()
+    expect(screen.getByText('0 of 3 here')).toBeInTheDocument()
+  })
+
   it('suppresses the reply quote when the parent is deleted', () => {
     hooks.messages.data = [
       msg({ id: 'parent', content: 'the original', deleted_at: '2026-01-01T09:00:00Z' }),

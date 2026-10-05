@@ -21,6 +21,7 @@ import {
 import { Avatar } from '../components/Avatar'
 import { MuteButton } from '../components/MuteButton'
 import { Modal } from '../components/Modal'
+import { ProfileStatusSection } from '../components/ProfileStatusSection'
 import { SignOutModal } from '../components/SignOutModal'
 
 export function SettingsPage() {
@@ -52,6 +53,8 @@ export function SettingsPage() {
           <Pencil className="h-[18px] w-[18px]" strokeWidth={1.5} />
         </span>
       </Link>
+
+      <ProfileStatusSection />
 
       <NotificationPreferences />
 

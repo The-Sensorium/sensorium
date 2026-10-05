@@ -38,6 +38,7 @@ import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../fea
 import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { rateLimitMessage, toErrorMessage } from '../../lib/error'
 import { isOnlineNow, usePresence } from '../../features/realtime'
+import { profileStatusMeta, resolveDisplayStatus } from '../../lib/profile-status'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
 import { MessageItem } from './room/MessageItem'
@@ -109,7 +110,9 @@ export function RoomView() {
   const { typing, signalTyping, resetTyping, online } = usePresence(clusterId)
 
   const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter((m) => isOnlineNow(online, m.id, userId)).length
+  const onlineCount = (members.data ?? []).filter(
+    (m) => resolveDisplayStatus(isOnlineNow(online, m.id, userId), m.manual_status) !== 'offline',
+  ).length
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -878,6 +881,8 @@ export function RoomView() {
           <ul className="flex flex-wrap items-center gap-2">
             {(members.data ?? []).map((m) => {
               const isMe = m.id === userId
+              const display = resolveDisplayStatus(isOnlineNow(online, m.id, userId), m.manual_status)
+              const dotClass = display === 'offline' ? null : profileStatusMeta(display).dotClass
               return (
                 <li key={m.id}>
                   <Link
@@ -891,9 +896,12 @@ export function RoomView() {
                       className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
                       textClassName="text-xs"
                     />
-                    {isOnlineNow(online, m.id, userId) ? (
+                    {dotClass ? (
                       <span
-                        className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
+                        className={cn(
+                          'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface',
+                          dotClass,
+                        )}
                         aria-hidden
                       />
                     ) : null}
@@ -919,6 +927,8 @@ export function RoomView() {
           <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
             {(members.data ?? []).slice(0, 8).map((m) => {
               const isMe = m.id === userId
+              const display = resolveDisplayStatus(isOnlineNow(online, m.id, userId), m.manual_status)
+              const dotClass = display === 'offline' ? null : profileStatusMeta(display).dotClass
               return (
                 <span
                   key={m.id}
@@ -931,9 +941,12 @@ export function RoomView() {
                     className={cn('h-6 w-6', isMe && 'ring-2 ring-primary')}
                     textClassName="text-[10px]"
                   />
-                  {isOnlineNow(online, m.id, userId) ? (
+                  {dotClass ? (
                     <span
-                      className="absolute bottom-[1px] right-[1px] h-2 w-2 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
+                      className={cn(
+                        'absolute bottom-[1px] right-[1px] h-2 w-2 rounded-full border-2 border-surface',
+                        dotClass,
+                      )}
                       aria-hidden
                     />
                   ) : null}

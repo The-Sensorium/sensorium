@@ -152,7 +152,7 @@ describe('EditProfilePage', () => {
     renderPage()
     const status = screen.getByPlaceholderText('e.g. Deep in a good book')
     fireEvent.change(status, { target: { value: 'In a meeting' } })
-    fireEvent.click(within(screen.getByRole('region', { name: 'Status' })).getByRole('button', { name: 'Save changes' }))
+    fireEvent.click(within(screen.getByRole('region', { name: 'Status message' })).getByRole('button', { name: 'Save changes' }))
     await waitFor(() => expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ current_status: 'In a meeting' }))
   })
 

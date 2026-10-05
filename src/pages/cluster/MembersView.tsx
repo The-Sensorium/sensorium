@@ -21,6 +21,8 @@ import { IntroChecklistBanner } from '../../components/IntroChecklistBanner'
 import { MemberCardMenu } from '../../components/MemberCardMenu'
 import { MemberLocalTime } from '../../components/MemberLocalTime'
 import { PronounBadge } from '../../components/PronounBadge'
+import { profileStatusMeta, resolveDisplayStatus } from '../../lib/profile-status'
+import { cn } from '../../lib/utils'
 import { ReportModal } from '../../components/ReportModal'
 import { countryName } from '../../lib/countries'
 import { inviteErrorMessage, toErrorMessage } from '../../lib/error'
@@ -80,6 +82,8 @@ export function MembersView() {
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {list.map((member) => {
             const onlineNow = isOnline(member.id)
+            const display = resolveDisplayStatus(onlineNow, member.manual_status)
+            const dotClass = display === 'offline' ? null : profileStatusMeta(display).dotClass
             const hasLocalTime = !!member.timezone && isValidTimeZone(member.timezone)
             return (
               <li key={member.id} className="min-w-0">
@@ -95,13 +99,18 @@ export function MembersView() {
                           src={member.avatar_url}
                           className="h-14 w-14"
                         />
-                        {onlineNow ? (
+                        <span className="sr-only">
+                          {display === 'offline' ? 'Offline' : profileStatusMeta(display).label}
+                        </span>
+                        {dotClass ? (
                           <span
-                            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface bg-emerald-500 dark:bg-emerald-400"
+                            className={cn(
+                              'absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-surface',
+                              dotClass,
+                            )}
                             aria-hidden
                           />
                         ) : null}
-                        <span className="sr-only">{onlineNow ? 'Online' : 'Offline'}</span>
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

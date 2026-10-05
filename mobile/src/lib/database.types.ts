@@ -1587,6 +1587,7 @@ export type Database = {
           local_country_code: string | null
           local_radius_km: number | null
           longitude: number | null
+          manual_status: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at: string | null
           pronouns: string | null
           timezone: string | null
@@ -1611,6 +1612,7 @@ export type Database = {
           local_country_code?: string | null
           local_radius_km?: number | null
           longitude?: number | null
+          manual_status?: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at?: string | null
           pronouns?: string | null
           timezone?: string | null
@@ -1635,6 +1637,7 @@ export type Database = {
           local_country_code?: string | null
           local_radius_km?: number | null
           longitude?: number | null
+          manual_status?: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at?: string | null
           pronouns?: string | null
           timezone?: string | null
@@ -2768,6 +2771,7 @@ export type Database = {
           display_name: string
           id: string
           last_read_message_at: string
+          manual_status: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at: string
           pronouns: string
           timezone: string
@@ -3710,6 +3714,7 @@ export type Database = {
         | "appeal-received"
         | "appeal-resolved"
       platform_role: "moderator" | "admin"
+      profile_status: "online" | "away" | "busy" | "invisible"
       replacement_status:
         | "selecting_candidates"
         | "voting"
@@ -3942,6 +3947,7 @@ export const Constants = {
         "appeal-resolved",
       ],
       platform_role: ["moderator", "admin"],
+      profile_status: ["online", "away", "busy", "invisible"],
       replacement_status: [
         "selecting_candidates",
         "voting",
