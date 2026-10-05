@@ -15,6 +15,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
+import { isProfileStatus, resolveDisplayStatus } from '../../../../src/lib/profile-status'
+import { statusDotColor } from '../../../../src/lib/status-dot'
 import type { MentionMember } from '../../../../src/features/mentions'
 import { Avatar } from '../../../../src/components/Avatar'
 import {
@@ -157,7 +159,10 @@ export default function RoomScreen() {
   const callRefreshing = activeCall.isFetching
 
   const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter((m) => online.has(m.id) || m.id === userId).length
+  const onlineCount = (members.data ?? []).filter(
+    (m) =>
+      resolveDisplayStatus(online.has(m.id) || m.id === userId, m.manual_status) !== 'offline',
+  ).length
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -978,10 +983,14 @@ export default function RoomScreen() {
               <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                 {(members.data ?? []).slice(0, 8).map((m) => {
                   const isMe = m.id === userId
+                  const onlineNow = online.has(m.id) || isMe
+                  const manual = isProfileStatus(m.manual_status) ? m.manual_status : 'online'
+                  const display = resolveDisplayStatus(onlineNow, manual)
+                  const dotColor = statusDotColor(manual, scheme === 'dark')
                   const face = (
                     <View style={{ position: 'relative' }}>
                       <Avatar name={m.display_name} src={m.avatar_url} size={24} />
-                      {online.has(m.id) || isMe ? (
+                      {display !== 'offline' ? (
                         <View
                           style={{
                             position: 'absolute',
@@ -992,7 +1001,7 @@ export default function RoomScreen() {
                             borderRadius: 5,
                             borderWidth: 2,
                             borderColor: t.surface,
-                            backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
+                            backgroundColor: dotColor,
                           }}
                         />
                       ) : null}

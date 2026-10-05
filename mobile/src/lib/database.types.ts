@@ -1569,7 +1569,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          availability: Database["public"]["Enums"]["availability"]
           avatar_url: string | null
           bio: string | null
           birth_day: number | null
@@ -1587,13 +1586,13 @@ export type Database = {
           local_country_code: string | null
           local_radius_km: number | null
           longitude: number | null
+          manual_status: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at: string | null
           pronouns: string | null
           timezone: string | null
           updated_at: string
         }
         Insert: {
-          availability?: Database["public"]["Enums"]["availability"]
           avatar_url?: string | null
           bio?: string | null
           birth_day?: number | null
@@ -1611,13 +1610,13 @@ export type Database = {
           local_country_code?: string | null
           local_radius_km?: number | null
           longitude?: number | null
+          manual_status?: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at?: string | null
           pronouns?: string | null
           timezone?: string | null
           updated_at?: string
         }
         Update: {
-          availability?: Database["public"]["Enums"]["availability"]
           avatar_url?: string | null
           bio?: string | null
           birth_day?: number | null
@@ -1635,6 +1634,7 @@ export type Database = {
           local_country_code?: string | null
           local_radius_km?: number | null
           longitude?: number | null
+          manual_status?: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at?: string | null
           pronouns?: string | null
           timezone?: string | null
@@ -2759,7 +2759,6 @@ export type Database = {
       get_member_profiles: {
         Args: { p_cluster_id: string }
         Returns: {
-          availability: Database["public"]["Enums"]["availability"]
           avatar_url: string
           bio: string
           birth_year: number
@@ -2768,6 +2767,7 @@ export type Database = {
           display_name: string
           id: string
           last_read_message_at: string
+          manual_status: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at: string
           pronouns: string
           timezone: string
@@ -3628,7 +3628,6 @@ export type Database = {
     Enums: {
       account_status: "active" | "suspended" | "banned"
       appeal_status: "submitted" | "resolved"
-      availability: "available" | "busy" | "dnd"
       cluster_status: "introductions" | "active" | "archived"
       image_moderation_status: "pending" | "approved" | "rejected"
       invitation_status: "pending" | "accepted" | "declined" | "expired"
@@ -3710,6 +3709,7 @@ export type Database = {
         | "appeal-received"
         | "appeal-resolved"
       platform_role: "moderator" | "admin"
+      profile_status: "online" | "away" | "busy" | "invisible"
       replacement_status:
         | "selecting_candidates"
         | "voting"
@@ -3855,7 +3855,6 @@ export const Constants = {
     Enums: {
       account_status: ["active", "suspended", "banned"],
       appeal_status: ["submitted", "resolved"],
-      availability: ["available", "busy", "dnd"],
       cluster_status: ["introductions", "active", "archived"],
       image_moderation_status: ["pending", "approved", "rejected"],
       invitation_status: ["pending", "accepted", "declined", "expired"],
@@ -3942,6 +3941,7 @@ export const Constants = {
         "appeal-resolved",
       ],
       platform_role: ["moderator", "admin"],
+      profile_status: ["online", "away", "busy", "invisible"],
       replacement_status: [
         "selecting_candidates",
         "voting",

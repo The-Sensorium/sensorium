@@ -181,10 +181,10 @@ export function EditProfilePage() {
         </form>
       </section>
 
-      <section aria-label="Status" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
+      <section aria-label="Status message" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
         <div className="flex items-center gap-2">
           <UserRound className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
-          <h2 className="font-display text-lg font-semibold text-on-surface">Status</h2>
+          <h2 className="font-display text-lg font-semibold text-on-surface">Status message</h2>
         </div>
         <p className="mt-1 text-sm text-on-surface-variant">
           Shown on your member card in every cluster.
