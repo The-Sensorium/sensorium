@@ -51,8 +51,8 @@ const member = {
   country_code: 'US',
   birth_year: 1990,
   current_status: 'Deep in a book',
+  manual_status: 'away',
   pronouns: 'she/her',
-  availability: 'available',
   timezone: 'America/New_York',
   bio: 'I am a writer who collects postcards and small radios. I believe in slow mornings, handwritten letters, and the kind of friendship that survives a decade of silence. This is a long bio so it would previously have been clamped.',
 }
@@ -104,6 +104,18 @@ describe('ProfilePage', () => {
     renderPage()
     expect(screen.queryByText('Status')).not.toBeInTheDocument()
     expect(screen.getByText('Deep in a book')).toBeInTheDocument()
+  })
+
+  it('shows the manual status pill when actually online', () => {
+    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+    renderPage()
+    expect(screen.getByText('Away', { selector: 'span:not(.sr-only)' })).toBeInTheDocument()
+  })
+
+  it('shows offline on the detail header when not actually online', () => {
+    renderPage()
+    expect(screen.getByText('Offline', { selector: 'span:not(.sr-only)' })).toBeInTheDocument()
+    expect(screen.queryByText('Away', { selector: 'span:not(.sr-only)' })).not.toBeInTheDocument()
   })
 
   it('orders sections as Details, About, Introductions', () => {

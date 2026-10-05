@@ -195,7 +195,7 @@ export default function EditProfileScreen() {
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <UserRound size={20} color={t.primary} strokeWidth={1.5} />
-            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Status</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Status message</Text>
           </View>
           <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
             Shown on your member card in every cluster.

@@ -25,7 +25,8 @@ import {
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvatarViewer } from '../components/AvatarViewer'
-import { AvailabilityBadge } from '../components/AvailabilityBadge'
+import { ProfileStatusBadge } from '../components/ProfileStatusBadge'
+import { resolveDisplayStatus } from '../lib/profile-status'
 import { CountryFlag } from '../components/CountryFlag'
 import { MemberLocalTime } from '../components/MemberLocalTime'
 import { PronounBadge } from '../components/PronounBadge'
@@ -175,14 +176,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             {(member.country_code || hasLocalTime) && (
               <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
             )}
-            {onlineNow ? (
-              <AvailabilityBadge value={member.availability} />
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-pill bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant">
-                <span className="h-2 w-2 rounded-full bg-on-surface-variant/30" aria-hidden />
-                Offline
-              </span>
-            )}
+            <ProfileStatusBadge value={resolveDisplayStatus(onlineNow, member.manual_status)} />
           </p>
         </div>
 

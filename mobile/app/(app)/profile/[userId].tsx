@@ -13,7 +13,8 @@ import {
 } from '../../../src/features/posts'
 import { useAuth } from '../../../src/auth-context'
 import { AvatarViewer } from '../../../src/components/AvatarViewer'
-import { AvailabilityBadge } from '../../../src/components/AvailabilityBadge'
+import { ProfileStatusBadge } from '../../../src/components/ProfileStatusBadge'
+import { resolveDisplayStatus } from '../../../src/lib/profile-status'
 import { CountryFlag } from '../../../src/components/CountryFlag'
 import { MemberLocalTime } from '../../../src/components/MemberLocalTime'
 import { PronounBadge } from '../../../src/components/PronounBadge'
@@ -150,16 +151,7 @@ export default function ProfileScreen() {
               {member.country_code || hasLocalTime ? (
                 <View style={{ width: 1, height: 16, backgroundColor: t.outlineVariant, opacity: 0.6 }} />
               ) : null}
-              {onlineNow ? (
-                <AvailabilityBadge value={member.availability} />
-              ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.onSurfaceVariant }} />
-                  <Text style={{ fontSize: 12, fontWeight: '500', color: t.onSurfaceVariant }}>
-                    Offline
-                  </Text>
-                </View>
-              )}
+              <ProfileStatusBadge value={resolveDisplayStatus(onlineNow, member.manual_status)} />
             </View>
         </View>
 

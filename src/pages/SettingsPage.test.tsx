@@ -56,11 +56,12 @@ const profile = {
   email: 'ally@example.com',
   bio: 'Hello there',
   current_status: 'busy',
+  manual_status: 'online',
   pronouns: 'she/her',
   avatar_url: null,
 }
 
-const updateProfile = { mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false, isError: false }
+const updateProfile = { mutateAsync: vi.fn().mockResolvedValue(undefined), mutate: vi.fn(), isPending: false, isError: false }
 
 function renderPage() {
   return render(
@@ -102,6 +103,13 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Ally')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Edit profile' })).toHaveAttribute('href', '/settings/profile')
     expect(screen.getByText('Settings')).toBeInTheDocument()
+  })
+
+  it('changes the manual status from the settings page', async () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Online' }))
+    fireEvent.click(screen.getByRole('radio', { name: /Away/ }))
+    await waitFor(() => expect(updateProfile.mutate).toHaveBeenCalledWith({ manual_status: 'away' }, expect.anything()))
   })
 
   it('offers appearance options on the settings page', () => {

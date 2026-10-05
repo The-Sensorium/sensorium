@@ -56,8 +56,8 @@ const member = {
   country_code: 'US',
   birth_year: 1990,
   current_status: 'Deep in a book',
+  manual_status: 'away',
   pronouns: 'they/them',
-  availability: 'available',
   timezone: 'America/New_York',
 }
 
@@ -123,6 +123,7 @@ describe('MembersView', () => {
 
   it('shows a presence dot on the avatar for online members', () => {
     hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'online' }]))
     const { container } = renderPage()
     const dot = container.querySelector('.bg-emerald-500')
     expect(dot).not.toBeNull()
@@ -131,6 +132,42 @@ describe('MembersView', () => {
   })
 
   it('shows no presence dot for members not in the presence set', () => {
+    const { container } = renderPage()
+    expect(container.querySelector('.bg-emerald-500')).toBeNull()
+    expect(container.querySelector('.bg-amber-500')).toBeNull()
+    expect(container.querySelector('.bg-red-500')).toBeNull()
+    expect(container.querySelector('.bg-gray-400')).toBeNull()
+    expect(screen.getByText('Offline', { selector: '.sr-only' })).toBeInTheDocument()
+  })
+
+  it.each([
+    ['online', 'bg-emerald-500', 'Online'],
+    ['away', 'bg-amber-500', 'Away'],
+    ['busy', 'bg-red-500', 'Busy'],
+  ] as const)(
+    'colors the presence dot for manual status %s when online',
+    (status, dotClass, label) => {
+      hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+      hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: status }]))
+      const { container } = renderPage()
+      expect(container.querySelector(`.${dotClass}`)).not.toBeNull()
+      expect(screen.getByText(label, { selector: '.sr-only' })).toBeInTheDocument()
+    },
+  )
+
+  it('shows invisible members exactly like offline members', () => {
+    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'invisible' }]))
+    const { container } = renderPage()
+    expect(container.querySelector('.bg-emerald-500')).toBeNull()
+    expect(container.querySelector('.bg-amber-500')).toBeNull()
+    expect(container.querySelector('.bg-red-500')).toBeNull()
+    expect(container.querySelector('.bg-gray-400')).toBeNull()
+    expect(screen.getByText('Offline', { selector: '.sr-only' })).toBeInTheDocument()
+  })
+
+  it('never shows an offline member as online, whatever the manual status', () => {
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'online' }]))
     const { container } = renderPage()
     expect(container.querySelector('.bg-emerald-500')).toBeNull()
     expect(screen.getByText('Offline', { selector: '.sr-only' })).toBeInTheDocument()
@@ -145,6 +182,7 @@ describe('MembersView', () => {
 
   it('renders a 56px avatar with the online indicator attached', () => {
     hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'online' }]))
     const { container } = renderPage()
     const avatar = container.querySelector('.h-14.w-14')
     expect(avatar).not.toBeNull()

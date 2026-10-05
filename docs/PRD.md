@@ -291,19 +291,15 @@ meetup is active per cluster at a time.
 ---
 ## Status System
 
-Users see each cluster's status as freeform text (for example working, studying,
-or traveling). There is no preset status list; availability stays a fixed set
-(Available, Busy, Do Not Disturb).
-
----
-## Availability System
-
-Options:
-- Available
-- Busy
-- Do Not Disturb
-
-Visible to cluster members.
+Each member picks a manual status (Online, Away, Busy, Invisible) in
+Settings. It colors the presence dot on member avatars (green, amber, red)
+wherever members are listed. Someone who is not actually online never shows a
+dot, no matter what manual status they picked, and Invisible renders exactly
+like offline (no dot) even while the person is using the app. The member
+profile detail page shows the resolved status as a pill instead. The manual
+status is separate from the automatic realtime online/offline presence and
+from the freeform status message (for example working, studying, or
+traveling).
 
 ---
 ## Cluster Governance

@@ -462,9 +462,9 @@ export interface ProfilePatch {
   bio?: string | null
   avatar_url?: string | null
   current_status?: string | null
+  manual_status?: Database['public']['Enums']['profile_status']
   pronouns?: string | null
   timezone?: string | null
-  availability?: Database['public']['Enums']['availability']
 }
 
 /** Update the signed-in user's own profile (RLS: self update). */

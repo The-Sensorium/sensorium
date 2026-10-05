@@ -13,6 +13,8 @@ import { CountryFlag } from '../../../../src/components/CountryFlag'
 import { MemberLocalTime } from '../../../../src/components/MemberLocalTime'
 import { MemberMenuButton, MemberMenuPopover, type MemberMenuTarget } from '../../../../src/components/MemberCardMenu'
 import { PronounBadge } from '../../../../src/components/PronounBadge'
+import { isProfileStatus, profileStatusMeta, resolveDisplayStatus } from '../../../../src/lib/profile-status'
+import { statusDotColor } from '../../../../src/lib/status-dot'
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { countryName } from '../../../../src/lib/countries'
@@ -104,6 +106,9 @@ export default function MembersScreen() {
       ) : (
         list.map((member) => {
           const onlineNow = isOnline(member.id)
+          const manual = isProfileStatus(member.manual_status) ? member.manual_status : 'online'
+          const display = resolveDisplayStatus(onlineNow, manual)
+          const dotColor = statusDotColor(manual, scheme === 'dark')
           const hasLocalTime = !!member.timezone && isValidTimeZone(member.timezone)
           return (
             <View
@@ -130,7 +135,7 @@ export default function MembersScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
                       <View style={{ position: 'relative' }}>
                         <Avatar name={member.display_name} src={member.avatar_url} size={56} />
-                        {onlineNow ? (
+                        {display !== 'offline' ? (
                           <View
                             style={{
                               position: 'absolute',
@@ -141,12 +146,12 @@ export default function MembersScreen() {
                               borderRadius: 8,
                               borderWidth: 2,
                               borderColor: t.surface,
-                              backgroundColor: scheme === 'dark' ? '#34d399' : '#10b981',
+                              backgroundColor: dotColor,
                             }}
                           />
                         ) : null}
                         <Text style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
-                          {onlineNow ? 'Online' : 'Offline'}
+                          {display === 'offline' ? 'Offline' : profileStatusMeta(display).label}
                         </Text>
                       </View>
                       <View style={{ flex: 1 }}>
