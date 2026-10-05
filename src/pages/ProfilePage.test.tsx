@@ -53,7 +53,6 @@ const member = {
   current_status: 'Deep in a book',
   manual_status: 'away',
   pronouns: 'she/her',
-  availability: 'available',
   timezone: 'America/New_York',
   bio: 'I am a writer who collects postcards and small radios. I believe in slow mornings, handwritten letters, and the kind of friendship that survives a decade of silence. This is a long bio so it would previously have been clamped.',
 }

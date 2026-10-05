@@ -58,7 +58,6 @@ const member = {
   current_status: 'Deep in a book',
   manual_status: 'away',
   pronouns: 'they/them',
-  availability: 'available',
   timezone: 'America/New_York',
 }
 
