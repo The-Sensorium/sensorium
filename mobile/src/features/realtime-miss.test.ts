@@ -13,7 +13,12 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   },
 }))
 
-import { patchMessageInsert } from './realtime'
+import {
+  FOREGROUND_HEAL_MIN_BACKGROUND_MS,
+  invalidateClusterRoomKeys,
+  patchMessageInsert,
+  shouldHealOnForeground,
+} from './realtime'
 import type { Database } from '../lib/database.types'
 
 type Message = Database['public']['Tables']['messages']['Row']
@@ -68,5 +73,32 @@ describe('patchMessageInsert', () => {
     expect(qc.getQueryData<Message[]>(['cluster-messages', 'c1'])?.map((m) => m.id)).toEqual([
       'm1',
     ])
+  })
+})
+
+describe('shouldHealOnForeground', () => {
+  it('never heals without a recorded background', () => {
+    expect(shouldHealOnForeground(null, 1_000)).toBe(false)
+  })
+
+  it('skips instant app switches', () => {
+    expect(shouldHealOnForeground(1_000, 1_000 + FOREGROUND_HEAL_MIN_BACKGROUND_MS)).toBe(false)
+  })
+
+  it('heals after a real background', () => {
+    expect(shouldHealOnForeground(1_000, 1_000 + FOREGROUND_HEAL_MIN_BACKGROUND_MS + 1)).toBe(true)
+  })
+})
+
+describe('invalidateClusterRoomKeys', () => {
+  it('pulls the same four room keys the foreground path heals', () => {
+    const qc = new QueryClient()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    invalidateClusterRoomKeys(qc, 'c1')
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-messages', 'c1'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-reactions', 'c1'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-signals', 'c1'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-votes', 'c1'] })
+    expect(spy).toHaveBeenCalledTimes(4)
   })
 })

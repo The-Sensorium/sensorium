@@ -259,6 +259,28 @@ interface ClusterChannelEntry {
 
 const clusterChannelEntries = new Map<string, ClusterChannelEntry>()
 
+// Backgrounds shorter than a heartbeat interval never drop the socket, so
+// skip the catch-up fetch on instant app switches and only heal real sleeps.
+export const FOREGROUND_HEAL_MIN_BACKGROUND_MS = 5_000
+
+export function shouldHealOnForeground(backgroundedAt: number | null, now = Date.now()) {
+  if (backgroundedAt === null) return false
+  return now - backgroundedAt > FOREGROUND_HEAL_MIN_BACKGROUND_MS
+}
+
+/** Pull the room window realtime never replays after a drop (missed messages,
+ * reactions, signals, votes). Used by both the subscribe-failure and the
+ * foreground paths so the two heal the same keys. */
+export function invalidateClusterRoomKeys(
+  queryClient: ReturnType<typeof useQueryClient>,
+  clusterId: string,
+) {
+  void queryClient.invalidateQueries({ queryKey: ['cluster-messages', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-reactions', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-signals', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
+}
+
 export function useClusterChannel(clusterId: string | null) {  const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -662,10 +684,29 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       .subscribe((status, err) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('Cluster channel subscribe failed', clusterId, status, err)
+          invalidateClusterRoomKeys(queryClient, clusterId)
         }
       })
 
-    entry.teardown = () => supabase.removeChannel(channel)
+    // Sleep/wake drops the socket and realtime never replays what was missed
+    // while asleep, so pull the missed window on foreground after a real
+    // background (instant switches keep a live socket and need no refetch).
+    let backgroundedAt: number | null = null
+    const foregroundSub = AppState.addEventListener('change', (status) => {
+      if (status === 'background' || status === 'inactive') {
+        backgroundedAt = Date.now()
+      } else if (status === 'active') {
+        if (shouldHealOnForeground(backgroundedAt)) {
+          invalidateClusterRoomKeys(queryClient, clusterId)
+        }
+        backgroundedAt = null
+      }
+    })
+
+    entry.teardown = () => {
+      foregroundSub.remove()
+      supabase.removeChannel(channel)
+    }
 
     return () => {
       entry.refs -= 1
