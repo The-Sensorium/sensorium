@@ -259,6 +259,28 @@ interface ClusterChannelEntry {
 
 const clusterChannelEntries = new Map<string, ClusterChannelEntry>()
 
+// Backgrounds shorter than a heartbeat interval never drop the socket, so
+// skip the catch-up fetch on instant app switches and only heal real sleeps.
+export const FOREGROUND_HEAL_MIN_BACKGROUND_MS = 5_000
+
+export function shouldHealOnForeground(backgroundedAt: number | null, now = Date.now()) {
+  if (backgroundedAt === null) return false
+  return now - backgroundedAt > FOREGROUND_HEAL_MIN_BACKGROUND_MS
+}
+
+/** Pull the room window realtime never replays after a drop (missed messages,
+ * reactions, signals, votes). Used by both the subscribe-failure and the
+ * foreground paths so the two heal the same keys. */
+export function invalidateClusterRoomKeys(
+  queryClient: ReturnType<typeof useQueryClient>,
+  clusterId: string,
+) {
+  void queryClient.invalidateQueries({ queryKey: ['cluster-messages', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-reactions', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-signals', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
+}
+
 export function useClusterChannel(clusterId: string | null) {  const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -662,10 +684,29 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       .subscribe((status, err) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('Cluster channel subscribe failed', clusterId, status, err)
+          invalidateClusterRoomKeys(queryClient, clusterId)
         }
       })
 
-    entry.teardown = () => supabase.removeChannel(channel)
+    // Sleep/wake drops the socket and realtime never replays what was missed
+    // while asleep, so pull the missed window on foreground after a real
+    // background (instant switches keep a live socket and need no refetch).
+    let backgroundedAt: number | null = null
+    const foregroundSub = AppState.addEventListener('change', (status) => {
+      if (status === 'background' || status === 'inactive') {
+        backgroundedAt = Date.now()
+      } else if (status === 'active') {
+        if (shouldHealOnForeground(backgroundedAt)) {
+          invalidateClusterRoomKeys(queryClient, clusterId)
+        }
+        backgroundedAt = null
+      }
+    })
+
+    entry.teardown = () => {
+      foregroundSub.remove()
+      supabase.removeChannel(channel)
+    }
 
     return () => {
       entry.refs -= 1
@@ -709,6 +750,44 @@ interface PresenceEntry {
 const presenceStore = new Map<string, PresenceEntry>()
 
 /**
+ * Derive the online/typing sets from a presence state snapshot, excluding
+ * self. Shared by the refresh closure and unit tests.
+ */
+export function getPresenceSnapshot(
+  presenceState: Record<string, Array<{ user_id?: string; typing?: boolean }>>,
+  userId: string,
+): ClusterPresence {
+  const online = new Set<string>()
+  const typing = new Set<string>()
+  for (const infos of Object.values(presenceState)) {
+    for (const info of infos) {
+      if (!info.user_id || info.user_id === userId) continue
+      online.add(info.user_id)
+      if (info.typing) typing.add(info.user_id)
+    }
+  }
+  return { online, typing }
+}
+
+/** Re-announce our presence on foreground so others see us again after a
+ * sleep/wake socket drop. A dead socket makes the track reject; that failure
+ * is logged and left for the SUBSCRIBED handler to retry on rejoin. Fresh
+ * server state always arrives via the sync/join/leave handlers below, which
+ * is what actually heals stale online dots - this only makes sure the server
+ * knows we are back. */
+export async function healPresenceOnForeground(entry: {
+  channel: Pick<RealtimeChannel, 'track'>
+  userId: string
+  broadcastTyping: boolean
+}): Promise<void> {
+  try {
+    await entry.channel.track({ user_id: entry.userId, typing: entry.broadcastTyping })
+  } catch (err) {
+    console.warn('Presence re-track failed on foreground', err)
+  }
+}
+
+/**
  * Presence channel for a cluster: who is online, who is typing. Also exposes
  * `signalTyping` / `resetTyping` for the composer to broadcast its own typing state.
  * Presence metadata is `{ user_id, typing }`.
@@ -746,18 +825,12 @@ export function usePresence(clusterId: string | null) {
         listeners: new Set(),
       }
       const refresh = () => {
-        const online = new Set<string>()
-        const typing = new Set<string>()
-        for (const infos of Object.values(channel.presenceState())) {
-          for (const info of infos as { user_id?: string; typing?: boolean }[]) {
-            if (!info.user_id || info.user_id === entry!.userId) continue
-            online.add(info.user_id)
-            if (info.typing) typing.add(info.user_id)
-          }
-        }
-        entry!.online = online
-        entry!.typing = typing
-        const snap: ClusterPresence = { online, typing }
+        const snap = getPresenceSnapshot(
+          channel.presenceState() as Record<string, Array<{ user_id?: string; typing?: boolean }>>,
+          entry!.userId,
+        )
+        entry!.online = snap.online
+        entry!.typing = snap.typing
         for (const listener of entry!.listeners) listener(snap)
       }
       entry.refresh = refresh
@@ -767,15 +840,15 @@ export function usePresence(clusterId: string | null) {
         .on('presence', { event: 'sync' }, refresh)
         .on('presence', { event: 'join' }, refresh)
         .on('presence', { event: 'leave' }, refresh)
-        .subscribe(async (status) => {
+        .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
-            await channel.track({ user_id: entry!.userId, typing: entry!.broadcastTyping })
+            void healPresenceOnForeground(entry!)
           }
         })
 
       const subscription = AppState.addEventListener('change', (status) => {
         if (status === 'active') {
-          void entry!.channel.track({ user_id: entry!.userId, typing: entry!.broadcastTyping })
+          void healPresenceOnForeground(entry!)
         } else if (status === 'background' || status === 'inactive') {
           entry!.broadcastTyping = false
           void entry!.channel.untrack()

@@ -595,11 +595,9 @@ export default function RoomScreen() {
     fireMark(clusterId)
   }, [clusterId, auth.state, fireMark, clearMarkTimer])
 
-  // One AppState subscription for both directions: flush the read marker
-  // when backgrounded while pinned (never when scrolled up reading history),
-  // and heal an errored message query when foregrounded (a mount fetch that
-  // failed while the app was waking would otherwise sit on stale rows with
-  // the new message missing until remount).
+  // Flush the read marker when backgrounded while pinned (never when
+  // scrolled up reading history). The foreground catch-up lives in
+  // useClusterChannel, which pulls the missed window for the cluster.
   useEffect(() => {
     if (!focused || !clusterId) return
     const sub = AppState.addEventListener('change', (state) => {
@@ -607,15 +605,10 @@ export default function RoomScreen() {
         if (!pinned || auth.state !== 'signedIn') return
         clearMarkTimer()
         fireMark(clusterId)
-      } else if (state === 'active') {
-        const key = ['cluster-messages', clusterId]
-        if (queryClient.getQueryState(key)?.status === 'error') {
-          void queryClient.invalidateQueries({ queryKey: key })
-        }
       }
     })
     return () => sub.remove()
-  }, [focused, pinned, clusterId, markRead, queryClient, auth.state, fireMark, clearMarkTimer])
+  }, [focused, pinned, clusterId, auth.state, fireMark, clearMarkTimer])
 
   useFocusEffect(
     useCallback(() => {
