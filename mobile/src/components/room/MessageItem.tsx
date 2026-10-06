@@ -1,8 +1,7 @@
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
-import { CornerUpLeft, Send, ShieldOff, X } from 'lucide-react-native'
+import { Pressable, Text, View } from 'react-native'
+import { CornerUpLeft, ShieldOff } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
 import { AvatarLink } from '../AvatarLink'
-import { MessageActionsSheet } from './MessageActionsSheet'
 import { DayDivider } from './DayDivider'
 import { MessageGif, MessageImage } from './MessageMedia'
 import { MentionText } from './MentionText'
@@ -23,23 +22,11 @@ export function MessageItem({
   members,
   showDay,
   showAuthor = true,
-  isEditing,
-  editDraft,
-  editPending,
-  menuOpen,
   replyParent,
   highlighted,
   onPressReplyParent,
-  onEditDraftChange,
-  onSaveEdit,
-  onCancelEdit,
   onToggleMenu,
-  onShowInfo,
-  onEdit,
-  onDelete,
-  onReply,
   onToggleReaction,
-  onReport,
 }: {
   message: Message
   mine: boolean
@@ -50,23 +37,11 @@ export function MessageItem({
   members: MentionMember[]
   showDay: boolean
   showAuthor?: boolean
-  isEditing: boolean
-  editDraft: string
-  editPending: boolean
-  menuOpen: boolean
   replyParent: { authorName?: string; preview: string } | undefined
   highlighted?: boolean
   onPressReplyParent?(parentId: string): void
-  onEditDraftChange(value: string): void
-  onSaveEdit(): void
-  onCancelEdit(): void
   onToggleMenu(): void
-  onShowInfo(message: Message): void
-  onEdit(message: Message): void
-  onDelete(messageId: string): void
-  onReply(message: Message): void
   onToggleReaction(messageId: string, emoji: string): void
-  onReport(message: Message): void
 }) {
   const t = useTheme()
   const grouped = new Map<string, number>()
@@ -77,7 +52,7 @@ export function MessageItem({
   // The quote jumps to the original message, but only when there is a real,
   // visible parent to land on (deleted, muted-hidden, and unfetched parents
   // render fallback text and stay inert).
-  const replyParentId = !isEditing ? (message.reply_to_id ?? null) : null
+  const replyParentId = message.reply_to_id ?? null
   const jumpable = Boolean(replyParentId && replyParent && onPressReplyParent)
 
   const avatarSlot = (
@@ -99,17 +74,6 @@ export function MessageItem({
       )}
     </View>
   )
-  // Bottom-anchored to the bubble itself (not the column): center anchoring
-  // drifts with whatever else shares the column (name header above,
-  // reaction chips below), which made otherwise identical messages sit at
-  // different heights. paddingBottom matches the bubble's own vertical
-  // padding so the time sits level with the last line of text.
-  const timestamp = (
-    <Text style={{ flexShrink: 0, fontSize: 12, color: t.onSurfaceVariant, paddingBottom: 10 }}>
-      {timeFormatter.format(new Date(message.created_at))}
-    </Text>
-  )
-
   return (
     <View>
       {showDay ? <DayDivider iso={message.created_at} /> : null}
@@ -127,34 +91,21 @@ export function MessageItem({
         <View
           style={{
             minWidth: 0,
-            maxWidth: isEditing ? '100%' : '72%',
-            flex: isEditing ? 1 : 0,
+            maxWidth: '72%',
             flexShrink: 1,
-            alignSelf: isEditing ? 'stretch' : 'auto',
             alignItems: mine ? 'flex-end' : 'flex-start',
           }}
         >
           {showAuthor ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
               <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
                 {mine ? 'You' : (author?.display_name ?? 'Member')}
               </Text>
+              <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                {timeFormatter.format(new Date(message.created_at))}
+              </Text>
             </View>
           ) : null}
-
-          <MessageActionsSheet
-            open={menuOpen}
-            mine={mine}
-            myReactionKeys={myReactionKeys}
-            messageId={message.id}
-            onClose={onToggleMenu}
-            onToggleReaction={onToggleReaction}
-            onReply={() => onReply(message)}
-            onInfo={() => onShowInfo(message)}
-            onEdit={() => onEdit(message)}
-            onDelete={() => onDelete(message.id)}
-            onReport={() => onReport(message)}
-          />
 
           <View
             style={{
@@ -163,34 +114,27 @@ export function MessageItem({
               gap: 8,
             }}
           >
-            {mine && !isEditing && timestamp}
           <Pressable
-            accessibilityLabel={isEditing ? undefined : 'Message options'}
-            accessibilityHint={isEditing ? undefined : 'Shows actions like react, reply, edit, and delete'}
-            accessibilityActions={isEditing ? undefined : [{ name: 'longpress', label: 'Show message actions' }]}
-            onAccessibilityAction={
-              isEditing
-                ? undefined
-                : (e) => {
-                    if (e.nativeEvent.actionName === 'longpress') onToggleMenu()
-                  }
-            }
-            onLongPress={isEditing ? undefined : onToggleMenu}
+            accessibilityLabel="Message options"
+            accessibilityHint="Shows actions like react, reply, edit, and delete"
+            accessibilityActions={[{ name: 'longpress', label: 'Show message actions' }]}
+            onAccessibilityAction={(e) => {
+              if (e.nativeEvent.actionName === 'longpress') onToggleMenu()
+            }}
+            onLongPress={onToggleMenu}
             delayLongPress={350}
             style={{
-              backgroundColor: isEditing ? t.surfaceLowest : toneMine ? t.chatOutgoing : t.surfaceContainer,
+              backgroundColor: toneMine ? t.chatOutgoing : t.surfaceContainer,
               borderRadius: 16,
               borderBottomRightRadius: mine ? 4 : 16,
               borderBottomLeftRadius: mine ? 16 : 4,
               paddingHorizontal: 16,
               paddingVertical: 10,
-              alignSelf: isEditing ? 'stretch' : 'auto',
-              flexGrow: isEditing ? 1 : 0,
               flexShrink: 1,
               minWidth: 0,
             }}
           >
-            {highlighted && !isEditing ? (
+            {highlighted ? (
               <View
                 pointerEvents="none"
                 accessibilityElementsHidden
@@ -207,7 +151,7 @@ export function MessageItem({
                 }}
               />
             ) : null}
-            {!isEditing && message.reply_to_id ? (
+            {message.reply_to_id ? (
               <Pressable
                 accessibilityRole={jumpable ? 'button' : undefined}
                 accessibilityLabel={jumpable ? 'Go to replied message' : undefined}
@@ -234,58 +178,13 @@ export function MessageItem({
                 </View>
               </Pressable>
             ) : null}
-            {isEditing ? (
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-                <TextInput
-                  accessibilityLabel="Edit message"
-                  value={editDraft}
-                  onChangeText={onEditDraftChange}
-                  multiline
-                  numberOfLines={3}
-                  autoFocus
-                  style={{
-                    flex: 1,
-                    minHeight: 72,
-                    textAlignVertical: 'top',
-                    backgroundColor: t.surface,
-                    borderWidth: 1,
-                    borderColor: t.outlineVariant,
-                    borderRadius: radii.md,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    fontSize: 14,
-                    color: t.onSurface,
-                  }}
-                />
-                <Pressable
-                  accessibilityLabel="Save edit"
-                  disabled={!editDraft.trim() || editPending}
-                  onPress={onSaveEdit}
-                  hitSlop={8}
-                  style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', opacity: !editDraft.trim() || editPending ? 0.4 : 1 }}
-                >
-                  {editPending ? (
-                    <ActivityIndicator size="small" color={t.primary} />
-                  ) : (
-                    <Send size={16} color={t.primary} strokeWidth={1.5} />
-                  )}
-                </Pressable>
-                <Pressable
-                  accessibilityLabel="Cancel edit"
-                  onPress={onCancelEdit}
-                  hitSlop={8}
-                  style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <X size={16} color={t.onSurface} strokeWidth={1.5} />
-                </Pressable>
-              </View>
-            ) : message.image_url ? (
+            {message.image_url ? (
               <>
                 {message.moderation_status === 'approved' ? (
                   <MessageImage
                     path={message.image_url}
                     alt="Shared image"
-                    onLongPress={isEditing ? undefined : onToggleMenu}
+                    onLongPress={onToggleMenu}
                   />
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -302,15 +201,14 @@ export function MessageItem({
                 ) : null}
               </>
             ) : gifUrl ? (
-              <MessageGif src={gifUrl} onLongPress={isEditing ? undefined : onToggleMenu} />
+              <MessageGif src={gifUrl} onLongPress={onToggleMenu} />
             ) : (
               <MentionText content={message.content ?? ''} members={members} mine={mine} />
             )}
-            {!isEditing && message.edited_at ? (
+            {message.edited_at ? (
               <Text style={{ fontSize: 12, color: toneMine ? t.onPrimary : t.onSurfaceVariant }}> (edited)</Text>
             ) : null}
           </Pressable>
-            {!mine && !isEditing && timestamp}
           </View>
 
           {grouped.size > 0 ? (
