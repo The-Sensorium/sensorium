@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { ArrowRight, Loader2, MapPin } from 'lucide-react'
+import { ArrowRight, ChevronRight, Loader2, MapPin } from 'lucide-react'
 import { useAuth } from '../../app/auth-context'
 import { CLUSTER_SIZE } from '../../lib/constants'
 import type { MatchingMode } from '../../lib/modes'
@@ -10,8 +10,9 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, formatAgePrefs } from '../../features/matching'
 import { Modal } from '../../components/Modal'
+import { MatchPreferencesSheet } from '../../components/MatchPreferences'
 import { WhatsNextSteps } from '../../components/WhatsNextSteps'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 
@@ -107,6 +108,9 @@ function JoinCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? waiting
   const profile = useProfile()
+  const [prefsOpen, setPrefsOpen] = useState(false)
+  const prefMin = profile.data?.local_pref_age_min ?? null
+  const prefMax = profile.data?.local_pref_age_max ?? null
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
   const displayBlurb =
     mode === 'open_mix'
@@ -118,15 +122,35 @@ function JoinCard({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-            Waiting in queue
+            Available queue
           </p>
           <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">{displayKey}</h2>
         </div>
         <span className="rounded-pill bg-surface-container px-3 py-1.5 text-sm font-semibold text-on-surface-variant">
-          {count} of {CLUSTER_SIZE} ready
+          {count} of {CLUSTER_SIZE} people waiting
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-on-surface-variant">{displayBlurb}</p>
+      {mode === 'local' && (
+        <div className="mt-4 rounded-2xl border border-outline-variant/60 p-4">
+          <button
+            type="button"
+            onClick={() => setPrefsOpen(true)}
+            data-e2e="open-match-prefs"
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-on-surface">
+                Match preferences
+              </span>
+              <span className="mt-1 block text-sm text-on-surface-variant">
+                {formatAgePrefs(prefMin, prefMax)}
+              </span>
+            </span>
+            <span aria-hidden><ChevronRight className="h-5 w-5 text-on-surface-variant" /></span>
+          </button>
+        </div>
+      )}
       <WhatsNextSteps className="mt-4" />
       <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
         <button
@@ -157,6 +181,15 @@ function JoinCard({
           {joinQueueErrorMessage(join.error, mode)}
         </p>
       )}
+      {mode === 'local' && prefsOpen && (
+        <MatchPreferencesSheet
+          open={prefsOpen}
+          onClose={() => setPrefsOpen(false)}
+          queueKey={queueKey}
+          initialMin={prefMin}
+          initialMax={prefMax}
+        />
+      )}
     </div>
   )
 }
@@ -175,9 +208,13 @@ function JoinedCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? 0
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
+  const profile = useProfile()
+  const [prefsOpen, setPrefsOpen] = useState(false)
+  const prefMin = profile.data?.local_pref_age_min ?? null
+  const prefMax = profile.data?.local_pref_age_max ?? null
 
   return (
-    <div className="rounded-2xl border border-primary/30 bg-primary-container/10 p-6 shadow-soft">
+    <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">You’re queued</p>
@@ -187,6 +224,26 @@ function JoinedCard({
           {count} of {CLUSTER_SIZE}
         </span>
       </div>
+      {mode === 'local' && (
+        <div className="mt-4 rounded-2xl border border-outline-variant/60 bg-surface p-4">
+          <button
+            type="button"
+            onClick={() => setPrefsOpen(true)}
+            data-e2e="open-match-prefs"
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span>
+              <span className="block text-sm font-semibold text-on-surface">
+                Match preferences
+              </span>
+              <span className="mt-1 block text-sm text-on-surface-variant">
+                {formatAgePrefs(prefMin, prefMax)}
+              </span>
+            </span>
+            <span aria-hidden><ChevronRight className="h-5 w-5 text-on-surface-variant" /></span>
+          </button>
+        </div>
+      )}
       <WhatsNextSteps compact className="mt-4" />
       <div className="mt-5 flex flex-wrap gap-3">
         <Link
@@ -204,6 +261,15 @@ function JoinedCard({
         >
           Update my location
         </button>
+      )}
+      {mode === 'local' && prefsOpen && (
+        <MatchPreferencesSheet
+          open={prefsOpen}
+          onClose={() => setPrefsOpen(false)}
+          queueKey={queueKey}
+          initialMin={prefMin}
+          initialMax={prefMax}
+        />
       )}
     </div>
   )
