@@ -82,6 +82,13 @@ function dayKey(iso: string) {
   return iso.slice(0, 10)
 }
 
+// Consecutive messages from the same author share one avatar/name header
+// only when they are close together in time. Without a window, messages
+// hours apart would visually merge into one group. 30 minutes suits slow
+// cluster rooms, where a reply 20 minutes later is still the same
+// conversational turn.
+const GROUP_WINDOW_MS = 30 * 60 * 1000
+
 export default function RoomScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
@@ -183,7 +190,7 @@ export default function RoomScreen() {
   const prevOldestIdRef = useRef<string | null>(null)
   const pinnedRef = useRef(true)
   const lastLenRef = useRef<number | null>(null)
-  const listRef = useRef<FlatList<{ key: string; item: TimelineItem; showDay: boolean }> | null>(null)
+  const listRef = useRef<FlatList<{ key: string; item: TimelineItem; showDay: boolean; showAuthor: boolean }> | null>(null)
   const [jumpHighlightId, setJumpHighlightId] = useState<string | null>(null)
   const [pendingJumpId, setPendingJumpId] = useState<string | null>(null)
   const jumpInFlight = useRef(false)
@@ -440,13 +447,31 @@ export default function RoomScreen() {
   const rows = useMemo(
     () =>
       timeline
-        .map((item, i) => ({
-          key: item.kind === 'message' ? item.data.id : `${item.kind}-${item.data.id}`,
-          item,
-          showDay: i === 0 || dayKey(timeline[i - 1]!.data.created_at) !== dayKey(item.data.created_at),
-        }))
+        .map((item, i) => {
+          const prev = i === 0 ? undefined : timeline[i - 1]
+          const showDay = i === 0 || !prev || dayKey(prev.data.created_at) !== dayKey(item.data.created_at)
+          const showAuthor = (() => {
+            if (!prev) return true
+            if (showDay) return true
+            if (prev.kind !== 'message' || item.kind !== 'message') return true
+            if (prev.data.author_id !== item.data.author_id) return true
+            // Any muted author renders a placeholder or a hide banner, both
+            // of which break visual continuity, so a muted message always
+            // starts a fresh group (revealed or not).
+            if (isMutedAuthor(mutedSet, prev.data.author_id) || isMutedAuthor(mutedSet, item.data.author_id)) return true
+            const gap = new Date(item.data.created_at).getTime() - new Date(prev.data.created_at).getTime()
+            if (gap < 0 || gap > GROUP_WINDOW_MS) return true
+            return false
+          })()
+          return {
+            key: item.kind === 'message' ? item.data.id : `${item.kind}-${item.data.id}`,
+            item,
+            showDay,
+            showAuthor,
+          }
+        })
         .reverse(),
-    [timeline],
+    [timeline, mutedSet],
   )
 
   // Ref mirror so the notification deep-link effect can page back without
@@ -1116,7 +1141,7 @@ export default function RoomScreen() {
                 ) : null
               }
               renderItem={({ item: row }) => {
-                const { item, showDay } = row
+                const { item, showDay, showAuthor } = row
                 if (item.kind === 'signal') {
                   const s = item.data
                   const signalMuted = isMutedAuthor(mutedSet, s.author_id)
@@ -1190,6 +1215,7 @@ export default function RoomScreen() {
                     myReactionKeys={myReactionKeys}
                     members={parseMembers}
                     showDay={showDay}
+                    showAuthor={showAuthor}
                     isEditing={editingId === m.id}
                     editDraft={editDraft}
                     editPending={editMessage.isPending}

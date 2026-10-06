@@ -22,6 +22,7 @@ export function MessageItem({
   myReactionKeys,
   members,
   showDay,
+  showAuthor = true,
   isEditing,
   editDraft,
   editPending,
@@ -48,6 +49,7 @@ export function MessageItem({
   myReactionKeys: ReadonlySet<string>
   members: MentionMember[]
   showDay: boolean
+  showAuthor?: boolean
   isEditing: boolean
   editDraft: string
   editPending: boolean
@@ -78,47 +80,67 @@ export function MessageItem({
   const replyParentId = !isEditing ? (message.reply_to_id ?? null) : null
   const jumpable = Boolean(replyParentId && replyParent && onPressReplyParent)
 
+  const avatarSlot = (
+    <View style={{ width: 28, flexShrink: 0 }}>
+      {showAuthor ? (
+        author ? (
+          <AvatarLink
+            userId={author.id}
+            clusterId={clusterId}
+            name={author.display_name}
+            src={author.avatar_url}
+            size={28}
+          />
+        ) : (
+          <Avatar name="Member" src={null} size={28} />
+        )
+      ) : (
+        <View style={{ width: 28, height: 28 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+      )}
+    </View>
+  )
+  // Bottom-anchored to the bubble itself (not the column): center anchoring
+  // drifts with whatever else shares the column (name header above,
+  // reaction chips below), which made otherwise identical messages sit at
+  // different heights. paddingBottom matches the bubble's own vertical
+  // padding so the time sits level with the last line of text.
+  const timestamp = (
+    <Text style={{ flexShrink: 0, fontSize: 12, color: t.onSurfaceVariant, paddingBottom: 10 }}>
+      {timeFormatter.format(new Date(message.created_at))}
+    </Text>
+  )
+
   return (
     <View>
       {showDay ? <DayDivider iso={message.created_at} /> : null}
-      <View style={{ flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4 }}>
-        <View style={{ marginTop: 24 }}>
-          {author ? (
-            <AvatarLink
-              userId={author.id}
-              clusterId={clusterId}
-              name={author.display_name}
-              src={author.avatar_url}
-              size={28}
-            />
-          ) : (
-            <Avatar name="Member" src={null} size={28} />
-          )}
-        </View>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: mine ? 'flex-end' : 'flex-start',
+          alignItems: 'flex-start',
+          gap: 8,
+          paddingTop: showAuthor ? 12 : 2,
+          paddingBottom: 2,
+        }}
+      >
+        {!mine && avatarSlot}
         <View
           style={{
-            maxWidth: isEditing ? '100%' : '78%',
+            minWidth: 0,
+            maxWidth: isEditing ? '100%' : '72%',
             flex: isEditing ? 1 : 0,
+            flexShrink: 1,
             alignSelf: isEditing ? 'stretch' : 'auto',
             alignItems: mine ? 'flex-end' : 'flex-start',
           }}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
-              {mine ? 'You' : (author?.display_name ?? 'Member')}
-            </Text>
-            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-              {timeFormatter.format(new Date(message.created_at))}
-            </Text>
-            <Pressable
-              accessibilityLabel="Message actions"
-              onPress={onToggleMenu}
-              hitSlop={12}
-              style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: '700', color: t.onSurfaceVariant }}>⋯</Text>
-            </Pressable>
-          </View>
+          {showAuthor ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
+                {mine ? 'You' : (author?.display_name ?? 'Member')}
+              </Text>
+            </View>
+          ) : null}
 
           <MessageActionsSheet
             open={menuOpen}
@@ -134,8 +156,25 @@ export function MessageItem({
             onReport={() => onReport(message)}
           />
 
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              gap: 8,
+            }}
+          >
+            {mine && !isEditing && timestamp}
           <Pressable
             accessibilityLabel={isEditing ? undefined : 'Message options'}
+            accessibilityHint={isEditing ? undefined : 'Shows actions like react, reply, edit, and delete'}
+            accessibilityActions={isEditing ? undefined : [{ name: 'longpress', label: 'Show message actions' }]}
+            onAccessibilityAction={
+              isEditing
+                ? undefined
+                : (e) => {
+                    if (e.nativeEvent.actionName === 'longpress') onToggleMenu()
+                  }
+            }
             onLongPress={isEditing ? undefined : onToggleMenu}
             delayLongPress={350}
             style={{
@@ -146,6 +185,9 @@ export function MessageItem({
               paddingHorizontal: 16,
               paddingVertical: 10,
               alignSelf: isEditing ? 'stretch' : 'auto',
+              flexGrow: isEditing ? 1 : 0,
+              flexShrink: 1,
+              minWidth: 0,
             }}
           >
             {highlighted && !isEditing ? (
@@ -268,6 +310,8 @@ export function MessageItem({
               <Text style={{ fontSize: 12, color: toneMine ? t.onPrimary : t.onSurfaceVariant }}> (edited)</Text>
             ) : null}
           </Pressable>
+            {!mine && !isEditing && timestamp}
+          </View>
 
           {grouped.size > 0 ? (
             <View style={{ marginTop: 4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 4, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
@@ -300,6 +344,7 @@ export function MessageItem({
             </View>
           ) : null}
         </View>
+        {mine && avatarSlot}
       </View>
     </View>
   )
