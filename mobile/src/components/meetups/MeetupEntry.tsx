@@ -14,6 +14,10 @@ const ACTIVE_STATUSES = ['proposed', 'voting', 'confirmed', 'starting', 'active'
 // Session-level mirror of the persisted dismissal so remounts do not flash
 // the banner before AsyncStorage resolves.
 const dismissedCache = new Map<string, string>()
+// Keys whose dismissal has been read at least once, including the negative
+// (no dismissal) case. Without this every remount to a cluster with no
+// dismissal re-reads storage and delays the banner each visit.
+const dismissalChecked = new Set<string>()
 
 function dismissalKey(userId: string, clusterId: string) {
   return `sensorium:dismissed-meetup:${userId}:${clusterId}`
@@ -30,19 +34,27 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
   const voteState = useMeetupState(voting ? voting.id : null)
   const key = userId ? dismissalKey(userId, clusterId) : null
   const [dismissedId, setDismissedId] = useState<string | null>(() => (key ? dismissedCache.get(key) ?? null : null))
-  // The room reuses this component across clusters without remounting, so
-  // always sync to the current cluster's dismissal. Otherwise one cluster's
-  // dismissal would leak into another cluster's banner and vice versa.
+  // Render nothing until the dismissal is resolved. Otherwise the banner
+  // flashes on entry while AsyncStorage is still reading, then vanishes.
+  const [dismissalReady, setDismissalReady] = useState(
+    () => (key ? dismissedCache.has(key) || dismissalChecked.has(key) : true),
+  )
+  // The caller remounts per cluster via key, so this sync is defense-in-depth
+  // for any reuse without remounting: always resolve the current cluster's
+  // dismissal, otherwise one cluster's dismissal leaks into another's banner.
   useEffect(() => {
     if (!key) {
       setDismissedId(null)
+      setDismissalReady(true)
       return
     }
     const cached = dismissedCache.get(key)
-    if (cached !== undefined) {
-      setDismissedId(cached)
+    if (cached !== undefined || dismissalChecked.has(key)) {
+      setDismissedId(cached ?? null)
+      setDismissalReady(true)
       return
     }
+    setDismissalReady(false)
     let cancelled = false
     void AsyncStorage.getItem(key)
       .then((value) => {
@@ -53,9 +65,13 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
         } else {
           setDismissedId(null)
         }
+        dismissalChecked.add(key)
+        setDismissalReady(true)
       })
       .catch(() => {
-        if (!cancelled) setDismissedId(null)
+        if (cancelled) return
+        setDismissedId(null)
+        setDismissalReady(true)
       })
     return () => {
       cancelled = true
@@ -63,6 +79,11 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
   }, [key])
   if (!MEETUP_ENABLED) return null
   if (callLive) return null
+  // Derived synchronously so the auth loading transition (first render with
+  // no key, then a key once signed in) can never show one frame of stale
+  // state before the effect below runs.
+  const cachedDismissal = key ? dismissedCache.get(key) : undefined
+  if (!dismissalReady || (key && cachedDismissal === undefined && !dismissalChecked.has(key))) return null
   if (meetups.isPending || meetups.isError) return null
   const active = rows.find((m) => ACTIVE_STATUSES.includes(m.status)) ?? null
   const lastDone = rows.find((m) => m.status === 'completed') ?? null
@@ -80,7 +101,8 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
   // The empty propose id carries the cluster so a dismissal in one cluster
   // can never match another cluster's banner, even with a stale state.
   const bannerId = active ? active.id : `propose:${clusterId}:${lastDone?.id ?? 'none'}`
-  if (bannerId === dismissedId) return null
+  const effectiveDismissedId = cachedDismissal ?? dismissedId
+  if (bannerId === effectiveDismissedId) return null
   if (!active && lastDone && metThisWeek(lastDone.completed_at, lastDone.ends_at)) return null
 
   function dismiss() {
