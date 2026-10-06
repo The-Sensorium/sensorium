@@ -156,7 +156,7 @@ export default function SignalDetailScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, minHeight: 44 }}
         >
           <ArrowLeft size={16} color={t.primary} strokeWidth={1.5} />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Back</Text>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>Signals</Text>
         </Pressable>
         <ClusterMenu clusterId={clusterId} active="signals" />
       </View>
@@ -177,22 +177,22 @@ export default function SignalDetailScreen() {
             />
           ) : null}
           <Card>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Avatar name={raiser?.display_name ?? 'Member'} src={raiser?.avatar_url} size={24} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, flexShrink: 1 }} numberOfLines={1}>
               {raiser?.display_name ?? 'Member'}
             </Text>
             {isRaiser ? (
-              <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>(you)</Text>
+              <Text style={{ fontSize: 12, color: t.onSurfaceVariant, flexShrink: 0 }}>(you)</Text>
             ) : null}
-            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 12, color: t.onSurfaceVariant, flexShrink: 0 }}>
               · {dateTimeFormatter.format(new Date(s.created_at))}
             </Text>
-            <View style={{ marginLeft: 'auto', backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-              <Text style={{ fontSize: 12, fontWeight: '500', color: t.primary }}>{meta.label}</Text>
+            <View style={{ marginLeft: 'auto', backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 2, flexShrink: 0 }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: t.primary }}>{meta.label}</Text>
             </View>
           </View>
-          <Text style={{ marginTop: 12, fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+          <Text style={{ marginTop: 8, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
             {s.prompt}
           </Text>
           {s.resolved_at ? (
@@ -270,9 +270,9 @@ export default function SignalDetailScreen() {
         </View>
       )}
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 12 }}>
-        <MessageSquare size={16} color={t.onSurface} strokeWidth={1.5} />
-        <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 4 }}>
+        <MessageSquare size={20} color={t.onSurface} strokeWidth={2} />
+        <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
           {replies.data?.length ?? 0} {replies.data?.length === 1 ? 'reply' : 'replies'}
         </Text>
       </View>
@@ -282,85 +282,108 @@ export default function SignalDetailScreen() {
           No replies yet. Offer a hand below.
         </Text>
       ) : (
-        (replies.data ?? []).map((r) => {
-          const rMuted = isMutedAuthor(mutedSet, r.author_id)
-          if (rMuted && !revealed.has(r.id)) {
+        <View>
+          {(replies.data ?? []).map((r, index) => {
+            const rMuted = isMutedAuthor(mutedSet, r.author_id)
+            const isLast = index === (replies.data ?? []).length - 1
+            if (rMuted && !revealed.has(r.id)) {
+              return (
+                <View
+                  key={r.id}
+                  style={{
+                    paddingVertical: 12,
+                    borderBottomWidth: isLast ? 0 : 1,
+                    borderBottomColor: t.outlineVariant,
+                  }}
+                >
+                  <MutedPlaceholder
+                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                    onToggle={() => toggleReveal(r.id)}
+                  />
+                </View>
+              )
+            }
             return (
-              <MutedPlaceholder
+              <View
                 key={r.id}
-                name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                onToggle={() => toggleReveal(r.id)}
-              />
-            )
-          }
-          return (
-            <View key={r.id} style={{ gap: 8 }}>
-              {rMuted ? (
-                <MutedHideBar
-                  name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                  onToggle={() => toggleReveal(r.id)}
-                />
-              ) : null}
-              <Card>
-                <View style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Avatar
+                style={{
+                  paddingVertical: 14,
+                  borderBottomWidth: isLast ? 0 : 1,
+                  borderBottomColor: t.outlineVariant,
+                }}
+              >
+                {rMuted ? (
+                  <View style={{ marginBottom: 8 }}>
+                    <MutedHideBar
                       name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                      src={memberById.get(r.author_id)?.avatar_url}
-                      size={20}
+                      onToggle={() => toggleReveal(r.id)}
                     />
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                      {memberById.get(r.author_id)?.display_name ?? 'Member'}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                      · {dateTimeFormatter.format(new Date(r.created_at))}
+                  </View>
+                ) : null}
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <Avatar
+                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                    src={memberById.get(r.author_id)?.avatar_url}
+                    size={32}
+                  />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
+                        {memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                        · {dateTimeFormatter.format(new Date(r.created_at))}
+                      </Text>
+                    </View>
+                    <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 22, color: t.onSurface }}>
+                      {r.content}
                     </Text>
                   </View>
-                  <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurface }}>
-                    {r.content}
-                  </Text>
                 </View>
-              </Card>
-            </View>
-          )
-        })
+              </View>
+            )
+          })}
+        </View>
       )}
 
-      <Card>
-        <TextInput
-          value={draft}
-          onChangeText={setDraft}
-          maxLength={2000}
-          multiline
-          placeholder="Offer a hand or share a thought…"
-          placeholderTextColor={t.onSurfaceVariant}
-          style={{
-            backgroundColor: t.surfaceContainer,
-            borderWidth: 1,
-            borderColor: t.outlineVariant,
-            borderRadius: radii.md,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            fontSize: 14,
-            lineHeight: 22,
-            minHeight: 88,
-            textAlignVertical: 'top',
-            color: t.onSurface,
-          }}
-        />
-        <View style={{ marginTop: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>{draft.length}/2000</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {error ? <Text style={{ fontSize: 12, color: t.error }}>{error}</Text> : null}
-            <PrimaryButton
-              title="Reply"
-              loadingTitle="Sending…"
-              loading={reply.isPending}
-              onPress={() => void handleReply()}
-            />
+      <View style={{ marginTop: 16 }}>
+        <Card>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            maxLength={2000}
+            multiline
+            placeholder="Offer a hand or share a thought…"
+            accessibilityLabel="Reply to this signal"
+            placeholderTextColor={t.onSurfaceVariant}
+            style={{
+              backgroundColor: t.surfaceContainer,
+              borderWidth: 1,
+              borderColor: t.outlineVariant,
+              borderRadius: radii.md,
+              paddingHorizontal: 16,
+              paddingVertical: 12,
+              fontSize: 14,
+              lineHeight: 22,
+              minHeight: 76,
+              textAlignVertical: 'top',
+              color: t.onSurface,
+            }}
+          />
+          <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>{draft.length}/2000</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {error ? <Text style={{ fontSize: 12, color: t.error }}>{error}</Text> : null}
+              <PrimaryButton
+                title="Reply"
+                loadingTitle="Sending…"
+                loading={reply.isPending}
+                onPress={() => void handleReply()}
+              />
+            </View>
           </View>
-        </View>
-      </Card>
+        </Card>
+      </View>
     </Screen>
   )
 }

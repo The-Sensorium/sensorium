@@ -110,8 +110,8 @@ export function ClusterRail({
                         {meta.label}
                       </span>
                       {(replyCount.get(s.id) ?? 0) > 0 && (
-                        <span className="inline-flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" strokeWidth={1.5} aria-hidden />
+                        <span className="inline-flex items-center gap-1.5">
+                          <MessageSquare className="h-4 w-4" strokeWidth={2} aria-hidden />
                           {replyCount.get(s.id)}
                         </span>
                       )}

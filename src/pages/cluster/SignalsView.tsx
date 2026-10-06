@@ -74,22 +74,23 @@ export function SignalsView() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-semibold text-on-surface">Signals</h2>
-          <p className="text-xs text-on-surface-variant">
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <h2 className="font-display text-lg font-semibold text-on-surface">Signals</h2>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-on-surface-variant">
             Raise a signal when you need help or a hand.
           </p>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            aria-label="Raise a signal"
+            className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+            Raise
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="inline-flex min-h-[48px] items-center gap-2 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
-          Raise a signal
-        </button>
       </div>
 
       {signals.isLoading || myMutes.isLoading ? (
@@ -271,30 +272,30 @@ function SignalCard({
         to={`/cluster/${clusterId}/signals/${signal.id}`}
         className={cn(
           'block rounded-2xl border border-outline-variant/60 bg-surface shadow-soft transition-colors hover:border-outline/60',
-          compact ? 'p-4' : 'p-5',
+          compact ? 'px-4 py-3' : 'p-4',
         )}
       >
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="flex items-center gap-x-2">
           <Avatar
             name={author?.display_name ?? 'Member'}
             src={author?.avatar_url}
-            className="h-5 w-5"
+            className="h-6 w-6 shrink-0"
             textClassName="text-[11px]"
           />
-          <span className="text-sm font-medium text-on-surface">
+          <span className="min-w-0 truncate text-sm font-medium text-on-surface">
             {author?.display_name ?? 'Member'}
           </span>
-          {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}
-          <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(signal.created_at))}</span>
-          <span className={cn('ml-auto rounded-pill px-2.5 py-1 text-xs font-medium', meta.className)}>
+          {isMine && <span className="shrink-0 text-xs text-on-surface-variant">(you)</span>}
+          <span className="shrink-0 text-xs text-on-surface-variant">· {timeAgo.format(new Date(signal.created_at))}</span>
+          <span className={cn('ml-auto shrink-0 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold', meta.className)}>
             {meta.label}
           </span>
         </div>
-        <p className={cn('mt-2 leading-6 text-on-surface', compact ? 'line-clamp-2 text-sm' : 'text-sm')}>
+        <p className={cn('mt-1.5 leading-6 text-on-surface', compact ? 'line-clamp-2 text-sm' : 'text-[15px]')}>
           {signal.prompt}
         </p>
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-on-surface-variant">
-          <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
+        <p className="mt-1.5 flex items-center gap-2 text-sm text-on-surface-variant">
+          <MessageSquare className="h-5 w-5" strokeWidth={2} aria-hidden />
           {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
         </p>
       </Link>
