@@ -207,7 +207,7 @@ function MatchPreferencesForm({
                   : null}
             </Text>
             <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-              Join the Local queue to be grouped with 7 strangers who match your preferences.
+              Join the Local queue to be grouped with 7 people who match your preferences.
             </Text>
           </View>
         </View>

@@ -87,7 +87,7 @@ New file: `supabase/migrations/0190_local_age_prefs.sql`.
    - Extend `joinQueueErrorMessage` in `src/lib/error.ts` with `invalid_age_range`.
 2. New `MatchPreferences` sheet (route or modal from Local `JoinCard`, mirroring the mock):
    - Dual slider 18 to 99, current label (`25 to 35 years` or `Any age`), `Any age` reset button.
-   - Live line: `N people match these preferences` via the new hook. Sub-line: `Join the Local queue to be grouped with 7 strangers who match your preferences.`
+   - Live line: `N people currently match` via the new hook. Sub-line: `Join the Local queue to be grouped with 7 people who match your preferences.`
    - Warning box when narrowed: `Narrower preferences may take longer to form a cluster.` Show whenever prefs are not Any, stronger when compatible count is below 7.
    - `Save preferences` persists without joining. Join stays explicit on the Local card.
    - Tailwind tokens only from `docs/DESIGN.md`, min touch target 44px, `data-e2e` attributes for Playwright.
