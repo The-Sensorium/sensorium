@@ -47,11 +47,11 @@ export default function ClusterCreatedScreen() {
   // neutral line instead of flashing the queue copy.
   const readyCopy =
     cluster.data?.origin === 'queue'
-      ? 'Eight strangers matched. Jump in and say hello.'
+      ? 'Eight people matched. Jump in and say hello.'
       : readyCount == null
         ? 'Your cluster is active. Jump in and say hello.'
         : readyCount >= 8
-          ? 'Eight strangers matched. Jump in and say hello.'
+          ? 'Eight people matched. Jump in and say hello.'
           : `${readyCount} of you are in. Jump in and say hello.`
 
   if (!notif && formed.isLoading) {

@@ -87,17 +87,14 @@ export default function SignalsScreen() {
       ) : (
       <>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Signals</Text>
-          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-            Raise a signal when you need help or a hand.
-          </Text>
-        </View>
+        <Text style={{ flex: 1, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+          Raise a signal when you need help or a hand.
+        </Text>
         <Pressable
           onPress={() => setModalOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Raise a signal"
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, minHeight: 44, justifyContent: 'center', flexShrink: 0 }}
         >
           <Plus size={16} color={t.onPrimary} strokeWidth={2} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>Raise</Text>
@@ -242,29 +239,29 @@ function SignalCard({
       asChild
     >
       <Pressable
-        style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: compact ? 16 : 20, marginBottom: 12 }}
+        style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: compact ? 12 : 16, marginBottom: 12 }}
       >
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-          <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={20} />
-          <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurface }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={24} />
+          <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurface, flexShrink: 1 }} numberOfLines={1}>
             {author?.display_name ?? 'Member'}
           </Text>
           {isMine ? (
-            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>(you)</Text>
+            <Text style={{ fontSize: 12, color: t.onSurfaceVariant, flexShrink: 0 }}>(you)</Text>
           ) : null}
-          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 12, color: t.onSurfaceVariant, flexShrink: 0 }}>
             · {dateTimeFormatter.format(new Date(signal.created_at))}
           </Text>
-          <View style={{ marginLeft: 'auto', backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <Text style={{ fontSize: 12, fontWeight: '500', color: t[meta.colorKey] }}>{meta.label}</Text>
+          <View style={{ marginLeft: 'auto', backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 2, flexShrink: 0 }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: t[meta.colorKey] }}>{meta.label}</Text>
           </View>
         </View>
-        <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurface }} numberOfLines={compact ? 2 : undefined}>
+        <Text style={{ marginTop: 6, fontSize: 15, lineHeight: 22, color: t.onSurface }} numberOfLines={compact ? 2 : undefined}>
           {signal.prompt}
         </Text>
-        <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <MessageSquare size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
-          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+        <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <MessageSquare size={20} color={t.onSurfaceVariant} strokeWidth={2} />
+          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
             {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
           </Text>
         </View>

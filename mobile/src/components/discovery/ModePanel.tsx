@@ -122,7 +122,7 @@ function JoinCard({
   const displayBlurb =
     mode === 'open_mix'
       ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
-      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match.'
+      : 'Join this queue and you’ll be grouped with 7 people sharing this match.'
 
   return (
     <Card>

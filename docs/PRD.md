@@ -11,7 +11,7 @@ This document defines what Sensorium is, who it is for, and how it should behave
 
 **Product Name:** Sensorium
 
-**Tagline:** Eight strangers. One cluster.
+**Tagline:** Eight people. One cluster.
 
 ## Naming Note
 
@@ -26,7 +26,7 @@ If anyone proposes a new feature or screen name going forward, check whether it'
 ---
 ## Vision
 
-Sensorium is a social platform that helps strangers form meaningful long-term connections through small permanent groups called Clusters.
+Sensorium is a social platform that helps people form meaningful long-term connections through small permanent groups called Clusters.
 
 Unlike traditional social networks that focus on content, followers, and engagement, Sensorium focuses on conversation, emotional awareness, and shared experiences.
 
@@ -39,7 +39,7 @@ Existing platforms optimize for broadcasting.
 - Reddit optimizes for discussion.
 - Discord optimizes for communities.
 
-None are designed to help a small group of strangers build genuine long-term friendships.
+None are designed to help a small group of people build genuine long-term friendships.
 
 Sensorium solves this by placing users into permanent clusters of exactly eight people and giving them the tools to build trust, connection, and shared history over time.
 
@@ -608,7 +608,7 @@ Sections:
 ```text
 Sensorium
 
-Eight strangers. One cluster.
+Eight people. One cluster.
 
 Build meaningful friendships through small permanent groups.
 ```
@@ -639,19 +639,7 @@ Join a Cluster
 Card 3
 
 ```text
-Meet 7 Strangers
-```
-
-Card 4
-
-```text
 Complete Introductions
-```
-
-Card 5
-
-```text
-Build Real Connections
 ```
 
 ---

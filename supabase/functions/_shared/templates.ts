@@ -1,6 +1,6 @@
 // Email templates for the moderation lifecycle. One render function per
 // template, matched to the existing brand family (Sign Up Confirmation / Reset
-// Password): #fff8f6 shell, "Sensorium" wordmark, the "Eight strangers. One
+// Password): #fff8f6 shell, "Sensorium" wordmark, the "Eight people. One
 // cluster." tagline, and the #9d3d1c pill CTA.
 //
 // Rules: no mailto:, no "reply" or "email us" wording (outbound-only sender),
@@ -37,7 +37,7 @@ function shell(inner: string): string {
 <div style="background:#fff8f6;padding:40px 16px;font-family:'Plus Jakarta Sans',Arial,sans-serif">
   <div style="max-width:520px;margin:0 auto">
     <p style="font-size:18px;font-weight:700;color:#3a0b00;margin:0 0 8px">Sensorium</p>
-    <p style="color:#802908;margin:0 0 24px;font-size:14px">Eight strangers. One cluster.</p>
+    <p style="color:#802908;margin:0 0 24px;font-size:14px">Eight people. One cluster.</p>
     ${inner}
   </div>
 </div></body></html>`
