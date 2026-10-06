@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth-context'
 import type { Database } from '../lib/database.types'
 import { requireSupabase, type MatchingMode } from '../lib/supabase'
+import { profileKey } from '../lib/use-profile'
 
 type Cluster = Database['public']['Tables']['clusters']['Row']
 export type MatchingStatus = Database['public']['Functions']['get_my_matching_status']['Returns'][number]
@@ -228,4 +229,72 @@ export function useLatestClusterFormed(enabled = true) {
       return (data?.[0] as ClusterFormedNotification | undefined) ?? null
     },
   })
+}
+
+export const LOCAL_AGE_MIN = 18
+export const LOCAL_AGE_MAX = 99
+
+export function formatAgePrefs(min: number | null, max: number | null): string {
+  if (min == null || max == null) return 'Any age'
+  if (min === LOCAL_AGE_MIN && max === LOCAL_AGE_MAX) return 'Any age'
+  return `${min} to ${max} years`
+}
+
+export function useSetLocalAgePrefs() {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ min, max }: { min: number | null; max: number | null }) => {
+      const supabase = requireSupabase()
+      const { error } = await supabase.rpc('set_local_age_prefs', {
+        p_min: min,
+        p_max: max,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      if (userId) {
+        void queryClient.invalidateQueries({ queryKey: profileKey(userId) })
+        void queryClient.invalidateQueries({ queryKey: ['my-queues', userId] })
+        void queryClient.invalidateQueries({ queryKey: ['matching-status', userId] })
+        void queryClient.invalidateQueries({ queryKey: ['local-compatible-count'] })
+      }
+    },
+  })
+}
+
+export function useLocalCompatibleCount(
+  queueKey: string | null,
+  min: number | null,
+  max: number | null,
+) {
+  const query = useQuery({
+    queryKey: ['local-compatible-count', queueKey ?? 'none', min ?? 'any', max ?? 'any'],
+    enabled: queueKey !== null,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
+    // Keep the previous count on screen while a new range fetches, so the
+    // line never flashes back to a loading state mid-drag.
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      if (!queueKey) return 0
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.rpc('get_local_compatible_count', {
+        p_queue_key: queueKey,
+        p_min: min,
+        p_max: max,
+      })
+      if (error) throw error
+      return data ?? 0
+    },
+  })
+
+  return {
+    count: query.data ?? null,
+    isLoading: query.isLoading,
+    isError: query.isError,
+  }
 }

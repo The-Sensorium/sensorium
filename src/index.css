@@ -270,8 +270,8 @@
   }
 
   /* Height of the fixed mobile bottom nav (+ safe area). The room composer and
-     its new-messages pill anchor above it on small screens. 4rem fits the
-     48px bottom-tab targets with room for the label; keep pb-24 clearance. */
+  its new-messages pill anchor above it on small screens. 4rem fits the
+  48px bottom-tab targets with room for the label; keep pb-24 clearance. */
   :root {
     --bottom-nav-offset: calc(4rem + max(env(safe-area-inset-bottom), 0.5rem));
   }
@@ -279,5 +279,49 @@
     :root {
       --bottom-nav-offset: 0rem;
     }
+  }
+
+  /* Dual-thumb age slider: two overlapping native ranges over one track.
+     Inputs are transparent and click-through except on the thumbs, so the
+     visible track + fill divs paint the rail. Keyboard accessible natively. */
+  .age-dual {
+    position: relative;
+    height: 3rem;
+  }
+  .age-dual input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 1.75rem;
+    margin: 0;
+    background: transparent;
+    pointer-events: none;
+  }
+  .age-dual input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: auto;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-lowest);
+    border: 2px solid var(--color-primary);
+    cursor: pointer;
+  }
+  .age-dual input[type='range']::-moz-range-thumb {
+    pointer-events: auto;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-lowest);
+    border: 2px solid var(--color-primary);
+    cursor: pointer;
+  }
+  .age-dual input[type='range']::-moz-range-track {
+    background: transparent;
   }
 }

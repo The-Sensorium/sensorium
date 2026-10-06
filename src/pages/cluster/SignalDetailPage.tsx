@@ -111,10 +111,11 @@ export function SignalDetailPage() {
       <button
         type="button"
         onClick={() => (key === 'default' ? navigate(`/cluster/${clusterId}/signals`) : navigate(-1))}
-        className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+        aria-label="Back to signals"
+        className="inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-[15px] font-semibold text-primary transition-colors hover:bg-surface-container"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-        Back
+        Signals
       </button>
 
       {isMutedAuthor(mutedSet, s.author_id) && !articleRevealed ? (
@@ -132,24 +133,24 @@ export function SignalDetailPage() {
             kind="signal"
           />
         ) : null}
-        <article className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <article className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft sm:p-5">
+        <div className="flex items-center gap-x-2">
           <Avatar
             name={raiser?.display_name ?? 'Member'}
             src={raiser?.avatar_url}
-            className="h-6 w-6"
+            className="h-6 w-6 shrink-0"
             textClassName="text-xs"
           />
-          <span className="text-sm font-semibold text-on-surface">
+          <span className="min-w-0 truncate text-sm font-semibold text-on-surface">
             {raiser?.display_name ?? 'Member'}
           </span>
-          {isRaiser && <span className="text-xs text-on-surface-variant">(you)</span>}
-          <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(s.created_at))}</span>
-          <span className={cn('ml-auto rounded-pill px-2.5 py-1 text-xs font-medium', meta.className)}>
+          {isRaiser && <span className="shrink-0 text-xs text-on-surface-variant">(you)</span>}
+          <span className="shrink-0 text-xs text-on-surface-variant">· {timeAgo.format(new Date(s.created_at))}</span>
+          <span className={cn('ml-auto shrink-0 rounded-pill px-2.5 py-0.5 text-[11px] font-semibold', meta.className)}>
             {meta.label}
           </span>
         </div>
-        <h1 className="mt-3 font-display text-xl font-semibold text-on-surface">{s.prompt}</h1>
+        <h1 className="mt-2 font-display text-xl font-semibold leading-8 text-on-surface">{s.prompt}</h1>
         {s.resolved_at && (
           <p className="mt-2 text-xs text-on-surface-variant">
             Resolved {timeAgo.format(new Date(s.resolved_at))}
@@ -214,8 +215,8 @@ export function SignalDetailPage() {
       )}
 
       <section aria-label="Replies">
-        <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-on-surface">
-          <MessageSquare className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+        <h2 className="flex items-center gap-2 text-base font-semibold text-on-surface">
+          <MessageSquare className="h-5 w-5" strokeWidth={2} aria-hidden />
           {replies.data?.length ?? 0} {replies.data?.length === 1 ? 'reply' : 'replies'}
         </h2>
 
@@ -224,12 +225,12 @@ export function SignalDetailPage() {
             No replies yet. Offer a hand below.
           </p>
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-1 divide-y divide-outline-variant/60">
             {(replies.data ?? []).map((r) => {
               const rMuted = isMutedAuthor(mutedSet, r.author_id)
               if (rMuted && !revealed.has(r.id)) {
                 return (
-                  <li key={r.id}>
+                  <li key={r.id} className="py-3">
                     <MutedPlaceholder
                       name={memberById.get(r.author_id)?.display_name ?? 'Member'}
                       onToggle={() => toggleReveal(r.id)}
@@ -238,29 +239,33 @@ export function SignalDetailPage() {
                 )
               }
               return (
-              <li key={r.id} className="space-y-2">
+              <li key={r.id} className="py-4">
                 {rMuted ? (
-                  <MutedHideBar
-                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                    onToggle={() => toggleReveal(r.id)}
-                  />
+                  <div className="mb-2">
+                    <MutedHideBar
+                      name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      onToggle={() => toggleReveal(r.id)}
+                    />
+                  </div>
                 ) : null}
-                <div className="rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft">
-                <div className="flex items-center gap-2">
+                <div className="flex gap-3">
                   <Avatar
                     name={memberById.get(r.author_id)?.display_name ?? 'Member'}
                     src={memberById.get(r.author_id)?.avatar_url}
-                    className="h-5 w-5"
-                    textClassName="text-[11px]"
+                    className="h-8 w-8 shrink-0"
+                    textClassName="text-xs"
                   />
-                  <span className="text-sm font-semibold text-on-surface">
-                    {memberById.get(r.author_id)?.display_name ?? 'Member'}
-                  </span>
-                  <span className="text-xs text-on-surface-variant">
-                    · {timeAgo.format(new Date(r.created_at))}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-on-surface">{r.content}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="text-sm font-semibold text-on-surface">
+                        {memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      </span>
+                      <span className="text-xs text-on-surface-variant">
+                        · {timeAgo.format(new Date(r.created_at))}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-on-surface">{r.content}</p>
+                  </div>
                 </div>
               </li>
               )
@@ -269,7 +274,7 @@ export function SignalDetailPage() {
         )}
 
         <form
-          className="mt-4 rounded-2xl border border-outline-variant/60 bg-surface p-4 shadow-soft"
+          className="mt-5 rounded-2xl border border-outline-variant/60 bg-surface p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-soft sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom)))]"
           onSubmit={(e) => {
             e.preventDefault()
             void handleReply()
@@ -287,8 +292,8 @@ export function SignalDetailPage() {
             placeholder="Offer a hand or share a thought…"
             className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
           />
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <span className="text-xs text-on-surface-variant">{draft.length}/2000</span>
+          <div className="mt-2.5 flex items-center justify-between gap-3">
+            <span className="text-xs tabular-nums text-on-surface-variant" aria-live="polite">{draft.length}/2000</span>
             <div className="flex items-center gap-2">
               {error && (
                 <span role="alert" className="text-xs text-error">
@@ -298,7 +303,7 @@ export function SignalDetailPage() {
               <button
                 type="submit"
                 disabled={!draft.trim() || reply.isPending}
-                className="min-h-[48px] rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+                className="min-h-[44px] rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
               >
                 {reply.isPending ? 'Sending…' : 'Reply'}
               </button>

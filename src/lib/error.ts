@@ -49,6 +49,9 @@ export function joinQueueErrorMessage(error: unknown, mode?: string): string {
   if (message.includes('invalid_radius')) {
     return 'That radius is not supported. Choose 10, 50, or 100 km.'
   }
+  if (message.includes('invalid_age_range')) {
+    return 'Choose an age range between 18 and 99, or Any age.'
+  }
   if (message.includes('already_in_cluster') || message.includes('already in a cluster')) {
     return 'You’re already in a cluster for this mode.'
   }

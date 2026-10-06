@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Link } from 'expo-router'
+import { ChevronRight, Users } from 'lucide-react-native'
 import { useAuth } from '../../auth-context'
 import { CLUSTER_SIZE } from '../../lib/constants'
 import type { MatchingMode } from '../../lib/modes'
@@ -9,12 +10,13 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, formatAgePrefs } from '../../features/matching'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { Card, LoadingView, PrimaryButton } from '../ui'
-import { Modal } from '../Modal'
+import { ConfirmSheet } from '../ConfirmSheet'
+import { MatchPreferencesSheet } from '../MatchPreferencesSheet'
 import { WhatsNextSteps } from '../WhatsNextSteps'
 
 export function ModePanel({ mode }: { mode: MatchingMode }) {
@@ -118,26 +120,64 @@ function JoinCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? waiting
   const profile = useProfile()
+  const [prefsOpen, setPrefsOpen] = useState(false)
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
   const displayBlurb =
     mode === 'open_mix'
       ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
-      : 'Join this queue and you’ll be grouped with 7 strangers sharing this match.'
+      : 'Join this queue and you’ll be grouped with 7 people sharing this match.'
+  const prefMin = profile.data?.local_pref_age_min ?? null
+  const prefMax = profile.data?.local_pref_age_max ?? null
 
   return (
     <Card>
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
-        Waiting in queue
+        Available queue
       </Text>
       <Text style={{ marginTop: 4, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
         {displayKey}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
-        {count} of {CLUSTER_SIZE} ready
+        {count} of {CLUSTER_SIZE} people waiting
       </Text>
       <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
         {displayBlurb}
       </Text>
+      {mode === 'local' ? (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Match preferences, ${formatAgePrefs(prefMin, prefMax)}`}
+            onPress={() => setPrefsOpen(true)}
+            hitSlop={8}
+            style={{
+              marginTop: 16,
+              borderWidth: 1,
+              borderColor: t.outlineVariant,
+              borderRadius: radii.xl,
+              padding: 16,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Users size={22} color={t.primary} strokeWidth={1.5} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
+                  Match preferences
+                </Text>
+                <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
+                  {formatAgePrefs(prefMin, prefMax)}
+                </Text>
+              </View>
+              <ChevronRight size={20} color={t.onSurfaceVariant} />
+            </View>
+          </Pressable>
+          <MatchPreferencesSheet
+            open={prefsOpen}
+            queueKey={queueKey}
+            onClose={() => setPrefsOpen(false)}
+          />
+        </>
+      ) : null}
       <WhatsNextSteps />
       <View style={{ marginTop: 20 }}>
         <PrimaryButton
@@ -167,8 +207,7 @@ function JoinCard({
   )
 }
 
-function JoinedCard({
-  mode,
+function JoinedCard({ mode,
   queueKey,
   label,
   onEditLocation,
@@ -182,6 +221,10 @@ function JoinedCard({
   const live = useQueueCount(mode, queueKey)
   const count = live.count ?? 0
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
+  const profile = useProfile()
+  const prefMin = profile.data?.local_pref_age_min ?? null
+  const prefMax = profile.data?.local_pref_age_max ?? null
+  const [joinedPrefsOpen, setJoinedPrefsOpen] = useState(false)
 
   return (
     <Card>
@@ -194,6 +237,42 @@ function JoinedCard({
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
         {count} of {CLUSTER_SIZE}
       </Text>
+      {mode === 'local' ? (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Match preferences, ${formatAgePrefs(prefMin, prefMax)}`}
+            onPress={() => setJoinedPrefsOpen(true)}
+            hitSlop={8}
+            style={{
+              marginTop: 16,
+              borderWidth: 1,
+              borderColor: t.outlineVariant,
+              borderRadius: radii.xl,
+              padding: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <Users size={22} color={t.primary} strokeWidth={1.5} />
+            <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
+                  Match preferences
+                </Text>
+              <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
+                {formatAgePrefs(prefMin, prefMax)}
+              </Text>
+            </View>
+            <ChevronRight size={20} color={t.onSurfaceVariant} />
+          </Pressable>
+          <MatchPreferencesSheet
+            open={joinedPrefsOpen}
+            queueKey={queueKey}
+            onClose={() => setJoinedPrefsOpen(false)}
+          />
+        </>
+      ) : null}
       <WhatsNextSteps />
       <View style={{ marginTop: 20 }}>
         <Link href={{ pathname: '/queue/[queueId]', params: { queueId: mode } }} asChild>
@@ -500,67 +579,33 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         </View>
       ) : null}
       {pendingRadius != null ? (
-        <Modal
+        <ConfirmSheet
           open={pendingRadius != null}
           onClose={closeRadiusDialog}
           title={`Join the ${pendingRadius} km queue?`}
-        >
-          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-            {`You’ll be matched within ${pendingRadius} km of ${dialogAreaLabel}${
-              pendingCount != null ? `, where ${pendingCount} of ${CLUSTER_SIZE} are waiting` : ''
-            }.`}
-          </Text>
-          {dialogError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{dialogError}</Text>
-          ) : null}
-          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={closeRadiusDialog}
-              disabled={joining}
-              hitSlop={8}
-              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: joining ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-            </Pressable>
-            <PrimaryButton
-              title="Join queue"
-              loadingTitle="Joining…"
-              loading={joining}
-              onPress={() => void confirmRadiusJoin()}
-            />
-          </View>
-        </Modal>
+          body={`You’ll be matched within ${pendingRadius} km of ${dialogAreaLabel}${
+            pendingCount != null ? `, where ${pendingCount} of ${CLUSTER_SIZE} are waiting` : ''
+          }.`}
+          error={dialogError}
+          confirmTitle="Join queue"
+          confirmLoadingTitle="Joining…"
+          loading={joining}
+          onConfirm={() => void confirmRadiusJoin()}
+        />
       ) : null}
       {pendingLeave != null ? (
-        <Modal
+        <ConfirmSheet
           open={pendingLeave != null}
           onClose={closeLeaveDialog}
           title={`Leave the ${pendingLeave} km queue?`}
-        >
-          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-            {`You’ll stop waiting within ${pendingLeave} km of ${dialogAreaLabel}. Your radius choice will be cleared, but your area stays saved.`}
-          </Text>
-          {dialogError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{dialogError}</Text>
-          ) : null}
-          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={closeLeaveDialog}
-              disabled={leaving}
-              hitSlop={8}
-              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leaving ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-            </Pressable>
-            <PrimaryButton
-              title="Leave queue"
-              loadingTitle="Leaving…"
-              loading={leaving}
-              tone="error"
-              onPress={() => void confirmRadiusLeave()}
-            />
-          </View>
-        </Modal>
+          body={`You’ll stop waiting within ${pendingLeave} km of ${dialogAreaLabel}. Your radius choice will be cleared, but your area stays saved.`}
+          error={dialogError}
+          confirmTitle="Leave queue"
+          confirmLoadingTitle="Leaving…"
+          loading={leaving}
+          tone="error"
+          onConfirm={() => void confirmRadiusLeave()}
+        />
       ) : null}
       {error ? (
         <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{error}</Text>

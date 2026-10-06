@@ -1,6 +1,6 @@
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { CalendarDays, Check, Clock, Loader2, Users } from 'lucide-react'
+import { CalendarDays, Check, Clock, Loader2, Trash2, Users } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { cn } from '../../lib/utils'
 import { rateLimitMessage, toErrorMessage } from '../../lib/error'
@@ -679,19 +679,19 @@ function MeetupDetail({
             </div>
             <p className="mt-3 flex items-start gap-1.5 text-sm text-on-surface-variant">
               <Users className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
-              <span>A meetup is set when {quorum} people choose the same time.</span>
+              <span>A meetup is set when {quorum} members choose the same time.</span>
             </p>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
                 onClick={startEditing}
-                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
               >
                 Change my vote
               </button>
               <Link
                 to={`/cluster/${clusterId}`}
-                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
               >
                 Back to room
               </Link>
@@ -704,13 +704,16 @@ function MeetupDetail({
           </p>
         )}
         {isCreator && !editing && (
-          <button
-            type="button"
-            onClick={() => setCancelOpen(true)}
-            className="mt-2 min-h-[44px] w-full rounded-pill px-5 py-2.5 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container"
-          >
-            Withdraw proposal
-          </button>
+          <div className="mt-4 border-t border-outline-variant/60 pt-2">
+            <button
+              type="button"
+              onClick={() => setCancelOpen(true)}
+              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 px-5 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:text-on-surface"
+            >
+              <Trash2 className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+              Withdraw proposal
+            </button>
+          </div>
         )}
       </div>
       <Modal open={cancelOpen && isCreator} onClose={() => setCancelOpen(false)} title="Withdraw proposal">

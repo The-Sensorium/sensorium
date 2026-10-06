@@ -1584,6 +1584,8 @@ export type Database = {
           latitude: number | null
           local_area: string | null
           local_country_code: string | null
+          local_pref_age_max: number | null
+          local_pref_age_min: number | null
           local_radius_km: number | null
           longitude: number | null
           manual_status: Database["public"]["Enums"]["profile_status"]
@@ -1608,6 +1610,8 @@ export type Database = {
           latitude?: number | null
           local_area?: string | null
           local_country_code?: string | null
+          local_pref_age_max?: number | null
+          local_pref_age_min?: number | null
           local_radius_km?: number | null
           longitude?: number | null
           manual_status?: Database["public"]["Enums"]["profile_status"]
@@ -1632,6 +1636,8 @@ export type Database = {
           latitude?: number | null
           local_area?: string | null
           local_country_code?: string | null
+          local_pref_age_max?: number | null
+          local_pref_age_min?: number | null
           local_radius_km?: number | null
           longitude?: number | null
           manual_status?: Database["public"]["Enums"]["profile_status"]
@@ -3125,6 +3131,14 @@ export type Database = {
           mode: Database["public"]["Enums"]["matching_mode"]
         }[]
       }
+      get_local_compatible_count: {
+        Args: {
+          p_max?: number | null
+          p_min?: number | null
+          p_queue_key: string
+        }
+        Returns: number
+      }
       get_queue_count: {
         Args: {
           p_mode: Database["public"]["Enums"]["matching_mode"]
@@ -3563,6 +3577,13 @@ export type Database = {
           p_reply_to_id?: string
         }
         Returns: string
+      }
+      set_local_age_prefs: {
+        Args: {
+          p_max?: number | null
+          p_min?: number | null
+        }
+        Returns: undefined
       }
       set_moderation_case_severity: {
         Args: {

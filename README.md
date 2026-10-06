@@ -5,7 +5,7 @@
 <h1 align="center">Sensorium</h1>
 
 <p align="center">
-  <strong>Eight strangers. One cluster.</strong>
+  <strong>Eight people. One cluster.</strong>
 </p>
 
 <p align="center">

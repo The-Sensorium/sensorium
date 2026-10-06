@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { HeartHandshake, MessageSquareText, SlidersHorizontal, UserPlus, Users } from 'lucide-react'
+import { MessageSquareText, SlidersHorizontal, UserPlus } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { BrandMark } from '../components/BrandMark'
 import { FixedThemeToggle } from '../components/FixedThemeToggle'
@@ -7,10 +7,8 @@ import { MATCHING_MODES } from '../lib/modes'
 
 const howItWorks = [
   { step: '01', title: 'Choose How You Want to Match', body: 'Pick from birth date, location-based, or open matching modes.', icon: SlidersHorizontal },
-  { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose.', icon: UserPlus },
-  { step: '03', title: 'Meet 7 Strangers', body: 'Your cluster forms when exactly eight people are ready.', icon: Users },
-  { step: '04', title: 'Complete Introductions', body: 'Introduce yourself with five questions, whenever you are ready.', icon: MessageSquareText },
-  { step: '05', title: 'Build Real Connections', body: 'Chat, raise signals, and meet up with your cluster.', icon: HeartHandshake },
+  { step: '02', title: 'Join a Cluster', body: 'Enter a queue for the mode you choose. Your cluster forms when exactly eight people are ready.', icon: UserPlus },
+  { step: '03', title: 'Complete Introductions', body: 'Introduce yourself with five questions, whenever you are ready, then come say hello to your cluster.', icon: MessageSquareText },
 ]
 
 const faqs = [
@@ -33,7 +31,7 @@ export function LandingPage() {
           <span className="font-brand text-lg tracking-[0.2em] text-primary">Sensorium</span>
         </div>
         <h1 className="mt-4 max-w-2xl text-4xl leading-tight font-bold md:text-5xl">
-          Eight strangers. One cluster.
+          Eight people. One cluster.
         </h1>
         <p className="mt-4 max-w-xl text-lg leading-7 text-on-surface-variant">
           Build meaningful friendships through small, lasting groups of exactly eight people.
@@ -58,7 +56,7 @@ export function LandingPage() {
       <section className="border-t border-outline-variant/60 bg-surface-container/50">
         <div className="mx-auto max-w-6xl px-6 py-16">
           <h2 className="text-3xl font-semibold">How It Works</h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
             {howItWorks.map((item) => (
               <article key={item.step} className="rounded-2xl bg-surface-lowest p-6 shadow-soft">
                 <div className="flex items-center justify-between">

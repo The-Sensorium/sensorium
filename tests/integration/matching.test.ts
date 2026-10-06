@@ -564,4 +564,189 @@ describe('matching', () => {
     const { data: bClusters } = await b.client.rpc('get_my_clusters')
     expect(bClusters).toHaveLength(0)
   })
+
+  it('rejects invalid local age pref ranges', async () => {
+    const u = await onboarded('m-agepref-bad')
+    const { error: rangeErr } = await u.client.rpc('set_local_age_prefs', {
+      p_min: 90,
+      p_max: 20,
+    })
+    expect(rangeErr?.message).toContain('invalid_age_range')
+
+    const { error: lowErr } = await u.client.rpc('set_local_age_prefs', {
+      p_min: 10,
+      p_max: 30,
+    })
+    expect(lowErr?.message).toContain('invalid_age_range')
+  })
+
+  it('rejects local age prefs outside 18 to 99 at the CHECK level', async () => {
+    const u = await onboarded('m-agepref-check')
+    const { error } = await admin
+      .from('profiles')
+      .update({ local_pref_age_min: 10, local_pref_age_max: 30 })
+      .eq('id', u.id)
+    expect(error).not.toBeNull()
+  })
+
+  it('counts only mutually compatible local waiters', async () => {
+    async function localUser(prefix: string, dob: string, pref: [number, number] | null) {
+      const u = await createUser(admin, prefix)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob })
+      await admin
+        .from('profiles')
+        .update({
+          country_code: 'IN',
+          latitude: 8.5,
+          longitude: 76.9,
+          local_area: 'age-count-area',
+          local_country_code: 'IN',
+          local_radius_km: 50,
+          local_pref_age_min: pref?.[0] ?? null,
+          local_pref_age_max: pref?.[1] ?? null,
+        })
+        .eq('id', u.id)
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'local', p_radius_km: 50 })
+      expect(error).toBeNull()
+      return u
+    }
+
+    const seeker = await localUser('m-age-seeker', '1996-06-15', [25, 35])
+    await localUser('m-age-friend', '1998-02-10', null)
+    await localUser('m-age-old', '1960-01-01', [55, 70])
+
+    const { data: status } = await seeker.client.rpc('get_my_matching_status')
+    const row = status.find((r: { mode: string }) => r.mode === 'local')
+    const { data: count, error } = await seeker.client.rpc('get_local_compatible_count', {
+      p_queue_key: row.queue_key,
+      p_min: 25,
+      p_max: 35,
+    })
+    expect(error).toBeNull()
+    expect(count).toBe(1)
+  })
+
+  it('forms a local cluster only from a mutually compatible set of 8', async () => {
+    const users: TestUser[] = []
+    for (let i = 0; i < 7; i++) {
+      const u = await createUser(admin, `m-ageform-${i}`)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob: `1994-05-${String((i % 27) + 1).padStart(2, '0')}` })
+      await admin
+        .from('profiles')
+        .update({
+          country_code: 'IN',
+          latitude: 8.5,
+          longitude: 76.9,
+          local_area: 'age-form-area',
+          local_country_code: 'IN',
+          local_radius_km: 50,
+          local_pref_age_min: 25,
+          local_pref_age_max: 35,
+        })
+        .eq('id', u.id)
+      users.push(u)
+    }
+    const outsider = await createUser(admin, 'm-ageform-out')
+    userIds.push(outsider.id)
+    await onboardUser(admin, outsider.id, { dob: '1960-01-01' })
+    await admin
+      .from('profiles')
+      .update({
+        country_code: 'IN',
+        latitude: 8.5,
+        longitude: 76.9,
+        local_area: 'age-form-area',
+        local_country_code: 'IN',
+        local_radius_km: 50,
+        local_pref_age_min: 55,
+        local_pref_age_max: 70,
+      })
+      .eq('id', outsider.id)
+
+    for (const u of [...users, outsider]) {
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'local', p_radius_km: 50 })
+      expect(error).toBeNull()
+    }
+
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id')
+      .eq('matching_mode', 'local')
+      .like('queue_key', '%age-form-area%')
+    expect(clusters).toHaveLength(0)
+  })
+
+  it('forms around an incompatible head waiter instead of stalling behind them', async () => {
+    async function localUser(prefix: string, dob: string, pref: [number, number], area: string) {
+      const u = await createUser(admin, prefix)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob })
+      await admin
+        .from('profiles')
+        .update({
+          country_code: 'IN',
+          latitude: 8.5,
+          longitude: 76.9,
+          local_area: area,
+          local_country_code: 'IN',
+          local_radius_km: 50,
+          local_pref_age_min: pref[0],
+          local_pref_age_max: pref[1],
+        })
+        .eq('id', u.id)
+      return u
+    }
+
+    const area = 'age-headline-area'
+    const head = await localUser('m-agehead', '1960-01-01', [55, 70], area)
+    const { error: headErr } = await head.client.rpc('join_queue', { p_mode: 'local', p_radius_km: 50 })
+    expect(headErr).toBeNull()
+
+    const rest: TestUser[] = []
+    for (let i = 0; i < 8; i++) {
+      const u = await localUser(`m-agebehind-${i}`, `1994-06-${String((i % 27) + 1).padStart(2, '0')}`, [25, 35], area)
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'local', p_radius_km: 50 })
+      expect(error).toBeNull()
+      rest.push(u)
+    }
+
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id')
+      .eq('matching_mode', 'local')
+      .like('queue_key', `%${area}%`)
+    expect(clusters).toHaveLength(1)
+    clusterIds.push(clusters![0].id)
+
+    const { data: members } = await admin
+      .from('cluster_members')
+      .select('user_id')
+      .eq('cluster_id', clusters![0].id)
+      .is('left_at', null)
+    expect(members).toHaveLength(8)
+    expect(members!.map((m) => m.user_id)).not.toContain(head.id)
+
+    const { data: headKeys } = await head.client.rpc('get_my_queue_keys')
+    expect(headKeys).toHaveLength(1)
+  })
+
+  it('hides birth_year for local cluster members', async () => {
+    const a = await onboarded('m-agevis-a')
+    const b = await onboarded('m-agevis-b')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      name: 'Local Age Visibility',
+      status: 'active',
+      mode: 'local',
+    })
+    clusterIds.push(clusterId)
+
+    const { data, error } = await a.client.rpc('get_member_profiles', { p_cluster_id: clusterId })
+    expect(error).toBeNull()
+    for (const m of data) {
+      expect(m.birth_year).toBeNull()
+    }
+  })
 })

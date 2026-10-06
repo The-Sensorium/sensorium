@@ -291,7 +291,7 @@ function GetStarted() {
         <h2 className="font-display text-xl font-semibold text-on-surface">Welcome to Sensorium</h2>
       </div>
       <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-        You’ll be matched into clusters of 8 strangers. Here’s how to get started.
+        You’ll be matched into clusters of 8 people. Here’s how to get started.
       </p>
       <ol className="mt-5 space-y-3">
         {GET_STARTED_STEPS.map((step, i) => (

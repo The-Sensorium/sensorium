@@ -73,7 +73,7 @@ export default function ClustersScreen() {
             <Users size={24} color={t.onSurfaceVariant} strokeWidth={1.5} />
             <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
               No clusters yet. Join a matching mode below and you’ll be matched with{' '}
-              {CLUSTER_SIZE - 1} strangers, or create a cluster with people you’ve already met.
+              {CLUSTER_SIZE - 1} people, or create a cluster with people you’ve already met.
             </Text>
           </View>
         </Card>
