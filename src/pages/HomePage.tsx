@@ -97,10 +97,16 @@ export function HomePage() {
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
   )
-  const loading = clusters.isLoading || invitations.isLoading
+  // Gate list freshness on isPending so retry backoff and offline pauses keep
+  // skeletons instead of flashing the get-started steps at existing users.
+  // formed is included: isFresh depends on formed.data.
+  const loading = clusters.isPending || invitations.isPending || formed.isPending
   const hasClusters = (clusters.data?.length ?? 0) > 0
   const hasInvites = (invitations.data?.length ?? 0) > 0
-  const isFresh = !loading && !hasClusters && !hasInvites && !formed.data
+  // Never mistake a list fetch error for a fresh account: errors show the
+  // listError banner below, not the get-started steps.
+  const listFailed = clusters.isError || invitations.isError || formed.isError
+  const isFresh = !loading && !listFailed && !hasClusters && !hasInvites && !formed.data
   const listError =
     (clusters.isError ? 'Couldn’t load your clusters.' : '') ||
     (invitations.isError ? 'Couldn’t load your invitations.' : '')
@@ -369,7 +375,7 @@ function RecentFromClusters({
           View all posts <ArrowRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
-      {recent.isLoading || myMutes.isLoading ? (
+      {recent.isPending || myMutes.isPending ? (
         <LoadingRow />
       ) : recent.isError ? (
         <div

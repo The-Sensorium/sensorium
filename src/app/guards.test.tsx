@@ -9,6 +9,7 @@ import { useProfile } from '../lib/use-profile'
 import { useSessionRole } from './session-role-context'
 import { useMyAccess } from '../features/access'
 import { useMfaStatus } from '../features/staff-mfa'
+import { ProfileMissingError } from '../lib/profile-missing'
 
 const authStates = {
   unconfigured: { state: 'unconfigured' as const },
@@ -18,33 +19,68 @@ const authStates = {
 }
 
 const profileStates = {
-  loading: { isLoading: true, isError: false, data: null as never, refetch: vi.fn() },
-  missing: {
+  loading: { isLoading: true, isPending: true, isError: false, data: null as never, error: null as never, refetch: vi.fn() },
+  retrying: {
+    // Slow connection: between fetch attempts there is no data yet, no
+    // error yet, and isLoading is already false. Must keep the spinner.
     isLoading: false,
+    isPending: true,
     isError: false,
-    data: null as never,
+    data: undefined as never,
+    error: null as never,
+    refetch: vi.fn(),
+  },
+  missingRow: {
+    isLoading: false,
+    isPending: false,
+    isError: true,
+    data: undefined as never,
+    error: new ProfileMissingError(),
     refetch: vi.fn(),
   },
   notOnboarded: {
     isLoading: false,
+    isPending: false,
     isError: false,
     data: { onboarding_completed_at: null },
+    error: null as never,
     refetch: vi.fn(),
   },
   onboarded: {
     isLoading: false,
+    isPending: false,
     isError: false,
     data: { onboarding_completed_at: '2026-01-01T00:00:00Z' },
+    error: null as never,
     refetch: vi.fn(),
   },
-  error: { isLoading: false, isError: true, data: null as never, refetch: vi.fn() },
+  staleComplete: {
+    // Loaded row wins even when a background refetch errors.
+    isLoading: false,
+    isPending: false,
+    isError: true,
+    data: { onboarding_completed_at: '2026-01-01T00:00:00Z' },
+    error: new Error('background refetch failed'),
+    refetch: vi.fn(),
+  },
+  staleIncomplete: {
+    // Known-incomplete row routes to onboarding despite a background error.
+    isLoading: false,
+    isPending: false,
+    isError: true,
+    data: { onboarding_completed_at: null },
+    error: new Error('background refetch failed'),
+    refetch: vi.fn(),
+  },
+  error: { isLoading: false, isPending: false, isError: true, data: null as never, error: new Error('network down'), refetch: vi.fn() },
 }
 
 const accessStates = {
-  loading: { isLoading: true, isError: false, data: null as never, refetch: vi.fn() },
-  error: { isLoading: false, isError: true, data: null as never, refetch: vi.fn() },
+  loading: { isLoading: true, isPending: true, isError: false, data: null as never, refetch: vi.fn() },
+  error: { isLoading: false, isPending: false, isError: true, data: null as never, refetch: vi.fn() },
   member: {
     isLoading: false,
+    isPending: false,
     isError: false,
     data: {
       user_id: 'u1',
@@ -59,6 +95,7 @@ const accessStates = {
   },
   moderator: {
     isLoading: false,
+    isPending: false,
     isError: false,
     data: {
       user_id: 'u1',
@@ -73,6 +110,7 @@ const accessStates = {
   },
   admin: {
     isLoading: false,
+    isPending: false,
     isError: false,
     data: {
       user_id: 'u1',
@@ -93,6 +131,7 @@ const accessStates = {
   },
   suspended: {
     isLoading: false,
+    isPending: false,
     isError: false,
     data: {
       user_id: 'u1',
@@ -107,6 +146,7 @@ const accessStates = {
   },
   banned: {
     isLoading: false,
+    isPending: false,
     isError: false,
     data: {
       user_id: 'u1',
@@ -140,7 +180,7 @@ vi.mock('../features/staff-mfa', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../features/staff-mfa')>()
   return {
     ...actual,
-    useMfaStatus: vi.fn(() => ({ data: null, isLoading: false, isError: false, refetch: vi.fn() })),
+    useMfaStatus: vi.fn(() => ({ data: null, isLoading: false, isPending: false, isError: false, refetch: vi.fn() })),
   }
 })
 
@@ -247,8 +287,28 @@ describe('RequireOnboarded', () => {
     expect(screen.queryByText('home')).not.toBeInTheDocument()
   })
 
-  it('redirects to onboarding when there is no profile yet', () => {
-    vi.mocked(useProfile).mockReturnValue(profileStates.missing)
+  it('redirects to onboarding when the row is missing after retries', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.missingRow)
+    renderGuarded(<RequireOnboarded>home</RequireOnboarded>)
+    expect(screen.getByText('onboarding page')).toBeInTheDocument()
+  })
+
+  it('keeps the spinner between retry attempts on a slow connection', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.retrying)
+    const { container } = renderGuarded(<RequireOnboarded>home</RequireOnboarded>)
+    expect(container.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.queryByText('onboarding page')).not.toBeInTheDocument()
+    expect(screen.queryByText('home')).not.toBeInTheDocument()
+  })
+
+  it('renders children from a loaded row despite a background refetch error', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.staleComplete)
+    renderGuarded(<RequireOnboarded>home</RequireOnboarded>)
+    expect(screen.getByText('home')).toBeInTheDocument()
+  })
+
+  it('routes a known-incomplete row to onboarding despite a background refetch error', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.staleIncomplete)
     renderGuarded(<RequireOnboarded>home</RequireOnboarded>)
     expect(screen.getByText('onboarding page')).toBeInTheDocument()
   })
@@ -376,6 +436,7 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMfaStatus).mockReturnValue({
       data: null,
       isLoading: false,
+      isPending: false,
       isError: false,
       refetch: vi.fn(),
     } as never)
@@ -403,6 +464,7 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMfaStatus).mockReturnValue({
       data: { currentLevel: 'aal1', nextLevel: 'aal2', verifiedTotpCount: 1, verifiedTotpIds: ['f1'] },
       isLoading: false,
+      isPending: false,
       isError: false,
       refetch: vi.fn(),
     } as never)
@@ -414,7 +476,8 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
     vi.mocked(useMfaStatus).mockReturnValue({
       data: null,
-      isLoading: true,
+      isLoading: false,
+      isPending: true,
       isError: false,
       refetch: vi.fn(),
     } as never)
@@ -428,6 +491,7 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMfaStatus).mockReturnValue({
       data: null,
       isLoading: false,
+      isPending: false,
       isError: true,
       refetch: vi.fn(),
     } as never)
@@ -442,6 +506,7 @@ describe('SessionRoleEntry', () => {
     vi.mocked(useMfaStatus).mockReturnValue({
       data: { currentLevel: 'aal1', nextLevel: 'aal2', verifiedTotpCount: 1, verifiedTotpIds: ['f1'] },
       isLoading: false,
+      isPending: false,
       isError: false,
       refetch: vi.fn(),
     } as never)
@@ -499,6 +564,32 @@ describe('RequireMemberShell', () => {
     const { container } = renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
     expect(container.querySelector('.animate-spin')).not.toBeNull()
     expect(screen.queryByText('home')).not.toBeInTheDocument()
+  })
+
+  it('keeps the spinner between retry attempts on a slow connection', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.retrying)
+    const { container } = renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(container.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.queryByText('onboarding page')).not.toBeInTheDocument()
+    expect(screen.queryByText('home')).not.toBeInTheDocument()
+  })
+
+  it('renders children from a loaded row despite a background refetch error', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.staleComplete)
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText('home')).toBeInTheDocument()
+  })
+
+  it('routes a known-incomplete row to onboarding despite a background refetch error', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.staleIncomplete)
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText('onboarding page')).toBeInTheDocument()
+  })
+
+  it('routes a missing row to onboarding so it can bootstrap', () => {
+    vi.mocked(useProfile).mockReturnValue(profileStates.missingRow)
+    renderGuarded(<RequireMemberShell>home</RequireMemberShell>)
+    expect(screen.getByText('onboarding page')).toBeInTheDocument()
   })
 
   it('redirects to onboarding when not completed', () => {

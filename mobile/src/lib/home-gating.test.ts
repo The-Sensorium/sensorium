@@ -45,7 +45,7 @@ describe('resolveOnboardingState', () => {
   it('reports complete when the timestamp is set, even on a background refetch error', () => {
     expect(
       resolveOnboardingState({
-        isLoading: false,
+        isPending: false,
         isError: true,
         profileMissing: false,
         onboardingCompletedAt: '2026-01-01T00:00:00Z',
@@ -53,10 +53,10 @@ describe('resolveOnboardingState', () => {
     ).toBe('complete')
   })
 
-  it('reports loading while the first fetch is in flight', () => {
+  it('reports loading while there is no data yet, including retry backoff and offline pauses', () => {
     expect(
       resolveOnboardingState({
-        isLoading: true,
+        isPending: true,
         isError: false,
         profileMissing: false,
         onboardingCompletedAt: undefined,
@@ -67,7 +67,7 @@ describe('resolveOnboardingState', () => {
   it('reports error instead of incomplete when the fetch fails with no data', () => {
     expect(
       resolveOnboardingState({
-        isLoading: false,
+        isPending: false,
         isError: true,
         profileMissing: false,
         onboardingCompletedAt: undefined,
@@ -78,7 +78,7 @@ describe('resolveOnboardingState', () => {
   it('reports incomplete for a missing row after retries so onboarding can bootstrap it', () => {
     expect(
       resolveOnboardingState({
-        isLoading: false,
+        isPending: false,
         isError: true,
         profileMissing: true,
         onboardingCompletedAt: undefined,
@@ -89,8 +89,19 @@ describe('resolveOnboardingState', () => {
   it('reports incomplete for a loaded profile without a timestamp', () => {
     expect(
       resolveOnboardingState({
-        isLoading: false,
+        isPending: false,
         isError: false,
+        profileMissing: false,
+        onboardingCompletedAt: null,
+      }),
+    ).toBe('incomplete')
+  })
+
+  it('reports incomplete for a known-incomplete row despite a background refetch error', () => {
+    expect(
+      resolveOnboardingState({
+        isPending: false,
+        isError: true,
         profileMissing: false,
         onboardingCompletedAt: null,
       }),
@@ -100,7 +111,7 @@ describe('resolveOnboardingState', () => {
   it('reports incomplete when there is no row and no error', () => {
     expect(
       resolveOnboardingState({
-        isLoading: false,
+        isPending: false,
         isError: false,
         profileMissing: false,
         onboardingCompletedAt: undefined,

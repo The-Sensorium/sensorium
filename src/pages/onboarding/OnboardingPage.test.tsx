@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { OnboardingPage } from './OnboardingPage'
+import { ProfileMissingError } from '../../lib/profile-missing'
 
 const hooks = vi.hoisted(() => ({
   useNavigate: vi.fn(),
@@ -73,5 +75,35 @@ describe('OnboardingPage', () => {
         { onConflict: 'id' },
       )
     })
+  })
+
+  it('keeps the spinner between retry attempts on a slow connection', () => {
+    hooks.useProfile.mockReturnValue({ data: undefined, error: null, isPending: true, isLoading: false, refetch: vi.fn() })
+    const { container } = render(<OnboardingPage />)
+    expect(container.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.queryByText(/Step 1 of 5/)).not.toBeInTheDocument()
+  })
+
+  it('shows an error state with a retry button instead of the form on fetch failure', async () => {
+    const user = userEvent.setup()
+    const refetch = vi.fn()
+    hooks.useProfile.mockReturnValue({ data: undefined, error: new Error('network down'), isPending: false, isLoading: false, refetch })
+    render(<OnboardingPage />)
+    expect(screen.getByText(/Couldn’t load your profile/)).toBeInTheDocument()
+    expect(screen.queryByText(/Step 1 of 5/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Try Again' }))
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  it('renders the form for a missing row so a new account can bootstrap', () => {
+    hooks.useProfile.mockReturnValue({ data: undefined, error: new ProfileMissingError(), isPending: false, isLoading: false, refetch: vi.fn() })
+    render(<OnboardingPage />)
+    expect(screen.getByText(/Step 1 of 5/)).toBeInTheDocument()
+  })
+
+  it('does not render the form for an onboarded profile', () => {
+    hooks.useProfile.mockReturnValue({ data: { onboarding_completed_at: '2026-01-01T00:00:00Z' }, error: null, isPending: false, isLoading: false, refetch: vi.fn() })
+    render(<OnboardingPage />)
+    expect(screen.queryByText(/Step 1 of 5/)).not.toBeInTheDocument()
   })
 })

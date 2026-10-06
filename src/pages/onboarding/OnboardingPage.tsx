@@ -6,6 +6,7 @@ import { FixedThemeToggle } from '../../components/FixedThemeToggle'
 import { useAuth } from '../../app/auth-context'
 import { requireSupabase } from '../../lib/supabase'
 import { useProfile, profileKey } from '../../lib/use-profile'
+import { isProfileMissingError } from '../../lib/profile-missing'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { modeInfo } from '../../lib/modes'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
@@ -43,8 +44,33 @@ export function OnboardingPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (auth.state !== 'signedIn') return null
-  if (profile.isLoading) return <Loading />
+  // Gate on isPending, not isLoading: isLoading drops during retry backoff
+  // and offline pauses while there is still no data, which would flash the
+  // onboarding form at onboarded users on slow connections.
+  if (profile.isPending) return <Loading />
   if (profile.data?.onboarding_completed_at) return <Navigate to="/home" replace />
+  // A failed profile fetch is never the onboarding form: an onboarded user
+  // whose fetch fails would otherwise get stuck here with no way back.
+  // Only a missing row (new account) falls through to bootstrap via upsert.
+  if (!profile.data && !isProfileMissingError(profile.error)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md rounded-2xl bg-surface-lowest p-8 text-center shadow-soft">
+          <h1 className="text-xl font-semibold text-on-surface">Couldn’t load your profile</h1>
+          <p className="mt-3 text-sm leading-6 text-on-surface-variant">
+            Something went wrong while checking your account. Please try again.
+          </p>
+          <button
+            type="button"
+            onClick={() => void profile.refetch()}
+            className="mt-6 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const userId = auth.userId
   const userEmail = auth.email

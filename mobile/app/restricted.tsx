@@ -24,10 +24,12 @@ export default function RestrictedScreen() {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (access.isLoading || access.isError || !access.data) {
+  // Gate on isPending so retry backoff and offline pauses keep the spinner
+  // instead of flashing the error state with no data yet.
+  if (access.isPending || access.isError || !access.data) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center', padding: spacing.containerMargin }}>
-        {access.isLoading ? (
+        {access.isPending ? (
           <ActivityIndicator size="large" color={t.primary} />
         ) : (
           <View style={{ alignItems: 'center' }}>

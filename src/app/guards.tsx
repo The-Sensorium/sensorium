@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { Navigate } from 'react-router'
 import { useAuth } from './auth-context'
 import { useProfile } from '../lib/use-profile'
+import { isProfileMissingError } from '../lib/profile-missing'
 import {
   activeSessionRoles,
   hasCapability,
@@ -91,7 +92,7 @@ export function RequireGuest({ children }: { children: ReactNode }) {
 export function RequireActiveAccount({ children }: { children: ReactNode }) {
   const access = useMyAccess()
 
-  if (access.isLoading) return <LoadingScreen />
+  if (access.isPending) return <LoadingScreen />
   if (access.isError || !access.data) return <AccessErrorScreen onRetry={() => void access.refetch()} />
   if (access.data.account_status !== 'active') return <Navigate to="/restricted" replace />
   return <>{children}</>
@@ -104,7 +105,7 @@ export function RequireActiveAccount({ children }: { children: ReactNode }) {
 export function RequireCapability({ capability, children }: { capability: Capability; children: ReactNode }) {
   const access = useMyAccess()
 
-  if (access.isLoading) return <LoadingScreen />
+  if (access.isPending) return <LoadingScreen />
   if (access.isError || !access.data) return <AccessErrorScreen onRetry={() => void access.refetch()} />
   if (access.data.account_status !== 'active') return <Navigate to="/restricted" replace />
   if (!hasCapability(access.data, capability)) return <Navigate to="/select-role" replace />
@@ -119,7 +120,7 @@ export function RequireCapability({ capability, children }: { capability: Capabi
 export function RequireSessionRole({ role, children }: { role: SessionRole; children: ReactNode }) {
   const access = useMyAccess()
 
-  if (access.isLoading) return <LoadingScreen />
+  if (access.isPending) return <LoadingScreen />
   if (access.isError || !access.data) return <AccessErrorScreen onRetry={() => void access.refetch()} />
   if (access.data.account_status !== 'active') return <Navigate to="/restricted" replace />
   return (
@@ -166,7 +167,7 @@ function SessionRoleGate({ access, role, children }: { access: MyAccessRow; role
 export function SessionRoleEntry() {
   const access = useMyAccess()
 
-  if (access.isLoading) return <LoadingScreen />
+  if (access.isPending) return <LoadingScreen />
   if (access.isError || !access.data) return <AccessErrorScreen onRetry={() => void access.refetch()} />
   if (access.data.account_status !== 'active') return <Navigate to="/restricted" replace />
   return <SessionRoleResolver access={access.data} />
@@ -192,7 +193,9 @@ function SessionRoleResolver({ access }: { access: MyAccessRow }) {
   // authenticator finish the AAL2 step before entering. Wait for the MFA
   // status first: routing before it resolves would let a fresh AAL1 session
   // slip past unverified. Fail closed on error like the access guards above.
-  if (staff && mfa.isLoading) return <LoadingScreen />
+  // Gate on isPending so retry backoff and offline pauses keep the spinner
+  // instead of routing before the status resolves.
+  if (staff && mfa.isPending) return <LoadingScreen />
   if (staff && mfa.isError) return <AccessErrorScreen onRetry={() => void mfa.refetch()} />
   if (staff && needsMfaVerify(mfa.data)) return <Navigate to="/mfa-verify" replace />
   if (!single) return <Navigate to="/select-role" replace />
@@ -206,7 +209,7 @@ function SessionRoleResolver({ access }: { access: MyAccessRow }) {
 export function RequireRestricted({ children }: { children: ReactNode }) {
   const access = useMyAccess()
 
-  if (access.isLoading) return <LoadingScreen />
+  if (access.isPending) return <LoadingScreen />
   if (access.isError || !access.data) return <AccessErrorScreen onRetry={() => void access.refetch()} />
   if (access.data.account_status === 'active') return <Navigate to="/home" replace />
   return <>{children}</>
@@ -224,12 +227,35 @@ export function RequireMemberShell({ children }: { children: ReactNode }) {
   const access = useMyAccess()
   const profile = useProfile()
 
-  if (access.isLoading || profile.isLoading) return <LoadingScreen />
+  // Gate on isPending, not isLoading: isLoading is isFetching && isPending,
+  // so it drops during retry backoff and offline pauses while there is still
+  // no data. Gating on it mistakes those windows for "not onboarded" and
+  // bounces onboarded users to /onboarding on slow connections.
+  if (access.isPending || profile.isPending) return <LoadingScreen />
   if (access.isError || !access.data)
     return <AccessErrorScreen onRetry={() => void access.refetch()} />
   if (access.data.account_status !== 'active') return <Navigate to="/restricted" replace />
 
-  if (!profile.isError && !profile.data) return <Navigate to="/onboarding" replace />
+  // A loaded row wins, even during a background refetch error: complete rows
+  // enter the app, known-incomplete rows go to onboarding. Read through a
+  // local: re-narrowing profile.data across branches collapses the query
+  // result union to never.
+  const profileData = profile.data
+  if (profileData?.onboarding_completed_at != null) {
+    return (
+      <SessionRoleGate access={access.data} role="member">
+        {children}
+      </SessionRoleGate>
+    )
+  }
+  if (profileData) {
+    return <Navigate to="/onboarding" replace />
+  }
+  // No row after retries: genuinely new (or pre-trigger) account. Onboarding
+  // bootstraps the row via upsert.
+  if (isProfileMissingError(profile.error)) {
+    return <Navigate to="/onboarding" replace />
+  }
   if (profile.isError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background p-6">
@@ -240,7 +266,7 @@ export function RequireMemberShell({ children }: { children: ReactNode }) {
           </p>
           <button
             type="button"
-            onClick={() => profile.refetch()}
+            onClick={() => void profile.refetch()}
             className="mt-6 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
           >
             Try Again
@@ -249,15 +275,7 @@ export function RequireMemberShell({ children }: { children: ReactNode }) {
       </div>
     )
   }
-  if (profile.data?.onboarding_completed_at == null) {
-    return <Navigate to="/onboarding" replace />
-  }
-
-  return (
-    <SessionRoleGate access={access.data} role="member">
-      {children}
-    </SessionRoleGate>
-  )
+  return <Navigate to="/onboarding" replace />
 }
 
 /**
@@ -267,11 +285,23 @@ export function RequireMemberShell({ children }: { children: ReactNode }) {
 export function RequireOnboarded({ children }: { children: ReactNode }) {
   const profile = useProfile()
 
-  if (profile.isLoading) return <LoadingScreen />
+  // See RequireMemberShell: gate on isPending so retry backoff and offline
+  // pauses keep the spinner instead of routing to onboarding.
+  if (profile.isPending) return <LoadingScreen />
+
+  // A loaded row wins, even during a background refetch error: complete rows
+  // pass through, known-incomplete rows go to onboarding. Read through a
+  // local: re-narrowing profile.data across branches collapses the query
+  // result union to never.
+  const profileData = profile.data
+  if (profileData?.onboarding_completed_at != null) return <>{children}</>
+  if (profileData) return <Navigate to="/onboarding" replace />
 
   // No profile row yet (e.g. signup before the row-trigger, or new account):
-  // treat as not onboarded and send to onboarding, which bootstraps the profile.
-  if (!profile.isError && !profile.data) return <Navigate to="/onboarding" replace />
+  // send to onboarding, which bootstraps the profile.
+  if (isProfileMissingError(profile.error)) {
+    return <Navigate to="/onboarding" replace />
+  }
 
   if (profile.isError) {
     return (
@@ -283,7 +313,7 @@ export function RequireOnboarded({ children }: { children: ReactNode }) {
           </p>
           <button
             type="button"
-            onClick={() => profile.refetch()}
+            onClick={() => void profile.refetch()}
             className="mt-6 rounded-pill bg-primary px-6 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
           >
             Try Again
@@ -293,10 +323,5 @@ export function RequireOnboarded({ children }: { children: ReactNode }) {
     )
   }
 
-  const completedOnboarding = profile.data?.onboarding_completed_at != null
-  if (!completedOnboarding) {
-    return <Navigate to="/onboarding" replace />
-  }
-
-  return <>{children}</>
+  return <Navigate to="/onboarding" replace />
 }
