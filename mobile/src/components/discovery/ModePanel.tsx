@@ -15,7 +15,7 @@ import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { Card, LoadingView, PrimaryButton } from '../ui'
-import { Modal } from '../Modal'
+import { ConfirmSheet } from '../ConfirmSheet'
 import { MatchPreferencesSheet } from '../MatchPreferencesSheet'
 import { WhatsNextSteps } from '../WhatsNextSteps'
 
@@ -579,67 +579,33 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         </View>
       ) : null}
       {pendingRadius != null ? (
-        <Modal
+        <ConfirmSheet
           open={pendingRadius != null}
           onClose={closeRadiusDialog}
           title={`Join the ${pendingRadius} km queue?`}
-        >
-          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-            {`You’ll be matched within ${pendingRadius} km of ${dialogAreaLabel}${
-              pendingCount != null ? `, where ${pendingCount} of ${CLUSTER_SIZE} are waiting` : ''
-            }.`}
-          </Text>
-          {dialogError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{dialogError}</Text>
-          ) : null}
-          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={closeRadiusDialog}
-              disabled={joining}
-              hitSlop={8}
-              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: joining ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-            </Pressable>
-            <PrimaryButton
-              title="Join queue"
-              loadingTitle="Joining…"
-              loading={joining}
-              onPress={() => void confirmRadiusJoin()}
-            />
-          </View>
-        </Modal>
+          body={`You’ll be matched within ${pendingRadius} km of ${dialogAreaLabel}${
+            pendingCount != null ? `, where ${pendingCount} of ${CLUSTER_SIZE} are waiting` : ''
+          }.`}
+          error={dialogError}
+          confirmTitle="Join queue"
+          confirmLoadingTitle="Joining…"
+          loading={joining}
+          onConfirm={() => void confirmRadiusJoin()}
+        />
       ) : null}
       {pendingLeave != null ? (
-        <Modal
+        <ConfirmSheet
           open={pendingLeave != null}
           onClose={closeLeaveDialog}
           title={`Leave the ${pendingLeave} km queue?`}
-        >
-          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-            {`You’ll stop waiting within ${pendingLeave} km of ${dialogAreaLabel}. Your radius choice will be cleared, but your area stays saved.`}
-          </Text>
-          {dialogError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{dialogError}</Text>
-          ) : null}
-          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={closeLeaveDialog}
-              disabled={leaving}
-              hitSlop={8}
-              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leaving ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-            </Pressable>
-            <PrimaryButton
-              title="Leave queue"
-              loadingTitle="Leaving…"
-              loading={leaving}
-              tone="error"
-              onPress={() => void confirmRadiusLeave()}
-            />
-          </View>
-        </Modal>
+          body={`You’ll stop waiting within ${pendingLeave} km of ${dialogAreaLabel}. Your radius choice will be cleared, but your area stays saved.`}
+          error={dialogError}
+          confirmTitle="Leave queue"
+          confirmLoadingTitle="Leaving…"
+          loading={leaving}
+          tone="error"
+          onConfirm={() => void confirmRadiusLeave()}
+        />
       ) : null}
       {error ? (
         <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{error}</Text>

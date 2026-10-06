@@ -5,8 +5,7 @@ import { useAuth } from '../auth-context'
 import { useIsMuted, useMuteUser, useUnmuteUser } from '../features/moderation'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
-import { Modal } from './Modal'
-import { PrimaryButton } from './ui'
+import { ConfirmSheet } from './ConfirmSheet'
 
 export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogClose }: { targetUserId: string; targetName: string; fill?: boolean; menuItem?: boolean; onDialogClose?: () => void }) {
   const t = useTheme()
@@ -81,38 +80,22 @@ export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogC
             {label}
           </Text>
         </Pressable>
-        <Modal open={confirmOpen} onClose={() => { if (!pending) closeConfirm() }} title={dialogTitle}>
-          {dialogUnmute ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-              Unmuting {targetName} shows their messages, posts, comments, and signals again right away.
-            </Text>
-          ) : (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-              Muting {targetName} hides their messages, posts, comments, and signals for you only, in every shared
-              cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.
-            </Text>
-          )}
-          {confirmError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{confirmError}</Text>
-          ) : null}
-          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-            <Pressable
-              onPress={() => closeConfirm()}
-              disabled={pending}
-              hitSlop={8}
-              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: pending ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-            </Pressable>
-            <PrimaryButton
-              title={dialogLabel}
-              loadingTitle="Saving…"
-              loading={pending}
-              onPress={handleConfirm}
-              icon={<DialogIcon size={16} color={t.onPrimary} strokeWidth={1.5} />}
-            />
-          </View>
-        </Modal>
+        <ConfirmSheet
+          open={confirmOpen}
+          onClose={() => { if (!pending) closeConfirm() }}
+          title={dialogTitle}
+          body={
+            dialogUnmute
+              ? `Unmuting ${targetName} shows their messages, posts, comments, and signals again right away.`
+              : `Muting ${targetName} hides their messages, posts, comments, and signals for you only, in every shared cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.`
+          }
+          error={confirmError}
+          confirmTitle={dialogLabel}
+          confirmLoadingTitle="Saving…"
+          confirmIcon={<DialogIcon size={16} color={t.onPrimary} strokeWidth={1.5} />}
+          loading={pending}
+          onConfirm={() => void handleConfirm()}
+        />
       </View>
     )
   }
@@ -155,38 +138,22 @@ export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogC
       {error ? (
         <Text style={{ fontSize: 12, color: t.error }}>Couldn’t update. Try again.</Text>
       ) : null}
-      <Modal open={confirmOpen} onClose={() => { if (!pending) closeConfirm() }} title={dialogTitle}>
-        {dialogUnmute ? (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-            Unmuting {targetName} shows their messages, posts, comments, and signals again right away.
-          </Text>
-        ) : (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-            Muting {targetName} hides their messages, posts, comments, and signals for you only, in every shared
-            cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.
-          </Text>
-        )}
-        {confirmError ? (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{confirmError}</Text>
-        ) : null}
-        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-          <Pressable
-            onPress={() => closeConfirm()}
-            disabled={pending}
-            hitSlop={8}
-            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: pending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-          </Pressable>
-          <PrimaryButton
-            title={dialogLabel}
-            loadingTitle="Saving…"
-            loading={pending}
-            onPress={handleConfirm}
-            icon={<DialogIcon size={16} color={t.onPrimary} strokeWidth={1.5} />}
-          />
-        </View>
-      </Modal>
+      <ConfirmSheet
+        open={confirmOpen}
+        onClose={() => { if (!pending) closeConfirm() }}
+        title={dialogTitle}
+        body={
+          dialogUnmute
+            ? `Unmuting ${targetName} shows their messages, posts, comments, and signals again right away.`
+            : `Muting ${targetName} hides their messages, posts, comments, and signals for you only, in every shared cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.`
+        }
+        error={confirmError}
+        confirmTitle={dialogLabel}
+        confirmLoadingTitle="Saving…"
+        confirmIcon={<DialogIcon size={16} color={t.onPrimary} strokeWidth={1.5} />}
+        loading={pending}
+        onConfirm={() => void handleConfirm()}
+      />
     </View>
   )
 }

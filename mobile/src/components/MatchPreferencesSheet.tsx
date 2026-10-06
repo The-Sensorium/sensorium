@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal as RNModal, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { CalendarDays, Clock, Users } from 'lucide-react-native'
+import { CalendarDays, Clock, Users, X } from 'lucide-react-native'
 import { AgeRangeSlider, AGE_MAX, AGE_MIN } from './AgeRangeSlider'
 import {
   useLocalCompatibleCount,
@@ -57,17 +57,24 @@ export function MatchPreferencesSheet({
             maxHeight: '90%',
           }}
         >
-          <View
-            style={{
-              alignSelf: 'center',
-              width: 40,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: t.outlineVariant,
-              marginBottom: 12,
-            }}
-          />
-          {open ? <MatchPreferencesForm queueKey={queueKey} onSaved={onClose} /> : null}
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss match preferences"
+            hitSlop={{ top: 0, bottom: 0, left: 8, right: 8 }}
+            style={{ alignSelf: 'stretch', minHeight: 48, justifyContent: 'center' }}
+          >
+            <View
+              style={{
+                alignSelf: 'center',
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: t.outlineVariant,
+              }}
+            />
+          </Pressable>
+          {open ? <MatchPreferencesForm queueKey={queueKey} onClose={onClose} /> : null}
         </View>
       </View>
     </RNModal>
@@ -76,10 +83,10 @@ export function MatchPreferencesSheet({
 
 function MatchPreferencesForm({
   queueKey,
-  onSaved,
+  onClose,
 }: {
   queueKey: string | null
-  onSaved: () => void
+  onClose: () => void
 }) {
   const t = useTheme()
   const profile = useProfile()
@@ -119,7 +126,7 @@ function MatchPreferencesForm({
     try {
       const fullSpan = min === AGE_MIN && max === AGE_MAX
       await save.mutateAsync(fullSpan ? { min: null, max: null } : { min, max })
-      onSaved()
+      onClose()
     } catch (err) {
       const raw = toErrorMessage(err, '').toLowerCase()
       setError(
@@ -140,9 +147,20 @@ function MatchPreferencesForm({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={{ fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
-          Match preferences
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{ flex: 1, fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+            Match preferences
+          </Text>
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close match preferences"
+            hitSlop={8}
+            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
+        </View>
         <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
           Choose the age range you’re comfortable being grouped with.
         </Text>

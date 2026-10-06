@@ -156,7 +156,7 @@ describe('MeetupsView', () => {
     renderPage()
     expect(screen.getByText('Finding a time')).toBeTruthy()
     expect(screen.getByText('3 of 3 members have voted')).toBeTruthy()
-    expect(screen.getByText('A meetup is set when 3 people choose the same time.')).toBeTruthy()
+    expect(screen.getByText('A meetup is set when 3 members choose the same time.')).toBeTruthy()
     expect(screen.getByText('Your pick')).toBeTruthy()
     expect(screen.getByText('Change my vote')).toBeTruthy()
     expect(screen.getByText('Back to room')).toBeTruthy()

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
-import { CalendarDays, Check, Clock, Users } from 'lucide-react-native'
+import { CalendarDays, Check, Clock, Trash2, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useClusterChannel } from '../../../../src/features/realtime'
@@ -15,7 +15,7 @@ import {
   useVoteMeetupSlot,
   type Meetup,
 } from '../../../../src/features/meetups'
-import { Modal } from '../../../../src/components/Modal'
+import { ConfirmSheet } from '../../../../src/components/ConfirmSheet'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
@@ -407,24 +407,26 @@ function MeetupDetail({
               </Pressable>
             </View>
           )}
-          <Modal open={declineOpen} onClose={() => setDeclineOpen(false)} title="Can’t make it?">
-            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
-              You’ll be removed from the meetup. The meetup time won’t change.
-            </Text>
-            <View style={{ marginTop: 16, gap: 8 }}>
-              <PrimaryButton title="I can’t make it" tone="error" loading={rsvp.isPending} onPress={() => void handleConfirmDecline()} />
-              <SecondaryButton title="Keep me in" onPress={() => setDeclineOpen(false)} />
-            </View>
-          </Modal>
-          <Modal open={joinOpen} onClose={() => setJoinOpen(false)} title="Count me in?">
-            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
-              You’ll be added to the meetup. We’ll remind you before it starts.
-            </Text>
-            <View style={{ marginTop: 16, gap: 8 }}>
-              <PrimaryButton title="Count me in" loading={rsvp.isPending} onPress={() => void handleConfirmJoinRsvp()} />
-              <SecondaryButton title="Cancel" onPress={() => setJoinOpen(false)} />
-            </View>
-          </Modal>
+          <ConfirmSheet
+            open={declineOpen}
+            onClose={() => { if (!rsvp.isPending) setDeclineOpen(false) }}
+            title="Can’t make it?"
+            body="You’ll be removed from the meetup. The meetup time won’t change."
+            confirmTitle="I can’t make it"
+            loading={rsvp.isPending}
+            tone="error"
+            cancelTitle="Keep me in"
+            onConfirm={() => void handleConfirmDecline()}
+          />
+          <ConfirmSheet
+            open={joinOpen}
+            onClose={() => { if (!rsvp.isPending) setJoinOpen(false) }}
+            title="Count me in?"
+            body="You’ll be added to the meetup. We’ll remind you before it starts."
+            confirmTitle="Count me in"
+            loading={rsvp.isPending}
+            onConfirm={() => void handleConfirmJoinRsvp()}
+          />
           {iAmIn ? (
             <View style={{ marginTop: 10 }}>
               <PrimaryButton title="Join Meetup" loading={joining} disabled={!joinable} onPress={() => void handleJoin()} />
@@ -629,16 +631,16 @@ function MeetupDetail({
                 <Users size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
               </View>
               <Text style={{ flex: 1, flexShrink: 1, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-                A meetup is set when {quorum} people choose the same time.
+                A meetup is set when {quorum} members choose the same time.
               </Text>
             </View>
             <View style={{ marginTop: 12, gap: 8 }}>
-              <SecondaryButton title="Change my vote" onPress={startEditing} />
-              <PrimaryButton
+              <PrimaryButton title="Change my vote" onPress={startEditing} />
+              <SecondaryButton
                 title="Back to room"
                 onPress={() => router.push({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })}
               />
-              </View>
+            </View>
           </>
         )}
         {showBallot && !editing && row.voting_closes_at ? (
@@ -653,32 +655,51 @@ function MeetupDetail({
 }
 
 function CancelRow({ clusterId, meetupId, onError }: { clusterId: string; meetupId: string; onError: (m: string | null) => void }) {
+  const t = useTheme()
   const cancel = useCancelMeetup(clusterId, meetupId)
   const [confirming, setConfirming] = useState(false)
   if (!confirming) {
     return (
-      <View style={{ marginTop: 8 }}>
-        <SecondaryButton title="Withdraw proposal" onPress={() => setConfirming(true)} />
+      <View style={{ marginTop: 16 }}>
+        <View style={{ height: 1, backgroundColor: t.outlineVariant, opacity: 0.4 }} />
+        <Pressable
+          onPress={() => setConfirming(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Withdraw proposal"
+          hitSlop={8}
+          style={{ marginTop: 4, minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        >
+          <Trash2 size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurfaceVariant }}>
+            Withdraw proposal
+          </Text>
+        </Pressable>
       </View>
     )
   }
   return (
-    <View style={{ marginTop: 8, gap: 8 }}>
-      <PrimaryButton
-        title="Confirm withdraw"
-        tone="error"
-        loading={cancel.isPending}
-        onPress={() =>
-          void mutateWithRetry(() => cancel.mutateAsync())
-            .then(() => successHaptic())
-            .catch((e: unknown) => {
-              errorHaptic()
-              onError(toErrorMessage(e, 'Could not withdraw the proposal'))
-            })
-        }
-      />
-      <SecondaryButton title="Keep proposal" onPress={() => setConfirming(false)} />
-    </View>
+    <ConfirmSheet
+      open={confirming}
+      onClose={() => { if (!cancel.isPending) setConfirming(false) }}
+      title="Withdraw proposal?"
+      body="This removes your proposal before anyone else confirms it."
+      confirmTitle="Withdraw proposal"
+      confirmLoadingTitle="Withdrawing…"
+      loading={cancel.isPending}
+      tone="error"
+      cancelTitle="Keep proposal"
+      onConfirm={() =>
+        void mutateWithRetry(() => cancel.mutateAsync())
+          .then(() => {
+            successHaptic()
+            setConfirming(false)
+          })
+          .catch((e: unknown) => {
+            errorHaptic()
+            onError(toErrorMessage(e, 'Could not withdraw the proposal'))
+          })
+      }
+    />
   )
 }
 
