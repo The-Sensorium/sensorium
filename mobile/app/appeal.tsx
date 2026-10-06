@@ -32,7 +32,9 @@ export default function AppealScreen() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  if (access.isLoading) {
+  // Gate on isPending, not isLoading: isLoading drops during retry backoff
+  // and offline pauses while there is still no data.
+  if (access.isPending) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={t.primary} />

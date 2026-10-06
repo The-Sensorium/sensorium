@@ -22,6 +22,7 @@ vi.mock('../features/notifications', () => ({
 
 const accessSuspended = {
   isLoading: false,
+  isPending: false,
   isError: false,
   refetch: vi.fn(),
   data: { account_status: 'suspended', restriction_expires_at: '2026-09-01T00:00:00Z' },
@@ -29,6 +30,7 @@ const accessSuspended = {
 
 const accessBanned = {
   isLoading: false,
+  isPending: false,
   isError: false,
   refetch: vi.fn(),
   data: { account_status: 'banned', restriction_expires_at: null },
@@ -36,6 +38,7 @@ const accessBanned = {
 
 const accessActive = {
   isLoading: false,
+  isPending: false,
   isError: false,
   refetch: vi.fn(),
   data: { account_status: 'active', restriction_expires_at: null },
@@ -66,6 +69,13 @@ describe('AppealPage', () => {
     expect(screen.getByText('Appeal a decision')).toBeInTheDocument()
     expect(screen.getByLabelText('Why should this be reconsidered?')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Submit appeal' })).toBeInTheDocument()
+  })
+
+  it('keeps the spinner between retry attempts on a slow connection', () => {
+    hooks.useMyAccess.mockReturnValue({ ...accessSuspended, data: undefined, isLoading: false, isPending: true })
+    const { container } = renderPage()
+    expect(container.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: 'Submit appeal' })).not.toBeInTheDocument()
   })
 
   it('disables the submit button while details are empty', () => {

@@ -47,10 +47,12 @@ export default function OnboardingScreen() {
 
   // Fail closed like the web RequireOnboarded guard: a transient profile
   // fetch error must keep an onboarded user off this form (see home-gating tests).
+  // Gate on isPending so retry backoff and offline pauses keep the spinner
+  // instead of flashing the form on slow connections.
   const profileMissing = !profile.data && isProfileMissingError(profile.error)
   const completed =
     resolveOnboardingState({
-      isLoading: profile.isLoading,
+      isPending: profile.isPending,
       isError: profile.isError,
       profileMissing,
       onboardingCompletedAt: profile.data?.onboarding_completed_at,
@@ -61,7 +63,7 @@ export default function OnboardingScreen() {
     else if (completed) goHome()
   }, [auth.state, completed])
 
-  if (auth.state !== 'signedIn' || profile.isLoading || completed) {
+  if (auth.state !== 'signedIn' || profile.isPending || completed) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={t.primary} />

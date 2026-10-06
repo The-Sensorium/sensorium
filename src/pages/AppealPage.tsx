@@ -28,7 +28,9 @@ export function AppealPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  if (access.isLoading) {
+  // Gate on isPending, not isLoading: isLoading drops during retry backoff
+  // and offline pauses while there is still no data.
+  if (access.isPending) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />

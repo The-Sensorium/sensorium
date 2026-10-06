@@ -113,9 +113,11 @@ export default function HomeScreen() {
 
   // Fail closed like the web RequireMemberShell guard: a transient profile
   // fetch error must not look like "not onboarded" (see home-gating tests).
+  // Gate on isPending so retry backoff and offline pauses keep the spinner
+  // instead of routing to onboarding on slow connections.
   const profileMissing = !profile.data && isProfileMissingError(profile.error)
   const onboardingState = resolveOnboardingState({
-    isLoading: profile.isLoading,
+    isPending: profile.isPending,
     isError: profile.isError,
     profileMissing,
     onboardingCompletedAt: profile.data?.onboarding_completed_at,
@@ -131,7 +133,7 @@ export default function HomeScreen() {
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
   )
-  if (profile.isLoading || onboardingState === 'incomplete') {
+  if (profile.isPending || onboardingState === 'incomplete') {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator />
@@ -163,7 +165,9 @@ export default function HomeScreen() {
   const { label: daypartLabel, Icon: DaypartIcon } = daypart()
   const inviteError =
     toErrorMessage(acceptInvite.error, '') || toErrorMessage(declineInvite.error, '') || null
-  const loading = clusters.isLoading || invitations.isLoading || formed.isLoading
+  // Gate list freshness on isPending so retry backoff and offline pauses keep
+  // skeletons instead of flashing the get-started steps at existing users.
+  const loading = clusters.isPending || invitations.isPending || formed.isPending
   const hasClusters = (clusters.data?.length ?? 0) > 0
   const hasInvites = (invitations.data?.length ?? 0) > 0
   // Never mistake a list fetch error for a fresh account: errors show the
@@ -539,7 +543,7 @@ function RecentFromClusters({
           </Pressable>
         </Link>
       </View>
-      {recent.isLoading || myMutes.isLoading ? (
+      {recent.isPending || myMutes.isPending ? (
         <LoadingView />
       ) : recent.isError ? (
         <Card>

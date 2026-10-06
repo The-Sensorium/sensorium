@@ -23,7 +23,7 @@ function short(path) {
 }
 
 planCopy(from('database.types.ts'), to('database.types.ts'))
-for (const f of ['countries.ts', 'constants.ts', 'error.ts', 'utils.ts', 'query-retry.ts', 'timezones.ts', 'links.ts', 'profile-status.ts']) {
+for (const f of ['countries.ts', 'constants.ts', 'error.ts', 'utils.ts', 'query-retry.ts', 'timezones.ts', 'links.ts', 'profile-status.ts', 'profile-missing.ts']) {
   planCopy(from(f), to(f))
 }
 for (const f of ['matching.ts', 'discovery.ts', 'introductions.ts', 'votes.ts', 'signals.ts', 'moderation.ts', 'mentions.ts', 'access.ts', 'appeals.ts', 'created-clusters.ts', 'meetups.ts']) {
