@@ -347,7 +347,7 @@ export default function HomeScreen() {
             </Text>
           </View>
           <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-            You’ll be matched into clusters of 8 strangers. Here’s how to get started.
+            You’ll be matched into clusters of 8 people. Here’s how to get started.
           </Text>
           <View style={{ marginTop: 12, gap: 8 }}>
             {GET_STARTED_STEPS.map((step, i) => (

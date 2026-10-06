@@ -50,7 +50,7 @@ export function ClustersPage() {
             <Users className="mx-auto h-6 w-6 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
             <p className="mt-3 text-sm text-on-surface-variant">
               No clusters yet. Join a matching mode below and you’ll be matched with{' '}
-              {CLUSTER_SIZE - 1} strangers, or create a cluster with people you’ve already met.
+              {CLUSTER_SIZE - 1} people, or create a cluster with people you’ve already met.
             </p>
           </div>
         ) : (
