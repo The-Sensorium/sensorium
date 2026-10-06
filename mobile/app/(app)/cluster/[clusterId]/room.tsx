@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   AppState,
   FlatList,
+  Keyboard,
   Pressable,
   Text,
   View,
@@ -59,6 +60,7 @@ import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistB
 import { MeetupEntry } from '../../../../src/components/meetups/MeetupEntry'
 import { type Gif } from '../../../../src/features/gifs'
 import { MessageItem } from '../../../../src/components/room/MessageItem'
+import { MessageActionsSheet } from '../../../../src/components/room/MessageActionsSheet'
 import { MessageInfoModal } from '../../../../src/components/room/MessageInfoModal'
 import { notSeenByMembers, seenByMembers } from '../../../../src/components/room/seen-by'
 import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalModal'
@@ -173,7 +175,6 @@ export default function RoomScreen() {
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editDraft, setEditDraft] = useState('')
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [infoFor, setInfoFor] = useState<string | null>(null)
   const [reportFor, setReportFor] = useState<Message | null>(null)
@@ -211,7 +212,6 @@ export default function RoomScreen() {
     // would otherwise leak from the previous cluster.
     setError(null)
     setEditingId(null)
-    setEditDraft('')
     setMenuFor(null)
     setInfoFor(null)
     setReportFor(null)
@@ -290,6 +290,7 @@ export default function RoomScreen() {
 
   function startReply(m: Message) {
     setMenuFor(null)
+    setEditingId(null)
     setReplyTo(m)
   }
 
@@ -415,7 +416,24 @@ export default function RoomScreen() {
     () => (infoFor ? (messages.data ?? []).find((m) => m.id === infoFor) ?? null : null),
     [infoFor, messages.data],
   )
-  const messageReads = useMessageReads(authedClusterId, infoMessage?.id ?? null)
+  const menuMessage = useMemo(
+    () => (menuFor ? (messages.data ?? []).find((m) => m.id === menuFor) ?? null : null),
+    [menuFor, messages.data],
+  )
+  const menuMine = menuMessage?.author_id === userId
+  // GIF messages carry the URL in content (`gif:…`), so there is no text to
+  // edit. Image captions remain editable.
+  const menuCanEdit = menuMessage ? !(menuMessage.content?.startsWith('gif:') ?? false) : false
+  const editingMessage = useMemo(
+    () => (editingId ? (messages.data ?? []).find((m) => m.id === editingId) ?? null : null),
+    [editingId, messages.data],
+  )
+  const editingState = useMemo(
+    () => (editingMessage ? { id: editingMessage.id, content: editingMessage.content ?? '' } : null),
+    [editingMessage],
+  )
+  const infoMine = infoMessage?.author_id === userId
+  const messageReads = useMessageReads(authedClusterId, infoMine ? (infoMessage?.id ?? null) : null)
   const readIds = useMemo(
     () => new Set((messageReads.data ?? []).map((r) => r.id)),
     [messageReads.data],
@@ -428,6 +446,13 @@ export default function RoomScreen() {
     () => (infoMessage ? notSeenByMembers(infoMessage, members.data ?? [], readIds) : []),
     [infoMessage, members.data, readIds],
   )
+  // A message can vanish while its sheet is open (deleted or paged out).
+  // Clear the stale id so reopening the same message does not take the
+  // toggle-close path and need a second tap.
+  useEffect(() => {
+    if (menuFor && !menuMessage) setMenuFor(null)
+    if (infoFor && !infoMessage) setInfoFor(null)
+  }, [menuFor, menuMessage, infoFor, infoMessage])
 
   const timeline = useMemo<TimelineItem[]>(() => {
     const items: TimelineItem[] = [
@@ -659,10 +684,10 @@ export default function RoomScreen() {
     }
   }
 
-  function startEdit(m: { id: string; content: string | null }) {
+  function startEdit(m: { id: string }) {
     setMenuFor(null)
+    setReplyTo(null)
     setEditingId(m.id)
-    setEditDraft(m.content ?? '')
   }
 
   function showInfo(m: Message) {
@@ -675,14 +700,16 @@ export default function RoomScreen() {
     setReportFor(m)
   }
 
-  async function saveEdit() {
-    const content = editDraft.trim()
-    if (!content || !editingId) return
+  async function saveEdit(content: string) {
+    const text = content.trim()
+    if (!text || !editingId) return
     setError(null)
     try {
-      await editMessage.mutateAsync({ messageId: editingId, content })
+      await editMessage.mutateAsync({ messageId: editingId, content: text })
       setEditingId(null)
+      successHaptic()
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not edit your message.'))
     }
   }
@@ -1209,10 +1236,6 @@ export default function RoomScreen() {
                     members={parseMembers}
                     showDay={showDay}
                     showAuthor={showAuthor}
-                    isEditing={editingId === m.id}
-                    editDraft={editDraft}
-                    editPending={editMessage.isPending}
-                    menuOpen={menuFor === m.id}
                     highlighted={jumpHighlightId === m.id}
                     replyParent={(() => {
                       const parent = replyById.get(m.reply_to_id ?? '')
@@ -1220,19 +1243,16 @@ export default function RoomScreen() {
                       return replyPreview(parent)
                     })()}
                     onPressReplyParent={handleJumpToReply}
-                    onEditDraftChange={setEditDraft}
-                    onSaveEdit={() => void saveEdit()}
-                    onCancelEdit={() => setEditingId(null)}
-                    onToggleMenu={() => setMenuFor(menuFor === m.id ? null : m.id)}
-                    onShowInfo={showInfo}
-                    onEdit={startEdit}
-                    onDelete={(messageId) => {
-                      setMenuFor(null)
-                      setDeleteError(null)
-                      setDeleteFor(messageId)
+                    onToggleMenu={() => {
+                      if (menuFor === m.id) {
+                        setMenuFor(null)
+                      } else {
+                        // The sheet shares the window, but a focused composer
+                        // would sit under it, so dismiss the keyboard first.
+                        Keyboard.dismiss()
+                        setMenuFor(m.id)
+                      }
                     }}
-                    onReply={startReply}
-                    onReport={startReport}
                     onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
                     />
                   </View>
@@ -1291,16 +1311,20 @@ export default function RoomScreen() {
             raisePending={raise.isPending}
             error={error}
             replyTo={replyParentInfo ?? null}
+            editing={editingState}
+            editPending={editMessage.isPending}
             onError={setError}
             onTyping={signalTyping}
             onStopTyping={resetTyping}
             onSend={persistSend}
+            onSaveEdit={(content) => void saveEdit(content)}
             onSendImage={persistSendImage}
             onSendGif={persistSendGif}
             onOpenSignal={() => setSignalOpen(true)}
             onStartCall={() => void handleStartCall()}
             callActive={callActive}
             onCancelReply={() => setReplyTo(null)}
+            onCancelEdit={() => setEditingId(null)}
           />
         </KeyboardStickyView>
 
@@ -1314,12 +1338,43 @@ export default function RoomScreen() {
           onRaise={() => void handleRaise()}
         />
 
+        <MessageActionsSheet
+          open={menuMessage !== null}
+          mine={menuMine}
+          canEdit={menuCanEdit}
+          myReactionKeys={myReactionKeys}
+          messageId={menuMessage?.id ?? ''}
+          onClose={() => setMenuFor(null)}
+          onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
+          onReply={() => {
+            if (menuMessage) startReply(menuMessage)
+          }}
+          onInfo={() => {
+            if (menuMessage) showInfo(menuMessage)
+          }}
+          onEdit={() => {
+            if (menuMessage) startEdit(menuMessage)
+          }}
+          onDelete={() => {
+            if (menuMessage) {
+              setMenuFor(null)
+              setDeleteError(null)
+              setDeleteFor(menuMessage.id)
+            }
+          }}
+          onReport={() => {
+            if (menuMessage) startReport(menuMessage)
+          }}
+        />
+
         <MessageInfoModal
           open={infoFor !== null}
           onClose={() => setInfoFor(null)}
-          seen={infoSeen}
-          notSeen={infoNotSeen}
+          seen={infoMine ? infoSeen : []}
+          notSeen={infoMine ? infoNotSeen : []}
           clusterId={clusterId}
+          sentAt={infoMessage?.created_at ?? null}
+          showReads={infoMine}
         />
 
         {reportFor ? (

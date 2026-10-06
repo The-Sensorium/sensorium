@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { CornerUpLeft, ImagePlus, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react-native'
+import { Check, CornerUpLeft, ImagePlus, Megaphone, Pencil, Phone, Plus, Send, Users, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
 import { CollapsibleChrome } from '../CollapsibleChrome'
 import {
@@ -37,16 +37,20 @@ export function Composer({
   raisePending,
   error,
   replyTo,
+  editing,
+  editPending,
   onError,
   onTyping,
   onStopTyping,
   onSend,
+  onSaveEdit,
   onSendImage,
   onSendGif,
   onOpenSignal,
   onStartCall,
   callActive,
   onCancelReply,
+  onCancelEdit,
 }: {
   members: MentionMember[]
   selfId: string | null
@@ -54,19 +58,24 @@ export function Composer({
   raisePending: boolean
   error: string | null
   replyTo: { id: string; authorName: string; preview: string } | null
+  editing: { id: string; content: string } | null
+  editPending: boolean
   onError(message: string | null): void
   onTyping(): void
   onStopTyping(): void
   onSend(content: string): Promise<void>
+  onSaveEdit(content: string): void
   onSendImage(image: PickedImage, caption: string | null): Promise<void>
   onSendGif(gif: Gif): Promise<void>
   onOpenSignal(): void
   onStartCall(): void
   callActive: boolean
   onCancelReply(): void
+  onCancelEdit(): void
 }) {
   const t = useTheme()
   const [draft, setDraft] = useState('')
+  const [editText, setEditText] = useState('')
   const [gifOpen, setGifOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
@@ -74,6 +83,26 @@ export function Composer({
   const [uploading, setUploading] = useState(false)
   const [stagedImage, setStagedImage] = useState<PickedImage | null>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const inputRef = useRef<TextInput>(null)
+  const focusedEditId = useRef<string | null>(null)
+
+  // Edit mode borrows the composer: the draft stays untouched in state while
+  // the original text loads here, where the keyboard can never cover it.
+  // Initialized during render on open, close, or message switch only, so
+  // realtime updates never clobber in-progress edits.
+  const [prevEditingId, setPrevEditingId] = useState<string | null>(null)
+  const editingIdNow = editing?.id ?? null
+  if (editingIdNow !== prevEditingId) {
+    setPrevEditingId(editingIdNow)
+    setEditText(editing?.content ?? '')
+  }
+  useEffect(() => {
+    if (editing && focusedEditId.current !== editing.id) {
+      focusedEditId.current = editing.id
+      inputRef.current?.focus()
+    }
+    if (!editing) focusedEditId.current = null
+  })
 
   const mentionMembers = useMemo(() => {
     if (!selfId) return []
@@ -119,7 +148,12 @@ export function Composer({
 
   function insertToken(name: string) {
     if (!mention) return
-    setDraft(`${draft.slice(0, mention.start)}@${name} ${draft.slice(mention.end)}`)
+    const tag = `@${name} `
+    if (editing) {
+      setEditText(`${editText.slice(0, mention.start)}${tag}${editText.slice(mention.end)}`)
+    } else {
+      setDraft(`${draft.slice(0, mention.start)}${tag}${draft.slice(mention.end)}`)
+    }
     setMention(null)
   }
 
@@ -129,6 +163,19 @@ export function Composer({
 
   function insertEveryone() {
     insertToken(EVERYONE_NAME)
+  }
+
+  function handleEditChange(value: string) {
+    setEditText(value)
+    setMention(parseMentionQuery(value, caret))
+  }
+
+  function handleSaveEdit() {
+    if (!editing || editPending) return
+    const content = editText.trim()
+    if (!content) return
+    onError(null)
+    onSaveEdit(content)
   }
 
   async function handleSend() {
@@ -191,6 +238,7 @@ export function Composer({
   }
 
   const canSend = (draft.trim().length > 0 || stagedImage !== null) && !pending && !uploading
+  const canSave = editText.trim().length > 0 && !editPending
   // Mirror the comment composer: while typing, the actions button collapses
   // so the input gets the full width. Send stays visible throughout.
   const isTyping = draft.trim().length > 0
@@ -200,7 +248,38 @@ export function Composer({
       {error ? (
         <Text style={{ fontSize: 14, color: t.error, marginBottom: 8 }}>{error}</Text>
       ) : null}
-      {replyTo ? (
+      {editing ? (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: t.surface,
+            borderRadius: radii.md,
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            marginBottom: 8,
+          }}
+        >
+          <Pencil size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>
+              Editing message
+            </Text>
+            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
+              {editing.content.trim() ? editing.content : 'Message'}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityLabel="Cancel edit"
+            onPress={onCancelEdit}
+            hitSlop={12}
+            style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
+        </View>
+      ) : replyTo ? (
         <View
           style={{
             flexDirection: 'row',
@@ -232,7 +311,7 @@ export function Composer({
           </Pressable>
         </View>
       ) : null}
-      {stagedImage ? (
+      {editing ? null : stagedImage ? (
         <View
           style={{
             flexDirection: 'row',
@@ -261,7 +340,7 @@ export function Composer({
           </Pressable>
         </View>
       ) : null}
-      {gifOpen ? (
+      {editing ? null : gifOpen ? (
         <View style={{ marginBottom: 8 }}>
           <GifPicker pending={pending} onSelect={(gif) => void handleSendGif(gif)} />
         </View>
@@ -370,7 +449,7 @@ export function Composer({
             paddingVertical: 4,
           }}
         >
-          <CollapsibleChrome shown={!isTyping} width={44} height={44}>
+          <CollapsibleChrome shown={!isTyping && !editing} width={44} height={44}>
             <Pressable
               accessibilityLabel="Room actions"
               disabled={raisePending}
@@ -388,7 +467,7 @@ export function Composer({
                 opacity: raisePending ? 0.6 : 1,
               }}
             >
-              {menuOpen ? (
+      {editing ? null : menuOpen ? (
                 <X size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
               ) : (
                 <Plus size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
@@ -396,15 +475,16 @@ export function Composer({
             </Pressable>
           </CollapsibleChrome>
           <TextInput
-            accessibilityLabel="Message"
-            value={draft}
-            onChangeText={handleInputChange}
+            ref={inputRef}
+            accessibilityLabel={editing ? 'Edit message' : 'Message'}
+            value={editing ? editText : draft}
+            onChangeText={editing ? handleEditChange : handleInputChange}
             onSelectionChange={(e) => setCaret(e.nativeEvent.selection.start)}
             onBlur={() => {
               onStopTyping()
               setMention(null)
             }}
-            placeholder={stagedImage ? 'Add a caption…' : 'Write to your cluster…'}
+            placeholder={editing ? 'Edit message…' : stagedImage ? 'Add a caption…' : 'Write to your cluster…'}
             placeholderTextColor={t.onSurfaceVariant}
             maxLength={2000}
             multiline
@@ -418,7 +498,7 @@ export function Composer({
               color: t.onSurface,
             }}
           />
-          <CollapsibleChrome shown={!isTyping} width={44} height={44}>
+          <CollapsibleChrome shown={!isTyping && !editing} width={44} height={44}>
             <Pressable
               accessibilityLabel="Attach image"
               accessibilityRole="button"
@@ -429,7 +509,7 @@ export function Composer({
               <ImagePlus size={22} color={stagedImage ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
           </CollapsibleChrome>
-          <CollapsibleChrome shown={!isTyping} width={44} height={44}>
+          <CollapsibleChrome shown={!isTyping && !editing} width={44} height={44}>
             <Pressable
               accessibilityLabel="Add a GIF"
               accessibilityRole="button"
@@ -457,10 +537,10 @@ export function Composer({
           </CollapsibleChrome>
         </View>
         <Pressable
-          accessibilityLabel="Send message"
-          disabled={!canSend}
-          accessibilityState={{ disabled: !canSend }}
-          onPress={() => void handleSend()}
+          accessibilityLabel={editing ? 'Save edit' : 'Send message'}
+          disabled={editing ? !canSave : !canSend}
+          accessibilityState={{ disabled: editing ? !canSave : !canSend }}
+          onPress={() => (editing ? handleSaveEdit() : void handleSend())}
           hitSlop={8}
           style={{
             width: 44,
@@ -469,11 +549,13 @@ export function Composer({
             backgroundColor: t.primary,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: !canSend ? 0.4 : 1,
+            opacity: (editing ? !canSave : !canSend) ? 0.4 : 1,
           }}
         >
-          {pending || uploading ? (
+          {pending || uploading || editPending ? (
             <ActivityIndicator size="small" color={t.onPrimary} />
+          ) : editing ? (
+            <Check size={20} color={t.onPrimary} strokeWidth={2} />
           ) : (
             <Send size={20} color={t.onPrimary} strokeWidth={1.5} />
           )}

@@ -44,6 +44,12 @@ Env is just `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (both public). The br
 - Tailwind utilities restricted to tokens in `docs/DESIGN.md` — no new colors, typefaces, or radii.
 - Tests are colocated with source (`foo.ts` + `foo.test.ts(x)`).
 
+## Fix quality (no hacks by default)
+
+- Fix root causes, never symptoms. Do not ship timing workarounds (`setTimeout` delays, polling loops), position save-and-restore, forced remounts, or any behavior tuned by trial on one device.
+- Before fixing a library-driven bug (gestures, keyboard, lists, navigation, realtime), check the library's official docs and guides first and follow its recommended pattern. Search online for the documented approach when unsure.
+- If the only known fix is a workaround, say so explicitly and propose the proper rewrite instead of shipping the hack.
+
 ## Docs are source of truth
 
 `docs/` is canonical and kept current; README and CONTRIBUTING point to it. Read order: `docs/ARCHITECTURE.md` → `docs/PRD.md` → `docs/DESIGN.md` → `docs/TECHNICAL.md`. `docs/archive/` holds design records for shipped features (not required reading). The mobile app is documented in `mobile/README.md`. CI skips markdown/docs-only changes (`paths-ignore` in `.github/workflows/ci.yml`).
