@@ -28,6 +28,7 @@ export default function DiscoveryModeScreen() {
     () => queryClient.refetchQueries({ queryKey: ['my-queues'] }),
     () => queryClient.refetchQueries({ queryKey: ['matching-status'] }),
     () => queryClient.refetchQueries({ queryKey: ['queue-count'] }),
+    () => queryClient.refetchQueries({ queryKey: ['local-compatible-count'] }),
   ])
 
   if (!mode || !info) {

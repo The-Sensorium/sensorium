@@ -73,12 +73,12 @@ Cluster formation is modular across multiple matching modes, each forming its ow
 | Birth Year + Month | Matched with people born in the same month and year |
 | Generation | Matched with people born within the same 5 years |
 | Birth Year | Matched with people born in the same year, any month |
-| Local | Matched with people within a user selected radius of their location. Radius is one of 10, 50, or 100 km. The queue key uses the located country (from reverse geocode), not profile country, so travelers match locals where they are |
+| Local | Matched with people within a user selected radius of their location. Radius is one of 10, 50, or 100 km. The queue key uses the located country (from reverse geocode), not profile country, so travelers match locals where they are. Users may optionally set a mutual age range (Any age by default); clusters form only from mutually compatible sets of 8. No ages are displayed for Local |
 | Open Mix | First 8 people in line, no birth-date or location filter (onboarding bridge) |
 
 A user can be active in multiple clusters at once, each formed via a different mode. For example, someone could be in a Birth Year cluster and a Local cluster at the same time.
 
-Local mode constraint: a user may only have one active Local cluster at a time (one radius), not multiple overlapping radii. They cannot run a tight 10km cluster and a broader 100km cluster simultaneously. Changing radius while queued migrates the queue entry to the new radius key.
+Local mode constraint: a user may only have one active Local cluster at a time (one radius), not multiple overlapping radii. They cannot run a tight 10km cluster and a broader 100km cluster simultaneously. Changing radius while queued migrates the queue entry to the new radius key. Age preferences (Any by default) narrow who they can form with and may slow formation; replacement candidates are filtered the same way.
 
 Open question: total cluster cap. Whether there's a maximum number of simultaneous clusters a user can belong to across all modes, or whether it's unlimited, is not yet decided. This affects onboarding UI, server load, and how spread thin a user's attention gets across clusters.
 

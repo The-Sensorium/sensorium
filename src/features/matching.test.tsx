@@ -7,13 +7,16 @@ import { requireSupabase } from '../lib/supabase'
 import { makeSupabaseClient, initialMockResult, asError, type MockSupabaseResult } from '../test/supabase-client'
 import {
   useClusterMembers,
+  formatAgePrefs,
   useJoinQueue,
   useLatestClusterFormed,
   useLeaveQueue,
+  useLocalCompatibleCount,
   useMyClusters,
   useMyQueueKeys,
   useMyQueueStatus,
   useQueueCount,
+  useSetLocalAgePrefs,
 } from './matching'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
@@ -183,5 +186,46 @@ it('useQueueCount stays disabled without a queue key', () => {
     await waitFor(() => expect(result.current.data?.id).toBe('n9'))
     const client = requireSupabaseMock.mock.results[0].value
     expect(client.from('notifications').is).toHaveBeenCalledWith('read_at', null)
+  })
+
+  it('formatAgePrefs renders Any age for nulls and full span', () => {
+    expect(formatAgePrefs(null, null)).toBe('Any age')
+    expect(formatAgePrefs(18, 99)).toBe('Any age')
+    expect(formatAgePrefs(25, 35)).toBe('25 to 35 years')
+  })
+
+  it('useSetLocalAgePrefs calls the RPC and invalidates compatible counts', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useSetLocalAgePrefs(), { wrapper })
+    result.current.mutate({ min: 25, max: 35 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('set_local_age_prefs', {
+      p_min: 25,
+      p_max: 35,
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['local-compatible-count'] })
+  })
+
+  it('useSetLocalAgePrefs propagates an invalid range error', async () => {
+    mockResult.value = asError('invalid_age_range')
+    const { result } = renderHook(() => useSetLocalAgePrefs(), { wrapper })
+    await expect(result.current.mutateAsync({ min: 90, max: 20 })).rejects.toThrow('invalid_age_range')
+  })
+
+  it('useLocalCompatibleCount queries the count RPC', async () => {
+    mockResult.value = { data: 3, error: null }
+    const { result } = renderHook(() => useLocalCompatibleCount('k1', 25, 35), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith(
+      'get_local_compatible_count',
+      { p_queue_key: 'k1', p_min: 25, p_max: 35 },
+    )
+    await waitFor(() => expect(result.current.count).toBe(3))
+  })
+
+  it('useLocalCompatibleCount stays disabled without a queue key', () => {
+    const { result } = renderHook(() => useLocalCompatibleCount(null, null, null), { wrapper })
+    expect(result.current.count).toBeNull()
+    expect(requireSupabaseMock).not.toHaveBeenCalled()
   })
 })
