@@ -376,7 +376,19 @@ function RecentFromClusters({
         </Link>
       </div>
       {recent.isPending || myMutes.isPending ? (
-        <LoadingRow />
+        <div role="status" className="space-y-4">
+          <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading recent posts…
+          </div>
+          <div aria-hidden className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-24 animate-pulse rounded-2xl border border-outline-variant/60 bg-surface-container/60 motion-reduce:animate-none"
+              />
+            ))}
+          </div>
+        </div>
       ) : recent.isError ? (
         <div
           role="alert"
@@ -489,15 +501,6 @@ function RecentPostEngagement({
         commentCount={commentCount}
         onLike={(id) => void toggle.mutateAsync(id)}
       />
-    </div>
-  )
-}
-
-function LoadingRow() {
-  return (
-    <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-      <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-      Loading…
     </div>
   )
 }
