@@ -24,19 +24,23 @@ export function ClustersPage() {
       <header className="pt-2">
         <h1 className="font-display text-3xl font-semibold text-on-surface">Clusters</h1>
         <p className="mt-1 text-sm text-on-surface-variant">
-          Every cluster you’ve been matched into or created. Browse a matching mode below to meet more people.
+          Browse a matching mode below to meet more people.
         </p>
-        <Link
-          to="/clusters/new"
-          data-e2e="create-cluster-button"
-          className="mt-4 inline-flex min-h-[48px] items-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
-          Create a cluster
-        </Link>
-        <p className="mt-2 text-xs text-on-surface-variant">
-          Bring people you’ve met in Sensorium together in a new space.
-        </p>
+        {(clusters.isLoading || clusters.isError || (clusters.data ?? []).length > 0) && (
+          <>
+            <Link
+              to="/clusters/new"
+              data-e2e="create-cluster-button"
+              className="mt-4 inline-flex min-h-[48px] items-center gap-1.5 rounded-pill bg-primary px-5 py-3 text-sm font-semibold text-on-primary shadow-soft transition-colors hover:bg-primary-container"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+              Create a cluster
+            </Link>
+            <p className="mt-2 text-xs text-on-surface-variant">
+              Bring people you’ve met in Sensorium together in a new space.
+            </p>
+          </>
+        )}
       </header>
 
       <section className="space-y-3">
@@ -50,7 +54,7 @@ export function ClustersPage() {
             <Users className="mx-auto h-6 w-6 text-on-surface-variant" strokeWidth={1.5} aria-hidden />
             <p className="mt-3 text-sm text-on-surface-variant">
               No clusters yet. Join a matching mode below and you’ll be matched with{' '}
-              {CLUSTER_SIZE - 1} people, or create a cluster with people you’ve already met.
+              {CLUSTER_SIZE - 1} people.
             </p>
           </div>
         ) : (
@@ -136,7 +140,7 @@ function ModeTile({
     ? status.cluster_id
       ? "You're in a cluster"
       : status.joined
-        ? `${status.waiting} of ${CLUSTER_SIZE} waiting`
+        ? `${status.waiting} of ${CLUSTER_SIZE} in queue`
         : 'No queue yet'
     : 'No queue yet'
 

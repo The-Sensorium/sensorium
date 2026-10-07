@@ -10,7 +10,7 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount, formatAgePrefs } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, useLocalMatchLine, formatAgePrefs } from '../../features/matching'
 import { Modal } from '../../components/Modal'
 import { MatchPreferencesSheet } from '../../components/MatchPreferences'
 import { WhatsNextSteps } from '../../components/WhatsNextSteps'
@@ -127,7 +127,7 @@ function JoinCard({
           <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">{displayKey}</h2>
         </div>
         <span className="rounded-pill bg-surface-container px-3 py-1.5 text-sm font-semibold text-on-surface-variant">
-          {count} of {CLUSTER_SIZE} people waiting
+          {count} of {CLUSTER_SIZE} in queue
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-on-surface-variant">{displayBlurb}</p>
@@ -212,6 +212,7 @@ function JoinedCard({
   const [prefsOpen, setPrefsOpen] = useState(false)
   const prefMin = profile.data?.local_pref_age_min ?? null
   const prefMax = profile.data?.local_pref_age_max ?? null
+  const matchLine = useLocalMatchLine(mode, queueKey, prefMin, prefMax)
 
   return (
     <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
@@ -221,7 +222,7 @@ function JoinedCard({
           <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">{displayKey}</h2>
         </div>
         <span className="rounded-pill bg-surface-container px-3 py-1.5 text-sm font-semibold text-on-surface-variant">
-          {count} of {CLUSTER_SIZE}
+          {`${count} of ${CLUSTER_SIZE} in queue`}
         </span>
       </div>
       {mode === 'local' && (
@@ -239,6 +240,11 @@ function JoinedCard({
               <span className="mt-1 block text-sm text-on-surface-variant">
                 {formatAgePrefs(prefMin, prefMax)}
               </span>
+              {matchLine ? (
+                <span className="mt-0.5 block text-[13px] font-semibold text-primary">
+                  {matchLine}
+                </span>
+              ) : null}
             </span>
             <span aria-hidden><ChevronRight className="h-5 w-5 text-on-surface-variant" /></span>
           </button>

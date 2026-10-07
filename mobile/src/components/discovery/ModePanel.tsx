@@ -10,7 +10,7 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount, formatAgePrefs } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, useLocalMatchLine, formatAgePrefs } from '../../features/matching'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
@@ -138,7 +138,7 @@ function JoinCard({
         {displayKey}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
-        {count} of {CLUSTER_SIZE} people waiting
+        {count} of {CLUSTER_SIZE} in queue
       </Text>
       <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
         {displayBlurb}
@@ -225,6 +225,7 @@ function JoinedCard({ mode,
   const prefMin = profile.data?.local_pref_age_min ?? null
   const prefMax = profile.data?.local_pref_age_max ?? null
   const [joinedPrefsOpen, setJoinedPrefsOpen] = useState(false)
+  const matchLine = useLocalMatchLine(mode, queueKey, prefMin, prefMax)
 
   return (
     <Card>
@@ -235,13 +236,13 @@ function JoinedCard({ mode,
         {displayKey}
       </Text>
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
-        {count} of {CLUSTER_SIZE}
+        {`${count} of ${CLUSTER_SIZE} in queue`}
       </Text>
       {mode === 'local' ? (
         <>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Match preferences, ${formatAgePrefs(prefMin, prefMax)}`}
+            accessibilityLabel={`Match preferences, ${formatAgePrefs(prefMin, prefMax)}${matchLine ? `, ${matchLine}` : ''}`}
             onPress={() => setJoinedPrefsOpen(true)}
             hitSlop={8}
             style={{
@@ -257,12 +258,17 @@ function JoinedCard({ mode,
           >
             <Users size={22} color={t.primary} strokeWidth={1.5} />
             <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
-                  Match preferences
-                </Text>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
+                Match preferences
+              </Text>
               <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
                 {formatAgePrefs(prefMin, prefMax)}
               </Text>
+              {matchLine ? (
+                <Text style={{ marginTop: 2, fontSize: 13, fontWeight: '600', color: t.primary }}>
+                  {matchLine}
+                </Text>
+              ) : null}
             </View>
             <ChevronRight size={20} color={t.onSurfaceVariant} />
           </Pressable>
