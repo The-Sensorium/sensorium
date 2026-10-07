@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { useAuth } from '../app/auth-context'
 import { requireSupabase } from '../lib/supabase'
 
@@ -20,6 +20,21 @@ export function needsMfaVerify(status: MfaStatus | null | undefined): boolean {
   return status?.currentLevel === 'aal1' && status?.nextLevel === 'aal2'
 }
 
+async function fetchMfaStatus(): Promise<MfaStatus> {
+  const supabase = requireSupabase()
+  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  if (error) throw error
+  const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors()
+  if (factorsError) throw factorsError
+  const verified = (factors?.totp ?? []).filter((f) => f.status === 'verified')
+  return {
+    currentLevel: (data?.currentLevel ?? 'aal1') as AssuranceLevel,
+    nextLevel: (data?.nextLevel ?? 'aal1') as AssuranceLevel,
+    verifiedTotpCount: verified.length,
+    verifiedTotpIds: verified.map((f) => f.id),
+  }
+}
+
 /** Signed-in user's MFA assurance state plus verified TOTP factor count. */
 export function useMfaStatus(enabled = true) {
   const auth = useAuth()
@@ -28,20 +43,13 @@ export function useMfaStatus(enabled = true) {
   return useQuery({
     queryKey: mfaStatusKey(userId ?? 'signed-out'),
     enabled: userId !== null && enabled,
-    queryFn: async (): Promise<MfaStatus> => {
-      const supabase = requireSupabase()
-      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-      if (error) throw error
-      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors()
-      if (factorsError) throw factorsError
-      const verified = (factors?.totp ?? []).filter((f) => f.status === 'verified')
-      return {
-        currentLevel: (data?.currentLevel ?? 'aal1') as AssuranceLevel,
-        nextLevel: (data?.nextLevel ?? 'aal1') as AssuranceLevel,
-        verifiedTotpCount: verified.length,
-        verifiedTotpIds: verified.map((f) => f.id),
-      }
-    },
+    // Assurance flips AAL1 to AAL2 at auth moments (verify, fresh login), so
+    // never serve it stale across mounts: /entry routes on this value, and a
+    // stale AAL1 after a successful verify bounces straight back to verify.
+    // A reload clears the cache, which is why the stale state only clears then.
+    staleTime: 0,
+    refetchOnMount: true,
+    queryFn: fetchMfaStatus,
   })
 }
 
@@ -114,6 +122,30 @@ export async function verifyTotpCode(factorId: string, code: string): Promise<vo
     code: code.trim(),
   })
   if (error) throw error
+}
+
+/**
+ * Writes the known outcome of a successful verify to the cache before the
+ * caller navigates. GoTrue returns a fresh AAL2 access token and persists it
+ * to the local session on success, so a successful verify means the session
+ * is AAL2 without needing to re-read it. Re-reading here would race session
+ * propagation and serve stale AAL1 back to /entry.
+ */
+export function markMfaVerified(
+  queryClient: Pick<QueryClient, 'setQueryData'>,
+  userId: string,
+  verifiedFactorId?: string,
+): void {
+  queryClient.setQueryData(mfaStatusKey(userId), (old: MfaStatus | undefined) => {
+    const ids = old?.verifiedTotpIds ?? []
+    const merged = verifiedFactorId && !ids.includes(verifiedFactorId) ? [...ids, verifiedFactorId] : ids
+    return {
+      currentLevel: 'aal2',
+      nextLevel: 'aal2',
+      verifiedTotpCount: merged.length > 0 ? merged.length : (old?.verifiedTotpCount ?? 0),
+      verifiedTotpIds: merged,
+    } satisfies MfaStatus
+  })
 }
 
 /** Returns the verified TOTP factors available for the login challenge step. */
