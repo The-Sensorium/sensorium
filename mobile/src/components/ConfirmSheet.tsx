@@ -5,8 +5,7 @@ import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { PrimaryButton } from './ui'
 /** Two-action confirmation as a bottom sheet (not a centered dialog): the
- * screen the decision depends on stays visible underneath. Follows the
- * ProfileStatusSheet chrome. */
+ * screen the decision depends on stays visible underneath. */
 export function ConfirmSheet({
   open,
   onClose,

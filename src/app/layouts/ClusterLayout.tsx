@@ -3,10 +3,9 @@ import { NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-rout
 import { ArrowLeft, CalendarDays, Megaphone, Menu, MessageSquare, Scale, Settings, Users } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { modeInfo } from '../../lib/modes'
-import { useAuth } from '../auth-context'
 import { useCluster, useMyMembership } from '../../features/introductions'
 import { useClusterMembers } from '../../features/matching'
-import { useClusterChannel, isOnlineNow, usePresence } from '../../features/realtime'
+import { useClusterChannel } from '../../features/realtime'
 import { ClusterRail } from '../../components/ClusterRail'
 import { RoutePending } from '../../components/RoutePending'
 
@@ -34,13 +33,7 @@ export function ClusterLayout() {
   const cluster = useCluster(clusterId)
   const membership = useMyMembership(clusterId)
   const members = useClusterMembers(clusterId)
-  const auth = useAuth()
-  const selfId = auth.state === 'signedIn' ? auth.userId : null
-  // Presence count for the compact mobile room header (mirrors the native
-  // app's "X of Y here" subtitle). Shared channel, no extra subscription.
-  const { online } = usePresence(isRoom ? clusterId : null)
   const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter((m) => isOnlineNow(online, m.id, selfId)).length
   const [sectionsOpen, setSectionsOpen] = useState(false)
 
   // One Postgres-Changes subscription for the whole cluster shell keeps the room,
@@ -180,7 +173,7 @@ export function ClusterLayout() {
             </h1>
             {isRoom && (
               <p className="truncate text-xs text-on-surface-variant lg:hidden">
-                {onlineCount} of {memberCount} here
+                {memberCount} {memberCount === 1 ? 'member' : 'members'}
               </p>
             )}
           </div>

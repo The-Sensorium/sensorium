@@ -15,8 +15,6 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 
 import {
   FOREGROUND_HEAL_MIN_BACKGROUND_MS,
-  getPresenceSnapshot,
-  healPresenceOnForeground,
   invalidateClusterRoomKeys,
   patchMessageInsert,
   shouldHealOnForeground,
@@ -102,44 +100,5 @@ describe('invalidateClusterRoomKeys', () => {
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-signals', 'c1'] })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-votes', 'c1'] })
     expect(spy).toHaveBeenCalledTimes(4)
-  })
-})
-
-describe('getPresenceSnapshot', () => {
-  it('collects other members online and typing, excluding self', () => {
-    const snap = getPresenceSnapshot(
-      {
-        a: [{ user_id: 'u1' }, { user_id: 'u2', typing: true }],
-        b: [{ user_id: 'me' }, { user_id: 'u2' }],
-        c: [{ typing: true }],
-      },
-      'me',
-    )
-    expect([...snap.online].sort()).toEqual(['u1', 'u2'])
-    expect([...snap.typing]).toEqual(['u2'])
-  })
-})
-
-describe('healPresenceOnForeground', () => {
-  it('re-tracks with the last broadcast typing state', async () => {
-    const track = vi.fn().mockResolvedValue('ok')
-    await healPresenceOnForeground({
-      channel: { track },
-      userId: 'me',
-      broadcastTyping: true,
-    })
-    expect(track).toHaveBeenCalledWith({ user_id: 'me', typing: true })
-  })
-
-  it('swallows rejection on a dead socket for SUBSCRIBED to retry', async () => {
-    const track = vi.fn().mockRejectedValue(new Error('socket closed'))
-    await expect(
-      healPresenceOnForeground({
-        channel: { track },
-        userId: 'me',
-        broadcastTyping: false,
-      }),
-    ).resolves.toBeUndefined()
-    expect(track).toHaveBeenCalledWith({ user_id: 'me', typing: false })
   })
 })

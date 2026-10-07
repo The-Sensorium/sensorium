@@ -3,7 +3,6 @@ import { Pressable, Text, View } from 'react-native'
 import { Link, router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Briefcase, Cake, Flag, Heart, Sparkles, Target, Telescope, Users } from 'lucide-react-native'
 import { useClusterMembers, useMyClusters } from '../../../src/features/matching'
-import { usePresence } from '../../../src/features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../../../src/features/cluster'
 import {
   useUserPosts,
@@ -13,8 +12,6 @@ import {
 } from '../../../src/features/posts'
 import { useAuth } from '../../../src/auth-context'
 import { AvatarViewer } from '../../../src/components/AvatarViewer'
-import { ProfileStatusBadge } from '../../../src/components/ProfileStatusBadge'
-import { resolveDisplayStatus } from '../../../src/lib/profile-status'
 import { CountryFlag } from '../../../src/components/CountryFlag'
 import { MemberLocalTime } from '../../../src/components/MemberLocalTime'
 import { PronounBadge } from '../../../src/components/PronounBadge'
@@ -41,8 +38,6 @@ export default function ProfileScreen() {
   const auth = useAuth()
   const selfId = auth.state === 'signedIn' ? auth.userId : null
   const isSelf = selfId !== null && selfId === userId
-  const { online } = usePresence(clusterId || null)
-  const onlineNow = online.has(userId) || isSelf
   const [reportOpen, setReportOpen] = useState(false)
   const userPosts = useUserPosts(userId || null)
   const profilePostIds = useMemo(
@@ -148,10 +143,6 @@ export default function ProfileScreen() {
                   <MemberLocalTime timeZone={member.timezone} fontSize={13} />
                 </View>
               ) : null}
-              {member.country_code || hasLocalTime ? (
-                <View style={{ width: 1, height: 16, backgroundColor: t.outlineVariant, opacity: 0.6 }} />
-              ) : null}
-              <ProfileStatusBadge value={resolveDisplayStatus(onlineNow, member.manual_status)} />
             </View>
         </View>
 

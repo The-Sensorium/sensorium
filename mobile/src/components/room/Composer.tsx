@@ -40,8 +40,6 @@ export function Composer({
   editing,
   editPending,
   onError,
-  onTyping,
-  onStopTyping,
   onSend,
   onSaveEdit,
   onSendImage,
@@ -61,8 +59,6 @@ export function Composer({
   editing: { id: string; content: string } | null
   editPending: boolean
   onError(message: string | null): void
-  onTyping(): void
-  onStopTyping(): void
   onSend(content: string): Promise<void>
   onSaveEdit(content: string): void
   onSendImage(image: PickedImage, caption: string | null): Promise<void>
@@ -82,7 +78,6 @@ export function Composer({
   const [caret, setCaret] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [stagedImage, setStagedImage] = useState<PickedImage | null>(null)
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<TextInput>(null)
   const focusedEditId = useRef<string | null>(null)
 
@@ -126,12 +121,6 @@ export function Composer({
     [showEveryone, mentionCandidates],
   )
 
-  useEffect(() => {
-    return () => {
-      if (typingTimer.current) clearTimeout(typingTimer.current)
-    }
-  }, [])
-
   function handleInputChange(value: string) {
     setDraft(value)
     // The + and GIF toggles hide while typing, so an open menu or picker
@@ -141,9 +130,6 @@ export function Composer({
       setGifOpen(false)
     }
     setMention(parseMentionQuery(value, caret))
-    onTyping()
-    if (typingTimer.current) clearTimeout(typingTimer.current)
-    typingTimer.current = setTimeout(() => onStopTyping(), 2000)
   }
 
   function insertToken(name: string) {
@@ -183,7 +169,6 @@ export function Composer({
     const content = draft.trim()
     if (!content && !stagedImage) return
     onError(null)
-    onStopTyping()
     try {
       if (stagedImage) {
         setUploading(true)
@@ -205,7 +190,6 @@ export function Composer({
 
   async function handleSendGif(gif: Gif) {
     onError(null)
-    onStopTyping()
     setGifOpen(false)
     try {
       await onSendGif(gif)
@@ -481,7 +465,6 @@ export function Composer({
             onChangeText={editing ? handleEditChange : handleInputChange}
             onSelectionChange={(e) => setCaret(e.nativeEvent.selection.start)}
             onBlur={() => {
-              onStopTyping()
               setMention(null)
             }}
             placeholder={editing ? 'Edit message…' : stagedImage ? 'Add a caption…' : 'Write to your cluster…'}

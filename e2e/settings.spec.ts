@@ -66,42 +66,14 @@ test.describe('settings (seeded)', () => {
     await expect(page.getByRole('heading', { name: original })).toBeVisible()
   })
 
-  test('changes the manual status and it persists after a reload', async ({ page }) => {
-    await login(page)
-    await page.goto('/settings')
-    const trigger = page.locator('[data-e2e="status-trigger"]')
-    await expect(trigger).toBeVisible()
-
-    await trigger.click()
-    await page.locator('[data-e2e="status-option-away"]').click()
-    await expect(trigger).toContainText('Away')
-
-    // Persisted server-side (self-write RLS round-trip)?
-    await page.reload()
-    await expect(page.locator('[data-e2e="status-trigger"]')).toContainText('Away')
-
-    // Restore Online so the seeded account stays idempotent.
-    await page.locator('[data-e2e="status-trigger"]').click()
-    await page.locator('[data-e2e="status-option-online"]').click()
-    await expect(page.locator('[data-e2e="status-trigger"]')).toContainText('Online')
-  })
-
   test.describe('narrow viewport', () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
-    test('opens the status dialog and selects a status', async ({ page }) => {
+    test('renders the settings page without a status section', async ({ page }) => {
       await login(page)
       await page.goto('/settings')
-      const trigger = page.locator('[data-e2e="status-trigger"]')
-      await trigger.click()
-      await expect(page.getByRole('radiogroup', { name: 'Profile status' })).toBeVisible()
-      await page.locator('[data-e2e="status-option-busy"]').click()
-      await expect(trigger).toContainText('Busy')
-
-      // Restore Online so the seeded account stays idempotent.
-      await trigger.click()
-      await page.locator('[data-e2e="status-option-online"]').click()
-      await expect(trigger).toContainText('Online')
+      await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+      await expect(page.locator('[data-e2e="status-trigger"]')).toHaveCount(0)
     })
   })
 

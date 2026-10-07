@@ -20,7 +20,6 @@ import {
 import { Avatar } from '../../src/components/Avatar'
 import { MuteButton } from '../../src/components/MuteButton'
 import { Modal } from '../../src/components/Modal'
-import { ProfileStatusCard } from '../../src/components/ProfileStatusCard'
 import { PrimaryButton } from '../../src/components/ui'
 import { useThemeChoice, type ThemeChoice } from '../../src/lib/theme-choice'
 import { radii, shadowShape } from '../../src/lib/theme-tokens'
@@ -74,8 +73,6 @@ export default function SettingsScreen() {
           </View>
         </Pressable>
       </Link>
-
-      <ProfileStatusCard />
 
       <NotificationPreferences />
       <AppearanceSection />

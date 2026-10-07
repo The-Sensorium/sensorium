@@ -31,7 +31,7 @@ Each layer has a single, clear responsibility:
 | **TanStack Query** | Fetches and caches server state; keeps the UI in sync with Supabase without manual bookkeeping. |
 | **Supabase Auth** | Email/password plus Google OAuth identity. The SPA holds only the public anon key; everything privileged runs server-side. |
 | **Supabase Postgres** | The source of truth. All data lives here and is guarded by Row Level Security (RLS). |
-| **Supabase Realtime** | Pushes live changes (chat messages, presence, notifications) to subscribed clients. |
+| **Supabase Realtime** | Pushes live database changes (chat messages, notifications) to subscribed clients. |
 | **Supabase Storage** | Private file buckets for chat images, avatars, and post images, served via short-lived signed URLs. |
 
 ## 2. Repository Structure
@@ -45,7 +45,7 @@ The repository is organized so the frontend and backend live side by side, with 
 | `src/pages/` | One component per route/page, composed from shared and feature components. |
 | `src/components/` | Reusable UI: avatars, modals, cards, pickers, navigation chrome. |
 | `src/features/` | Domain logic: matching, cluster, cluster-calls, introductions, signals, votes, meetups, notifications, moderation, admin-moderation, admin-accounts, metrics, appeals, posts, discovery, access, avatars, mentions, gifs, realtime. One module per domain, with its hooks and tests. |
-| `src/lib/` | Shared utilities: the typed Supabase client, profile status, modes, theme, geo/country data, image helpers, device, error handling, query retry, Turnstile, document-title/online/profile hooks, and constants. |
+| `src/lib/` | Shared utilities: the typed Supabase client, modes, theme, geo/country data, image helpers, device, error handling, query retry, Turnstile, document-title/online hooks, and constants. |
 | `mobile/` | The Expo/React Native Android app. Its own router (`app/`) and mirrors of the shared feature modules (`src/features/`). Member-only; staff surfaces stay web-only. |
 | `supabase/migrations/` | The entire database schema as ordered SQL files (the single source of truth for the backend). |
 | `supabase/functions/` | Edge Functions: `send-emails` (Resend), `send-push` (Expo), and `create-call-token` (LiveKit), plus shared email templates. |
@@ -77,7 +77,7 @@ flowchart TD
 - **Onboarding**: profile setup before the user can enter queues.
 - **Matching Queue**: the user opts into up to six matching modes; each queues them separately.
 - **Cluster Formation**: when a mode reaches eight ready people, a cluster is formed - and opens immediately.
-- **Open Cluster**: members get chat, audio/video calls, presence status, Signals, posts, votes, meetups, and notifications from formation. No locks, no deadlines, no removal for unfinished intros.
+- **Open Cluster**: members get chat, audio/video calls, Signals, posts, votes, meetups, and notifications from formation. No locks, no deadlines, no removal for unfinished intros.
 - **Introductions Checklist**: a shared five-question intro stays answerable at any time as an optional in-cluster checklist (progress nudge, never a gate).
 - **Restriction & Appeal**: a moderated suspension/ban shows on the restricted-account screen, where the member may open one in-app appeal (`/appeal`). Admins review the queue (`/admin/appeals`) and decide; the outcome emails the appellant and lifts the restriction when accepted.
 
@@ -97,7 +97,7 @@ Responsibilities are separated by layering:
 - **Pages** compose features and components. They contain routing-specific logic only.
 - **Feature modules** own one domain (e.g. matching). Each exposes data hooks, realtime subscriptions, and mutations. This is where business-facing frontend logic lives.
 - **Components** are reusable and mostly presentational, driven by props and the hooks they're given.
-- **Lib** holds pure utilities and cross-cutting concerns (theme, modes, profile status, utils) with no page awareness.
+- **Lib** holds pure utilities and cross-cutting concerns (theme, modes, utils) with no page awareness.
 
 This keeps components small and focused, prevents duplicated logic, and makes a feature findable by name.
 
@@ -110,7 +110,7 @@ There is no application server. Supabase provides every backend service, and the
 - **Row Level Security**: every table has RLS enabled. Users only ever see rows they're allowed to; the frontend never bypasses this.
 - **RPC Functions**: privileged operations are exposed as Postgres functions (often `security definer`) and called via `.rpc()`. This is how the frontend performs actions it isn't allowed to do with direct row writes.
 - **Storage**: private buckets for chat images and avatars. Files are served through short-lived signed URLs, never through public object URLs.
-- **Realtime**: the SPA subscribes to database changes (chat, presence, notifications) and reacts live.
+- **Realtime**: the SPA subscribes to database changes (chat, notifications) and reacts live.
 - **Scheduled Jobs**: pg_cron runs database functions on a schedule (e.g. expiring stale signals, rebalancing membership, pumping the email outbox).
 - **Edge Functions**: stateless workers around the DB. `send-emails` and `send-push` are invoked by their cron-driven outbox pumps - and only by them, guarded by a shared secret - claim queued rows under the service-role key, and forward to Resend and Expo respectively. `create-call-token` mints short-lived LiveKit tokens for cluster calls, verifying membership before it does. The DB is the source of truth; the functions hold no state.
 

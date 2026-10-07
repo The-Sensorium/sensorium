@@ -105,13 +105,6 @@ describe('SettingsPage', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument()
   })
 
-  it('changes the manual status from the settings page', async () => {
-    renderPage()
-    fireEvent.click(screen.getByRole('button', { name: 'Online' }))
-    fireEvent.click(screen.getByRole('radio', { name: /Away/ }))
-    await waitFor(() => expect(updateProfile.mutate).toHaveBeenCalledWith({ manual_status: 'away' }, expect.anything()))
-  })
-
   it('offers appearance options on the settings page', () => {
     renderPage()
     expect(screen.getByRole('radio', { name: 'Light' })).toHaveAttribute('aria-checked', 'false')

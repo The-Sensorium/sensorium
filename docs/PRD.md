@@ -291,15 +291,10 @@ meetup is active per cluster at a time.
 ---
 ## Status System
 
-Each member picks a manual status (Online, Away, Busy, Invisible) in
-Settings. It colors the presence dot on member avatars (green, amber, red)
-wherever members are listed. Someone who is not actually online never shows a
-dot, no matter what manual status they picked, and Invisible renders exactly
-like offline (no dot) even while the person is using the app. The member
-profile detail page shows the resolved status as a pill instead. The manual
-status is separate from the automatic realtime online/offline presence and
-from the freeform status message (for example working, studying, or
-traveling).
+Live presence (online dots, "here" counts, typing indicators) and the manual
+status picker (Online, Away, Busy, Invisible) were removed. The room keeps a
+plain member strip with no status indicators. Members can still share a
+freeform status message (for example working, studying, or traveling).
 
 ---
 ## Cluster Governance

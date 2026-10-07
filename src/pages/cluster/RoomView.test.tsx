@@ -46,12 +46,6 @@ const hooks = vi.hoisted(() => ({
     ],
     isLoading: false,
   },
-  presence: {
-    online: new Set<string>(),
-    typing: new Set<string>(),
-    signalTyping: vi.fn(),
-    resetTyping: vi.fn(),
-  },
   myMutes: { data: [] as string[], isLoading: false, isError: false },
   activeCall: { data: null as Call | null, isSuccess: true },
   callParticipants: { data: [] as CallParticipant[] },
@@ -113,10 +107,6 @@ vi.mock('../../features/moderation', () => ({
     { value: 'other', label: 'Other' },
   ],
 }))
-vi.mock('../../features/realtime', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../features/realtime')>()
-  return { ...actual, usePresence: () => hooks.presence }
-})
 vi.mock('../../features/cluster-calls', () => ({
   useActiveCall: () => hooks.activeCall,
   useCallParticipants: () => hooks.callParticipants,
@@ -225,12 +215,6 @@ function resetHooks() {
       { id: 'u3', display_name: 'Cy', avatar_url: null, last_read_message_at: '2026-01-01T00:00:00Z' },
     ],
     isLoading: false,
-  }
-  hooks.presence = {
-    online: new Set<string>(),
-    typing: new Set<string>(),
-    signalTyping: vi.fn(),
-    resetTyping: vi.fn(),
   }
   hooks.activeCall = { data: null, isSuccess: true }
   hooks.callParticipants = { data: [] }
@@ -418,87 +402,24 @@ describe('RoomView timeline', () => {
     expect(screen.queryByRole('button', { name: 'Jump to 1 new message' })).not.toBeInTheDocument()
   })
 
-  it('shows a typing bubble for a member who is typing', () => {
-    hooks.presence.typing = new Set(['u2'])
+  it('renders the member strip with member links and no status indicators', () => {
     renderRoom()
-    expect(screen.getByRole('status', { name: 'Bo is typing…' })).toBeInTheDocument()
-  })
-
-  it('shows one typing bubble per typing member', () => {
-    hooks.presence.typing = new Set(['u2', 'u3'])
-    renderRoom()
-    expect(screen.getByRole('status', { name: 'Bo is typing…' })).toBeInTheDocument()
-    expect(screen.getByRole('status', { name: 'Cy is typing…' })).toBeInTheDocument()
-  })
-
-  it('renders the presence strip with member links and counts', () => {
-    renderRoom()
-    // Desktop card keeps the full heading; mobile shows the compact pill.
-    expect(screen.getByText('1 of 3 here')).toBeInTheDocument()
-    expect(screen.getByText('1/3')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /View all members/i })).toHaveAttribute(
       'href',
       '/cluster/c1/members',
     )
     const boLinks = screen.getAllByTitle('Bo')
     expect(boLinks[0]).toHaveAttribute('href', '/profile/u2?cluster=c1')
+    expect(screen.queryByText(/of 3 here/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it('links the presence strip heading to the members page', () => {
+  it('links the member strip heading to the members page', () => {
     renderRoom()
-    expect(screen.getByRole('link', { name: /In the cluster now/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /In the cluster/i })).toHaveAttribute(
       'href',
       '/cluster/c1/members',
     )
-  })
-
-  it('colors presence dots by manual status', () => {
-    hooks.members = {
-      data: hooks.members.data.map((m) =>
-        m.id === 'u2' ? { ...m, manual_status: 'busy' } : m,
-      ),
-      isLoading: false,
-    } as typeof hooks.members
-    hooks.presence = {
-      online: new Set<string>(['u2']),
-      typing: new Set<string>(),
-      signalTyping: vi.fn(),
-      resetTyping: vi.fn(),
-    }
-    const { container } = renderRoom()
-    expect(container.querySelector('.bg-red-500')).not.toBeNull()
-  })
-
-  it('shows invisible members exactly like offline members in the strip', () => {
-    hooks.members = {
-      data: hooks.members.data.map((m) => ({ ...m, manual_status: 'invisible' })),
-      isLoading: false,
-    } as typeof hooks.members
-    hooks.presence = {
-      online: new Set<string>(['u1', 'u2', 'u3']),
-      typing: new Set<string>(),
-      signalTyping: vi.fn(),
-      resetTyping: vi.fn(),
-    }
-    const { container } = renderRoom()
-    expect(
-      container.querySelector('.bg-emerald-500,.bg-amber-500,.bg-red-500,.bg-gray-400'),
-    ).toBeNull()
-  })
-
-  it('excludes invisible members from the here count', () => {
-    hooks.members = {
-      data: hooks.members.data.map((m) => ({ ...m, manual_status: 'invisible' })),
-      isLoading: false,
-    } as typeof hooks.members
-    hooks.presence = {
-      online: new Set<string>(['u1', 'u2', 'u3']),
-      typing: new Set<string>(),
-      signalTyping: vi.fn(),
-      resetTyping: vi.fn(),
-    }
-    renderRoom()
-    expect(screen.getByText('0 of 3 here')).toBeInTheDocument()
   })
 
   it('suppresses the reply quote when the parent is deleted', () => {
