@@ -31,6 +31,52 @@ const SUBTITLES = [
   'You’ll send invitations to these people. The cluster becomes active once at least 3 members have joined.',
 ] as const
 
+function StepProgress({ step }: { step: number }) {
+  const t = useTheme()
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12, marginBottom: 20 }}
+    >
+      {[0, 1, 2].map((i) => {
+        const active = i <= step
+        return (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center', flex: i < 2 ? 1 : 0 }}>
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: active ? t.primary : 'transparent',
+                borderWidth: active ? 0 : 1,
+                borderColor: t.outlineVariant,
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '600', color: active ? t.onPrimary : t.onSurfaceVariant }}>
+                {i + 1}
+              </Text>
+            </View>
+            {i < 2 ? (
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: t.outlineVariant, marginHorizontal: 8, overflow: 'hidden' }}
+              >
+                {i < step ? <View style={{ flex: 1, backgroundColor: t.primary }} /> : null}
+              </View>
+            ) : null}
+          </View>
+        )
+      })}
+    </View>
+  )
+}
+
 export default function NewClusterScreen() {
   const t = useTheme()
   const profile = useProfile()
@@ -90,25 +136,27 @@ export default function NewClusterScreen() {
 
   return (
     <Screen>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
           onPress={() => (step === 0 ? router.back() : setStep(step - 1))}
           hitSlop={8}
-          style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
         >
-          <ArrowLeft size={20} color={t.primary} strokeWidth={1.5} />
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+            Back
+          </Text>
         </Pressable>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
-            {TITLES[step]}
-          </Text>
-          <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant }}>
-            Step {step + 1} of 3
-          </Text>
-        </View>
       </View>
+      <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+        {TITLES[step]}
+      </Text>
+      <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
+        Step {step + 1} of 3
+      </Text>
+      <StepProgress step={step} />
       <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 16 }}>
         {SUBTITLES[step]}
       </Text>
@@ -294,7 +342,7 @@ export default function NewClusterScreen() {
               </View>
             ))}
           </Card>
-          <View style={{ marginTop: 8 }}>
+          <View style={{ marginTop: 16 }}>
             <PrimaryButton
               title="Send invitations"
               loadingTitle="Sending…"

@@ -12,6 +12,7 @@ import {
   useLatestClusterFormed,
   useLeaveQueue,
   useLocalCompatibleCount,
+  useLocalMatchLine,
   useMyClusters,
   useMyQueueKeys,
   useMyQueueStatus,
@@ -226,6 +227,28 @@ it('useQueueCount stays disabled without a queue key', () => {
   it('useLocalCompatibleCount stays disabled without a queue key', () => {
     const { result } = renderHook(() => useLocalCompatibleCount(null, null, null), { wrapper })
     expect(result.current.count).toBeNull()
+    expect(requireSupabaseMock).not.toHaveBeenCalled()
+  })
+
+  it('useLocalMatchLine reports other matches for narrowed prefs', async () => {
+    mockResult.value = { data: 3, error: null }
+    const { result } = renderHook(() => useLocalMatchLine('local', 'k1', 25, 35), { wrapper })
+    await waitFor(() => expect(result.current).toBe('3 other matches'))
+  })
+
+  it('useLocalMatchLine singularizes one match', async () => {
+    mockResult.value = { data: 1, error: null }
+    const { result } = renderHook(() => useLocalMatchLine('local', 'k1', 25, 35), { wrapper })
+    await waitFor(() => expect(result.current).toBe('1 other match'))
+  })
+
+  it('useLocalMatchLine stays null for Any age, full span, and non-local', () => {
+    const { result: any } = renderHook(() => useLocalMatchLine('local', 'k1', null, null), { wrapper })
+    expect(any.current).toBeNull()
+    const { result: full } = renderHook(() => useLocalMatchLine('local', 'k1', 18, 99), { wrapper })
+    expect(full.current).toBeNull()
+    const { result: other } = renderHook(() => useLocalMatchLine('open_mix', 'open', null, null), { wrapper })
+    expect(other.current).toBeNull()
     expect(requireSupabaseMock).not.toHaveBeenCalled()
   })
 })

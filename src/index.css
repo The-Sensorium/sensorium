@@ -69,7 +69,7 @@
      Outgoing mentions reuse the existing on-primary token (white semibold
      underline, no pill). Light keeps the terracotta outgoing;
      dark uses the navy override below. */
-  --color-chat-outgoing: #aa4d2c;
+  --color-chat-outgoing: #b5573a;
 
   /* typography */
   --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;

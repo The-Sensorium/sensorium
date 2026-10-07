@@ -137,6 +137,7 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
         borderRadius: radii.xl,
         paddingHorizontal: 16,
         paddingVertical: 12,
+        marginBottom: 8,
       }}
     >
       <View
