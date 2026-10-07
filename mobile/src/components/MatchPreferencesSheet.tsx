@@ -16,7 +16,7 @@ import { ErrorText, PrimaryButton } from './ui'
 
 /** Match preferences as a bottom sheet (not a pushed page): the Local queue
  * with its radius rows and counts stays visible underneath, and saving
- * updates the card in place. Follows the ProfileStatusSheet pattern. */
+ * updates the card in place. */
 export function MatchPreferencesSheet({
   open,
   queueKey,

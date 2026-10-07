@@ -7,7 +7,6 @@ const hooks = vi.hoisted(() => ({
   useAuth: vi.fn(),
   useClusterMembers: vi.fn(),
   useMyClusters: vi.fn(),
-  usePresence: vi.fn(),
   useMemberIntroAnswers: vi.fn(),
   useIntroQuestionMap: vi.fn(),
   useUserPosts: vi.fn(),
@@ -28,10 +27,6 @@ vi.mock('../features/matching', () => ({
   useClusterMembers: hooks.useClusterMembers,
   useMyClusters: hooks.useMyClusters,
 }))
-vi.mock('../features/realtime', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../features/realtime')>()
-  return { ...actual, usePresence: hooks.usePresence }
-})
 vi.mock('../features/cluster', () => ({
   useMemberIntroAnswers: hooks.useMemberIntroAnswers,
   useIntroQuestionMap: hooks.useIntroQuestionMap,
@@ -77,7 +72,6 @@ describe('ProfilePage', () => {
     hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'u1' })
     hooks.useClusterMembers.mockReturnValue(queryStub([member]))
     hooks.useMyClusters.mockReturnValue(queryStub([clusterRow]))
-    hooks.usePresence.mockReturnValue({ online: new Set() })
     hooks.useMemberIntroAnswers.mockReturnValue(queryStub([]))
     hooks.useIntroQuestionMap.mockReturnValue({ data: new Map() })
     hooks.useUserPosts.mockReturnValue(queryStub([]))
@@ -106,16 +100,11 @@ describe('ProfilePage', () => {
     expect(screen.getByText('Deep in a book')).toBeInTheDocument()
   })
 
-  it('shows the manual status pill when actually online', () => {
-    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
+  it('renders no status pill in the detail header', () => {
     renderPage()
-    expect(screen.getByText('Away', { selector: 'span:not(.sr-only)' })).toBeInTheDocument()
-  })
-
-  it('shows offline on the detail header when not actually online', () => {
-    renderPage()
-    expect(screen.getByText('Offline', { selector: 'span:not(.sr-only)' })).toBeInTheDocument()
     expect(screen.queryByText('Away', { selector: 'span:not(.sr-only)' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Offline', { selector: 'span:not(.sr-only)' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Online', { selector: 'span:not(.sr-only)' })).not.toBeInTheDocument()
   })
 
   it('orders sections as Details, About, Introductions', () => {
@@ -158,7 +147,7 @@ describe('ProfilePage', () => {
     expect(screen.getByText('United States')).toBeInTheDocument()
     expect(screen.queryByText(/\d{1,2}:\d{2} (AM|PM)/)).not.toBeInTheDocument()
     expect(screen.queryByText('Local time:')).not.toBeInTheDocument()
-    expect(container.querySelectorAll('span.w-px')).toHaveLength(1)
+    expect(container.querySelectorAll('span.w-px')).toHaveLength(0)
   })
 
   it('renders the Details card full width when only the cluster is present', () => {

@@ -25,8 +25,6 @@ export function Composer({
   error,
   replyTo,
   onError,
-  onTyping,
-  onStopTyping,
   onSend,
   onSendImage,
   onSendGif,
@@ -42,8 +40,6 @@ export function Composer({
   error: string | null
   replyTo: { id: string; authorName: string; preview: string } | null
   onError(message: string | null): void
-  onTyping(): void
-  onStopTyping(): void
   onSend(content: string): Promise<void>
   onSendImage(file: File): Promise<void>
   onSendGif(gif: Gif): Promise<void>
@@ -60,7 +56,6 @@ export function Composer({
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const typingTimer = useRef<number | null>(null)
 
   const mentionMembers = useMemo(() => {
     if (!selfId) return []
@@ -76,12 +71,6 @@ export function Composer({
     )
   }, [mention, mentionMembers, selfId, showEveryone])
   const mentionTotal = (showEveryone ? 1 : 0) + mentionCandidates.length
-
-  useEffect(() => {
-    return () => {
-      if (typingTimer.current) window.clearTimeout(typingTimer.current)
-    }
-  }, [])
 
   // Close the room-actions popover on outside click / Escape.
   useEffect(() => {
@@ -105,9 +94,6 @@ export function Composer({
     const caret = inputRef.current?.selectionStart ?? value.length
     setMention(parseMentionQuery(value, caret))
     setMentionIndex(0)
-    onTyping()
-    if (typingTimer.current) window.clearTimeout(typingTimer.current)
-    typingTimer.current = window.setTimeout(() => onStopTyping(), 2000)
   }
 
   function insertToken(name: string) {
@@ -165,7 +151,6 @@ export function Composer({
     const content = draft.trim()
     if (!content || pending || uploading) return
     onError(null)
-    onStopTyping()
     try {
       await onSend(content)
       setDraft('')
@@ -176,7 +161,6 @@ export function Composer({
 
   async function handleSendGif(gif: Gif) {
     onError(null)
-    onStopTyping()
     setGifOpen(false)
     try {
       await onSendGif(gif)
@@ -197,7 +181,6 @@ export function Composer({
       return
     }
     setUploading(true)
-    onStopTyping()
     try {
       await onSendImage(file)
     } catch (e) {
@@ -419,7 +402,6 @@ export function Composer({
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleInputKeyDown}
             onBlur={() => {
-              onStopTyping()
               setMention(null)
               // Drop any page offset iOS stranded while the keyboard was open
               // so no gap lingers below the composer after it closes.

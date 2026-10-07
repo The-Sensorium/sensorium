@@ -1,7 +1,7 @@
 import { Suspense, lazy, useCallback, useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ChevronRight, Loader2, Users } from 'lucide-react'
+import { ArrowDown, ChevronRight, Loader2 } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { cn } from '../../lib/utils'
 import { useAuth } from '../../app/auth-context'
@@ -37,15 +37,12 @@ import { useMarkClusterRead } from '../../features/notifications'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { rateLimitMessage, toErrorMessage } from '../../lib/error'
-import { isOnlineNow, usePresence } from '../../features/realtime'
-import { profileStatusMeta, resolveDisplayStatus } from '../../lib/profile-status'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
 import { MessageItem } from './room/MessageItem'
 import { MessageInfoModal } from './room/MessageInfoModal'
 import { notSeenByMembers, seenByMembers } from './room/seen-by'
 import { RaiseSignalModal } from './room/RaiseSignalModal'
-import { TypingBubble } from './room/TypingBubble'
 import { CallBanner } from './room/CallBanner'
 const CallOverlay = lazy(() => import('./room/CallOverlay').then((m) => ({ default: m.CallOverlay })))
 import { PreJoinDialog } from './room/PreJoinDialog'
@@ -107,12 +104,6 @@ export function RoomView() {
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
-  const { typing, signalTyping, resetTyping, online } = usePresence(clusterId)
-
-  const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter(
-    (m) => resolveDisplayStatus(isOnlineNow(online, m.id, userId), m.manual_status) !== 'offline',
-  ).length
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -846,21 +837,9 @@ export function RoomView() {
     if (inCall && prev !== null && id === null) setInCall(false)
   }, [inCall, activeCall.data])
 
-  const typingMembers = [...typing]
-    .map((id) => memberMap.get(id))
-    .filter((m): m is NonNullable<typeof m> => Boolean(m))
-
-  // Keep the view pinned when a typing bubble appears or another member joins in
-  // while the user is at the bottom, so the indicator lands in view instead of
-  // below the fold. No-op while scrolled up (like the "jump to latest" affordance).
-  const typingKey = [...typing].sort().join(',')
-  useEffect(() => {
-    if (typingMembers.length > 0 && pinnedRef.current) scrollToEnd()
-  }, [typingKey, typingMembers.length])
-
   return (
     <section aria-label="The room" className="flex min-h-0 flex-1 flex-col gap-2 lg:h-full lg:gap-4">
-      {/* Presence strip - desktop keeps the full "who's here" card; mobile
+      {/* Member strip - desktop keeps the full "who's here" card; mobile
         uses the compact native-style avatar pill below. */}
       <section
         aria-label="Who is in the cluster"
@@ -872,17 +851,12 @@ export function RoomView() {
               to="members"
               className="inline-flex items-baseline gap-2 whitespace-nowrap rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              In the cluster now
-              <span className="text-xs font-normal text-on-surface-variant">
-                {onlineCount} of {memberCount} here
-              </span>
+              In the cluster
             </Link>
           </h2>
           <ul className="flex flex-wrap items-center gap-2">
             {(members.data ?? []).map((m) => {
               const isMe = m.id === userId
-              const display = resolveDisplayStatus(isOnlineNow(online, m.id, userId), m.manual_status)
-              const dotClass = display === 'offline' ? null : profileStatusMeta(display).dotClass
               return (
                 <li key={m.id}>
                   <Link
@@ -896,15 +870,6 @@ export function RoomView() {
                       className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
                       textClassName="text-xs"
                     />
-                    {dotClass ? (
-                      <span
-                        className={cn(
-                          'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface',
-                          dotClass,
-                        )}
-                        aria-hidden
-                      />
-                    ) : null}
                   </Link>
                 </li>
               )
@@ -921,14 +886,12 @@ export function RoomView() {
       >
         <Link
           to="members"
-          aria-label={`View all members, ${onlineCount} of ${memberCount} here`}
+          aria-label="View all members"
           className="flex items-center gap-2 overflow-hidden rounded-full border border-outline-variant/60 bg-surface py-1.5 pl-3 pr-2 shadow-soft"
         >
           <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
             {(members.data ?? []).slice(0, 8).map((m) => {
               const isMe = m.id === userId
-              const display = resolveDisplayStatus(isOnlineNow(online, m.id, userId), m.manual_status)
-              const dotClass = display === 'offline' ? null : profileStatusMeta(display).dotClass
               return (
                 <span
                   key={m.id}
@@ -941,22 +904,11 @@ export function RoomView() {
                     className={cn('h-6 w-6', isMe && 'ring-2 ring-primary')}
                     textClassName="text-[10px]"
                   />
-                  {dotClass ? (
-                    <span
-                      className={cn(
-                        'absolute bottom-[1px] right-[1px] h-2 w-2 rounded-full border-2 border-surface',
-                        dotClass,
-                      )}
-                      aria-hidden
-                    />
-                  ) : null}
                 </span>
               )
             })}
           </span>
           <span className="flex shrink-0 items-center gap-1 text-xs text-on-surface-variant">
-            <Users className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
-            {onlineCount}/{memberCount}
             <ChevronRight className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
           </span>
         </Link>
@@ -1134,19 +1086,6 @@ export function RoomView() {
             </ul>
           </>
         )}
-        {typingMembers.length > 0 && (
-          <ul aria-label="Typing in the room" className="space-y-1">
-            {typingMembers.map((m) => (
-              <TypingBubble
-                key={m.id}
-                name={m.display_name}
-                avatarUrl={m.avatar_url}
-                clusterId={clusterId}
-                userId={m.id}
-              />
-            ))}
-          </ul>
-        )}
         <div ref={endRef} aria-hidden />
       </div>
 
@@ -1175,8 +1114,6 @@ export function RoomView() {
         error={error}
         replyTo={replyParentInfo ?? null}
         onError={setError}
-        onTyping={signalTyping}
-        onStopTyping={resetTyping}
         onSend={persistSend}
         onSendImage={persistSendImage}
         onSendGif={persistSendGif}

@@ -31,8 +31,6 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
     error: null,
     replyTo: null,
     onError: vi.fn(),
-    onTyping: vi.fn(),
-    onStopTyping: vi.fn(),
     onSend: vi.fn().mockResolvedValue(undefined),
     onSendImage: vi.fn().mockResolvedValue(undefined),
     onSendGif: vi.fn().mockResolvedValue(undefined),
@@ -51,8 +49,6 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
       error={props.error}
       replyTo={props.replyTo}
       onError={props.onError}
-      onTyping={props.onTyping}
-      onStopTyping={props.onStopTyping}
       onSend={props.onSend}
       onSendImage={props.onSendImage}
       onSendGif={props.onSendGif}
@@ -90,7 +86,6 @@ describe('Composer', () => {
     await userEvent.type(input(), '  hello there   ')
     await userEvent.keyboard('{Enter}')
     await waitFor(() => expect(props.onSend).toHaveBeenCalledWith('hello there'))
-    expect(props.onStopTyping).toHaveBeenCalled()
   })
 
   it('opens the mention listbox on @ and inserts the selected member', async () => {

@@ -47,10 +47,10 @@ async function openSection(page: Page, name: string) {
 }
 
 test.describe('cluster room (seeded Aurora)', () => {
-  test('renders the presence strip and the composer', async ({ page }) => {
+  test('renders the member strip and the composer', async ({ page }) => {
     await openRoom(page)
     if (isDesktop(page)) {
-      await expect(page.getByRole('heading', { name: /In the cluster now/i })).toBeVisible()
+      await expect(page.getByRole('heading', { name: /In the cluster/i })).toBeVisible()
     } else {
       // Mobile shows the compact native-style avatar pill instead.
       await expect(page.getByRole('link', { name: /View all members/i })).toBeVisible()
