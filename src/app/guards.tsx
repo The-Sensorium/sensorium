@@ -194,9 +194,14 @@ function SessionRoleResolver({ access }: { access: MyAccessRow }) {
   // status first: routing before it resolves would let a fresh AAL1 session
   // slip past unverified. Fail closed on error like the access guards above.
   // Gate on isPending so retry backoff and offline pauses keep the spinner
-  // instead of routing before the status resolves.
+  // instead of routing before the status resolves. Also hold the spinner
+  // while a background revalidation is in flight and the cached value still
+  // says verification is needed: right after a successful code entry the
+  // cache can briefly hold a stale AAL1, and bouncing to /mfa-verify on it
+  // strands the user between the two routes until a reload clears it.
   if (staff && mfa.isPending) return <LoadingScreen />
   if (staff && mfa.isError) return <AccessErrorScreen onRetry={() => void mfa.refetch()} />
+  if (staff && mfa.isFetching && !mfa.isPaused && needsMfaVerify(mfa.data)) return <LoadingScreen />
   if (staff && needsMfaVerify(mfa.data)) return <Navigate to="/mfa-verify" replace />
   if (!single) return <Navigate to="/select-role" replace />
   return <Navigate to={sessionRoleShell(available[0])} replace />

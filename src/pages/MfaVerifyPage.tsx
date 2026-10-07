@@ -9,7 +9,7 @@ import { isMobileDevice } from '../lib/device'
 import {
   formatMfaError,
   listVerifiedTotpFactorIds,
-  mfaStatusKey,
+  markMfaVerified,
   needsMfaVerify,
   useMfaStatus,
   verifyTotpCode,
@@ -71,11 +71,11 @@ export function MfaVerifyPage() {
       const factorId = ids[0]
       if (!factorId) throw new Error('No authenticator enrolled. Set one up first.')
       await verifyTotpCode(factorId, code)
-      // Refresh the cached assurance level before leaving: /entry routes on
-      // it, and a stale AAL1 would bounce straight back here.
+      // Record the successful verify before leaving: /entry routes on this
+      // value, and re-reading it here can return stale AAL1 while the new
+      // session propagates. A successful verify means the session is AAL2.
       if (userId) {
-        await queryClient.invalidateQueries({ queryKey: mfaStatusKey(userId) })
-        await queryClient.refetchQueries({ queryKey: mfaStatusKey(userId) })
+        markMfaVerified(queryClient, userId, factorId)
       }
       navigate('/entry', { replace: true })
     } catch (err) {

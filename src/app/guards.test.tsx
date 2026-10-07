@@ -486,6 +486,38 @@ describe('SessionRoleEntry', () => {
     expect(screen.queryByText('role picker')).not.toBeInTheDocument()
   })
 
+  it('holds the spinner while a stale verify-needed value revalidates', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    vi.mocked(useMfaStatus).mockReturnValue({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2', verifiedTotpCount: 1, verifiedTotpIds: ['f1'] },
+      isLoading: false,
+      isPending: false,
+      isFetching: true,
+      isPaused: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never)
+    const { container } = renderGuarded(<SessionRoleEntry />)
+    expect(container.querySelector('.animate-spin')).not.toBeNull()
+    expect(screen.queryByText('mfa verify page')).not.toBeInTheDocument()
+    expect(screen.queryByText('role picker')).not.toBeInTheDocument()
+  })
+
+  it('still routes to verify when the refetch is paused offline', () => {
+    vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
+    vi.mocked(useMfaStatus).mockReturnValue({
+      data: { currentLevel: 'aal1', nextLevel: 'aal2', verifiedTotpCount: 1, verifiedTotpIds: ['f1'] },
+      isLoading: false,
+      isPending: false,
+      isFetching: true,
+      isPaused: true,
+      isError: false,
+      refetch: vi.fn(),
+    } as never)
+    renderGuarded(<SessionRoleEntry />)
+    expect(screen.getByText('mfa verify page')).toBeInTheDocument()
+  })
+
   it('fails closed when the MFA status errors for staff', () => {
     vi.mocked(useMyAccess).mockReturnValue(accessStates.admin)
     vi.mocked(useMfaStatus).mockReturnValue({
