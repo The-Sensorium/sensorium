@@ -256,7 +256,10 @@ export function NotificationsPage() {
           </p>
           <button
             type="button"
-            onClick={() => void notifications.refetch()}
+            onClick={() => {
+              void notifications.refetch()
+              void clusters.refetch()
+            }}
             className="mt-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
           >
             Try again

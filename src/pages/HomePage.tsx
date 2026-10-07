@@ -420,7 +420,10 @@ function RecentFromClusters({
           <span className="min-w-0 flex-1">Couldn’t load recent posts. Please try again.</span>
           <button
             type="button"
-            onClick={() => void recent.refetch()}
+            onClick={() => {
+              void recent.refetch()
+              void myMutes.refetch()
+            }}
             className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
           >
             Try again

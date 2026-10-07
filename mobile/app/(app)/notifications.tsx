@@ -83,6 +83,10 @@ export default function NotificationsScreen() {
   const pull = usePullToRefresh([
     () => notifications.refetch(),
     () => queryClient.refetchQueries({ queryKey: ['notifications', 'unread'] }),
+    // Meetup names resolve via clusters, but only when a meetup notification
+    // exists. Guard like posts.tsx: refetch() on a disabled query runs its
+    // queryFn, which would surface as a spurious failure.
+    () => (items.some((n) => MEETUP_TYPES.has(n.type)) ? clusters.refetch() : Promise.resolve()),
   ])
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const [menuOpen, setMenuOpen] = useState(false)

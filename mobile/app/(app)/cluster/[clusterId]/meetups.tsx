@@ -99,7 +99,7 @@ export default function MeetupsScreen() {
           <ProposeCard clusterId={clusterId} />
         </View>
       ) : (
-        <MeetupDetail key={active.id} clusterId={clusterId} meetup={active} members={(members.data ?? [])} />
+        <MeetupDetail key={active.id} clusterId={clusterId} meetup={active} members={(members.data ?? [])} onRetryMembers={() => void members.refetch()} />
       )}
     </Screen>
   )
@@ -136,10 +136,12 @@ function MeetupDetail({
   clusterId,
   meetup,
   members,
+  onRetryMembers,
 }: {
   clusterId: string
   meetup: Meetup
   members: Array<{ id: string; display_name: string | null; avatar_url: string | null }>
+  onRetryMembers: () => void
 }) {
   const memberCount = members.length
   const t = useTheme()
@@ -173,7 +175,10 @@ function MeetupDetail({
           accessibilityRole="button"
           accessibilityLabel="Try loading this meetup again"
           hitSlop={8}
-          onPress={() => void state.refetch()}
+          onPress={() => {
+            void state.refetch()
+            onRetryMembers()
+          }}
           style={{ paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
         >
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>

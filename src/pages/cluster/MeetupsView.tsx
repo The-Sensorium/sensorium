@@ -97,7 +97,7 @@ export function MeetupsView() {
 
   return (
     <section aria-label="Cluster meetup" className="space-y-5">
-      <MeetupDetail key={active.id} clusterId={clusterId} meetupId={active.id} members={members.data ?? []} />
+      <MeetupDetail key={active.id} clusterId={clusterId} meetupId={active.id} members={members.data ?? []} onRetryMembers={() => void members.refetch()} />
     </section>
   )
 }
@@ -129,10 +129,12 @@ function MeetupDetail({
   clusterId,
   meetupId,
   members,
+  onRetryMembers,
 }: {
   clusterId: string
   meetupId: string
   members: Array<{ id: string; display_name: string | null; avatar_url: string | null }>
+  onRetryMembers: () => void
 }) {
   const memberCount = members.length
   const auth = useAuth()
@@ -172,7 +174,10 @@ function MeetupDetail({
         <span className="min-w-0 flex-1">Could not load this meetup. Please try again.</span>
         <button
           type="button"
-          onClick={() => void state.refetch()}
+          onClick={() => {
+            void state.refetch()
+            onRetryMembers()
+          }}
           className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
         >
           Try again

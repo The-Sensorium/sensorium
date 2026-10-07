@@ -195,9 +195,10 @@ export default function HomeScreen() {
     formedError: formed.isError,
   })
   // One error surface for the whole screen: the specific list copy when a
-  // list failed, otherwise the generic swipe failure (e.g. only unread
-  // counts or mutes failed). Either way the same Try again recovery runs
-  // the swipe refresh.
+  // list failed, otherwise the generic swipe failure. Either way the same
+  // Try again recovery runs the swipe refresh. Note pull.error only reflects
+  // the direct-refetch tasks: refetchQueries tasks resolve void, so a
+  // background-poll failure there stays silent until its query errors.
   const refreshError = listError ? `${listError} Please try again.` : pull.error
 
   return (
@@ -581,7 +582,10 @@ function RecentFromClusters({
             accessibilityRole="button"
             accessibilityLabel="Try loading recent posts again"
             hitSlop={8}
-            onPress={() => void recent.refetch()}
+            onPress={() => {
+              void recent.refetch()
+              void myMutes.refetch()
+            }}
             style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
           >
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
