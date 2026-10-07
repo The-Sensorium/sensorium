@@ -57,11 +57,26 @@ export default function MeetupsScreen() {
   return (
     <Screen refreshing={pull.refreshing} onRefresh={pull.onRefresh}>
       <ClusterSectionHeader title="Meetups" clusterId={clusterId} section="meetups" />
-      <ErrorText message={pull.error} />
+      <ErrorText message={meetups.isError ? null : pull.error} />
       {meetups.isPending || members.isPending ? (
         <LoadingView label="Loading meetups…" />
       ) : meetups.isError ? (
-        <ErrorText message="Could not load meetups. Pull to refresh." />
+        <Card>
+          <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, color: t.error }}>
+            Could not load meetups. Please try again.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Try loading meetups again"
+            hitSlop={8}
+            onPress={() => pull.onRefresh()}
+            style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+              Try again
+            </Text>
+          </Pressable>
+        </Card>
       ) : !active ? (
         <View style={{ gap: 16 }}>
           {latest?.status === 'cancelled' && latest.cancelled_reason !== 'withdrawn' ? (
@@ -84,7 +99,7 @@ export default function MeetupsScreen() {
           <ProposeCard clusterId={clusterId} />
         </View>
       ) : (
-        <MeetupDetail key={active.id} clusterId={clusterId} meetup={active} members={(members.data ?? [])} />
+        <MeetupDetail key={active.id} clusterId={clusterId} meetup={active} members={(members.data ?? [])} onRetryMembers={() => void members.refetch()} />
       )}
     </Screen>
   )
@@ -121,10 +136,12 @@ function MeetupDetail({
   clusterId,
   meetup,
   members,
+  onRetryMembers,
 }: {
   clusterId: string
   meetup: Meetup
   members: Array<{ id: string; display_name: string | null; avatar_url: string | null }>
+  onRetryMembers: () => void
 }) {
   const memberCount = members.length
   const t = useTheme()
@@ -150,7 +167,27 @@ function MeetupDetail({
   }, [meetup.id])
 
   if (state.isPending) return <LoadingView label="Loading meetup…" />
-  if (state.isError || !state.data) return <ErrorText message="Could not load this meetup." />
+  if (state.isError || !state.data) {
+    return (
+      <View style={{ gap: 4 }}>
+        <ErrorText message="Could not load this meetup." />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Try loading this meetup again"
+          hitSlop={8}
+          onPress={() => {
+            void state.refetch()
+            onRetryMembers()
+          }}
+          style={{ paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+            Try again
+          </Text>
+        </Pressable>
+      </View>
+    )
+  }
   const detail = state.data
   const row = detail.meetup
   const mySlot = selected ?? detail.my_slot_id

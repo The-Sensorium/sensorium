@@ -17,6 +17,10 @@ const queryClient = new QueryClient({
       staleTime: 30_000,
       refetchOnWindowFocus: false,
       retry: (failureCount, error) => {
+        // Permanent client errors (RLS denials, non-expiry PostgREST auth
+        // codes) won't recover on retry; transient failures - including an
+        // expired access token, which supabase-js refreshes in the
+        // background - get up to two retries.
         if (isPermanentQueryError(error)) return false
         return failureCount < 2
       },

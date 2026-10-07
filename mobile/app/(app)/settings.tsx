@@ -331,9 +331,22 @@ function SafetySection() {
             {mutes.isLoading ? (
               <LoadingView />
             ) : mutes.isError ? (
-              <Text style={{ fontSize: 14, color: t.error }}>
-                Couldn’t load your muted members. Please try again.
-              </Text>
+              <>
+                <Text style={{ fontSize: 14, color: t.error }}>
+                  Couldn’t load your muted members. Please try again.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Try loading muted members again"
+                  hitSlop={8}
+                  onPress={() => void mutes.refetch()}
+                  style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+                    Try again
+                  </Text>
+                </Pressable>
+              </>
             ) : (
               muted.map((m) => (
                 <View
@@ -434,9 +447,25 @@ function NotificationPreferences() {
             <LoadingView />
           </View>
         ) : clusters.isError || prefs.isError ? (
-          <Text style={{ marginTop: 16, fontSize: 14, color: t.error }}>
-            Couldn’t load your preferences. Please try again.
-          </Text>
+          <>
+            <Text style={{ marginTop: 16, fontSize: 14, color: t.error }}>
+              Couldn’t load your preferences. Please try again.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Try loading preferences again"
+              hitSlop={8}
+              onPress={() => {
+                void clusters.refetch()
+                void prefs.refetch()
+              }}
+              style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+                Try again
+              </Text>
+            </Pressable>
+          </>
         ) : (clusters.data ?? []).length === 0 ? (
           <View style={{ marginTop: 16, backgroundColor: t.surfaceContainer, borderRadius: radii.md, padding: 16 }}>
             <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>

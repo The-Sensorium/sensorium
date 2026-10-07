@@ -254,6 +254,16 @@ export function NotificationsPage() {
           <p className="mt-1 text-sm text-on-surface-variant">
             Something went wrong while fetching them. Please try again.
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              void notifications.refetch()
+              void clusters.refetch()
+            }}
+            className="mt-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+          >
+            Try again
+          </button>
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-10 text-center">
