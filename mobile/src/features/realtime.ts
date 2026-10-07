@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { AppState } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
-import type { RealtimeChannel } from '@supabase/supabase-js'
-import { useAuth } from '../auth-context'
 import { requireSupabase } from '../lib/supabase'
 import type { Database } from '../lib/database.types'
 type PostRealtime = Database['public']['Tables']['posts']['Row']
@@ -258,6 +256,28 @@ interface ClusterChannelEntry {
 }
 
 const clusterChannelEntries = new Map<string, ClusterChannelEntry>()
+
+// Backgrounds shorter than a heartbeat interval never drop the socket, so
+// skip the catch-up fetch on instant app switches and only heal real sleeps.
+export const FOREGROUND_HEAL_MIN_BACKGROUND_MS = 5_000
+
+export function shouldHealOnForeground(backgroundedAt: number | null, now = Date.now()) {
+  if (backgroundedAt === null) return false
+  return now - backgroundedAt > FOREGROUND_HEAL_MIN_BACKGROUND_MS
+}
+
+/** Pull the room window realtime never replays after a drop (missed messages,
+ * reactions, signals, votes). Used by both the subscribe-failure and the
+ * foreground paths so the two heal the same keys. */
+export function invalidateClusterRoomKeys(
+  queryClient: ReturnType<typeof useQueryClient>,
+  clusterId: string,
+) {
+  void queryClient.invalidateQueries({ queryKey: ['cluster-messages', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-reactions', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-signals', clusterId] })
+  void queryClient.invalidateQueries({ queryKey: ['cluster-votes', clusterId] })
+}
 
 export function useClusterChannel(clusterId: string | null) {  const queryClient = useQueryClient()
 
@@ -662,10 +682,29 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       .subscribe((status, err) => {
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.warn('Cluster channel subscribe failed', clusterId, status, err)
+          invalidateClusterRoomKeys(queryClient, clusterId)
         }
       })
 
-    entry.teardown = () => supabase.removeChannel(channel)
+    // Sleep/wake drops the socket and realtime never replays what was missed
+    // while asleep, so pull the missed window on foreground after a real
+    // background (instant switches keep a live socket and need no refetch).
+    let backgroundedAt: number | null = null
+    const foregroundSub = AppState.addEventListener('change', (status) => {
+      if (status === 'background' || status === 'inactive') {
+        backgroundedAt = Date.now()
+      } else if (status === 'active') {
+        if (shouldHealOnForeground(backgroundedAt)) {
+          invalidateClusterRoomKeys(queryClient, clusterId)
+        }
+        backgroundedAt = null
+      }
+    })
+
+    entry.teardown = () => {
+      foregroundSub.remove()
+      supabase.removeChannel(channel)
+    }
 
     return () => {
       entry.refs -= 1
@@ -675,154 +714,4 @@ export function useClusterChannel(clusterId: string | null) {  const queryClient
       }
     }
   }, [clusterId, queryClient])
-}
-
-export interface ClusterPresence {
-  online: Set<string>
-  typing: Set<string>
-}
-
-// Self is intentionally always shown online. The presence set only holds other
-// members, so callers must pass their own id through here instead of inlining
-// the comparison.
-export function isOnlineNow(online: Set<string>, memberId: string, selfId: string | null) {
-  return online.has(memberId) || memberId === selfId
-}
-
-interface PresenceEntry {
-  channel: RealtimeChannel
-  userId: string
-  online: Set<string>
-  typing: Set<string>
-  broadcastTyping: boolean
-  refresh: () => void
-  listeners: Set<(state: ClusterPresence) => void>
-  teardownBackground?: () => void
-}
-
-/**
- * One presence channel per cluster per user is shared by every caller (the room
- * composer, the "who's here" band, the desktop rail, the members list). Without
- * this, two components subscribing to the same `presence:<clusterId>` channel
- * make Supabase throw "cannot add presence callbacks after subscribe()".
- */
-const presenceStore = new Map<string, PresenceEntry>()
-
-/**
- * Presence channel for a cluster: who is online, who is typing. Also exposes
- * `signalTyping` / `resetTyping` for the composer to broadcast its own typing state.
- * Presence metadata is `{ user_id, typing }`.
- */
-export function usePresence(clusterId: string | null) {
-  const auth = useAuth()
-  const userId = auth.state === 'signedIn' ? auth.userId : null
-  const [presence, setPresence] = useState<ClusterPresence>({ online: new Set(), typing: new Set() })
-  // The shared presence channel for this cluster lives in the module-level
-  // `presenceStore`. Its `broadcastTyping` flag holds the last typing state this
-  // client broadcast so a (re)subscribe re-broadcasts it, not the initial
-  // `false` - otherwise typing is lost across a StrictMode remount or socket
-  // reconnect. The flag lives on the entry (not a per-hook ref) because any
-  // instance may create the shared channel, and its subscribe callback must read
-  // the state that *this* client is broadcasting regardless of who created it.
-  const entryRef = useRef<PresenceEntry | null>(null)
-
-  useEffect(() => {
-    if (!clusterId || !userId) return
-    const supabase = requireSupabase()
-    const storeKey = `${clusterId}:${userId}`
-
-    let entry = presenceStore.get(storeKey)
-    if (!entry) {
-      const channel = supabase.channel(`presence:${clusterId}`, {
-        config: { presence: { key: userId } },
-      })
-      entry = {
-        channel,
-        userId,
-        online: new Set(),
-        typing: new Set(),
-        broadcastTyping: false,
-        refresh: () => {},
-        listeners: new Set(),
-      }
-      const refresh = () => {
-        const online = new Set<string>()
-        const typing = new Set<string>()
-        for (const infos of Object.values(channel.presenceState())) {
-          for (const info of infos as { user_id?: string; typing?: boolean }[]) {
-            if (!info.user_id || info.user_id === entry!.userId) continue
-            online.add(info.user_id)
-            if (info.typing) typing.add(info.user_id)
-          }
-        }
-        entry!.online = online
-        entry!.typing = typing
-        const snap: ClusterPresence = { online, typing }
-        for (const listener of entry!.listeners) listener(snap)
-      }
-      entry.refresh = refresh
-      presenceStore.set(storeKey, entry)
-
-      channel
-        .on('presence', { event: 'sync' }, refresh)
-        .on('presence', { event: 'join' }, refresh)
-        .on('presence', { event: 'leave' }, refresh)
-        .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            await channel.track({ user_id: entry!.userId, typing: entry!.broadcastTyping })
-          }
-        })
-
-      const subscription = AppState.addEventListener('change', (status) => {
-        if (status === 'active') {
-          void entry!.channel.track({ user_id: entry!.userId, typing: entry!.broadcastTyping })
-        } else if (status === 'background' || status === 'inactive') {
-          entry!.broadcastTyping = false
-          void entry!.channel.untrack()
-        }
-      })
-      entry.teardownBackground = () => subscription.remove()
-    }
-
-    entryRef.current = entry
-
-    const listener = (state: ClusterPresence) => setPresence(state)
-    entry.listeners.add(listener)
-    entry.refresh()
-
-    return () => {
-      entry!.listeners.delete(listener)
-      if (entry!.listeners.size === 0) {
-        // Defer tearing down the shared channel by a tick: React StrictMode (dev)
-        // synchronously re-runs the effect after cleanup, and that re-run re-adds
-        // a listener before the timer fires. Without this the channel briefly goes
-        // through join/leave/join, which can make the server drop later presence
-        // tracks. A real unmount is unaffected (the timer fires a hair later).
-        setTimeout(() => {
-          const current = presenceStore.get(storeKey)
-          if (current === entry && current.listeners.size === 0) {
-            current.teardownBackground?.()
-            supabase.removeChannel(current.channel)
-            presenceStore.delete(storeKey)
-          }
-        }, 0)
-      }
-    }
-  }, [clusterId, userId])
-
-  const signalTyping = useCallback(() => {
-    const entry = entryRef.current
-    if (!entry || entry.broadcastTyping) return
-    entry.broadcastTyping = true
-    void entry.channel.track({ user_id: entry.userId, typing: true })
-  }, [])
-
-  const resetTyping = useCallback(() => {
-    const entry = entryRef.current
-    if (!entry || !entry.broadcastTyping) return
-    entry.broadcastTyping = false
-    void entry.channel.track({ user_id: entry.userId, typing: false })
-  }, [])
-
-  return { online: presence.online, typing: presence.typing, signalTyping, resetTyping }
 }

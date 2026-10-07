@@ -47,7 +47,18 @@ export function MfaVerifyPage() {
     )
   }
 
-  if (!status.isLoading && !needsMfaVerify(status.data)) {
+  // Gate on isPending, not isLoading: during retry backoff or an offline
+  // pause needsMfaVerify(undefined) is false, which would bounce a staff
+  // user who still needs verification away to /entry.
+  if (status.isPending) {
+    return (
+      <div className="rounded-2xl bg-surface-lowest p-8 text-center shadow-soft" data-e2e="mfa-verify">
+        <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" aria-hidden />
+      </div>
+    )
+  }
+
+  if (!needsMfaVerify(status.data)) {
     return <Navigate to="/entry" replace />
   }
 
@@ -84,7 +95,7 @@ export function MfaVerifyPage() {
           Enter the 6-digit code from your authenticator app to continue to staff tools.
         </p>
 
-        {status.isLoading ? (
+        {status.isPending ? (
           <div className="mt-6 flex justify-center" role="status" aria-label="Loading">
             <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
           </div>

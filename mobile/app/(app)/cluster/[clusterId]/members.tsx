@@ -7,21 +7,18 @@ import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useCluster } from '../../../../src/features/introductions'
 import { useReplacementRound } from '../../../../src/features/votes'
-import { usePresence, useClusterChannel } from '../../../../src/features/realtime'
+import { useClusterChannel } from '../../../../src/features/realtime'
 import { Avatar } from '../../../../src/components/Avatar'
 import { CountryFlag } from '../../../../src/components/CountryFlag'
 import { MemberLocalTime } from '../../../../src/components/MemberLocalTime'
 import { MemberMenuButton, MemberMenuPopover, type MemberMenuTarget } from '../../../../src/components/MemberCardMenu'
 import { PronounBadge } from '../../../../src/components/PronounBadge'
-import { isProfileStatus, profileStatusMeta, resolveDisplayStatus } from '../../../../src/lib/profile-status'
-import { statusDotColor } from '../../../../src/lib/status-dot'
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { countryName } from '../../../../src/lib/countries'
 import { isValidTimeZone } from '../../../../src/lib/timezones'
 import { radii, shadowShape } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
-import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { CreatedPendingSection } from '../../../../src/components/created/CreatedPendingSection'
@@ -29,7 +26,6 @@ import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 export default function MembersScreen() {
   const t = useTheme()
-  const scheme = useResolvedScheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -38,7 +34,6 @@ export default function MembersScreen() {
   // Keep roster, round, and pending lists live while watching: notification
   // taps (join notices, vote starts) must not render stale screens.
   useClusterChannel(clusterId || null)
-  const { online } = usePresence(clusterId || null)
   const replacement = useReplacementRound(clusterId || null)
   const pull = usePullToRefresh([() => members.refetch(), () => replacement.refetch()])
   const [menuFor, setMenuFor] = useState<MemberMenuTarget | null>(null)
@@ -54,7 +49,6 @@ export default function MembersScreen() {
   }
 
   const list = members.data ?? []
-  const isOnline = (id: string) => online.has(id) || id === userId
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
@@ -105,10 +99,6 @@ export default function MembersScreen() {
         </Text>
       ) : (
         list.map((member) => {
-          const onlineNow = isOnline(member.id)
-          const manual = isProfileStatus(member.manual_status) ? member.manual_status : 'online'
-          const display = resolveDisplayStatus(onlineNow, manual)
-          const dotColor = statusDotColor(manual, scheme === 'dark')
           const hasLocalTime = !!member.timezone && isValidTimeZone(member.timezone)
           return (
             <View
@@ -133,27 +123,7 @@ export default function MembersScreen() {
                     style={{ flex: 1 }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-                      <View style={{ position: 'relative' }}>
-                        <Avatar name={member.display_name} src={member.avatar_url} size={56} />
-                        {display !== 'offline' ? (
-                          <View
-                            style={{
-                              position: 'absolute',
-                              bottom: -2,
-                              right: -2,
-                              width: 16,
-                              height: 16,
-                              borderRadius: 8,
-                              borderWidth: 2,
-                              borderColor: t.surface,
-                              backgroundColor: dotColor,
-                            }}
-                          />
-                        ) : null}
-                        <Text style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}>
-                          {display === 'offline' ? 'Offline' : profileStatusMeta(display).label}
-                        </Text>
-                      </View>
+                      <Avatar name={member.display_name} src={member.avatar_url} size={56} />
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                           <Text style={{ flexShrink: 1, fontSize: 16, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>

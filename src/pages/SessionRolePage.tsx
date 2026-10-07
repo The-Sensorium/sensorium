@@ -85,7 +85,7 @@ export function SessionRolePage() {
               </p>
             </div>
 
-            {access.isLoading && !access.data ? (
+            {access.isPending && !access.data ? (
               <div className="mt-10 flex items-center gap-3 rounded-2xl bg-surface-container/60 p-5 text-sm text-on-surface-variant">
                 <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden />
                 Loading your available workspaces...

@@ -35,13 +35,12 @@ Sensorium is an open-source social platform that places you into a group of exac
 ## Features
 
 - **Matching**: enter up to six queues (exact birth date, birth year and month, generation 5-year cohort, birth year, local radius, or Open Mix). A cluster forms when a mode reaches eight ready people.
-- **Cluster chat**: realtime messaging with edits, reply threads, @-mentions, emoji reactions, image sharing, a GIF picker (KLIPY), and presence (who is here, who is typing, who is online).
+- **Cluster chat**: realtime messaging with edits, reply threads, @-mentions, emoji reactions, image sharing, and a GIF picker (KLIPY).
 - **Read receipts**: per-message "seen by" detail with the time each member first read it, updated automatically as members scroll.
 - **Cluster calls**: start or join audio/video calls from the room on web and Android, with ringing state and membership gating powered by LiveKit.
 - **Introduction checklist**: a five-question shared intro stays answerable at any time as an optional in-cluster checklist (progress nudge, never a gate, no deadline).
 - **Posts**: a cluster-scoped feed of text, images, and GIFs - optional titles, heart likes, and threaded comments and replies, visible only to the cluster.
 - **Clusters directory**: browse matching modes and preview a mode's non-archived clusters (name, status, member count, formation date).
-- **Availability**: per-cluster availability status shown to members.
 - **Signals**: raise a request for help, reply in threads, and track open, in-progress, and resolved states.
 - **Governance**: votes for cluster renames and member replacement, invitation flows, and cooldowns.
 - **Notifications & push**: a per-cluster notification center with per-type preferences, plus Android push notifications delivered through an Expo outbox pipeline.

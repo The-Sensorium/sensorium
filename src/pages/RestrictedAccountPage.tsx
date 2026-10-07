@@ -21,11 +21,13 @@ export function RestrictedAccountPage() {
   const [error, setError] = useState<string | null>(null)
   const online = useOnline()
 
-  if (access.isLoading || access.isError || !access.data) {
+  // Gate on isPending so retry backoff and offline pauses keep the spinner
+  // instead of flashing the error state with no data yet.
+  if (access.isPending || access.isError || !access.data) {
     return (
       <div className="min-h-screen bg-background">
         <div className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-6 text-center">
-          {access.isLoading ? (
+          {access.isPending ? (
             <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
           ) : (
             <div>

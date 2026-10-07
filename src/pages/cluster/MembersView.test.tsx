@@ -8,7 +8,6 @@ const hooks = vi.hoisted(() => ({
   useCluster: vi.fn(),
   useClusterMembers: vi.fn(),
   useReplacementRound: vi.fn(),
-  usePresence: vi.fn(),
   useAvatarUrl: vi.fn(),
   useCreatedPendingInvites: vi.fn(),
   useEligibleComembers: vi.fn(),
@@ -33,10 +32,6 @@ vi.mock('../../features/created-clusters', async (importOriginal) => {
     useInviteToCreatedCluster: hooks.useInviteToCreatedCluster,
     useCancelCreatedInvitation: hooks.useCancelCreatedInvitation,
   }
-})
-vi.mock('../../features/realtime', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../features/realtime')>()
-  return { ...actual, usePresence: hooks.usePresence }
 })
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
 vi.mock('../../components/MuteButton', () => ({
@@ -80,7 +75,6 @@ describe('MembersView', () => {
     hooks.useCluster.mockReturnValue(queryStub({ id: 'c1', origin: 'queue', created_by: 'u9' }))
     hooks.useClusterMembers.mockReturnValue(queryStub([member]))
     hooks.useReplacementRound.mockReturnValue(queryStub(null))
-    hooks.usePresence.mockReturnValue({ online: new Set() })
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
     hooks.useCreatedPendingInvites.mockReturnValue(queryStub([]))
     hooks.useEligibleComembers.mockReturnValue(queryStub([]))
@@ -121,56 +115,14 @@ describe('MembersView', () => {
     expect(screen.queryByText(/\d{1,2}:\d{2} (AM|PM)/)).not.toBeInTheDocument()
   })
 
-  it('shows a presence dot on the avatar for online members', () => {
-    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
-    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'online' }]))
+  it('renders member avatars with no presence indicator', () => {
     const { container } = renderPage()
-    const dot = container.querySelector('.bg-emerald-500')
-    expect(dot).not.toBeNull()
-    expect(dot?.classList.contains('h-3.5')).toBe(true)
-    expect(screen.getByText('Online', { selector: '.sr-only' })).toBeInTheDocument()
-  })
-
-  it('shows no presence dot for members not in the presence set', () => {
-    const { container } = renderPage()
+    expect(container.querySelector('.h-14.w-14')).not.toBeNull()
     expect(container.querySelector('.bg-emerald-500')).toBeNull()
     expect(container.querySelector('.bg-amber-500')).toBeNull()
     expect(container.querySelector('.bg-red-500')).toBeNull()
-    expect(container.querySelector('.bg-gray-400')).toBeNull()
-    expect(screen.getByText('Offline', { selector: '.sr-only' })).toBeInTheDocument()
-  })
-
-  it.each([
-    ['online', 'bg-emerald-500', 'Online'],
-    ['away', 'bg-amber-500', 'Away'],
-    ['busy', 'bg-red-500', 'Busy'],
-  ] as const)(
-    'colors the presence dot for manual status %s when online',
-    (status, dotClass, label) => {
-      hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
-      hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: status }]))
-      const { container } = renderPage()
-      expect(container.querySelector(`.${dotClass}`)).not.toBeNull()
-      expect(screen.getByText(label, { selector: '.sr-only' })).toBeInTheDocument()
-    },
-  )
-
-  it('shows invisible members exactly like offline members', () => {
-    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
-    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'invisible' }]))
-    const { container } = renderPage()
-    expect(container.querySelector('.bg-emerald-500')).toBeNull()
-    expect(container.querySelector('.bg-amber-500')).toBeNull()
-    expect(container.querySelector('.bg-red-500')).toBeNull()
-    expect(container.querySelector('.bg-gray-400')).toBeNull()
-    expect(screen.getByText('Offline', { selector: '.sr-only' })).toBeInTheDocument()
-  })
-
-  it('never shows an offline member as online, whatever the manual status', () => {
-    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'online' }]))
-    const { container } = renderPage()
-    expect(container.querySelector('.bg-emerald-500')).toBeNull()
-    expect(screen.getByText('Offline', { selector: '.sr-only' })).toBeInTheDocument()
+    expect(screen.queryByText('Offline')).not.toBeInTheDocument()
+    expect(screen.queryByText('Online')).not.toBeInTheDocument()
   })
 
   it('shows the replacement banner when a spot is open', () => {
@@ -180,13 +132,9 @@ describe('MembersView', () => {
     expect(screen.getByText("We're 1 of 8, finding a new member.")).toBeInTheDocument()
   })
 
-  it('renders a 56px avatar with the online indicator attached', () => {
-    hooks.usePresence.mockReturnValue({ online: new Set(['m1']) })
-    hooks.useClusterMembers.mockReturnValue(queryStub([{ ...member, manual_status: 'online' }]))
+  it('renders a 56px avatar for each member', () => {
     const { container } = renderPage()
-    const avatar = container.querySelector('.h-14.w-14')
-    expect(avatar).not.toBeNull()
-    expect(avatar?.parentElement?.querySelector('.bg-emerald-500')).not.toBeNull()
+    expect(container.querySelector('.h-14.w-14')).not.toBeNull()
   })
 
   it('shows a small options button instead of a large mute button', () => {

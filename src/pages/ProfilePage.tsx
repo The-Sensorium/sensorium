@@ -15,7 +15,6 @@ import {
 } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useClusterMembers, useMyClusters } from '../features/matching'
-import { isOnlineNow, usePresence } from '../features/realtime'
 import { useMemberIntroAnswers, useIntroQuestionMap } from '../features/cluster'
 import {
   usePostCountsForClusters,
@@ -25,8 +24,6 @@ import {
 import { useAuth } from '../app/auth-context'
 import { Avatar } from '../components/Avatar'
 import { AvatarViewer } from '../components/AvatarViewer'
-import { ProfileStatusBadge } from '../components/ProfileStatusBadge'
-import { resolveDisplayStatus } from '../lib/profile-status'
 import { CountryFlag } from '../components/CountryFlag'
 import { MemberLocalTime } from '../components/MemberLocalTime'
 import { PronounBadge } from '../components/PronounBadge'
@@ -88,8 +85,6 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
   const myClusters = useMyClusters()
   const auth = useAuth()
   const isSelf = auth.state === 'signedIn' && auth.userId === userId
-  const { online } = usePresence(clusterId)
-  const onlineNow = isOnlineNow(online, userId, auth.state === 'signedIn' ? auth.userId : null)
   const [reportOpen, setReportOpen] = useState(false)
   const userPosts = useUserPosts(userId)
   const postClusterIds = useMemo(
@@ -157,27 +152,25 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
           <h1 className="mt-1.5 w-full truncate text-center font-display text-xl font-semibold text-on-surface">
             {member.display_name}
           </h1>
-          <p className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-sm text-on-surface-variant">
-            {member.country_code && (
-              <span className="inline-flex items-center gap-1">
-                <CountryFlag code={member.country_code} />
-                {countryName(member.country_code)}
-              </span>
-            )}
-            {member.country_code && hasLocalTime && (
-              <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
-            )}
-            {hasLocalTime ? (
-              <span>
-                <span className="sr-only">Local time: </span>
-                <MemberLocalTime timeZone={member.timezone} />
-              </span>
-            ) : null}
-            {(member.country_code || hasLocalTime) && (
-              <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
-            )}
-            <ProfileStatusBadge value={resolveDisplayStatus(onlineNow, member.manual_status)} />
-          </p>
+          {(member.country_code || hasLocalTime) && (
+            <p className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center text-sm text-on-surface-variant">
+              {member.country_code && (
+                <span className="inline-flex items-center gap-1">
+                  <CountryFlag code={member.country_code} />
+                  {countryName(member.country_code)}
+                </span>
+              )}
+              {member.country_code && hasLocalTime && (
+                <span className="h-4 w-px bg-outline-variant/60" aria-hidden />
+              )}
+              {hasLocalTime ? (
+                <span>
+                  <span className="sr-only">Local time: </span>
+                  <MemberLocalTime timeZone={member.timezone} />
+                </span>
+              ) : null}
+            </p>
+          )}
         </div>
 
         {member.current_status && (

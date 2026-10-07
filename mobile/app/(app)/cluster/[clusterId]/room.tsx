@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   AppState,
   FlatList,
+  Keyboard,
   Pressable,
   Text,
   View,
@@ -15,8 +16,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
 import { useClusterMembers } from '../../../../src/features/matching'
-import { isProfileStatus, resolveDisplayStatus } from '../../../../src/lib/profile-status'
-import { statusDotColor } from '../../../../src/lib/status-dot'
 import type { MentionMember } from '../../../../src/features/mentions'
 import { Avatar } from '../../../../src/components/Avatar'
 import {
@@ -52,17 +51,17 @@ import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../
 import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/MutedPlaceholder'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, lightHaptic, successHaptic } from '../../../../src/lib/haptics'
-import { useClusterChannel, usePresence } from '../../../../src/features/realtime'
+import { useClusterChannel } from '../../../../src/features/realtime'
 import { useDismissKeyboardOnBlur } from '../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { MeetupEntry } from '../../../../src/components/meetups/MeetupEntry'
 import { type Gif } from '../../../../src/features/gifs'
 import { MessageItem } from '../../../../src/components/room/MessageItem'
+import { MessageActionsSheet } from '../../../../src/components/room/MessageActionsSheet'
 import { MessageInfoModal } from '../../../../src/components/room/MessageInfoModal'
 import { notSeenByMembers, seenByMembers } from '../../../../src/components/room/seen-by'
 import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalModal'
-import { TypingBubble } from '../../../../src/components/room/TypingBubble'
 import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows'
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { Modal } from '../../../../src/components/Modal'
@@ -71,7 +70,6 @@ import { CreatedPendingGate } from '../../../../src/components/created/CreatedPe
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
-import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 
 type TimelineItem =
   | { kind: 'message'; data: Message }
@@ -91,7 +89,6 @@ const GROUP_WINDOW_MS = 30 * 60 * 1000
 
 export default function RoomScreen() {
   const t = useTheme()
-  const scheme = useResolvedScheme()
   const { bottom } = useSafeAreaInsets()
   // Sticky composer pattern: the composer rides a native frame-synced
   // translate (no whole-screen resize). The footer is in-flow, so the flex
@@ -147,7 +144,6 @@ export default function RoomScreen() {
   function toggleReveal(id: string) {
     setRevealed((prev) => toggleRevealedId(prev, id))
   }
-  const { typing, signalTyping, resetTyping, online } = usePresence(clusterId || null)
   const roomClusterId = authedClusterId
   const activeCall = useActiveCall(roomClusterId)
   const callParticipants = useCallParticipants(activeCall.data?.id ?? null)
@@ -166,14 +162,9 @@ export default function RoomScreen() {
   const callRefreshing = activeCall.isFetching
 
   const memberCount = (members.data ?? []).length
-  const onlineCount = (members.data ?? []).filter(
-    (m) =>
-      resolveDisplayStatus(online.has(m.id) || m.id === userId, m.manual_status) !== 'offline',
-  ).length
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editDraft, setEditDraft] = useState('')
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [infoFor, setInfoFor] = useState<string | null>(null)
   const [reportFor, setReportFor] = useState<Message | null>(null)
@@ -211,7 +202,6 @@ export default function RoomScreen() {
     // would otherwise leak from the previous cluster.
     setError(null)
     setEditingId(null)
-    setEditDraft('')
     setMenuFor(null)
     setInfoFor(null)
     setReportFor(null)
@@ -290,6 +280,7 @@ export default function RoomScreen() {
 
   function startReply(m: Message) {
     setMenuFor(null)
+    setEditingId(null)
     setReplyTo(m)
   }
 
@@ -415,7 +406,24 @@ export default function RoomScreen() {
     () => (infoFor ? (messages.data ?? []).find((m) => m.id === infoFor) ?? null : null),
     [infoFor, messages.data],
   )
-  const messageReads = useMessageReads(authedClusterId, infoMessage?.id ?? null)
+  const menuMessage = useMemo(
+    () => (menuFor ? (messages.data ?? []).find((m) => m.id === menuFor) ?? null : null),
+    [menuFor, messages.data],
+  )
+  const menuMine = menuMessage?.author_id === userId
+  // GIF messages carry the URL in content (`gif:…`), so there is no text to
+  // edit. Image captions remain editable.
+  const menuCanEdit = menuMessage ? !(menuMessage.content?.startsWith('gif:') ?? false) : false
+  const editingMessage = useMemo(
+    () => (editingId ? (messages.data ?? []).find((m) => m.id === editingId) ?? null : null),
+    [editingId, messages.data],
+  )
+  const editingState = useMemo(
+    () => (editingMessage ? { id: editingMessage.id, content: editingMessage.content ?? '' } : null),
+    [editingMessage],
+  )
+  const infoMine = infoMessage?.author_id === userId
+  const messageReads = useMessageReads(authedClusterId, infoMine ? (infoMessage?.id ?? null) : null)
   const readIds = useMemo(
     () => new Set((messageReads.data ?? []).map((r) => r.id)),
     [messageReads.data],
@@ -428,6 +436,13 @@ export default function RoomScreen() {
     () => (infoMessage ? notSeenByMembers(infoMessage, members.data ?? [], readIds) : []),
     [infoMessage, members.data, readIds],
   )
+  // A message can vanish while its sheet is open (deleted or paged out).
+  // Clear the stale id so reopening the same message does not take the
+  // toggle-close path and need a second tap.
+  useEffect(() => {
+    if (menuFor && !menuMessage) setMenuFor(null)
+    if (infoFor && !infoMessage) setInfoFor(null)
+  }, [menuFor, menuMessage, infoFor, infoMessage])
 
   const timeline = useMemo<TimelineItem[]>(() => {
     const items: TimelineItem[] = [
@@ -595,11 +610,9 @@ export default function RoomScreen() {
     fireMark(clusterId)
   }, [clusterId, auth.state, fireMark, clearMarkTimer])
 
-  // One AppState subscription for both directions: flush the read marker
-  // when backgrounded while pinned (never when scrolled up reading history),
-  // and heal an errored message query when foregrounded (a mount fetch that
-  // failed while the app was waking would otherwise sit on stale rows with
-  // the new message missing until remount).
+  // Flush the read marker when backgrounded while pinned (never when
+  // scrolled up reading history). The foreground catch-up lives in
+  // useClusterChannel, which pulls the missed window for the cluster.
   useEffect(() => {
     if (!focused || !clusterId) return
     const sub = AppState.addEventListener('change', (state) => {
@@ -607,15 +620,10 @@ export default function RoomScreen() {
         if (!pinned || auth.state !== 'signedIn') return
         clearMarkTimer()
         fireMark(clusterId)
-      } else if (state === 'active') {
-        const key = ['cluster-messages', clusterId]
-        if (queryClient.getQueryState(key)?.status === 'error') {
-          void queryClient.invalidateQueries({ queryKey: key })
-        }
       }
     })
     return () => sub.remove()
-  }, [focused, pinned, clusterId, markRead, queryClient, auth.state, fireMark, clearMarkTimer])
+  }, [focused, pinned, clusterId, auth.state, fireMark, clearMarkTimer])
 
   useFocusEffect(
     useCallback(() => {
@@ -626,10 +634,6 @@ export default function RoomScreen() {
       }
     }, [flushPendingMark]),
   )
-
-  const typingMembers = [...typing]
-    .map((id) => memberMap.get(id))
-    .filter((m): m is NonNullable<typeof m> => Boolean(m))
 
   async function persistSend(content: string) {
     if (!clusterId) return
@@ -666,10 +670,10 @@ export default function RoomScreen() {
     }
   }
 
-  function startEdit(m: { id: string; content: string | null }) {
+  function startEdit(m: { id: string }) {
     setMenuFor(null)
+    setReplyTo(null)
     setEditingId(m.id)
-    setEditDraft(m.content ?? '')
   }
 
   function showInfo(m: Message) {
@@ -682,14 +686,16 @@ export default function RoomScreen() {
     setReportFor(m)
   }
 
-  async function saveEdit() {
-    const content = editDraft.trim()
-    if (!content || !editingId) return
+  async function saveEdit(content: string) {
+    const text = content.trim()
+    if (!text || !editingId) return
     setError(null)
     try {
-      await editMessage.mutateAsync({ messageId: editingId, content })
+      await editMessage.mutateAsync({ messageId: editingId, content: text })
       setEditingId(null)
+      successHaptic()
     } catch (e) {
+      errorHaptic()
       setError(toErrorMessage(e, 'Could not edit your message.'))
     }
   }
@@ -891,7 +897,7 @@ export default function RoomScreen() {
               {cluster.data.name}
             </Text>
             <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, textAlign: 'center' }}>
-              {onlineCount} of {memberCount} here
+              {memberCount} members
             </Text>
           </View>
           <ClusterMenu clusterId={clusterId} active="room" />
@@ -993,7 +999,7 @@ export default function RoomScreen() {
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`View all members, ${onlineCount} of ${memberCount} here`}
+            accessibilityLabel={`View all members, ${memberCount} members`}
             onPress={() => router.push({ pathname: '/cluster/[clusterId]/members', params: { clusterId } })}
             style={{
               backgroundColor: t.surface,
@@ -1008,30 +1014,7 @@ export default function RoomScreen() {
               <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                 {(members.data ?? []).slice(0, 8).map((m) => {
                   const isMe = m.id === userId
-                  const onlineNow = online.has(m.id) || isMe
-                  const manual = isProfileStatus(m.manual_status) ? m.manual_status : 'online'
-                  const display = resolveDisplayStatus(onlineNow, manual)
-                  const dotColor = statusDotColor(manual, scheme === 'dark')
-                  const face = (
-                    <View style={{ position: 'relative' }}>
-                      <Avatar name={m.display_name} src={m.avatar_url} size={24} />
-                      {display !== 'offline' ? (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            right: -2,
-                            width: 10,
-                            height: 10,
-                            borderRadius: 5,
-                            borderWidth: 2,
-                            borderColor: t.surface,
-                            backgroundColor: dotColor,
-                          }}
-                        />
-                      ) : null}
-                    </View>
-                  )
+                  const face = <Avatar name={m.display_name} src={m.avatar_url} size={24} />
                   // Own avatar gets a primary ring, mirroring web's
                   // `ring-2 ring-primary`. The -2 margin keeps the ring
                   // layout-neutral so the strip doesn't reshuffle.
@@ -1058,7 +1041,7 @@ export default function RoomScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
                 <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
-                  {onlineCount}/{memberCount}
+                  {memberCount}
                 </Text>
                 <ChevronRight size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
               </View>
@@ -1216,10 +1199,6 @@ export default function RoomScreen() {
                     members={parseMembers}
                     showDay={showDay}
                     showAuthor={showAuthor}
-                    isEditing={editingId === m.id}
-                    editDraft={editDraft}
-                    editPending={editMessage.isPending}
-                    menuOpen={menuFor === m.id}
                     highlighted={jumpHighlightId === m.id}
                     replyParent={(() => {
                       const parent = replyById.get(m.reply_to_id ?? '')
@@ -1227,19 +1206,16 @@ export default function RoomScreen() {
                       return replyPreview(parent)
                     })()}
                     onPressReplyParent={handleJumpToReply}
-                    onEditDraftChange={setEditDraft}
-                    onSaveEdit={() => void saveEdit()}
-                    onCancelEdit={() => setEditingId(null)}
-                    onToggleMenu={() => setMenuFor(menuFor === m.id ? null : m.id)}
-                    onShowInfo={showInfo}
-                    onEdit={startEdit}
-                    onDelete={(messageId) => {
-                      setMenuFor(null)
-                      setDeleteError(null)
-                      setDeleteFor(messageId)
+                    onToggleMenu={() => {
+                      if (menuFor === m.id) {
+                        setMenuFor(null)
+                      } else {
+                        // The sheet shares the window, but a focused composer
+                        // would sit under it, so dismiss the keyboard first.
+                        Keyboard.dismiss()
+                        setMenuFor(m.id)
+                      }
                     }}
-                    onReply={startReply}
-                    onReport={startReport}
                     onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
                     />
                   </View>
@@ -1283,13 +1259,6 @@ export default function RoomScreen() {
             paddingBottom: 8 + bottom,
           }}
         >
-          {typingMembers.length > 0 ? (
-            <View style={{ paddingHorizontal: 4, paddingBottom: 4, gap: 4 }}>
-              {typingMembers.map((m) => (
-                <TypingBubble key={m.id} name={m.display_name} avatarUrl={m.avatar_url} userId={m.id} clusterId={clusterId} />
-              ))}
-            </View>
-          ) : null}
           <Composer
             key={clusterId}
             members={parseMembers}
@@ -1298,16 +1267,18 @@ export default function RoomScreen() {
             raisePending={raise.isPending}
             error={error}
             replyTo={replyParentInfo ?? null}
+            editing={editingState}
+            editPending={editMessage.isPending}
             onError={setError}
-            onTyping={signalTyping}
-            onStopTyping={resetTyping}
             onSend={persistSend}
+            onSaveEdit={(content) => void saveEdit(content)}
             onSendImage={persistSendImage}
             onSendGif={persistSendGif}
             onOpenSignal={() => setSignalOpen(true)}
             onStartCall={() => void handleStartCall()}
             callActive={callActive}
             onCancelReply={() => setReplyTo(null)}
+            onCancelEdit={() => setEditingId(null)}
           />
         </KeyboardStickyView>
 
@@ -1321,12 +1292,43 @@ export default function RoomScreen() {
           onRaise={() => void handleRaise()}
         />
 
+        <MessageActionsSheet
+          open={menuMessage !== null}
+          mine={menuMine}
+          canEdit={menuCanEdit}
+          myReactionKeys={myReactionKeys}
+          messageId={menuMessage?.id ?? ''}
+          onClose={() => setMenuFor(null)}
+          onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
+          onReply={() => {
+            if (menuMessage) startReply(menuMessage)
+          }}
+          onInfo={() => {
+            if (menuMessage) showInfo(menuMessage)
+          }}
+          onEdit={() => {
+            if (menuMessage) startEdit(menuMessage)
+          }}
+          onDelete={() => {
+            if (menuMessage) {
+              setMenuFor(null)
+              setDeleteError(null)
+              setDeleteFor(menuMessage.id)
+            }
+          }}
+          onReport={() => {
+            if (menuMessage) startReport(menuMessage)
+          }}
+        />
+
         <MessageInfoModal
           open={infoFor !== null}
           onClose={() => setInfoFor(null)}
-          seen={infoSeen}
-          notSeen={infoNotSeen}
+          seen={infoMine ? infoSeen : []}
+          notSeen={infoMine ? infoNotSeen : []}
           clusterId={clusterId}
+          sentAt={infoMessage?.created_at ?? null}
+          showReads={infoMine}
         />
 
         {reportFor ? (

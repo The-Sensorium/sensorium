@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../app/auth-context'
 import { requireSupabase, type Database } from './supabase'
+import { resolveProfileData } from './profile-missing'
 
 export type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -31,8 +32,9 @@ export function useProfile() {
         .select('*')
         .eq('id', userId)
         .maybeSingle()
-      if (error) throw error
-      return data
+      // An empty success is never proof of a new user (see profile-missing):
+      // it retries through the global budget instead of routing to onboarding.
+      return resolveProfileData(data, error)
     },
   })
 }
