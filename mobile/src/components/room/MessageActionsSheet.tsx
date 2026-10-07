@@ -128,9 +128,11 @@ export function MessageActionsSheet({
           <SheetRow label="Reply" onPress={onReply}>
             <CornerUpLeft size={18} color={t.onSurface} strokeWidth={1.5} />
           </SheetRow>
-          <SheetRow label="Info" onPress={onInfo}>
-            <Info size={18} color={t.onSurface} strokeWidth={1.5} />
-          </SheetRow>
+          {mine ? (
+            <SheetRow label="Info" onPress={onInfo}>
+              <Info size={18} color={t.onSurface} strokeWidth={1.5} />
+            </SheetRow>
+          ) : null}
           {mine && canEdit ? (
             <>
               <SheetRow label="Edit" onPress={onEdit}>

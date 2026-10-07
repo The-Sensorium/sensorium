@@ -32,34 +32,38 @@ export default function ClustersScreen() {
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Clusters</Text>
       <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-        Every cluster you’ve been matched into or created. Browse a matching mode below to meet more people.
+        Browse a matching mode below to meet more people.
       </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Create a cluster"
-        onPress={() => router.push('/clusters/new')}
-        style={{
-          marginTop: 16,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          backgroundColor: t.primary,
-          borderRadius: radii.pill,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          minHeight: 48,
-          alignSelf: 'flex-start',
-        }}
-      >
-        <Plus size={16} color={t.onPrimary} strokeWidth={2} />
-        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
-          Create a cluster
-        </Text>
-      </Pressable>
-      <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 18, color: t.onSurfaceVariant, marginBottom: 24 }}>
-        Bring people you’ve met in Sensorium together in a new space.
-      </Text>
+      {(clusters.isLoading || clusters.isError || (clusters.data ?? []).length > 0) && (
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Create a cluster"
+            onPress={() => router.push('/clusters/new')}
+            style={{
+              marginTop: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              backgroundColor: t.primary,
+              borderRadius: radii.pill,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              minHeight: 48,
+              alignSelf: 'flex-start',
+            }}
+          >
+            <Plus size={16} color={t.onPrimary} strokeWidth={2} />
+            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+              Create a cluster
+            </Text>
+          </Pressable>
+          <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 18, color: t.onSurfaceVariant, marginBottom: 24 }}>
+            Bring people you’ve met in Sensorium together in a new space.
+          </Text>
+        </>
+      )}
       <ErrorText message={pull.error} />
 
       <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginBottom: 12 }}>
@@ -73,7 +77,7 @@ export default function ClustersScreen() {
             <Users size={24} color={t.onSurfaceVariant} strokeWidth={1.5} />
             <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
               No clusters yet. Join a matching mode below and you’ll be matched with{' '}
-              {CLUSTER_SIZE - 1} people, or create a cluster with people you’ve already met.
+              {CLUSTER_SIZE - 1} people.
             </Text>
           </View>
         </Card>
@@ -148,7 +152,7 @@ function ModeTile({
     ? status.cluster_id
       ? "You're in a cluster"
       : status.joined
-        ? `${status.waiting} of ${CLUSTER_SIZE} waiting`
+        ? `${status.waiting} of ${CLUSTER_SIZE} in queue`
         : 'No queue yet'
     : 'No queue yet'
 

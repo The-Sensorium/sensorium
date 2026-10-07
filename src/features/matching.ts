@@ -298,3 +298,25 @@ export function useLocalCompatibleCount(
     isError: query.isError,
   }
 }
+
+/** Match-count line for a local queue card's preferences row.
+ * Reports how many *other* waiters match saved narrowed prefs (same RPC the
+ * preferences sheet uses). Returns null for non-local modes, Any-age prefs
+ * (null/null or full-span 18/99), and until the first count loads. Across
+ * range changes the previous count is kept (keepPreviousData) instead of
+ * flashing to nothing. */
+export function useLocalMatchLine(
+  mode: MatchingMode,
+  queueKey: string | null,
+  min: number | null,
+  max: number | null,
+): string | null {
+  const narrowed =
+    mode === 'local' &&
+    min != null &&
+    max != null &&
+    !(min === LOCAL_AGE_MIN && max === LOCAL_AGE_MAX)
+  const compat = useLocalCompatibleCount(narrowed ? queueKey : null, min, max)
+  if (!narrowed || compat.count == null) return null
+  return compat.count === 1 ? '1 other match' : `${compat.count} other matches`
+}

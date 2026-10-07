@@ -903,11 +903,11 @@ export default function RoomScreen() {
           <ClusterMenu clusterId={clusterId} active="room" />
         </View>
 
-        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <View style={{ paddingHorizontal: 16 }}>
           <IntroChecklistBanner key={clusterId} clusterId={clusterId} />
         </View>
 
-        <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+        <View style={{ paddingHorizontal: 16 }}>
           <MeetupEntry key={`meetup-${clusterId}`} clusterId={clusterId} callLive={Boolean(activeCall.data)} />
         </View>
 

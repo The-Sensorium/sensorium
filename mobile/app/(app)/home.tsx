@@ -26,7 +26,7 @@ import { homeListError, isProfileMissingError, resolveOnboardingState, shouldSho
 import { radii } from '../../src/lib/theme-tokens'
 import { useResolvedScheme } from '../../src/lib/theme-choice'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
+import { Card, ErrorText, FeedSkeleton, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { Modal } from '../../src/components/Modal'
 import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 import { MemberClusterCard } from '../../src/components/ClusterCard'
@@ -544,7 +544,7 @@ function RecentFromClusters({
         </Link>
       </View>
       {recent.isPending || myMutes.isPending ? (
-        <LoadingView />
+        <FeedSkeleton rows={3} />
       ) : recent.isError ? (
         <Card>
           <Text style={{ fontSize: 14, color: t.error }}>

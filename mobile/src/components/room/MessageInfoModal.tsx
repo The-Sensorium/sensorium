@@ -52,7 +52,7 @@ export function MessageInfoModal({
   open,
   onClose,
   seen,
-  notSeen,
+  notSeen: _notSeen,
   clusterId,
   sentAt,
   showReads = true,
@@ -67,6 +67,7 @@ export function MessageInfoModal({
 }) {
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
+  const sentLabel = sentAt ? dateTimeFormatter.format(new Date(sentAt)) : null
   const closeRef = useRef(onClose)
   useEffect(() => {
     closeRef.current = onClose
@@ -120,9 +121,33 @@ export function MessageInfoModal({
             />
           </Pressable>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={{ flex: 1, fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
-              Message info
-            </Text>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text
+                style={{ flexShrink: 0, fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }}
+                numberOfLines={1}
+                accessibilityRole="header"
+              >
+                Message info
+              </Text>
+              {sentLabel ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+                  <Text
+                    style={{ fontSize: 14, color: t.onSurfaceVariant }}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  >
+                    ·
+                  </Text>
+                  <Text
+                    style={{ fontSize: 14, color: t.onSurfaceVariant }}
+                    numberOfLines={1}
+                    accessibilityLabel={`Sent ${sentLabel}`}
+                  >
+                    {sentLabel}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
@@ -133,38 +158,20 @@ export function MessageInfoModal({
               <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
           </View>
-          <ScrollView
-            style={{ flexShrink: 1, marginTop: 16 }}
-            contentContainerStyle={{ gap: 16, paddingBottom: 8 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {sentAt ? (
+          {showReads ? (
+            <ScrollView
+              style={{ flexShrink: 1, marginTop: 16 }}
+              contentContainerStyle={{ gap: 16, paddingBottom: 8 }}
+              showsVerticalScrollIndicator={false}
+            >
               <View style={{ gap: 6 }}>
                 <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.onSurfaceVariant }}>
-                  Sent
+                  Seen by
                 </Text>
-                <Text style={{ fontSize: 14, color: t.onSurface }}>
-                  {dateTimeFormatter.format(new Date(sentAt))}
-                </Text>
+                <MemberList members={seen} empty="No one has seen it yet." clusterId={clusterId} />
               </View>
-            ) : null}
-            {showReads ? (
-            <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.onSurfaceVariant }}>
-                Seen by
-              </Text>
-              <MemberList members={seen} empty="No one has seen it yet." clusterId={clusterId} />
-            </View>
-            ) : null}
-            {showReads ? (
-            <View style={{ gap: 6 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.onSurfaceVariant }}>
-                Not seen yet
-              </Text>
-              <MemberList members={notSeen} empty="Everyone has seen it." clusterId={clusterId} />
-            </View>
-            ) : null}
-          </ScrollView>
+            </ScrollView>
+          ) : null}
       </Animated.View>
     </View>
   )

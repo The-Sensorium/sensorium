@@ -26,7 +26,7 @@ export const colors = {
   onError: '#ffffff',
   errorContainer: '#ffdad6',
   like: '#ba1a1a',
-  chatOutgoing: '#AA4D2C',
+  chatOutgoing: '#B5573A',
   background: '#fff8f6',
   onBackground: '#211a17',
   shadowColor: '#9d3d1c',
