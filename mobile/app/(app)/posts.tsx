@@ -193,7 +193,7 @@ export default function PostsFeedScreen() {
                 })}
               </View>
             </View>
-            <ErrorText message={pull.error} />
+            <ErrorText message={clusters.isError || posts.isError || myMutes.isError ? null : pull.error} />
             {inCluster ? (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {(clusters.data ?? []).map((c) => {
@@ -224,6 +224,17 @@ export default function PostsFeedScreen() {
               <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
                 Couldn’t load your clusters. Please try again.
               </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Try loading posts again"
+                hitSlop={8}
+                onPress={() => pull.onRefresh()}
+                style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+                  Try again
+                </Text>
+              </Pressable>
             </Card>
           ) : !inCluster ? (
             <Card>
@@ -236,6 +247,17 @@ export default function PostsFeedScreen() {
               <Text accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.error }}>
                 Couldn’t load posts. Please try again.
               </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Try loading posts again"
+                hitSlop={8}
+                onPress={() => pull.onRefresh()}
+                style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+                  Try again
+                </Text>
+              </Pressable>
             </Card>
           ) : (
             <Card plain>

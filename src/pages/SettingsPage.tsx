@@ -266,9 +266,16 @@ function SafetySection() {
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
             </p>
           ) : mutes.isError ? (
-            <p role="alert" className="rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
-              Couldn’t load your muted members. Please try again.
-            </p>
+            <div role="alert" className="flex items-center gap-3 rounded-xl border border-error/30 bg-error/10 px-4 py-2.5 text-sm text-error">
+              <span className="min-w-0 flex-1">Couldn’t load your muted members. Please try again.</span>
+              <button
+                type="button"
+                onClick={() => void mutes.refetch()}
+                className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+              >
+                Try again
+              </button>
+            </div>
           ) : (
             <ul className="space-y-2">
               {muted.map((m) => (
@@ -362,9 +369,19 @@ function NotificationPreferences() {
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
         </p>
       ) : clusters.isError || prefs.isError ? (
-        <p role="alert" className="mt-4 rounded-xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
-          Couldn’t load your preferences. Please try again.
-        </p>
+        <div role="alert" className="mt-4 flex items-center gap-3 rounded-xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+          <span className="min-w-0 flex-1">Couldn’t load your preferences. Please try again.</span>
+          <button
+            type="button"
+            onClick={() => {
+              void clusters.refetch()
+              void prefs.refetch()
+            }}
+            className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+          >
+            Try again
+          </button>
+        </div>
       ) : (clusters.data ?? []).length === 0 ? (
         <p className="mt-4 rounded-xl bg-surface-container/50 px-4 py-3 text-sm text-on-surface-variant">
           No clusters yet. Preferences appear here once you join a cluster.

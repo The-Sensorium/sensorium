@@ -51,8 +51,18 @@ export function MeetupsView() {
 
   if (meetups.isError) {
     return (
-      <div className="rounded-2xl border border-error/30 bg-error/10 p-5 text-sm text-error" role="alert">
-        Could not load meetups. Try again.
+      <div className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error/10 p-5 text-sm text-error" role="alert">
+        <span className="min-w-0 flex-1">Could not load meetups. Please try again.</span>
+        <button
+          type="button"
+          onClick={() => {
+            void meetups.refetch()
+            void members.refetch()
+          }}
+          className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+        >
+          Try again
+        </button>
       </div>
     )
   }
@@ -158,8 +168,15 @@ function MeetupDetail({
   }
   if (state.isError || !state.data) {
     return (
-      <div className="rounded-2xl border border-error/30 bg-error/10 p-5 text-sm text-error" role="alert">
-        Could not load this meetup. Try again.
+      <div className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error/10 p-5 text-sm text-error" role="alert">
+        <span className="min-w-0 flex-1">Could not load this meetup. Please try again.</span>
+        <button
+          type="button"
+          onClick={() => void state.refetch()}
+          className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+        >
+          Try again
+        </button>
       </div>
     )
   }

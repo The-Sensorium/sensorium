@@ -26,7 +26,7 @@ import { homeListError, isProfileMissingError, resolveOnboardingState, shouldSho
 import { radii } from '../../src/lib/theme-tokens'
 import { useResolvedScheme } from '../../src/lib/theme-choice'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, FeedSkeleton, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
+import { Card, FeedSkeleton, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { Modal } from '../../src/components/Modal'
 import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 import { MemberClusterCard } from '../../src/components/ClusterCard'
@@ -129,6 +129,15 @@ export default function HomeScreen() {
     }
   }, [auth.state, onboardingState])
 
+  // Log the underlying failure (code + message) so a sticky list error can
+  // be diagnosed instead of guessed at. Console output lands in logcat and
+  // in Sentry breadcrumbs on device builds.
+  useEffect(() => {
+    if (clusters.error) console.warn('Home lists: clusters failed', clusters.error)
+    if (invitations.error) console.warn('Home lists: invitations failed', invitations.error)
+    if (formed.error) console.warn('Home lists: formed failed', formed.error)
+  }, [clusters.error, invitations.error, formed.error])
+
   const clusterNameById = useMemo(
     () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
     [clusters.data],
@@ -185,6 +194,11 @@ export default function HomeScreen() {
     invitationsError: invitations.isError,
     formedError: formed.isError,
   })
+  // One error surface for the whole screen: the specific list copy when a
+  // list failed, otherwise the generic swipe failure (e.g. only unread
+  // counts or mutes failed). Either way the same Try again recovery runs
+  // the swipe refresh.
+  const refreshError = listError ? `${listError} Please try again.` : pull.error
 
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
@@ -197,8 +211,8 @@ export default function HomeScreen() {
           {daypartLabel}
         </Text>
       </View>
-      <ErrorText message={pull.error} />
-
+      {/* The single error card below reports refresh failures (and
+      recovers them with Try again), so the swipe's own message stays out. */}
       <PushPermissionPrompt compact />
       {(invitations.data ?? []).map((inv) => (
         <Card key={inv.id}>
@@ -296,9 +310,22 @@ export default function HomeScreen() {
         </Card>
       ))}
 
-      {listError ? (
+      {refreshError ? (
         <Card>
-          <Text style={{ fontSize: 14, color: t.error }}>{listError} Please try again.</Text>
+          <Text style={{ fontSize: 14, color: t.error }}>{refreshError}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Try loading your lists again"
+            hitSlop={8}
+            // Same refresh the swipe gesture uses, so both error sources
+            // clear together.
+            onPress={() => pull.onRefresh()}
+            style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+              Try again
+            </Text>
+          </Pressable>
         </Card>
       ) : null}
 
@@ -550,6 +577,17 @@ function RecentFromClusters({
           <Text style={{ fontSize: 14, color: t.error }}>
             Couldn’t load recent posts. Please try again.
           </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Try loading recent posts again"
+            hitSlop={8}
+            onPress={() => void recent.refetch()}
+            style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+              Try again
+            </Text>
+          </Pressable>
         </Card>
       ) : (recent.data ?? []).length === 0 ? (
         <Card plain>
