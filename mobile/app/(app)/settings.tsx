@@ -143,7 +143,11 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
     if (confirm.trim() !== 'DELETE') return
     setError(null)
     try {
+      const { unregisterPushToken } = await import('../../src/lib/push')
+      await unregisterPushToken().catch(() => {})
       await deleteAccount.mutateAsync()
+      const { teardownRealtime } = await import('../../src/lib/supabase')
+      await teardownRealtime()
       successHaptic()
       router.replace('/')
     } catch {

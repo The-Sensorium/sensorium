@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth-context'
 import type { Database } from '../lib/database.types'
-import { requireSupabase, teardownRealtime } from '../lib/supabase'
-import { unregisterPushToken } from '../lib/push'
+import { requireSupabase } from '../lib/supabase'
 import { deleteAvatarObject } from './avatars'
 import { deleteChatImage } from './cluster'
 
@@ -197,8 +196,6 @@ export function useDeleteAccount() {
       if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
 
-      await unregisterPushToken().catch(() => {})
-
       const { data: profile } = await supabase
         .from('profiles')
         .select('avatar_url')
@@ -217,12 +214,8 @@ export function useDeleteAccount() {
 
       const { error } = await supabase.rpc('delete_my_account')
       if (error) throw error
-      try {
-        await supabase.auth.signOut()
-      } finally {
-        await teardownRealtime()
-        queryClient.clear()
-      }
+      await supabase.auth.signOut()
+      queryClient.clear()
     },
   })
 }
