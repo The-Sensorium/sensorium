@@ -70,17 +70,17 @@ describe('validateStep', () => {
     expect(validateStep(3, EMPTY_DRAFT)).toBeNull()
   })
 
-  it('step 4 enforces location + radius only when Local is selected', () => {
+  it('step 4 enforces location + radius only when Local Radius is selected', () => {
     expect(validateStep(4, { ...EMPTY_DRAFT, selectedModes: ['birth_year'] })).toBeNull()
     expect(validateStep(4, { ...EMPTY_DRAFT, selectedModes: ['local'] })).toBe(
-      'Share your location to join the Local mode.',
+      'Share your location to join the Local Radius mode.',
     )
   })
 
   it('step 5 hides join until local location is complete', () => {
     expect(validateStep(5, { ...EMPTY_DRAFT, selectedModes: ['birth_year'] })).toBeNull()
     expect(validateStep(5, { ...EMPTY_DRAFT, selectedModes: ['local'] })).toBe(
-      'Share your location to join the Local mode.',
+      'Share your location to join the Local Radius mode.',
     )
     expect(
       validateStep(5, {

@@ -14,7 +14,7 @@ import { useResolvedScheme } from '../lib/theme-choice'
 import { useTheme } from '../lib/use-theme'
 import { ErrorText, PrimaryButton } from './ui'
 
-/** Match preferences as a bottom sheet (not a pushed page): the Local queue
+/** Match preferences as a bottom sheet (not a pushed page): the Local Radius queue
  * with its radius rows and counts stays visible underneath, and saving
  * updates the card in place. */
 export function MatchPreferencesSheet({
@@ -207,7 +207,7 @@ function MatchPreferencesForm({
                   : null}
             </Text>
             <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-              Join the Local queue to be grouped with 7 people who match your preferences.
+              Join the Local Radius queue to be grouped with 7 people who match your preferences.
             </Text>
           </View>
         </View>

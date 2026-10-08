@@ -503,7 +503,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
   return (
     <Card>
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
-        Local matching
+        Local Radius matching
       </Text>
       <Text style={{ marginTop: 4, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
         {hasArea ? 'Update your local area' : 'Set your local area'}

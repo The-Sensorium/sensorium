@@ -285,7 +285,7 @@ Security lives in the database, not in the client. The browser holds only the pu
 | `VITE_SUPABASE_ANON_KEY` | yes | public anon (publishable) key |
 | `VITE_KLIPY_APP_KEY` | no | KLIPY app key that enables the chat/post GIF picker |
 | `VITE_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`); useful for pointing at a mirror in non-production |
-| `VITE_GEOCODING_ENDPOINT` | no | Geocoding endpoint override used by Local mode (falls back to keyless BigDataCloud, then raw coordinates) |
+| `VITE_GEOCODING_ENDPOINT` | no | Geocoding endpoint override used by Local Radius mode (falls back to keyless BigDataCloud, then raw coordinates) |
 | `VITE_TURNSTILE_SITE_KEY` | no | Cloudflare Turnstile site key for auth bot protection; empty means the widget is hidden (local dev only) |
 
 The mobile app uses the `EXPO_PUBLIC_` equivalents (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `EXPO_PUBLIC_KLIPY_APP_KEY`, `EXPO_PUBLIC_KLIPY_ENDPOINT`, `EXPO_PUBLIC_GEOCODING_ENDPOINT`) plus `EXPO_PUBLIC_WEB_URL` (web origin hosting `/auth/mobile-challenge`; required on device builds, empty only for local dev); see [`../mobile/README.md`](../mobile/README.md).

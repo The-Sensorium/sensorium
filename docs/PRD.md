@@ -73,12 +73,12 @@ Cluster formation is modular across multiple matching modes, each forming its ow
 | Birth Year + Month | Matched with people born in the same month and year |
 | Generation | Matched with people born within the same 5 years |
 | Birth Year | Matched with people born in the same year, any month |
-| Local | Matched with people within a user selected radius of their location. Radius is one of 10, 50, or 100 km. The queue key uses the located country (from reverse geocode), not profile country, so travelers match locals where they are. Users may optionally set a mutual age range (Any age by default); clusters form only from mutually compatible sets of 8. No ages are displayed for Local |
+| Local Radius | Matched with people within a user selected radius of their location. Radius is one of 10, 50, or 100 km. The queue key uses the located country (from reverse geocode), not profile country, so travelers match locals where they are. Users may optionally set a mutual age range (Any age by default); clusters form only from mutually compatible sets of 8. No ages are displayed for Local Radius |
 | Open Mix | First 8 people in line, no birth-date or location filter (onboarding bridge) |
 
-A user can be active in multiple clusters at once, each formed via a different mode. For example, someone could be in a Birth Year cluster and a Local cluster at the same time.
+A user can be active in multiple clusters at once, each formed via a different mode. For example, someone could be in a Birth Year cluster and a Local Radius cluster at the same time.
 
-Local mode constraint: a user may only have one active Local cluster at a time (one radius), not multiple overlapping radii. They cannot run a tight 10km cluster and a broader 100km cluster simultaneously. Changing radius while queued migrates the queue entry to the new radius key. Age preferences (Any by default) narrow who they can form with and may slow formation; replacement candidates are filtered the same way.
+Local Radius mode constraint: a user may only have one active Local Radius cluster at a time (one radius), not multiple overlapping radii. They cannot run a tight 10km cluster and a broader 100km cluster simultaneously. Changing radius while queued migrates the queue entry to the new radius key. Age preferences (Any by default) narrow who they can form with and may slow formation; replacement candidates are filtered the same way.
 
 Open question: total cluster cap. Whether there's a maximum number of simultaneous clusters a user can belong to across all modes, or whether it's unlimited, is not yet decided. This affects onboarding UI, server load, and how spread thin a user's attention gets across clusters.
 
@@ -117,7 +117,7 @@ Users must:
 - Choose a display name
 - Select full date of birth
 - Select a country
-- Optionally share location, only if they want to use Local mode
+- Optionally share location, only if they want to use Local Radius mode
 
 Date of birth cannot be changed after registration.
 
@@ -135,7 +135,7 @@ Optional Fields
 - Profile Photo
 - Bio
 - Pronouns
-- Location (only required if using Local mode)
+- Location (only required if using Local Radius mode)
 
 Users may edit profile information at any time except date of birth.
 
@@ -149,7 +149,7 @@ Users may join any combination of available matching modes, each forming a separ
 - Birth Year + Month
 - Generation
 - Birth Year
-- Local
+- Local Radius
 - Open Mix (pre-selected in onboarding; single global queue `open`)
 
 Each mode a user opts into puts them in a separate queue for that mode. A user is not required to join all modes. They can start with just one and add others later from the Discovery page.
@@ -215,7 +215,7 @@ Members see each other fully from formation:
 Visible:
 - Display Name
 - Country
-- Birth Year (or relevant matching detail depending on mode; for example, Local cluster members might see general location instead)
+- Birth Year (or relevant matching detail depending on mode; for example, Local Radius cluster members might see general location instead)
 - Profile Photo
 - Bio
 - Introduction Answers (as each member completes them)
@@ -351,7 +351,7 @@ Leaving a cluster triggers a cooldown before joining another cluster of the same
 | Mode | Cooldown |
 |---|---|
 | Open Mix | 3 days |
-| Local | 3 days |
+| Local Radius | 3 days |
 | All date modes | 7 days |
 
 Example:
@@ -512,11 +512,11 @@ flow for that mode and a directory of the mode's active clusters. There is no
 standalone tabbed `/discovery` page; `/discovery` redirects to `/clusters`.
 
 Discovery tiles show:
-- Matching Mode (Exact Birthdate, Birth Year + Month, Generation, Birth Year, Local, Open Mix)
+- Matching Mode (Exact Birthdate, Birth Year + Month, Generation, Birth Year, Local Radius, Open Mix)
 - Number of active clusters currently in that mode
 
 A mode page shows:
-- Queue Count for the relevant pool. For Local, the radius they've selected. For birth based modes, their relevant date grouping. For Open Mix, the single global pool.
+- Queue Count for the relevant pool. For Local Radius, the radius they've selected. For birth based modes, their relevant date grouping. For Open Mix, the single global pool.
 - Active clusters in that mode: cluster name, status, member count, and formation date only.
 
 Example:
@@ -658,7 +658,7 @@ Birth Year
 ```
 
 ```text
-Local
+Local Radius
 ```
 
 ```text
@@ -808,7 +808,7 @@ Exact Birthdate
 Birth Year + Month
 Generation
 Birth Year
-Local
+Local Radius
 Open Mix (pre-selected)
 ```
 
@@ -822,9 +822,9 @@ Must select at least one.
 
 #### Step 4
 
-Local Setup
+Local Radius Setup
 
-Only if Local mode selected.
+Only if Local Radius mode selected.
 
 Fields
 
@@ -897,7 +897,7 @@ Example
 Example
 
 ```text
-Local Cluster, 25km (San Francisco)
+Local Radius Cluster, 25km (San Francisco)
 
 6 Members
 5 Unread Messages
@@ -931,7 +931,7 @@ Exact Birthdate
 Birth Year + Month
 Generation
 Birth Year
-Local
+Local Radius
 Open Mix
 ```
 
@@ -973,7 +973,7 @@ Waiting: 5/8
 
 ---
 
-#### Local
+#### Local Radius
 
 Card
 
