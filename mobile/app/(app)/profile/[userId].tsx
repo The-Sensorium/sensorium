@@ -295,25 +295,43 @@ export default function ProfileScreen() {
             ) : null}
           </View>
         ) : (
-          answers.map((a) => {
-            const Icon = INTRO_ICONS[a.question_id - 1] ?? Sparkles
-            const prompt = questions.data?.get(a.question_id) ?? `Question ${a.question_id}`
-            return (
-              <View key={a.question_id} style={{ flexDirection: 'row', gap: 12, paddingVertical: 10 }}>
-                <View
-                  style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <Icon size={20} color={t.primary} strokeWidth={1.5} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.primary }}>{prompt}</Text>
-                  <View style={{ marginTop: 2 }}>
-                    <LinkifiedText text={a.answer} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} />
+          <View>
+            {answers.map((a) => {
+              const Icon = INTRO_ICONS[a.question_id - 1] ?? Sparkles
+              const prompt = questions.data?.get(a.question_id) ?? `Question ${a.question_id}`
+              return (
+                <View key={a.question_id} style={{ flexDirection: 'row', gap: 12, paddingVertical: 10 }}>
+                  <View
+                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Icon size={20} color={t.primary} strokeWidth={1.5} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.primary }}>{prompt}</Text>
+                    <View style={{ marginTop: 2 }}>
+                      <LinkifiedText text={a.answer} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} />
+                    </View>
                   </View>
                 </View>
-              </View>
-            )
-          })
+              )
+            })}
+            {isSelf ? (
+              <Link
+                href={{ pathname: '/cluster/[clusterId]/introductions', params: { clusterId } }}
+                asChild
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit introductions"
+                  style={{ marginTop: 12, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}
+                >
+                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary }}>
+                    Edit introductions
+                  </Text>
+                </Pressable>
+              </Link>
+            ) : null}
+          </View>
         )}
       </Card>
 

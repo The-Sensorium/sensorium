@@ -83,7 +83,7 @@ jobs:
           npx supabase secrets set
           --project-ref "$SUPABASE_PROD_PROJECT_ID"
           RESEND_API_KEY="$RESEND_API_KEY"
-          RESEND_FROM="no-reply@thesensorium.online"
+          RESEND_FROM="no-reply@thesensoriumapp.com"
           SENSORIUM_EMAIL_SECRET="$SENSORIUM_EMAIL_SECRET"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_PROD_ACCESS_TOKEN }}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { AlertTriangle, ArrowRight, Loader2, MailOpen, Moon, PartyPopper, Sparkles, Sun } from 'lucide-react'
 import { useDocumentTitle } from '../lib/use-document-title'
@@ -109,7 +109,19 @@ export function HomePage() {
   const isFresh = !loading && !listFailed && !hasClusters && !hasInvites && !formed.data
   const listError =
     (clusters.isError ? 'Couldn’t load your clusters.' : '') ||
-    (invitations.isError ? 'Couldn’t load your invitations.' : '')
+    (invitations.isError ? 'Couldn’t load your invitations.' : '') ||
+    (formed.isError ? 'Couldn’t load your latest updates.' : '')
+
+  // Log the underlying failure (code + message) so a sticky list error can
+  // be diagnosed instead of guessed at. Dev-only: the web app has no log
+  // sink in production (mobile keeps its unconditional log for logcat and
+  // Sentry breadcrumbs).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    if (clusters.error) console.warn('Home lists: clusters failed', clusters.error)
+    if (invitations.error) console.warn('Home lists: invitations failed', invitations.error)
+    if (formed.error) console.warn('Home lists: formed failed', formed.error)
+  }, [clusters.error, invitations.error, formed.error])
 
   return (
     <div className="space-y-8">
@@ -206,7 +218,18 @@ export function HomePage() {
           className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
         >
           <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden />
-          <span>{listError} Please try again.</span>
+          <span className="min-w-0 flex-1">{listError} Please try again.</span>
+          <button
+            type="button"
+            onClick={() => {
+              void clusters.refetch()
+              void invitations.refetch()
+              void formed.refetch()
+            }}
+            className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+          >
+            Try again
+          </button>
         </div>
       )}
 
@@ -392,9 +415,19 @@ function RecentFromClusters({
       ) : recent.isError ? (
         <div
           role="alert"
-          className="rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
+          className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
         >
-          Couldn’t load recent posts. Please try again.
+          <span className="min-w-0 flex-1">Couldn’t load recent posts. Please try again.</span>
+          <button
+            type="button"
+            onClick={() => {
+              void recent.refetch()
+              void myMutes.refetch()
+            }}
+            className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+          >
+            Try again
+          </button>
         </div>
       ) : (recent.data ?? []).length === 0 ? (
         <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center">

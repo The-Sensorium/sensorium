@@ -53,6 +53,17 @@ export default function MyReportsScreen() {
           <Text style={{ fontSize: 14, color: t.error }}>
             Couldn’t load your reports. Please try again.
           </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Try loading reports again"
+            hitSlop={8}
+            onPress={() => void reports.refetch()}
+            style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+              Try again
+            </Text>
+          </Pressable>
         </Card>
       ) : (reports.data ?? []).length === 0 ? (
         <Card plain>

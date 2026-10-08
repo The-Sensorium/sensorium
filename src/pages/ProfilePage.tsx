@@ -316,23 +316,33 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
             )}
           </div>
         ) : (
-          <ul className="mt-3 divide-y divide-outline-variant/40">
-            {answers.map((a) => {
-              const Icon = INTRO_ICONS[a.question_id - 1] ?? Sparkles
-              const prompt = questions.data?.get(a.question_id) ?? `Question ${a.question_id}`
-              return (
-                <li key={a.question_id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
-                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                    <Icon className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-primary">{prompt}</p>
-                    <p className="mt-0.5 text-sm leading-5 text-on-surface-variant"><LinkifiedText text={a.answer} /></p>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+          <>
+            <ul className="mt-3 divide-y divide-outline-variant/40">
+              {answers.map((a) => {
+                const Icon = INTRO_ICONS[a.question_id - 1] ?? Sparkles
+                const prompt = questions.data?.get(a.question_id) ?? `Question ${a.question_id}`
+                return (
+                  <li key={a.question_id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <Icon className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-primary">{prompt}</p>
+                      <p className="mt-0.5 text-sm leading-5 text-on-surface-variant"><LinkifiedText text={a.answer} /></p>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+            {isSelf && (
+              <Link
+                to={`/cluster/${clusterId}/introductions`}
+                className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-1.5 rounded-pill border border-outline-variant/60 px-5 py-3 text-sm font-semibold text-primary transition-colors hover:bg-surface-container"
+              >
+                Edit introductions
+              </Link>
+            )}
+          </>
         )}
       </section>
 

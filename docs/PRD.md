@@ -425,7 +425,7 @@ Moderators cannot take enforcement action against other moderators or admins, an
 ---
 ### Email Notifications
 
-- All product email is outbound-only and sent from a single sender: `no-reply@thesensorium.online`. There is no inbox, no `mailto:` support in this release, and no Reply-To address.
+- All product email is outbound-only and sent from a single sender: `no-reply@thesensoriumapp.com`. Human support lives at `support@thesensoriumapp.com` (privacy contact, deletion requests, Play listing contact).
 - The catalog covers moderation and appeal lifecycles: report confirmation, report resolution, warning issued, message hidden, account suspended, account banned, restriction lifted, appeal received, appeal resolved.
 - Emails are queued in the database and delivered by a scheduled Edge Function; the app never sends email from the browser.
 - Restricted accounts can reach the appeal page from the emails they receive and from the restricted-account screen.

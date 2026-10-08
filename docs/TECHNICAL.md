@@ -297,7 +297,7 @@ Server-side secrets live only in the Edge Function environments and the matching
 | Variable | Environment | Used by |
 |---|---|---|
 | `RESEND_API_KEY` | staging + prod, edge fn env | `send-emails` → Resend |
-| `RESEND_FROM` | `no-reply@thesensorium.online` | `send-emails` sender |
+| `RESEND_FROM` | `no-reply@thesensoriumapp.com` | `send-emails` sender |
 | `SENSORIUM_EMAIL_SECRET` | shared, per environment | email DB cron header vs edge fn check |
 | `SENSORIUM_PUSH_SECRET` | shared, per environment | push DB cron header vs edge fn check |
 | `EXPO_ACCESS_TOKEN` | edge fn env | `send-push` → Expo Push (optional but recommended) |
@@ -374,7 +374,7 @@ The migration workflows are environment-aware and expect the following repositor
 | `EXPO_TOKEN` | Expo access token for `eas-build.yml` |
 | `GOOGLE_SERVICES_JSON` | base64-encoded `google-services.json` restored for Android builds |
 
-`RESEND_FROM` (`no-reply@thesensorium.online`) is set by the migration workflow, not stored as a secret.
+`RESEND_FROM` (`no-reply@thesensoriumapp.com`) is set by the migration workflow, not stored as a secret.
 
 ## Scripts
 

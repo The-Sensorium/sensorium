@@ -91,7 +91,7 @@ Deno.serve(async (request) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const resendKey = Deno.env.get('RESEND_API_KEY')
-  const from = Deno.env.get('RESEND_FROM') ?? 'no-reply@thesensorium.online'
+  const from = Deno.env.get('RESEND_FROM') ?? 'no-reply@thesensoriumapp.com'
 
   if (!authorized(request, secret)) {
     return new Response('unauthorized', { status: 401 })

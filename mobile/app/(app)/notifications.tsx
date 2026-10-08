@@ -83,6 +83,10 @@ export default function NotificationsScreen() {
   const pull = usePullToRefresh([
     () => notifications.refetch(),
     () => queryClient.refetchQueries({ queryKey: ['notifications', 'unread'] }),
+    // Meetup names resolve via clusters, but only when a meetup notification
+    // exists. Guard like posts.tsx: refetch() on a disabled query runs its
+    // queryFn, which would surface as a spurious failure.
+    () => (items.some((n) => MEETUP_TYPES.has(n.type)) ? clusters.refetch() : Promise.resolve()),
   ])
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -191,7 +195,7 @@ export default function NotificationsScreen() {
                 </Pressable>
               </View>
             ) : null}
-            <ErrorText message={pull.error} />
+            <ErrorText message={notifications.isError ? null : pull.error} />
           </>
         }
         ListEmptyComponent={
@@ -207,6 +211,17 @@ export default function NotificationsScreen() {
                 <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   Something went wrong while fetching them. Please try again.
                 </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Try loading notifications again"
+                  hitSlop={8}
+                  onPress={() => pull.onRefresh()}
+                  style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
+                    Try again
+                  </Text>
+                </Pressable>
               </View>
             </Card>
           ) : items.length > 0 && visible.length === 0 ? (

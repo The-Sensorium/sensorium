@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Text, View } from 'react-native'
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { Sparkles } from 'lucide-react-native'
 import {
   useCluster,
@@ -8,6 +8,8 @@ import {
   useIntroQuestions,
   useSubmitIntroAnswers,
 } from '../../../../src/features/introductions'
+import { useMemberIntroAnswers } from '../../../../src/features/cluster'
+import { useAuth } from '../../../../src/auth-context'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import {
@@ -21,25 +23,36 @@ import {
 export default function IntroductionsScreen() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  const auth = useAuth()
+  const authUserId = auth.state === 'signedIn' ? auth.userId : null
   const cluster = useCluster(clusterId || null)
   const membership = useMyMembership(clusterId || null)
   const questions = useIntroQuestions(clusterId !== '')
+  const ownAnswers = useMemberIntroAnswers(clusterId || null, authUserId)
 
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
   const submit = useSubmitIntroAnswers()
+  const seededRef = useRef(false)
+  const touchedRef = useRef(false)
 
-  const done = !!membership.data?.intro_completed_at
-  useFocusEffect(
-    useCallback(() => {
-      if (membership.isLoading) return
-      if (done) {
-        router.replace({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
-      }
-    }, [done, membership.isLoading, clusterId]),
-  )
+  useEffect(() => {
+    seededRef.current = false
+    touchedRef.current = false
+    setAnswers({})
+  }, [clusterId])
 
-  if (cluster.isLoading || membership.isLoading || questions.isLoading) {
+  useEffect(() => {
+    if (seededRef.current || touchedRef.current) return
+    const rows = ownAnswers.data ?? []
+    if (rows.length === 0) return
+    setAnswers(Object.fromEntries(rows.map((r) => [r.question_id, r.answer])))
+    seededRef.current = true
+  }, [ownAnswers.data])
+
+  const isEdit = (ownAnswers.data ?? []).length > 0
+
+  if (cluster.isLoading || membership.isLoading || questions.isLoading || ownAnswers.isLoading) {
     return (
       <Screen>
         <LoadingView />
@@ -55,14 +68,6 @@ export default function IntroductionsScreen() {
             This cluster isn’t available to you.
           </Text>
         </Card>
-      </Screen>
-    )
-  }
-
-  if (done) {
-    return (
-      <Screen>
-        <LoadingView />
       </Screen>
     )
   }
@@ -88,12 +93,12 @@ export default function IntroductionsScreen() {
         Introductions · {cluster.data.name}
       </Text>
       <Text style={{ marginTop: 4, fontSize: 24, lineHeight: 30, fontWeight: '600', color: t.onSurface }}>
-        Tell your cluster who you are
+        {isEdit ? 'Edit your introductions' : 'Tell your cluster who you are'}
       </Text>
       <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <Sparkles size={16} color={t.primary} strokeWidth={1.5} />
         <Text style={{ flex: 1, fontSize: 14, color: t.onSurfaceVariant }}>
-          Answer below to share who you are.
+          {isEdit ? 'Update anything that changed.' : 'Answer below to share who you are.'}
         </Text>
       </View>
 
@@ -115,7 +120,10 @@ export default function IntroductionsScreen() {
             <Field
               label=""
               value={answers[q.id] ?? ''}
-              onChangeText={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))}
+              onChangeText={(v) => {
+                touchedRef.current = true
+                setAnswers((a) => ({ ...a, [q.id]: v }))
+              }}
               maxLength={1000}
               multiline
               numberOfLines={3}
@@ -135,7 +143,7 @@ export default function IntroductionsScreen() {
       ) : null}
 
       <PrimaryButton
-        title="Save introductions"
+        title={isEdit ? 'Save changes' : 'Save introductions'}
         loadingTitle="Saving…"
         loading={submit.isPending}
         disabled={!allAnswered}

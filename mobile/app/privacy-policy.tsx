@@ -78,9 +78,9 @@ export default function PrivacyPolicyScreen() {
       ))}
       <View style={{ alignItems: 'center', padding: 12 }}>
         <Pressable
-          onPress={() => void Linking.openURL('mailto:thesensoriumapp@gmail.com')}
+          onPress={() => void Linking.openURL('mailto:support@thesensoriumapp.com')}
           accessibilityRole="link"
-          accessibilityLabel="Email thesensoriumapp@gmail.com"
+          accessibilityLabel="Email support@thesensoriumapp.com"
           hitSlop={8}
           style={{ paddingVertical: 12, minHeight: 44, justifyContent: 'center' }}
         >

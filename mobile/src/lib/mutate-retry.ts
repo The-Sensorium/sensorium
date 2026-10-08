@@ -6,7 +6,9 @@ function delay(ms: number): Promise<void> {
 
 /**
  * Run a mutation with exponential backoff + jitter for transient failures.
- * Permanent errors (RLS `42501`, PostgREST `PGRST3xx`) throw immediately.
+ * Permanent errors (RLS `42501`, non-expiry PostgREST `PGRST3xx`) throw
+ * immediately. An expired access token is transient: supabase-js refreshes it
+ * in the background, so the backoff gives the retry a fresh token.
  * Used for chat/post/vote sends on flaky mobile networks.
  */
 export async function mutateWithRetry<T>(

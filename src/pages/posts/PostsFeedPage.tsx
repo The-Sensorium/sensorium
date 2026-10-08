@@ -142,6 +142,17 @@ export function PostsFeedPage() {
         <div role="status" className="flex items-center gap-2 text-sm text-on-surface-variant">
           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden /> Loading…
         </div>
+      ) : clusters.isError ? (
+        <div role="alert" className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+          <span className="min-w-0 flex-1">Couldn’t load your clusters. Please try again.</span>
+          <button
+            type="button"
+            onClick={() => void clusters.refetch()}
+            className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+          >
+            Try again
+          </button>
+        </div>
       ) : (clusters.data ?? []).length === 0 ? (
         <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">
           You aren’t in a cluster yet. Join a matching mode to start sharing posts.
@@ -183,6 +194,23 @@ export function PostsFeedPage() {
                   />
                 ))}
               </div>
+            </div>
+          ) : posts.isError || myMutes.isError ? (
+            <div role="alert" className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+              <span className="min-w-0 flex-1">Couldn’t load posts. Please try again.</span>
+              <button
+                type="button"
+                onClick={() => {
+                  void posts.refetch()
+                  void myMutes.refetch()
+                  void members.refetch()
+                  void likes.refetch()
+                  void counts.refetch()
+                }}
+                className="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold text-primary hover:underline min-h-[44px]"
+              >
+                Try again
+              </button>
             </div>
           ) : (posts.data ?? []).length === 0 ? (
             <div className="rounded-2xl border border-dashed border-outline-variant bg-surface-container/40 p-8 text-center text-sm text-on-surface-variant">

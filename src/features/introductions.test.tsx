@@ -101,5 +101,6 @@ describe('introductions', () => {
       ],
     })
     expect(spy).toHaveBeenCalledWith({ queryKey: ['cluster-membership', 'c1'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['member-intro-answers', 'c1'] })
   })
 })
