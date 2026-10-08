@@ -16,6 +16,7 @@ import {
   type Gif,
 } from '../../features/gifs'
 import { radii } from '../../lib/theme-tokens'
+import { useDebouncedValue } from '../../lib/use-debounced-value'
 import { useTheme } from '../../lib/use-theme'
 import { Field } from '../ui'
 
@@ -39,10 +40,11 @@ export function GifPicker({
 }) {
   const t = useTheme()
   const [query, setQuery] = useState('')
-  const search = useSearchGifs(query)
+  const debouncedQuery = useDebouncedValue(query, 300)
+  const search = useSearchGifs(debouncedQuery)
   const trending = useTrendingGifs(true)
-  const trimmed = query.trim()
-  const gifs = trimmed ? search.data : trending.data
+  const trimmed = debouncedQuery.trim()
+  const gifs = (trimmed ? search.data : trending.data)?.slice(0, 24)
   const loading = trimmed ? search.isPending : trending.isPending
   const error = trimmed ? search.error : trending.error
 

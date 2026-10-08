@@ -49,7 +49,7 @@ function useAuthDeepLinks() {
         if (result === 'recovery') resetTo('/(auth)/reset-password')
         else if (result === 'session') goHome()
       } catch (err) {
-        console.warn('Auth link failed', err)
+        console.warn('Auth link failed', err instanceof Error ? err.message : 'unknown')
       }
     }
     void Linking.getInitialURL().then((url) => {
