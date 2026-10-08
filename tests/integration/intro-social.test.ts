@@ -134,6 +134,61 @@ describe('introductions and social', () => {
     expect(unlocked).toHaveLength(0)
   })
 
+  it('editing intros upserts answers silently without extra notifications', async () => {
+    const a = await member('i-edit-a')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { error: firstErr } = await a.client.rpc('submit_intro_answers', {
+      p_cluster_id: clusterId,
+      p_answers: ANSWERS,
+    })
+    expect(firstErr).toBeNull()
+
+    const { data: beforeRow } = await admin
+      .from('cluster_members')
+      .select('intro_completed_at')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', a.id)
+      .single()
+    expect(beforeRow?.intro_completed_at).not.toBeNull()
+
+    const edited = ANSWERS.map((row) =>
+      row.question_id === 1 ? { ...row, answer: 'edited answer 1' } : row,
+    )
+    const { error: editErr } = await a.client.rpc('submit_intro_answers', {
+      p_cluster_id: clusterId,
+      p_answers: edited,
+    })
+    expect(editErr).toBeNull()
+
+    const { data: answerRow } = await admin
+      .from('intro_answers')
+      .select('answer')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', a.id)
+      .eq('question_id', 1)
+      .single()
+    expect(answerRow?.answer).toBe('edited answer 1')
+
+    const { data: afterRow } = await admin
+      .from('cluster_members')
+      .select('intro_completed_at')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', a.id)
+      .single()
+    expect(afterRow?.intro_completed_at).not.toBeNull()
+
+    const { data: unlocked } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('cluster_id', clusterId)
+    expect(unlocked).toHaveLength(0)
+  })
+
   it('marks a replacement complete in an active cluster without re-unlocking or re-notifying', async () => {
     const original = await member('i-late-a')
     const replacement = await member('i-late-b')

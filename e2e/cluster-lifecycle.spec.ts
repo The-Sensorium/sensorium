@@ -51,28 +51,35 @@ test.describe('cluster lifecycle (seeded)', () => {
     await expect(page.getByRole('combobox', { name: 'Message' })).toBeVisible()
 
     // Diya's intro is pending on a fresh seed, but an earlier project run
-    // shares the seeded DB and may already have completed it. Probe the form
-    // route: it renders only while the intro is still pending.
+    // shares the seeded DB and may already have completed it. The form now
+    // doubles as an edit form, so it renders in both cases with a different
+    // heading and button label.
     await page.goto(`${roomUrl}/introductions`)
-    const formHeading = page.getByRole('heading', { name: 'Tell your cluster who you are' })
-    const pending = await formHeading
-      .waitFor({ state: 'visible', timeout: 10_000 })
-      .then(() => true)
-      .catch(() => false)
+    const formHeading = page.getByRole('heading', { name: /Tell your cluster who you are|Edit your introductions/ })
+    await expect(formHeading).toBeVisible({ timeout: 10_000 })
 
-    if (pending) {
-      const areas = page.locator('form textarea')
-      await expect(areas).toHaveCount(5)
-      for (let i = 0; i < 5; i++) {
-        await areas.nth(i).fill(`e2e intro answer ${i + 1} ${Date.now()}`)
-      }
-      await page.getByRole('button', { name: 'Save introductions' }).click()
+    const areas = page.locator('form textarea')
+    await expect(areas).toHaveCount(5)
+    for (let i = 0; i < 5; i++) {
+      await areas.nth(i).fill(`e2e intro answer ${i + 1} ${Date.now()}`)
     }
+    await page.getByRole('button', { name: /Save introductions|Save changes/ }).click()
 
-    // Back in the room (via save, or via the done-redirect) with the nudge
-    // cleared and the room fully usable.
+    // Back in the room with the nudge cleared and the room fully usable.
     await page.goto(roomUrl)
     await expect(page.getByRole('combobox', { name: 'Message' })).toBeVisible()
     await expect(page.getByText('Complete your introductions')).not.toBeVisible()
+
+    // Revisit the form: answers are prefilled and editable.
+    await page.goto(`${roomUrl}/introductions`)
+    await expect(
+      page.getByRole('heading', { name: 'Edit your introductions' }),
+    ).toBeVisible({ timeout: 10_000 })
+    const editAreas = page.locator('form textarea')
+    await expect(editAreas).toHaveCount(5)
+    await expect(editAreas.first()).not.toBeEmpty()
+    await editAreas.first().fill(`e2e intro edit ${Date.now()}`)
+    await page.getByRole('button', { name: /Save introductions|Save changes/ }).click()
+    await expect(page.getByRole('combobox', { name: 'Message' })).toBeVisible()
   })
 })

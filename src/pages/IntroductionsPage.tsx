@@ -1,8 +1,10 @@
-import { useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import { Check, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
+import { useAuth } from '../app/auth-context'
+import { useMemberIntroAnswers } from '../features/cluster'
 import {
   useCluster,
   useMyMembership,
@@ -13,16 +15,35 @@ import {
 export function IntroductionsPage() {
   useDocumentTitle('Introductions')
   const { clusterId = '' } = useParams()
+  const auth = useAuth()
+  const authUserId = auth.state === 'signedIn' ? auth.userId : null
   const cluster = useCluster(clusterId)
   const membership = useMyMembership(clusterId)
   const questions = useIntroQuestions(clusterId !== '')
+  const ownAnswers = useMemberIntroAnswers(clusterId || null, authUserId)
 
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
   const submit = useSubmitIntroAnswers()
   const navigate = useNavigate()
+  const seededRef = useRef(false)
+  const touchedRef = useRef(false)
 
-  if (cluster.isLoading || membership.isLoading || questions.isLoading) {
+  useEffect(() => {
+    seededRef.current = false
+    touchedRef.current = false
+    setAnswers({})
+  }, [clusterId])
+
+  useEffect(() => {
+    if (seededRef.current || touchedRef.current) return
+    const rows = ownAnswers.data ?? []
+    if (rows.length === 0) return
+    setAnswers(Object.fromEntries(rows.map((r) => [r.question_id, r.answer])))
+    seededRef.current = true
+  }, [ownAnswers.data])
+
+  if (cluster.isLoading || membership.isLoading || questions.isLoading || ownAnswers.isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm text-on-surface-variant">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
@@ -38,12 +59,10 @@ export function IntroductionsPage() {
     )
   }
 
-  // The form is an optional checklist: members who already answered go to
-  // the room, and saving answers returns to the room (never a waiting screen).
-  if (membership.data?.intro_completed_at) {
-    return <Navigate to={`/cluster/${clusterId}`} replace />
-  }
-
+  // The form doubles as an edit form: completed members revisit the same
+  // route, see their answers prefilled, and re-save. Saving returns to the
+  // room (never a waiting screen).
+  const isEdit = (ownAnswers.data ?? []).length > 0
   const allAnswered =
     (questions.data?.length ?? 0) > 0 &&
     (questions.data ?? []).every((q) => (answers[q.id] ?? '').trim().length > 0)
@@ -66,11 +85,11 @@ export function IntroductionsPage() {
           Introductions · {cluster.data.name}
         </p>
         <h1 className="mt-1 font-display text-3xl font-semibold text-on-surface">
-          Tell your cluster who you are
+          {isEdit ? 'Edit your introductions' : 'Tell your cluster who you are'}
         </h1>
         <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-on-surface-variant">
           <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} aria-hidden />
-          Answer below to share who you are.
+          {isEdit ? 'Update anything that changed.' : 'Answer below to share who you are.'}
         </p>
       </header>
 
@@ -95,7 +114,10 @@ export function IntroductionsPage() {
               rows={3}
               maxLength={1000}
               value={answers[q.id] ?? ''}
-              onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+              onChange={(e) => {
+                touchedRef.current = true
+                setAnswers((a) => ({ ...a, [q.id]: e.target.value }))
+              }}
               placeholder="Write a few honest sentences…"
               aria-required="true"
               className="mt-3 w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
@@ -129,7 +151,7 @@ export function IntroductionsPage() {
           )}
           {submit.isPending
             ? 'Saving…'
-            : 'Save introductions'}
+            : isEdit ? 'Save changes' : 'Save introductions'}
         </button>
       </form>
     </div>
