@@ -103,7 +103,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
           kind: 'email',
           before:
             'We may update these Terms, and the current version always applies; continued use after a change means you accept them. Questions? ',
-          address: 'thesensoriumapp@gmail.com',
+          address: 'support@thesensoriumapp.com',
           after: '',
         },
       ],
@@ -165,6 +165,14 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
           text: 'Data is stored by our hosted infrastructure provider and kept while you have an active account. You can delete your account at any time from Settings, which removes your profile, memberships, and the content you own. Some records may be retained where required by law or to investigate reported abuse.',
         },
         {
+          kind: 'email',
+          before:
+            'If you cannot sign in (for example, you lost access to your account), email ',
+          address: 'support@thesensoriumapp.com',
+          after:
+            " from your account email address with the subject 'Delete my account' and we will delete your account and associated data.",
+        },
+        {
           kind: 'p',
           text: "Moderation records, including reports and the actions taken on them, are retained for up to 24 months so we can keep our community safe. If you delete your account, we remove the personal identifiers from those records rather than destroy the audit trail. When a message is hidden or your account is warned or suspended, we notify you in the app; a permanent ban ends your access, so it is communicated through the affected account's restricted screen instead.",
         },
@@ -194,7 +202,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
         {
           kind: 'email',
           before: 'Questions about this policy? Reach out at ',
-          address: 'thesensoriumapp@gmail.com',
+          address: 'support@thesensoriumapp.com',
           after: '.',
         },
       ],

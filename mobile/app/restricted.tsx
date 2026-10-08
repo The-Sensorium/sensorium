@@ -64,7 +64,11 @@ export default function RestrictedScreen() {
   async function handleDelete() {
     setError(null)
     try {
+      const { unregisterPushToken } = await import('../src/lib/push')
+      await unregisterPushToken().catch(() => {})
       await deleteAccount.mutateAsync()
+      const { teardownRealtime } = await import('../src/lib/supabase')
+      await teardownRealtime()
     } catch {
       setError('Could not delete your account. Please try again.')
     }

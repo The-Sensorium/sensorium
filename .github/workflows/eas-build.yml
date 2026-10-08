@@ -46,6 +46,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Restore google-services.json from secret
+        # EAS cloud only receives what is in the workspace: google-services.json
+        # is gitignored, so restore it the same way android-apk-build.yml does.
+        # iOS builds do not need it.
+        if: inputs.platform != 'ios'
+        run: |
+          if [ -z "${{ secrets.GOOGLE_SERVICES_JSON }}" ]; then
+            echo "GOOGLE_SERVICES_JSON secret is not set. Add the base64-encoded google-services.json as that secret, then rerun."
+            exit 1
+          fi
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > google-services.json
+        shell: bash
+        working-directory: mobile
+
       - name: EAS build
         run: npx eas-cli@latest build --non-interactive --profile ${{ inputs.profile }} --platform ${{ inputs.platform }}
         env:

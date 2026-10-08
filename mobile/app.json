@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sensorium",
     "slug": "sensorium",
-    "version": "0.0.27",
+    "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "sensorium",
     "userInterfaceStyle": "automatic",
@@ -10,6 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "online.thesensorium.app",
+      "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera is used for video during cluster calls.",
         "NSMicrophoneUsageDescription": "Microphone is used for audio during cluster calls.",
@@ -29,7 +30,7 @@
         "backgroundColor": "#fef8f7"
       },
       "package": "online.thesensorium.app",
-      "versionCode": 27,
+      "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "allowBackup": false,
       "predictiveBackGestureEnabled": true,
