@@ -172,4 +172,35 @@ describe('ProfilePage', () => {
     expect(screen.getByRole('link', { name: 'Edit profile' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Message Amelia Chen' })).not.toBeInTheDocument()
   })
+
+  it('offers Complete your introductions on the self view when unanswered', () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'm1' })
+    hooks.useMemberIntroAnswers.mockReturnValue(queryStub([]))
+    renderPage()
+    const link = screen.getByRole('link', { name: 'Complete your introductions' })
+    expect(link).toHaveAttribute('href', '/cluster/c1/introductions')
+  })
+
+  it('offers Edit introductions on the self view once answered', () => {
+    hooks.useAuth.mockReturnValue({ state: 'signedIn', userId: 'm1' })
+    hooks.useMemberIntroAnswers.mockReturnValue(
+      queryStub([{ question_id: 1, answer: 'Hello', created_at: '2026-01-01' }]),
+    )
+    hooks.useIntroQuestionMap.mockReturnValue({ data: new Map([[1, 'What brings you joy?']]) })
+    renderPage()
+    expect(screen.getByText('Hello')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'Edit introductions' })
+    expect(link).toHaveAttribute('href', '/cluster/c1/introductions')
+    expect(screen.queryByRole('link', { name: 'Complete your introductions' })).not.toBeInTheDocument()
+  })
+
+  it('shows no intro action to other members', () => {
+    hooks.useMemberIntroAnswers.mockReturnValue(
+      queryStub([{ question_id: 1, answer: 'Hello', created_at: '2026-01-01' }]),
+    )
+    hooks.useIntroQuestionMap.mockReturnValue({ data: new Map([[1, 'What brings you joy?']]) })
+    renderPage()
+    expect(screen.queryByRole('link', { name: 'Edit introductions' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Complete your introductions' })).not.toBeInTheDocument()
+  })
 })

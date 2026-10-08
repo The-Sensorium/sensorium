@@ -107,6 +107,7 @@ export function useSubmitIntroAnswers() {
       void queryClient.invalidateQueries({ queryKey: ['cluster-membership', variables.clusterId] })
       void queryClient.invalidateQueries({ queryKey: ['cluster', variables.clusterId] })
       void queryClient.invalidateQueries({ queryKey: ['my-clusters'] })
+      void queryClient.invalidateQueries({ queryKey: ['member-intro-answers', variables.clusterId] })
     },
   })
 }
