@@ -203,7 +203,7 @@ export function OnboardingPage() {
           {error && <p className="mt-5 text-sm text-error">{error}</p>}
           {step === TOTAL_STEPS && !hasLocalLocation && (
             <p className="mt-5 text-sm text-on-surface-variant">
-              Add your location to join the Local mode.
+              Add your location to join the Local Radius mode.
             </p>
           )}
 

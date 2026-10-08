@@ -219,7 +219,7 @@ export default function OnboardingScreen() {
           ) : null}
           {step === TOTAL_STEPS && !hasLocalLocation ? (
             <Text style={{ marginTop: 16, fontSize: 14, color: t.onSurfaceVariant }}>
-              Add your location to join the Local mode.
+              Add your location to join the Local Radius mode.
             </Text>
           ) : null}
 

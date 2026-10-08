@@ -69,7 +69,7 @@ const GEOCODING_ENDPOINT = import.meta.env.VITE_GEOCODING_ENDPOINT as string | u
  * Resolves a location label + slug for local matching.
  * 1) configured VITE_GEOCODING_ENDPOINT, 2) keyless BigDataCloud, 3) coords fallback.
  * Country code comes from the same payload when present and backs
- * profiles.local_country_code so Local queue keys use located country.
+ * profiles.local_country_code so Local Radius queue keys use located country.
  */
 export async function reverseGeocode(point: GeoPoint): Promise<Place> {
   if (GEOCODING_ENDPOINT) {
