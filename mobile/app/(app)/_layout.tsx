@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
+import { Platform } from 'react-native'
 import { router, Tabs } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Bell, Home, Newspaper, Settings, Users } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
 import { goHome, goLogin } from '../../src/lib/auth-navigation'
@@ -47,8 +49,23 @@ function handlePushTap(data: PushData, signedIn: boolean) {
   }
 }
 
+// AOSP gesture-bar height. Some Android OEM builds (confirmed on realme UI
+// 2.0 / Android 11) report a 0 bottom inset in full-gesture mode, which parks
+// the tab bar flush at the physical edge under the gesture zone and clips the
+// labels. Floor the inset so tappable labels always clear it. Math.max keeps
+// correctly reporting devices untouched. Revisit if the install base ever
+// guarantees enforced insets (Android 15+).
+const ANDROID_GESTURE_BAR_FALLBACK = 16
+// React Navigation UIKit default tab bar content height, sans inset. Set
+// explicitly alongside paddingBottom so a floored inset grows the bar instead
+// of squeezing its content.
+const TAB_BAR_CONTENT_HEIGHT = 49
+
 export default function AppTabs() {
   const t = useTheme()
+  const insets = useSafeAreaInsets()
+  const tabBarBottom =
+    Platform.OS === 'android' ? Math.max(insets.bottom, ANDROID_GESTURE_BAR_FALLBACK) : insets.bottom
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   useEffect(() => {
@@ -97,7 +114,12 @@ export default function AppTabs() {
         headerShown: false,
         tabBarActiveTintColor: t.primary,
         tabBarInactiveTintColor: t.onSurfaceVariant,
-        tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.outlineVariant },
+        tabBarStyle: {
+          backgroundColor: t.surface,
+          borderTopColor: t.outlineVariant,
+          height: TAB_BAR_CONTENT_HEIGHT + tabBarBottom,
+          paddingBottom: tabBarBottom,
+        },
         tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
         tabBarBadgeStyle: { backgroundColor: t.error, color: t.onError, fontSize: 11, fontWeight: '600', minWidth: 18, height: 18, borderRadius: 9, lineHeight: 16, textAlign: 'center' },
         // Sticky composers own keyboard positioning natively. Hiding the tab
