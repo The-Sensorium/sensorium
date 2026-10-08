@@ -165,7 +165,7 @@ export function MatchPreferencesSheet({
                   : null}
             </p>
             <p className="mt-1 text-sm leading-6 text-on-surface-variant">
-              Join the Local queue to be grouped with 7 people who match your preferences.
+              Join the Local Radius queue to be grouped with 7 people who match your preferences.
             </p>
           </div>
         </div>

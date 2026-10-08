@@ -495,7 +495,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
     <div className="rounded-2xl border border-outline-variant/60 bg-surface p-6 shadow-soft">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Local matching</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">Local Radius matching</p>
           <h2 className="mt-1 font-display text-xl font-semibold text-on-surface">
             {hasArea ? 'Update your local area' : 'Set your local area'}
           </h2>

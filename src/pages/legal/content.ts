@@ -120,7 +120,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
       blocks: [
         {
           kind: 'p',
-          text: 'When you create an account we collect your email, display name, date of birth, country, and any details you add to your profile. If you enable Local matching, we store a coarse location (city area) and the matching radius you choose, never your precise coordinates. We also record your activity on the service, such as messages, reactions, signals, votes, and notifications.',
+          text: 'When you create an account we collect your email, display name, date of birth, country, and any details you add to your profile. If you enable Local Radius matching, we store a coarse location (city area) and the matching radius you choose, never your precise coordinates. We also record your activity on the service, such as messages, reactions, signals, votes, and notifications.',
         },
         {
           kind: 'p',
