@@ -149,7 +149,7 @@ export function CreatedPendingSection({
                 marginTop: 8,
                 backgroundColor: t.surfaceLowest,
                 borderWidth: 1,
-                borderColor: t.outlineVariant,
+                borderColor: t.outline,
                 borderRadius: radii.xl,
                 padding: 12,
               }}

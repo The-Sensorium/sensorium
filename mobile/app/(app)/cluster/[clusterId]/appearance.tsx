@@ -22,7 +22,7 @@ import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 function paletteFor(
   id: ClusterAppearanceId,
   scheme: 'light' | 'dark',
-  base: { background: string; surfaceContainer: string; chatOutgoing: string; primary: string; surface: string; outlineVariant: string },
+  base: { background: string; surfaceContainer: string; chatOutgoing: string; primary: string; onPrimary: string; surface: string; outlineVariant: string },
 ): ClusterPalette {
   return resolveClusterPalette(id, scheme, base)
 }
@@ -92,7 +92,7 @@ function ClusterAppearanceScreenContent() {
     }
   }
 
-  const base = { background: g.background, surfaceContainer: g.surfaceContainer, chatOutgoing: g.chatOutgoing, primary: g.primary, surface: g.surface, outlineVariant: g.outlineVariant }
+  const base = { background: g.background, surfaceContainer: g.surfaceContainer, chatOutgoing: g.chatOutgoing, primary: g.primary, onPrimary: g.onPrimary, surface: g.surface, outlineVariant: g.outlineVariant }
 
   return (
     <Screen>

@@ -2,9 +2,11 @@ import { Text } from 'react-native'
 import { parseMentions, type MentionMember } from '../../features/mentions'
 import { LinkifiedText } from '../LinkifiedText'
 import { useTheme } from '../../lib/use-theme'
+import { useClusterAccentText } from '../../lib/cluster-theme'
 
 export function MentionText({ content, members, mine = false }: { content: string; members: MentionMember[]; mine?: boolean }) {
   const t = useTheme()
+  const accentText = useClusterAccentText() ?? t.primary
   const parts = parseMentions(content, members)
   return (
     <Text style={{ fontSize: 16, lineHeight: 24, color: mine ? t.onPrimary : t.onSurface }}>
@@ -21,7 +23,7 @@ export function MentionText({ content, members, mine = false }: { content: strin
             <Text
               style={{
                 fontWeight: '600',
-                color: mine ? t.onPrimary : t.primary,
+                color: mine ? t.onPrimary : accentText,
                 textDecorationLine: mine ? 'underline' : 'none',
               }}
             >

@@ -68,7 +68,7 @@ import { Modal } from '../../../../src/components/Modal'
 import { PrimaryButton } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
-import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface } from '../../../../src/lib/cluster-theme'
+import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface, useClusterOnAccent, useClusterAccentText } from '../../../../src/lib/cluster-theme'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 
@@ -125,6 +125,8 @@ function RoomScreenContent() {
   // (cards, menus) on the global theme.
   const themed = useProvidedAppearanceId() !== 'default'
   const composerSurface = useClusterComposerSurface()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
+  const accentText = useClusterAccentText() ?? t.primary
   const roomBg = themed ? t.background : t.surfaceLowest
 
   useClusterChannel(authedClusterId)
@@ -859,8 +861,8 @@ function RoomScreenContent() {
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+            <ArrowLeft size={18} color={accentText} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: accentText }}>
               Home
             </Text>
           </Pressable>
@@ -899,8 +901,8 @@ function RoomScreenContent() {
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+            <ArrowLeft size={18} color={accentText} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: accentText }}>
               Home
             </Text>
           </Pressable>
@@ -953,7 +955,7 @@ function RoomScreenContent() {
                   backgroundColor: t.primary,
                 }}
               >
-                <Phone size={16} color="#fff" strokeWidth={2} />
+                <Phone size={16} color={onAccent} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
@@ -985,7 +987,7 @@ function RoomScreenContent() {
                   opacity: callPending || callRefreshing ? 0.6 : 1,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: onAccent }}>
                   {joinedCall ? 'Open' : 'Join'}
                 </Text>
               </Pressable>
@@ -1258,8 +1260,8 @@ function RoomScreenContent() {
                 minHeight: 48,
               }}
             >
-              <ArrowDown size={16} color={t.onPrimary} strokeWidth={2} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
+              <ArrowDown size={16} color={onAccent} strokeWidth={2} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: onAccent }}>
                 {newCount} new message{newCount === 1 ? '' : 's'}
               </Text>
             </Pressable>

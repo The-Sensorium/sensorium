@@ -26,7 +26,7 @@ export function useClusterTheme(clusterId: string | null | undefined): {
   const tokens = resolveClusterPalette(
     appearanceId,
     scheme,
-    { background: t.background, surfaceContainer: t.surfaceContainer, chatOutgoing: t.chatOutgoing, primary: t.primary, surface: t.surface, outlineVariant: t.outlineVariant },
+    { background: t.background, surfaceContainer: t.surfaceContainer, chatOutgoing: t.chatOutgoing, primary: t.primary, onPrimary: t.onPrimary, surface: t.surface, outlineVariant: t.outlineVariant },
   )
   return { appearanceId, tokens, isLoading, refresh }
 }

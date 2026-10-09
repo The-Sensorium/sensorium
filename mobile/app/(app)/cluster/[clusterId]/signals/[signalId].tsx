@@ -16,7 +16,7 @@ import { useAuth } from '../../../../../src/auth-context'
 import { Avatar } from '../../../../../src/components/Avatar'
 import { MutedHideBar, MutedPlaceholder } from '../../../../../src/components/MutedPlaceholder'
 import { ClusterMenu, ClusterSectionHeader } from '../../../../../src/components/ClusterMenu'
-import { ClusterThemeProvider } from '../../../../../src/lib/cluster-theme'
+import { ClusterThemeProvider, useClusterOnAccent } from '../../../../../src/lib/cluster-theme'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../../src/features/moderation'
 import { useClusterChannel } from '../../../../../src/features/realtime'
 import { dateTimeFormatter } from '../../../../../src/components/room/format'
@@ -43,6 +43,7 @@ export default function SignalDetailScreen() {
 
 function SignalDetailScreenContent() {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const { clusterId = '', signalId = '' } = useLocalSearchParams<{ clusterId: string; signalId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -264,7 +265,7 @@ function SignalDetailScreenContent() {
                     style={{
                       fontSize: 14,
                       fontWeight: '600',
-                      color: nextStatus === 'resolved' ? t.error : t.onPrimary,
+                      color: nextStatus === 'resolved' ? t.error : onAccent,
                     }}
                   >
                     {nextStatus === 'in_progress' ? 'Mark in progress' : 'Mark resolved'}

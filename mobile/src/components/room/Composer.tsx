@@ -16,6 +16,7 @@ import { toErrorMessage } from '../../lib/error'
 import { errorHaptic, lightHaptic } from '../../lib/haptics'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
+import { useClusterOnAccent, useClusterAccentText } from '../../lib/cluster-theme'
 import { GifPicker } from './GifPicker'
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
@@ -73,6 +74,8 @@ export function Composer({
 }) {
   const t = useTheme()
   const inputSurface = surfaceColor ?? t.surface
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
+  const accentText = useClusterAccentText() ?? t.primary
   const [draft, setDraft] = useState('')
   const [editText, setEditText] = useState('')
   const [gifOpen, setGifOpen] = useState(false)
@@ -429,7 +432,9 @@ export function Composer({
             gap: 4,
             backgroundColor: inputSurface,
             borderWidth: 1,
-            borderColor: t.outlineVariant,
+            // Same deliberate split as Field: neutral global outline here so
+            // the composer boundary stays contrasted under soft theme borders.
+            borderColor: t.outline,
             borderRadius: radii.md,
             paddingStart: 6,
             paddingEnd: 4,
@@ -492,7 +497,7 @@ export function Composer({
               hitSlop={8}
               style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             >
-              <ImagePlus size={22} color={stagedImage ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
+              <ImagePlus size={22} color={stagedImage ? accentText : t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
           </CollapsibleChrome>
           <CollapsibleChrome shown={!isTyping && !editing} width={44} height={44}>
@@ -509,13 +514,13 @@ export function Composer({
               <View
                 style={{
                   borderWidth: 1.5,
-                  borderColor: gifOpen ? t.primary : t.onSurfaceVariant,
+                  borderColor: gifOpen ? accentText : t.onSurfaceVariant,
                   borderRadius: 6,
                   paddingHorizontal: 5,
                   paddingVertical: 3,
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '800', color: gifOpen ? t.primary : t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: gifOpen ? accentText : t.onSurfaceVariant }}>
                   GIF
                 </Text>
               </View>
@@ -539,11 +544,11 @@ export function Composer({
           }}
         >
           {pending || uploading || editPending ? (
-            <ActivityIndicator size="small" color={t.onPrimary} />
+            <ActivityIndicator size="small" color={onAccent} />
           ) : editing ? (
-            <Check size={20} color={t.onPrimary} strokeWidth={2} />
+            <Check size={20} color={onAccent} strokeWidth={2} />
           ) : (
-            <Send size={20} color={t.onPrimary} strokeWidth={1.5} />
+            <Send size={20} color={onAccent} strokeWidth={1.5} />
           )}
         </Pressable>
       </View>

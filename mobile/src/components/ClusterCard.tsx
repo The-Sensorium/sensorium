@@ -26,7 +26,10 @@ export function ClusterCard({
   const t = useTheme()
   const { cluster } = item
   const clusterTheme = useClusterTheme(cluster.id)
+  const themed = clusterTheme.appearanceId !== 'default'
   const accent = clusterTheme.tokens.accent
+  const accentText = clusterTheme.tokens.accentText
+  const cardBg = clusterTheme.appearanceId === 'default' ? t.surfaceContainer : clusterTheme.tokens.surface
   const info = modeInfo(cluster.matching_mode)
   const Icon = info.icon
   const needsIntros = myIntroCompletedAt === null
@@ -41,7 +44,7 @@ export function ClusterCard({
         accessibilityRole="button"
         accessibilityLabel={`Open ${cluster.name}`}
         style={{
-          backgroundColor: t.surfaceContainer,
+          backgroundColor: cardBg,
           borderRadius: radii.xl,
           padding: 16,
           marginBottom: 16,
@@ -51,34 +54,12 @@ export function ClusterCard({
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: radii.md,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <View
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    borderRadius: radii.md,
-                    backgroundColor: accent,
-                    opacity: 0.2,
-                  }}
-                />
-                {created ? (
-                  <Users size={20} color={accent} strokeWidth={1.5} />
-                ) : (
-                  <Icon size={20} color={accent} strokeWidth={1.5} />
-                )}
-              </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {created ? (
+                <Users size={20} color={accent} strokeWidth={1.5} />
+              ) : (
+                <Icon size={20} color={accent} strokeWidth={1.5} />
+              )}
               <Text
                 style={{
                   fontSize: 12,
@@ -86,7 +67,7 @@ export function ClusterCard({
                   fontWeight: '600',
                   textTransform: 'uppercase',
                   letterSpacing: 1,
-                  color: accent,
+                  color: accentText,
                   flexShrink: 1,
                 }}
                 numberOfLines={1}
@@ -109,6 +90,8 @@ export function ClusterCard({
               alignItems: 'center',
               gap: 6,
               backgroundColor: t.surfaceLowest,
+              borderWidth: 1,
+              borderColor: themed ? t.outlineVariant : 'transparent',
               borderRadius: radii.pill,
               paddingHorizontal: 12,
               paddingVertical: 6,
@@ -143,6 +126,8 @@ export function ClusterCard({
                 flexDirection: 'row',
                 alignItems: 'center',
                 backgroundColor: t.surfaceLowest,
+                borderWidth: 1,
+                borderColor: themed ? t.outlineVariant : 'transparent',
                 borderRadius: radii.pill,
                 paddingHorizontal: 12,
                 paddingVertical: 6,

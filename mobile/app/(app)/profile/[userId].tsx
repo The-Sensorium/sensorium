@@ -23,7 +23,7 @@ import { countryName } from '../../../src/lib/countries'
 import { isValidTimeZone } from '../../../src/lib/timezones'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
-import { ClusterThemeProvider } from '../../../src/lib/cluster-theme'
+import { ClusterThemeProvider, useClusterAccentText, useClusterOnAccent } from '../../../src/lib/cluster-theme'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
 
 const INTRO_ICONS = [Briefcase, Heart, Target, Users, Telescope]
@@ -39,6 +39,8 @@ export default function ProfileScreen() {
 
 function ProfileScreenContent() {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
+  const accentText = useClusterAccentText() ?? t.primary
   const { userId = '', cluster = '' } = useLocalSearchParams<{ userId: string; cluster: string }>()
   const clusterId = cluster
   const members = useClusterMembers(clusterId || null)
@@ -118,8 +120,8 @@ function ProfileScreenContent() {
         asChild
       >
         <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, minHeight: 44, marginBottom: 4 }}>
-          <ArrowLeft size={16} color={t.primary} strokeWidth={1.5} />
-          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
+          <ArrowLeft size={16} color={accentText} strokeWidth={1.5} />
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: accentText }}>
             Back to members
           </Text>
         </Pressable>
@@ -174,7 +176,7 @@ function ProfileScreenContent() {
                 accessibilityRole="button"
                 style={{ marginTop: 16, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
               >
-                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: onAccent }}>
                   Message {member.display_name}
                 </Text>
               </Pressable>
@@ -203,7 +205,7 @@ function ProfileScreenContent() {
               accessibilityLabel="Edit profile"
               style={{ marginTop: 16, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
             >
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: onAccent }}>
                 Edit profile
               </Text>
             </Pressable>
@@ -218,7 +220,7 @@ function ProfileScreenContent() {
               <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <Cake size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: accentText, textAlign: 'left' }}>
                     Born
                   </Text>
                   <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }}>
@@ -231,7 +233,7 @@ function ProfileScreenContent() {
               <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, borderLeftWidth: member.birth_year ? 1 : 0, borderLeftColor: t.outlineVariant, paddingLeft: member.birth_year ? 16 : 0 }}>
                 <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: accentText, textAlign: 'left' }}>
                     Cluster
                   </Text>
                   <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant, textAlign: 'left' }} numberOfLines={2}>
@@ -246,7 +248,7 @@ function ProfileScreenContent() {
 
       {member.bio ? (
         <Card>
-          <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary, textAlign: 'left' }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: accentText, textAlign: 'left' }}>
             About
           </Text>
           <View style={{ marginTop: 4, flexDirection: 'row', gap: 12 }}>
@@ -297,7 +299,7 @@ function ProfileScreenContent() {
                   accessibilityLabel="Complete your introductions"
                   style={{ marginTop: 12, backgroundColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}
                 >
-                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>
+                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: onAccent }}>
                     Complete your introductions
                   </Text>
                 </Pressable>
@@ -314,10 +316,10 @@ function ProfileScreenContent() {
                   <View
                     style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Icon size={20} color={t.primary} strokeWidth={1.5} />
+                    <Icon size={20} color={accentText} strokeWidth={1.5} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.primary }}>{prompt}</Text>
+                    <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: accentText }}>{prompt}</Text>
                     <View style={{ marginTop: 2 }}>
                       <LinkifiedText text={a.answer} fontSize={14} lineHeight={20} color={t.onSurfaceVariant} />
                     </View>
@@ -335,7 +337,7 @@ function ProfileScreenContent() {
                   accessibilityLabel="Edit introductions"
                   style={{ marginTop: 12, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}
                 >
-                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary }}>
+                  <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: accentText }}>
                     Edit introductions
                   </Text>
                 </Pressable>

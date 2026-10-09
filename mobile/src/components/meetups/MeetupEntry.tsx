@@ -8,6 +8,7 @@ import { useClusterMeetups, useMeetupState } from '../../features/meetups'
 import { MEETUP_ENABLED, formatSlotCompact24, hasEnded, metThisWeek } from '../../lib/meetup'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
+import { useClusterOnAccent } from '../../lib/cluster-theme'
 
 const ACTIVE_STATUSES = ['proposed', 'voting', 'confirmed', 'starting', 'active']
 
@@ -26,6 +27,7 @@ function dismissalKey(userId: string, clusterId: string) {
 /** Quiet entry point at the top of the room. Hidden when the flag is off. */
 export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string; callLive?: boolean }) {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const meetups = useClusterMeetups(MEETUP_ENABLED ? clusterId || null : null)
@@ -150,7 +152,7 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
           backgroundColor: t.primary,
         }}
       >
-        <CalendarDays size={16} color={t.onPrimary} strokeWidth={2} />
+        <CalendarDays size={16} color={onAccent} strokeWidth={2} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
@@ -173,7 +175,7 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
           justifyContent: 'center',
         }}
       >
-        <Text style={{ color: t.onPrimary, fontSize: 14, fontWeight: '600' }}>{cta}</Text>
+        <Text style={{ color: onAccent, fontSize: 14, fontWeight: '600' }}>{cta}</Text>
       </Pressable>
       <Pressable
         accessibilityLabel="Dismiss meetup banner"

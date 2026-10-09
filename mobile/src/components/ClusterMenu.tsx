@@ -4,6 +4,7 @@ import { router, type Href } from 'expo-router'
 import { CalendarDays, Megaphone, Menu, MessageSquare, Palette, Scale, Settings, Users } from 'lucide-react-native'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { useProvidedAppearanceId } from '../lib/cluster-theme'
 
 export type ClusterSection = 'room' | 'appearance' | 'members' | 'signals' | 'votes' | 'meetups' | 'settings'
 
@@ -37,6 +38,7 @@ export function ClusterSectionHeader({
 
 export function ClusterMenu({ clusterId, active }: { clusterId: string; active: ClusterSection }) {
   const t = useTheme()
+  const themed = useProvidedAppearanceId() !== 'default'
   const [open, setOpen] = useState(false)
 
   return (
@@ -68,6 +70,8 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
               end: 16,
               width: 208,
               backgroundColor: t.surfaceLowest,
+              borderWidth: 1,
+              borderColor: themed ? t.outlineVariant : 'transparent',
               borderRadius: radii.xl,
               padding: 8,
               gap: 2,
