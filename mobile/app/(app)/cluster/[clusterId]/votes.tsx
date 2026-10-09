@@ -21,6 +21,7 @@ import { Modal } from '../../../../src/components/Modal'
 import { Avatar } from '../../../../src/components/Avatar'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -43,6 +44,15 @@ const VOTE_TYPE_LABEL: Record<GovernableVoteType, string> = {
 const YES_TALLY = { light: '#047857', dark: '#6ee7b7' }
 
 export default function VotesScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <VotesScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function VotesScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()

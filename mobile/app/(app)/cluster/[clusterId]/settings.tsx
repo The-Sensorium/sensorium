@@ -10,6 +10,7 @@ import { CLUSTER_SIZE } from '../../../../src/lib/constants'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
@@ -17,6 +18,15 @@ import { Card, PrimaryButton, Screen } from '../../../../src/components/ui'
 import { Modal } from '../../../../src/components/Modal'
 
 export default function ClusterSettingsScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <ClusterSettingsScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function ClusterSettingsScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const cluster = useCluster(clusterId || null)

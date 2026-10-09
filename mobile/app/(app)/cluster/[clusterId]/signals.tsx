@@ -8,6 +8,7 @@ import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal, type 
 import { useAuth } from '../../../../src/auth-context'
 import { Avatar } from '../../../../src/components/Avatar'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalModal'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
 import { useClusterChannel } from '../../../../src/features/realtime'
@@ -26,6 +27,15 @@ const statusMeta: Record<SignalStatus, { label: string; colorKey: 'primary' | 't
 }
 
 export default function SignalsScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <SignalsScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function SignalsScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()

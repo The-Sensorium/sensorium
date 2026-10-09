@@ -15,6 +15,7 @@ import { MemberMenuButton, MemberMenuPopover, type MemberMenuTarget } from '../.
 import { PronounBadge } from '../../../../src/components/PronounBadge'
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import { countryName } from '../../../../src/lib/countries'
 import { isValidTimeZone } from '../../../../src/lib/timezones'
 import { radii, shadowShape } from '../../../../src/lib/theme-tokens'
@@ -25,6 +26,15 @@ import { CreatedPendingSection } from '../../../../src/components/created/Create
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 export default function MembersScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <MembersScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function MembersScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()

@@ -16,6 +16,7 @@ import { PreJoin, type PreJoinChoices } from '../../../../src/components/room/ca
 import { isLiveKitAvailable } from '../../../../src/lib/livekit'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
+import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 
 const CallSession = lazy(() =>
   import('../../../../src/components/room/call/CallSession').then((mod) => ({
@@ -41,6 +42,15 @@ function TitleBar() {
 }
 
 export default function CallScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <CallScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function CallScreenContent() {
   const t = useTheme()
   const { clusterId = '', callId = '' } = useLocalSearchParams<{
     clusterId: string

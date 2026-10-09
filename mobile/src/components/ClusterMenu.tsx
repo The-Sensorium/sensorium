@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Modal, Pressable, Text, View } from 'react-native'
 import { router, type Href } from 'expo-router'
-import { CalendarDays, Megaphone, Menu, MessageSquare, Scale, Settings, Users } from 'lucide-react-native'
+import { CalendarDays, Megaphone, Menu, MessageSquare, Palette, Scale, Settings, Users } from 'lucide-react-native'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 
-export type ClusterSection = 'room' | 'members' | 'signals' | 'votes' | 'meetups' | 'settings'
+export type ClusterSection = 'room' | 'appearance' | 'members' | 'signals' | 'votes' | 'meetups' | 'settings'
 
 const SECTIONS: { key: ClusterSection; label: string; icon: typeof MessageSquare; href: (clusterId: string) => Href }[] = [
   { key: 'room', label: 'Room', icon: MessageSquare, href: (id) => ({ pathname: '/cluster/[clusterId]/room', params: { clusterId: id } }) },
+  { key: 'appearance', label: 'Appearance', icon: Palette, href: (id) => ({ pathname: '/cluster/[clusterId]/appearance', params: { clusterId: id } }) },
   { key: 'members', label: 'Members', icon: Users, href: (id) => ({ pathname: '/cluster/[clusterId]/members', params: { clusterId: id } }) },
   { key: 'meetups', label: 'Meetups', icon: CalendarDays, href: (id) => ({ pathname: '/cluster/[clusterId]/meetups', params: { clusterId: id } }) },
   { key: 'signals', label: 'Signals', icon: Megaphone, href: (id) => ({ pathname: '/cluster/[clusterId]/signals', params: { clusterId: id } }) },

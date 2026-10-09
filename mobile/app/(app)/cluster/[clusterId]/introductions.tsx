@@ -12,6 +12,7 @@ import { useMemberIntroAnswers } from '../../../../src/features/cluster'
 import { useAuth } from '../../../../src/auth-context'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
+import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import {
   Card,
   Field,
@@ -21,6 +22,15 @@ import {
 } from '../../../../src/components/ui'
 
 export default function IntroductionsScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <IntroductionsScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function IntroductionsScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
