@@ -27,6 +27,7 @@ export function ClusterCard({
   const { cluster } = item
   const clusterTheme = useClusterTheme(cluster.id)
   const accent = clusterTheme.tokens.accent
+  const accentText = clusterTheme.tokens.accentText
   const cardBg = clusterTheme.appearanceId === 'default' ? t.surfaceContainer : clusterTheme.tokens.surface
   const info = modeInfo(cluster.matching_mode)
   const Icon = info.icon
@@ -65,7 +66,7 @@ export function ClusterCard({
                   fontWeight: '600',
                   textTransform: 'uppercase',
                   letterSpacing: 1,
-                  color: accent,
+                  color: accentText,
                   flexShrink: 1,
                 }}
                 numberOfLines={1}

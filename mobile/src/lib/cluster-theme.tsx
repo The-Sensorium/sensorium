@@ -11,6 +11,8 @@ interface ClusterThemeValue {
   theme: ClusterThemeTokens
   appearanceId: ClusterAppearanceId
   composerSurface: string
+  onAccent: string
+  accentText: string
 }
 
 const ClusterThemeContext = createContext<ClusterThemeValue | null>(null)
@@ -25,6 +27,14 @@ export function useProvidedAppearanceId(): ClusterAppearanceId {
 
 export function useClusterComposerSurface(): string | null {
   return useContext(ClusterThemeContext)?.composerSurface ?? null
+}
+
+export function useClusterOnAccent(): string | null {
+  return useContext(ClusterThemeContext)?.onAccent ?? null
+}
+
+export function useClusterAccentText(): string | null {
+  return useContext(ClusterThemeContext)?.accentText ?? null
 }
 
 export function useGlobalTheme(): ClusterThemeTokens {
@@ -97,27 +107,30 @@ export function ClusterThemeProvider({
 
   const palette = useMemo(
     () =>
-      appearanceId === 'default'
-        ? null
-        : resolveClusterPalette(
-            appearanceId,
-            scheme,
-            { background: base.background, surfaceContainer: base.surfaceContainer, chatOutgoing: base.chatOutgoing, primary: base.primary, surface: base.surface, outlineVariant: base.outlineVariant },
-          ),
+      resolveClusterPalette(
+        appearanceId,
+        scheme,
+            { background: base.background, surfaceContainer: base.surfaceContainer, chatOutgoing: base.chatOutgoing, primary: base.primary, onPrimary: base.onPrimary, surface: base.surface, outlineVariant: base.outlineVariant },
+      ),
     [appearanceId, base, scheme],
   )
 
   const theme = useMemo<ClusterThemeTokens>(
-    () =>
-      palette
-        ? { ...base, background: palette.background, surfaceContainer: palette.incoming, chatOutgoing: palette.sent, primary: palette.accent, surface: palette.surface, outlineVariant: palette.border }
-        : base,
+    () => ({
+      ...base,
+      background: palette.background,
+      surfaceContainer: palette.incoming,
+      chatOutgoing: palette.sent,
+      primary: palette.accent,
+      surface: palette.surface,
+      outlineVariant: palette.border,
+    }),
     [palette, base],
   )
 
   const value = useMemo<ClusterThemeValue>(
-    () => ({ theme, appearanceId, composerSurface: palette?.composerSurface ?? base.surface }),
-    [theme, appearanceId, palette, base],
+    () => ({ theme, appearanceId, composerSurface: palette.composerSurface, onAccent: palette.onAccent, accentText: palette.accentText }),
+    [theme, appearanceId, palette],
   )
 
   return <ClusterThemeContext.Provider value={value}>{children}</ClusterThemeContext.Provider>

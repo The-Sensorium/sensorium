@@ -9,6 +9,7 @@ import type { Signal, SignalStatus } from '../../features/signals'
 import type { Vote } from '../../features/votes'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
+import { useClusterAccentText } from '../../lib/cluster-theme'
 
 const SIGNAL_STATUS: Record<SignalStatus, { label: string; colorKey: 'primary' | 'tertiary' | 'onSurfaceVariant' }> = {
   open: { label: 'Open', colorKey: 'primary' },
@@ -32,6 +33,8 @@ export function SignalRow({
   showDay: boolean
 }) {
   const t = useTheme()
+  const accentText = useClusterAccentText() ?? t.primary
+  const statusColor = SIGNAL_STATUS[signal.status].colorKey === 'primary' ? accentText : t[SIGNAL_STATUS[signal.status].colorKey]
   return (
     <View>
       {showDay ? <DayDivider iso={signal.created_at} /> : null}
@@ -75,8 +78,8 @@ export function SignalRow({
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <View style={{ backgroundColor: t.surface, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <Text style={{ fontSize: 12, fontWeight: '500', color: t[SIGNAL_STATUS[signal.status].colorKey] }}>
+            <View style={{ backgroundColor: t.surface, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <Text style={{ fontSize: 12, fontWeight: '500', color: statusColor }}>
               {SIGNAL_STATUS[signal.status].label}
             </Text>
           </View>

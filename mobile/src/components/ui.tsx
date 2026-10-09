@@ -16,6 +16,7 @@ import type { SharedValue } from 'react-native-reanimated'
 import { Link, type Href } from 'expo-router'
 import { radii, shadowShape, spacing } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { useClusterOnAccent } from '../lib/cluster-theme'
 import { lightHaptic } from '../lib/haptics'
 import { BrandMark } from './BrandMark'
 import { BrandWordmark } from './BrandWordmark'
@@ -209,9 +210,10 @@ export function PrimaryButton({
   tone?: 'primary' | 'error'
 }) {
   const t = useTheme()
+  const clusterOnAccent = useClusterOnAccent()
   const inactive = disabled || loading
   const backgroundColor = tone === 'error' ? t.error : t.primary
-  const color = tone === 'error' ? t.onError : t.onPrimary
+  const color = tone === 'error' ? t.onError : (clusterOnAccent ?? t.onPrimary)
   return (
     <Pressable
       onPress={() => {

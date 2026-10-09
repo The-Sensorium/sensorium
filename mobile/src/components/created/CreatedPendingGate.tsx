@@ -3,6 +3,7 @@ import { Link } from 'expo-router'
 import { Clock } from 'lucide-react-native'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
+import { useClusterOnAccent } from '../../lib/cluster-theme'
 
 /** Locked view for pending created clusters: chat, signals, votes, calls,
  * and settings stay closed until 3 members activate the cluster. */
@@ -16,6 +17,7 @@ export function CreatedPendingGate({
   loading?: boolean
 }) {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const remaining = Math.max(0, 3 - confirmedCount)
   return (
     <View style={{ alignItems: 'center', padding: 32 }}>
@@ -48,7 +50,7 @@ export function CreatedPendingGate({
           paddingHorizontal: 24,
           paddingVertical: 14,
           minHeight: 48,
-          color: t.onPrimary,
+          color: onAccent,
           fontSize: 14,
           fontWeight: '600',
           overflow: 'hidden',
