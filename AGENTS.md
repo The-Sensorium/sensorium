@@ -14,6 +14,12 @@ Sensorium: React 19 SPA (Vite + TypeScript + Tailwind v4 + TanStack Query) with 
 
 Env is just `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (both public). The browser holds only the anon key.
 
+## Mobile versioning
+
+- App version lives in `mobile/app.json` (`expo.version`) and `mobile/package.json`; keep the two in sync.
+- Follow semver: minor for backwards-compatible features, patch for fixes, major for breaking changes.
+- With every version bump, also increment `android.versionCode` (+1) and `ios.buildNumber` (+1) in `mobile/app.json`. Production EAS builds auto-increment store codes (`autoIncrement` in `mobile/eas.json`); the `versionCode` still matters for preview APK builds.
+
 ## Local stack
 
 - `supabase start` for the full Docker stack; `supabase db reset` rebuilds it from scratch; then rerun `npm run seed:demo`.
