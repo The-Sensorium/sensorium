@@ -114,7 +114,9 @@ function MembersScreenContent() {
             <View
               key={member.id}
               style={{
-                backgroundColor: t.surfaceLowest,
+                backgroundColor: t.surface,
+                borderWidth: 1,
+                borderColor: t.outlineVariant,
                 borderRadius: radii.xl,
                 padding: 16,
                 marginBottom: 12,
