@@ -23,11 +23,21 @@ import { countryName } from '../../../src/lib/countries'
 import { isValidTimeZone } from '../../../src/lib/timezones'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
+import { ClusterThemeProvider } from '../../../src/lib/cluster-theme'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
 
 const INTRO_ICONS = [Briefcase, Heart, Target, Users, Telescope]
 
 export default function ProfileScreen() {
+  const { cluster = '' } = useLocalSearchParams<{ userId: string; cluster: string }>()
+  return (
+    <ClusterThemeProvider clusterId={cluster || null}>
+      <ProfileScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function ProfileScreenContent() {
   const t = useTheme()
   const { userId = '', cluster = '' } = useLocalSearchParams<{ userId: string; cluster: string }>()
   const clusterId = cluster

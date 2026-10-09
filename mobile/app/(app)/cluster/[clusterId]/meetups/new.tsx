@@ -8,6 +8,7 @@ import { useClusterMembers } from '../../../../../src/features/matching'
 import { useCreateMeetup } from '../../../../../src/features/meetups'
 import { Avatar } from '../../../../../src/components/Avatar'
 import { ClusterSectionHeader } from '../../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider } from '../../../../../src/lib/cluster-theme'
 import { TimezonePicker } from '../../../../../src/components/TimezonePicker'
 import { mutateWithRetry } from '../../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../../src/lib/error'
@@ -86,6 +87,15 @@ function PickerPill({
 
 /** Ballot builder: the proposer adds 2-5 custom times, each previewed per member. */
 export default function NewMeetupScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <NewMeetupScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function NewMeetupScreenContent() {
   const t = useTheme()
   const scheme = useResolvedScheme()
   const amber = scheme === 'dark' ? '#fbbf24' : '#b45309'

@@ -68,6 +68,7 @@ import { Modal } from '../../../../src/components/Modal'
 import { PrimaryButton } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface } from '../../../../src/lib/cluster-theme'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 
@@ -88,6 +89,15 @@ function dayKey(iso: string) {
 const GROUP_WINDOW_MS = 30 * 60 * 1000
 
 export default function RoomScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <RoomScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function RoomScreenContent() {
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
   // Sticky composer pattern: the composer rides a native frame-synced
@@ -110,6 +120,12 @@ export default function RoomScreen() {
   // request fails RLS (permanent error, no retry) and a pre-session channel
   // receives nothing, leaving a push-tapped room stuck without its message.
   const authedClusterId = authed ? clusterId || null : null
+  // Single theme source: t already carries the provider override. Only the
+  // main background needs a gate, since the provider leaves surfaceLowest
+  // (cards, menus) on the global theme.
+  const themed = useProvidedAppearanceId() !== 'default'
+  const composerSurface = useClusterComposerSurface()
+  const roomBg = themed ? t.background : t.surfaceLowest
 
   useClusterChannel(authedClusterId)
   useDismissKeyboardOnBlur()
@@ -868,7 +884,7 @@ export default function RoomScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.surfaceLowest }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: roomBg }}>
       <View style={{ flex: 1 }}>
         <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
@@ -1021,14 +1037,14 @@ export default function RoomScreen() {
                   return (
                     <View key={m.id}>
                       {isMe ? (
-                        <View
-                          style={{
-                            borderWidth: 2,
-                            borderColor: t.primary,
-                            borderRadius: 14,
-                            margin: -2,
-                          }}
-                        >
+                          <View
+                            style={{
+                              borderWidth: 2,
+                              borderColor: t.primary,
+                              borderRadius: 14,
+                              margin: -2,
+                            }}
+                          >
                           {face}
                         </View>
                       ) : (
@@ -1253,7 +1269,7 @@ export default function RoomScreen() {
         <KeyboardStickyView
           offset={{ closed: 0, opened: bottom }}
           style={{
-            backgroundColor: t.surfaceLowest,
+            backgroundColor: roomBg,
             paddingHorizontal: 12,
             paddingTop: 8,
             paddingBottom: 8 + bottom,
@@ -1263,6 +1279,7 @@ export default function RoomScreen() {
             key={clusterId}
             members={parseMembers}
             selfId={userId}
+            surfaceColor={composerSurface ?? undefined}
             pending={send.isPending}
             raisePending={raise.isPending}
             error={error}

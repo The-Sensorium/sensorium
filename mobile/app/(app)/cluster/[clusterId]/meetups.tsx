@@ -18,6 +18,7 @@ import {
 import { ConfirmSheet } from '../../../../src/components/ConfirmSheet'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, successHaptic } from '../../../../src/lib/haptics'
@@ -33,6 +34,15 @@ import { MEETUP_ENABLED, MEETUP_JOIN_LEAD_MS, MEETUP_QUORUM, canJoinMeetup, form
 const ACTIVE_STATUSES = ['proposed', 'voting', 'confirmed', 'starting', 'active']
 
 export default function MeetupsScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <MeetupsScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function MeetupsScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const id = MEETUP_ENABLED ? clusterId || null : null

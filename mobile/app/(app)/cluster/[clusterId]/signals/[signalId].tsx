@@ -16,6 +16,7 @@ import { useAuth } from '../../../../../src/auth-context'
 import { Avatar } from '../../../../../src/components/Avatar'
 import { MutedHideBar, MutedPlaceholder } from '../../../../../src/components/MutedPlaceholder'
 import { ClusterMenu, ClusterSectionHeader } from '../../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider } from '../../../../../src/lib/cluster-theme'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../../src/features/moderation'
 import { useClusterChannel } from '../../../../../src/features/realtime'
 import { dateTimeFormatter } from '../../../../../src/components/room/format'
@@ -32,6 +33,15 @@ const statusMeta: Record<SignalStatus, { label: string }> = {
 }
 
 export default function SignalDetailScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <SignalDetailScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function SignalDetailScreenContent() {
   const t = useTheme()
   const { clusterId = '', signalId = '' } = useLocalSearchParams<{ clusterId: string; signalId: string }>()
   const auth = useAuth()

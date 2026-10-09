@@ -49,6 +49,7 @@ export function Composer({
   callActive,
   onCancelReply,
   onCancelEdit,
+  surfaceColor,
 }: {
   members: MentionMember[]
   selfId: string | null
@@ -58,6 +59,7 @@ export function Composer({
   replyTo: { id: string; authorName: string; preview: string } | null
   editing: { id: string; content: string } | null
   editPending: boolean
+  surfaceColor?: string
   onError(message: string | null): void
   onSend(content: string): Promise<void>
   onSaveEdit(content: string): void
@@ -70,6 +72,7 @@ export function Composer({
   onCancelEdit(): void
 }) {
   const t = useTheme()
+  const inputSurface = surfaceColor ?? t.surface
   const [draft, setDraft] = useState('')
   const [editText, setEditText] = useState('')
   const [gifOpen, setGifOpen] = useState(false)
@@ -424,7 +427,7 @@ export function Composer({
             flexDirection: 'row',
             alignItems: 'center',
             gap: 4,
-            backgroundColor: t.surface,
+            backgroundColor: inputSurface,
             borderWidth: 1,
             borderColor: t.outlineVariant,
             borderRadius: radii.md,

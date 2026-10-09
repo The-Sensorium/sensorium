@@ -7,6 +7,7 @@ import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { useClusterTheme } from '../lib/use-cluster-appearance'
 
 function statusLabel(status: string): string {
   if (status === 'archived') return 'Archived'
@@ -24,6 +25,8 @@ export function ClusterCard({
 }) {
   const t = useTheme()
   const { cluster } = item
+  const clusterTheme = useClusterTheme(cluster.id)
+  const accent = clusterTheme.tokens.accent
   const info = modeInfo(cluster.matching_mode)
   const Icon = info.icon
   const needsIntros = myIntroCompletedAt === null
@@ -41,18 +44,30 @@ export function ClusterCard({
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.xl,
           padding: 16,
+          paddingTop: 20,
           marginBottom: 16,
+          overflow: 'hidden',
           ...shadowShape,
           shadowColor: t.shadowColor,
         }}
       >
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            start: 0,
+            end: 0,
+            height: 4,
+            backgroundColor: accent,
+          }}
+        />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {created ? (
-                <Users size={20} color={t.primary} strokeWidth={1.5} />
+                <Users size={20} color={accent} strokeWidth={1.5} />
               ) : (
-                <Icon size={20} color={t.primary} strokeWidth={1.5} />
+                <Icon size={20} color={accent} strokeWidth={1.5} />
               )}
               <Text
                 style={{
@@ -61,7 +76,7 @@ export function ClusterCard({
                   fontWeight: '600',
                   textTransform: 'uppercase',
                   letterSpacing: 1,
-                  color: t.primary,
+                  color: accent,
                   flexShrink: 1,
                 }}
                 numberOfLines={1}
