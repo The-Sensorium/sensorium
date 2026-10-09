@@ -102,7 +102,9 @@ export function Field({
           {
             backgroundColor: t.surfaceContainer,
             borderWidth: 1,
-            borderColor: error ? t.error : t.outlineVariant,
+            // Inputs keep the neutral global outline (not the themed soft
+            // border) so the entry boundary stays contrasted everywhere.
+            borderColor: error ? t.error : t.outline,
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 12,
@@ -144,7 +146,7 @@ export function PasswordField({
           alignItems: 'center',
           backgroundColor: t.surfaceContainer,
           borderWidth: 1,
-          borderColor: error ? t.error : t.outlineVariant,
+          borderColor: error ? t.error : t.outline,
           borderRadius: radii.md,
         }}
       >

@@ -130,7 +130,7 @@ export function InCallChat({
             flex: 1,
             backgroundColor: t.surfaceLowest,
             borderWidth: 1,
-            borderColor: t.outlineVariant,
+            borderColor: t.outline,
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 10,

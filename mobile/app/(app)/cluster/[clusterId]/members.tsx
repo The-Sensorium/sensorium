@@ -15,7 +15,7 @@ import { MemberMenuButton, MemberMenuPopover, type MemberMenuTarget } from '../.
 import { PronounBadge } from '../../../../src/components/PronounBadge'
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
-import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
+import { ClusterThemeProvider, useProvidedAppearanceId } from '../../../../src/lib/cluster-theme'
 import { countryName } from '../../../../src/lib/countries'
 import { isValidTimeZone } from '../../../../src/lib/timezones'
 import { radii, shadowShape } from '../../../../src/lib/theme-tokens'
@@ -36,6 +36,7 @@ export default function MembersScreen() {
 
 function MembersScreenContent() {
   const t = useTheme()
+  const themed = useProvidedAppearanceId() !== 'default'
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -114,9 +115,9 @@ function MembersScreenContent() {
             <View
               key={member.id}
               style={{
-                backgroundColor: t.surface,
+                backgroundColor: themed ? t.surface : t.surfaceLowest,
                 borderWidth: 1,
-                borderColor: t.outlineVariant,
+                borderColor: themed ? t.outlineVariant : 'transparent',
                 borderRadius: radii.xl,
                 padding: 16,
                 marginBottom: 12,

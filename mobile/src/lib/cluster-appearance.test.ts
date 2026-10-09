@@ -88,7 +88,7 @@ describe('cluster-appearance', () => {
       onAccent: '#ffffff',
       surface: '#F8F5FD',
       composerSurface: '#FBF9FF',
-      border: '#9378BF',
+      border: '#B6A2D5',
     })
     expect(resolveClusterPalette('lavender', 'dark', base)).toEqual({
       background: '#111014',
@@ -99,9 +99,12 @@ describe('cluster-appearance', () => {
       onAccent: '#111014',
       surface: '#1C1921',
       composerSurface: '#17141C',
-      border: '#7465AD',
+      border: '#574C7B',
     })
     expect(resolveClusterPalette('amber', 'dark', base).accent).toBe('#F2B84B')
+    expect(resolveClusterPalette('amber', 'dark', base)).toMatchObject({ border: '#765826' })
+    expect(resolveClusterPalette('ocean', 'dark', base)).toMatchObject({ border: '#366164' })
+    expect(resolveClusterPalette('sage', 'dark', base)).toMatchObject({ border: '#42624D' })
     expect(resolveClusterPalette('amber', 'dark', base).onAccent).toBe('#14100A')
     expect(resolveClusterPalette('amber', 'light', base)).toMatchObject({ sent: '#8A5200', accent: '#8A5200', onAccent: '#ffffff' })
     expect(resolveClusterPalette('amber', 'dark', base)).toMatchObject({ sent: '#9A6206' })
@@ -115,19 +118,19 @@ describe('cluster-appearance', () => {
       background: '#F7FAF7',
       surface: '#EFF4EF',
       composerSurface: '#F3F7F3',
-      border: '#688B75',
+      border: '#95B09D',
     })
     expect(resolveClusterPalette('ocean', 'light', base)).toMatchObject({
       background: '#F5FBFB',
       surface: '#ECF5F5',
       composerSurface: '#F0F8F8',
-      border: '#588D90',
+      border: '#8BB4B6',
     })
     expect(resolveClusterPalette('amber', 'light', base)).toMatchObject({
       background: '#FFFBF3',
       surface: '#FBF0DE',
       composerSurface: '#F8E8CC',
-      border: '#A97A32',
+      border: '#C69F61',
     })
   })
 

@@ -432,7 +432,9 @@ export function Composer({
             gap: 4,
             backgroundColor: inputSurface,
             borderWidth: 1,
-            borderColor: t.outlineVariant,
+            // Same deliberate split as Field: neutral global outline here so
+            // the composer boundary stays contrasted under soft theme borders.
+            borderColor: t.outline,
             borderRadius: radii.md,
             paddingStart: 6,
             paddingEnd: 4,

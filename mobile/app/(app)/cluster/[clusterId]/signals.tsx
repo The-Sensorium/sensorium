@@ -8,7 +8,7 @@ import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal, type 
 import { useAuth } from '../../../../src/auth-context'
 import { Avatar } from '../../../../src/components/Avatar'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
-import { ClusterThemeProvider, useClusterOnAccent } from '../../../../src/lib/cluster-theme'
+import { ClusterThemeProvider, useClusterOnAccent, useProvidedAppearanceId } from '../../../../src/lib/cluster-theme'
 import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalModal'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../src/features/moderation'
 import { useClusterChannel } from '../../../../src/features/realtime'
@@ -242,6 +242,7 @@ function SignalCard({
   compact?: boolean
 }) {
   const t = useTheme()
+  const themed = useProvidedAppearanceId() !== 'default'
   const meta = statusMeta[signal.status]
   const author = memberById.get(signal.author_id)
   return (
@@ -250,7 +251,7 @@ function SignalCard({
       asChild
     >
       <Pressable
-        style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: compact ? 12 : 16, marginBottom: 12 }}
+        style={{ backgroundColor: themed ? t.surface : t.surfaceLowest, borderWidth: 1, borderColor: themed ? t.outlineVariant : 'transparent', borderRadius: radii.xl, padding: compact ? 12 : 16, marginBottom: 12 }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={24} />

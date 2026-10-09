@@ -12,6 +12,7 @@ import { useMemberIntroAnswers } from '../../../../src/features/cluster'
 import { useAuth } from '../../../../src/auth-context'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
+import { useProvidedAppearanceId } from '../../../../src/lib/cluster-theme'
 import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import {
   Card,
@@ -32,6 +33,7 @@ export default function IntroductionsScreen() {
 
 function IntroductionsScreenContent() {
   const t = useTheme()
+  const themed = useProvidedAppearanceId() !== 'default'
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const authUserId = auth.state === 'signedIn' ? auth.userId : null
@@ -115,7 +117,14 @@ function IntroductionsScreenContent() {
       {(questions.data ?? []).map((q, i) => (
         <View
           key={q.id}
-          style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 20, marginBottom: 16 }}
+          style={{
+            backgroundColor: themed ? t.surface : t.surfaceLowest,
+            borderWidth: 1,
+            borderColor: themed ? t.outlineVariant : 'transparent',
+            borderRadius: radii.xl,
+            padding: 20,
+            marginBottom: 16,
+          }}
         >
           <Text
             style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}

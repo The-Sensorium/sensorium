@@ -26,6 +26,7 @@ export function ClusterCard({
   const t = useTheme()
   const { cluster } = item
   const clusterTheme = useClusterTheme(cluster.id)
+  const themed = clusterTheme.appearanceId !== 'default'
   const accent = clusterTheme.tokens.accent
   const accentText = clusterTheme.tokens.accentText
   const cardBg = clusterTheme.appearanceId === 'default' ? t.surfaceContainer : clusterTheme.tokens.surface
@@ -89,6 +90,8 @@ export function ClusterCard({
               alignItems: 'center',
               gap: 6,
               backgroundColor: t.surfaceLowest,
+              borderWidth: 1,
+              borderColor: themed ? t.outlineVariant : 'transparent',
               borderRadius: radii.pill,
               paddingHorizontal: 12,
               paddingVertical: 6,
@@ -123,6 +126,8 @@ export function ClusterCard({
                 flexDirection: 'row',
                 alignItems: 'center',
                 backgroundColor: t.surfaceLowest,
+                borderWidth: 1,
+                borderColor: themed ? t.outlineVariant : 'transparent',
                 borderRadius: radii.pill,
                 paddingHorizontal: 12,
                 paddingVertical: 6,
