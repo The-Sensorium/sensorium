@@ -62,6 +62,18 @@ function dayKey(iso: string) {
   return iso.slice(0, 10)
 }
 
+// Errors set only by the reply/deep-link jump flow. A successful jump clears
+// these so a stale jump failure does not stick, but never wipes unrelated
+// banner errors (reactions, edits, sends). The constants are shared between
+// the setters and the set so a copy edit cannot silently break the clearing.
+const JUMP_TOO_OLD = 'Could not find that message. It may be very old.'
+const JUMP_UNAVAILABLE = 'That message is no longer available.'
+const JUMP_LOADING = 'That message is still loading. Try again in a moment.'
+// Same copy as the manual "Load earlier" failure; the jump path records it in
+// jumpFailureRef so clearing stays scoped to the jump that set it.
+const JUMP_PAGE_FAILED = 'Could not load earlier messages.'
+const JUMP_ERRORS = new Set([JUMP_TOO_OLD, JUMP_UNAVAILABLE, JUMP_LOADING])
+
 export function RoomView() {
   useDocumentTitle('Cluster Chat')
   const { clusterId = '' } = useParams()
@@ -135,6 +147,11 @@ export function RoomView() {
   const [pendingJumpId, setPendingJumpId] = useState<string | null>(null)
   const jumpInFlight = useRef(false)
   const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Exact text of a jump-flow failure that is not one of the fixed strings
+  // above (a paging error while jumping). Lets a later successful jump clear
+  // exactly that banner without touching unrelated errors, even when the text
+  // collides with a manual "Load earlier" failure.
+  const jumpFailureRef = useRef<string | null>(null)
 
   const memberMap = useMemo(() => {
     const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
@@ -284,6 +301,7 @@ export function RoomView() {
     setJumpHighlightId(null)
     setPendingJumpId(null)
     jumpInFlight.current = false
+    jumpFailureRef.current = null
     if (jumpTimer.current) {
       clearTimeout(jumpTimer.current)
       jumpTimer.current = null
@@ -591,8 +609,17 @@ export function RoomView() {
 
   // Prepend an earlier page. The length watch treats this as a non-event so the
   // older messages don't count toward the "new messages" badge.
-  async function handleLoadEarlier(): Promise<{ added: number; hasMore: boolean } | null> {
-    setError(null)
+  // Failures surface the banner and return the exact text shown, so the
+  // jump flow can record it for scoped clearing (a later successful jump
+  // clears exactly its own failure). The jump path passes clearBanner: false
+  // so paging never wipes an unrelated banner; it clears stale jump errors
+  // itself via clearJumpError before starting.
+  async function handleLoadEarlier(
+    { clearBanner = true }: { clearBanner?: boolean } = {},
+  ): Promise<
+    { ok: true; added: number; hasMore: boolean } | { ok: false; error: string }
+  > {
+    if (clearBanner) setError(null)
     // Record which surface is scrollable and its offset *before* the merge, so
     // we can re-anchor on the message the user is reading after content grows
     // above it (see useLayoutEffect below).
@@ -621,11 +648,12 @@ export function RoomView() {
         exhaustedRef.current = true
         setHasMore(false)
       }
-      return result
+      return { ok: true as const, added: result.added, hasMore: result.hasMore }
     } catch (e) {
-      setError(toErrorMessage(e, 'Could not load earlier messages.'))
+      const message = toErrorMessage(e, JUMP_PAGE_FAILED)
+      setError(message)
       anchorRef.current = null
-      return null
+      return { ok: false as const, error: message }
     }
   }
 
@@ -647,6 +675,14 @@ export function RoomView() {
       window.scrollTo(0, anchor.scrollTop + delta)
     }
   }, [messages.data])
+
+  const clearJumpError = useCallback(() => {
+    const failure = jumpFailureRef.current
+    jumpFailureRef.current = null
+    setError((prev) =>
+      prev !== null && (JUMP_ERRORS.has(prev) || prev === failure) ? null : prev,
+    )
+  }, [])
 
   function flashJumpHighlight(messageId: string) {
     setJumpHighlightId(messageId)
@@ -681,41 +717,51 @@ export function RoomView() {
       for (let i = 0; i < 5; i++) {
         const msgs = queryClient.getQueryData<Message[]>(key) ?? []
         if (msgs.some((m) => m.id === parentId && !m.deleted_at)) return
-        const result = await handleLoadEarlier()
-        if (!result) {
-          // Load failed; handleLoadEarlier already surfaced it. Just release.
+        const outcome = await handleLoadEarlier({ clearBanner: false })
+        if (!outcome.ok) {
+          // Load failed; handleLoadEarlier already surfaced the exact text.
+          // Record it so a later successful jump clears exactly this banner.
+          jumpFailureRef.current = outcome.error
           setPendingJumpId((cur) => (cur === parentId ? null : cur))
           return
         }
-        if (!result.hasMore || result.added === 0) break
+        if (!outcome.hasMore || outcome.added === 0) break
       }
+      // A realtime arrival may have delivered the target while the last page
+      // was in flight (the pending effect already scrolled to it). Re-check
+      // before failing so success is never clobbered by a stale error.
+      const latest = queryClient.getQueryData<Message[]>(key) ?? []
+      if (latest.some((m) => m.id === parentId && !m.deleted_at)) return
       setPendingJumpId((cur) => (cur === parentId ? null : cur))
-      setError('Could not find that message. It may be very old.')
-    } catch {
+      setError(JUMP_TOO_OLD)
+    } catch (e) {
       setPendingJumpId((cur) => (cur === parentId ? null : cur))
-      setError('Could not load earlier messages.')
+      const message = toErrorMessage(e, JUMP_PAGE_FAILED)
+      jumpFailureRef.current = message
+      setError(message)
     }
   }
 
   function handleJumpToReply(parentId: string) {
     if (jumpInFlight.current) return
     if (timeline.some((it) => it.kind === 'message' && it.data.id === parentId)) {
+      clearJumpError()
       scrollMessageIntoView(parentId)
       return
     }
     // Outside the loaded window: only page back for a parent we know exists
     // (a rendered preview). Anything else is deleted or unavailable.
     if (loadEarlier.isPending) {
-      setError('That message is still loading. Try again in a moment.')
+      setError(JUMP_LOADING)
       return
     }
     const known = replyById.get(parentId)
     if (!known || known.deleted_at || !clusterId) {
-      setError('That message is no longer available.')
+      setError(JUMP_UNAVAILABLE)
       return
     }
     jumpInFlight.current = true
-    setError(null)
+    clearJumpError()
     setPendingJumpId(parentId)
     void pageBackToParent(parentId, ['cluster-messages', clusterId]).finally(() => {
       jumpInFlight.current = false
@@ -734,16 +780,20 @@ export function RoomView() {
     if (!timeline.some((it) => it.kind === 'message' && it.data.id === pendingJumpId)) return
     const target = pendingJumpId
     setPendingJumpId(null)
+    clearJumpError()
     scrollMessageIntoView(target)
-  }, [timeline, pendingJumpId])
+  }, [timeline, pendingJumpId, clearJumpError])
 
   // Notification deep link (?message=): same scroll plus highlight as a reply
   // jump, but the target is any message, not just a reply parent. The param
   // is consumed (cleared) on every run, so each new value fires exactly once
   // even when the room instance is reused across taps.
+  // The isFetching wait mirrors mobile: on a warm cache the room remounts
+  // with stale rows while the latest page refetches, and a target newer than
+  // that window would otherwise page backwards and fail as "very old".
   useEffect(() => {
     const messageId = searchParams.get('message')
-    if (!messageId || !clusterId || messages.isLoading) return
+    if (!messageId || !clusterId || messages.isLoading || messages.isFetching) return
     const next = new URLSearchParams(searchParams)
     next.delete('message')
     setSearchParams(next, { replace: true })
@@ -753,24 +803,25 @@ export function RoomView() {
     // below lands on it.
     const known = replyById.get(messageId)
     if (known && known.deleted_at) {
-      setError('That message is no longer available.')
+      setError(JUMP_UNAVAILABLE)
       return
     }
     if (timeline.some((it) => it.kind === 'message' && it.data.id === messageId)) {
+      clearJumpError()
       scrollMessageIntoView(messageId)
       return
     }
     if (loadEarlier.isPending) {
-      setError('That message is still loading. Try again in a moment.')
+      setError(JUMP_LOADING)
       return
     }
     jumpInFlight.current = true
-    setError(null)
+    clearJumpError()
     setPendingJumpId(messageId)
     void pageBackRef.current(messageId, ['cluster-messages', clusterId]).finally(() => {
       jumpInFlight.current = false
     })
-  }, [searchParams, clusterId, messages.isLoading, timeline, loadEarlier.isPending, setSearchParams, replyById])
+  }, [searchParams, clusterId, messages.isLoading, messages.isFetching, timeline, loadEarlier.isPending, setSearchParams, replyById, clearJumpError])
 
   async function handleRaise() {
     const prompt = signalPrompt.trim()

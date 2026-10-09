@@ -88,6 +88,15 @@ function dayKey(iso: string) {
 // conversational turn.
 const GROUP_WINDOW_MS = 30 * 60 * 1000
 
+// Errors set only by the reply/deep-link jump flow. A successful jump clears
+// these so a stale jump failure does not stick, but never wipes unrelated
+// banner errors (reactions, edits, sends). The constants are shared between
+// the setters and the set so a copy edit cannot silently break the clearing.
+const JUMP_TOO_OLD = 'Could not find that message. It may be very old.'
+const JUMP_UNAVAILABLE = 'That message is no longer available.'
+const JUMP_LOADING = 'That message is still loading. Try again in a moment.'
+const JUMP_ERRORS = new Set([JUMP_TOO_OLD, JUMP_UNAVAILABLE, JUMP_LOADING])
+
 export default function RoomScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   return (
@@ -206,6 +215,11 @@ function RoomScreenContent() {
   const jumpRetryCount = useRef(0)
   const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const jumpRetryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Exact text of a jump-flow failure that is not one of the fixed strings
+  // above (a network error while paging back). Lets a later successful jump
+  // clear exactly that banner without touching unrelated errors, even when
+  // the text collides with a manual "Load earlier" failure.
+  const jumpFailureRef = useRef<string | null>(null)
 
   useEffect(() => {
     lastLenRef.current = null
@@ -231,6 +245,7 @@ function RoomScreenContent() {
     setJumpHighlightId(null)
     setPendingJumpId(null)
     jumpInFlight.current = false
+    jumpFailureRef.current = null
     if (jumpTimer.current) {
       clearTimeout(jumpTimer.current)
       jumpTimer.current = null
@@ -302,6 +317,14 @@ function RoomScreenContent() {
     setReplyTo(m)
   }
 
+  const clearJumpError = useCallback(() => {
+    const failure = jumpFailureRef.current
+    jumpFailureRef.current = null
+    setError((prev) =>
+      prev !== null && (JUMP_ERRORS.has(prev) || prev === failure) ? null : prev,
+    )
+  }, [])
+
   function flashJumpHighlight(messageId: string) {
     setJumpHighlightId(messageId)
     if (jumpTimer.current) clearTimeout(jumpTimer.current)
@@ -346,11 +369,18 @@ function RoomScreenContent() {
         }
         if (result.added === 0) break
       }
+      // A realtime arrival may have delivered the target while the last page
+      // was in flight (the pending effect already scrolled to it). Re-check
+      // before failing so success is never clobbered by a stale error.
+      const latest = queryClient.getQueryData<Message[]>(key) ?? []
+      if (latest.some((m) => m.id === parentId && !m.deleted_at)) return
       setPendingJumpId((cur) => (cur === parentId ? null : cur))
-      setError('Could not find that message. It may be very old.')
+      setError(JUMP_TOO_OLD)
     } catch (e) {
       setPendingJumpId((cur) => (cur === parentId ? null : cur))
-      setError(toErrorMessage(e, 'Could not load earlier messages.'))
+      const message = toErrorMessage(e, 'Could not load earlier messages.')
+      jumpFailureRef.current = message
+      setError(message)
     } finally {
       jumpInFlight.current = false
     }
@@ -360,22 +390,23 @@ function RoomScreenContent() {
     if (jumpInFlight.current) return
     const index = rows.findIndex((r) => r.key === parentId)
     if (index !== -1) {
+      clearJumpError()
       scrollToRowIndex(index, parentId)
       return
     }
     // Outside the loaded window: only page back for a parent we know exists
     // (a rendered preview). Anything else is deleted or unavailable.
     if (loadEarlier.isPending) {
-      setError('That message is still loading. Try again in a moment.')
+      setError(JUMP_LOADING)
       return
     }
     const known = replyById.get(parentId)
     if (!known || known.deleted_at || !clusterId) {
-      setError('That message is no longer available.')
+      setError(JUMP_UNAVAILABLE)
       return
     }
     jumpInFlight.current = true
-    setError(null)
+    clearJumpError()
     setPendingJumpId(parentId)
     void pageBackToParent(parentId, ['cluster-messages', clusterId])
   }
@@ -520,15 +551,21 @@ function RoomScreenContent() {
     if (index === -1) return
     setPendingJumpId(null)
     jumpInFlight.current = false
+    clearJumpError()
     scrollToRowIndex(index, pendingJumpId)
-  }, [rows, pendingJumpId])
+  }, [rows, pendingJumpId, clearJumpError])
 
   // Notification deep link (?message=): same scroll plus highlight as a reply
   // jump, for any message. The param is consumed (cleared) on every run, so
   // each new value fires exactly once even when the screen is reused across
   // taps, and re-tapping the same notification works too.
+  // The isFetching wait matters for push taps onto a warm cache: the room
+  // remounts with stale rows while the latest page refetches, and a target
+  // newer than that window (e.g. the just-sent GIF) would otherwise page
+  // backwards and fail with "very old". Holding the param until the refetch
+  // settles lets the normal scroll path below land on it.
   useEffect(() => {
-    if (typeof deepLinkMessageId !== 'string' || !deepLinkMessageId || !clusterId || messages.isLoading) return
+    if (typeof deepLinkMessageId !== 'string' || !deepLinkMessageId || !clusterId || messages.isLoading || messages.isFetching) return
     router.setParams({ message: undefined })
     if (jumpInFlight.current) return
     // Known but deleted: no point paging back for it. A muted-hidden target
@@ -536,23 +573,24 @@ function RoomScreenContent() {
     // lands on it.
     const known = replyById.get(deepLinkMessageId)
     if (known && known.deleted_at) {
-      setError('That message is no longer available.')
+      setError(JUMP_UNAVAILABLE)
       return
     }
     const index = rows.findIndex((r) => r.key === deepLinkMessageId)
     if (index !== -1) {
+      clearJumpError()
       scrollToRowIndex(index, deepLinkMessageId)
       return
     }
     if (loadEarlier.isPending) {
-      setError('That message is still loading. Try again in a moment.')
+      setError(JUMP_LOADING)
       return
     }
     jumpInFlight.current = true
-    setError(null)
+    clearJumpError()
     setPendingJumpId(deepLinkMessageId)
     void pageBackRef.current(deepLinkMessageId, ['cluster-messages', clusterId])
-  }, [deepLinkMessageId, clusterId, messages.isLoading, rows, loadEarlier.isPending, replyById])
+  }, [deepLinkMessageId, clusterId, messages.isLoading, messages.isFetching, rows, loadEarlier.isPending, replyById, clearJumpError])
 
   useEffect(() => {
     const list = messages.data
