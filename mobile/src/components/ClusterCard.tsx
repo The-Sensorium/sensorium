@@ -44,31 +44,41 @@ export function ClusterCard({
           backgroundColor: t.surfaceContainer,
           borderRadius: radii.xl,
           padding: 16,
-          paddingTop: 20,
           marginBottom: 16,
-          overflow: 'hidden',
           ...shadowShape,
           shadowColor: t.shadowColor,
         }}
       >
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            start: 0,
-            end: 0,
-            height: 4,
-            backgroundColor: accent,
-          }}
-        />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {created ? (
-                <Users size={20} color={accent} strokeWidth={1.5} />
-              ) : (
-                <Icon size={20} color={accent} strokeWidth={1.5} />
-              )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: radii.md,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    borderRadius: radii.md,
+                    backgroundColor: accent,
+                    opacity: 0.2,
+                  }}
+                />
+                {created ? (
+                  <Users size={20} color={accent} strokeWidth={1.5} />
+                ) : (
+                  <Icon size={20} color={accent} strokeWidth={1.5} />
+                )}
+              </View>
               <Text
                 style={{
                   fontSize: 12,
