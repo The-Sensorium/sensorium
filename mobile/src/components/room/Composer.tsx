@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { Check, CornerUpLeft, ImagePlus, Megaphone, Pencil, Phone, Plus, Send, Users, X } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
@@ -51,6 +51,12 @@ export function Composer({
   onCancelReply,
   onCancelEdit,
   surfaceColor,
+  inputNativeID,
+  gifPickerOpen,
+  onPickerOpenChange,
+  menuOpen,
+  onMenuOpenChange,
+  onInputLayout,
 }: {
   members: MentionMember[]
   selfId: string | null
@@ -61,6 +67,12 @@ export function Composer({
   editing: { id: string; content: string } | null
   editPending: boolean
   surfaceColor?: string
+  inputNativeID?: string
+  gifPickerOpen: boolean
+  onPickerOpenChange?(open: boolean): void
+  menuOpen: boolean
+  onMenuOpenChange?(open: boolean): void
+  onInputLayout?(e: LayoutChangeEvent): void
   onError(message: string | null): void
   onSend(content: string): Promise<void>
   onSaveEdit(content: string): void
@@ -78,8 +90,6 @@ export function Composer({
   const accentText = useClusterAccentText() ?? t.primary
   const [draft, setDraft] = useState('')
   const [editText, setEditText] = useState('')
-  const [gifOpen, setGifOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
   const [caret, setCaret] = useState(0)
   const [uploading, setUploading] = useState(false)
@@ -132,10 +142,24 @@ export function Composer({
     // The + and GIF toggles hide while typing, so an open menu or picker
     // must not linger above the composer without its trigger visible.
     if (value.trim().length > 0) {
-      setMenuOpen(false)
-      setGifOpen(false)
+      onMenuOpenChange?.(false)
+      if (gifPickerOpen) {
+        onPickerOpenChange?.(false)
+      }
     }
     setMention(parseMentionQuery(value, caret))
+  }
+
+  function openGifPicker() {
+    // Plain in-flow panel toggle. No keyboard games here: dismissing the
+    // main input on open changed the focus sequence versus develop, and the
+    // picker must open and close as a pure flex change.
+    onPickerOpenChange?.(true)
+    onMenuOpenChange?.(false)
+  }
+
+  function closeGifPicker() {
+    onPickerOpenChange?.(false)
   }
 
   function insertToken(name: string) {
@@ -196,7 +220,7 @@ export function Composer({
 
   async function handleSendGif(gif: Gif) {
     onError(null)
-    setGifOpen(false)
+    closeGifPicker()
     try {
       await onSendGif(gif)
       lightHaptic()
@@ -207,7 +231,7 @@ export function Composer({
   }
 
   async function handlePickImage() {
-    setMenuOpen(false)
+    onMenuOpenChange?.(false)
     onError(null)
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -330,7 +354,7 @@ export function Composer({
           </Pressable>
         </View>
       ) : null}
-      {editing ? null : gifOpen ? (
+      {editing ? null : gifPickerOpen ? (
         <View style={{ marginBottom: 8 }}>
           <GifPicker pending={pending} onSelect={(gif) => void handleSendGif(gif)} />
         </View>
@@ -349,7 +373,7 @@ export function Composer({
             label="Raise a signal"
             disabled={raisePending}
             onPress={() => {
-              setMenuOpen(false)
+              onMenuOpenChange?.(false)
               onOpenSignal()
             }}
           >
@@ -360,7 +384,7 @@ export function Composer({
               label="Start a call"
               disabled={raisePending}
               onPress={() => {
-                setMenuOpen(false)
+                onMenuOpenChange?.(false)
                 onStartCall()
               }}
             >
@@ -446,8 +470,8 @@ export function Composer({
               accessibilityLabel="Room actions"
               disabled={raisePending}
               onPress={() => {
-                setGifOpen(false)
-                setMenuOpen((o) => !o)
+                if (gifPickerOpen) closeGifPicker()
+                else onMenuOpenChange?.(!menuOpen)
               }}
               hitSlop={8}
               style={{
@@ -468,6 +492,8 @@ export function Composer({
           </CollapsibleChrome>
           <TextInput
             ref={inputRef}
+            nativeID={inputNativeID}
+            onLayout={onInputLayout}
             accessibilityLabel={editing ? 'Edit message' : 'Message'}
             value={editing ? editText : draft}
             onChangeText={editing ? handleEditChange : handleInputChange}
@@ -505,8 +531,8 @@ export function Composer({
               accessibilityLabel="Add a GIF"
               accessibilityRole="button"
               onPress={() => {
-                setMenuOpen(false)
-                setGifOpen((o) => !o)
+                if (gifPickerOpen) closeGifPicker()
+                else openGifPicker()
               }}
               hitSlop={8}
               style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
@@ -514,13 +540,13 @@ export function Composer({
               <View
                 style={{
                   borderWidth: 1.5,
-                  borderColor: gifOpen ? accentText : t.onSurfaceVariant,
+                  borderColor: gifPickerOpen ? accentText : t.onSurfaceVariant,
                   borderRadius: 6,
                   paddingHorizontal: 5,
                   paddingVertical: 3,
                 }}
               >
-                <Text style={{ fontSize: 12, fontWeight: '800', color: gifOpen ? accentText : t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 12, fontWeight: '800', color: gifPickerOpen ? accentText : t.onSurfaceVariant }}>
                   GIF
                 </Text>
               </View>

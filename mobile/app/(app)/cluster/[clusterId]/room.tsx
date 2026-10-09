@@ -2,14 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   AppState,
+  BackHandler,
   FlatList,
   Keyboard,
   Pressable,
   Text,
   View,
+  type LayoutChangeEvent,
   type ScrollViewProps,
 } from 'react-native'
-import { KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
+import {
+  KeyboardChatScrollView,
+  KeyboardGestureArea,
+  KeyboardStickyView,
+} from 'react-native-keyboard-controller'
+import { useSharedValue, withTiming } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -97,6 +104,13 @@ const JUMP_UNAVAILABLE = 'That message is no longer available.'
 const JUMP_LOADING = 'That message is still loading. Try again in a moment.'
 const JUMP_ERRORS = new Set([JUMP_TOO_OLD, JUMP_UNAVAILABLE, JUMP_LOADING])
 
+// Chat chrome metrics. GESTURE_OFFSET is the baseline input height the
+// gesture area uses, matching the keyboard-controller chat guide.
+// CHAT_MARGIN is the visual gap around the sticky composer.
+const CHAT_MARGIN = 8
+const CHAT_GESTURE_OFFSET = 42
+const CHAT_INPUT_NATIVE_ID = 'cluster-chat-input'
+
 export default function RoomScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   return (
@@ -109,17 +123,54 @@ export default function RoomScreen() {
 function RoomScreenContent() {
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
-  // Sticky composer pattern: the composer rides a native frame-synced
-  // translate (no whole-screen resize). The footer is in-flow, so the flex
-  // layout already clears it - no extraContentPadding. (Post detail passes
-  // its full footer height, but that list is top-down; on this inverted
-  // list it would push short conversations up and leave a dead gap above
-  // the composer.)
+  // Sticky composer pattern from the keyboard-controller chat guide: the
+  // composer rides a native frame-synced translate (no whole-screen resize)
+  // while the chat scroll view extends its scroll range via contentInset.
+  // Multiline input growth is reported through extraContentPadding so the
+  // newest messages never clip under a taller input. Inline panels (GIF
+  // picker, actions menu) stay pure flex changes with no freeze: freezing
+  // across a panel collapse stranded a gap where the panel had been.
+  const extraContentPadding = useSharedValue(0)
+  const [gifPickerOpen, setGifPickerOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const composerBaselineRef = useRef<number | null>(null)
+  const handlePickerOpenChange = useCallback((open: boolean) => {
+    setGifPickerOpen(open)
+  }, [])
+  // One path closes every composer panel, so thread taps, scrolls, Back,
+  // and blur can never leave one lingering without its trigger visible.
+  const closeComposerPanels = useCallback(() => {
+    setMenuOpen(false)
+    setGifPickerOpen(false)
+  }, [])
+  const panelsOpen = gifPickerOpen || menuOpen
+  const handleComposerInputLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const height = e.nativeEvent.layout.height
+      if (composerBaselineRef.current === null) composerBaselineRef.current = height
+      const baseline = composerBaselineRef.current ?? height
+      extraContentPadding.value = withTiming(Math.max(height - baseline, 0), { duration: 250 })
+    },
+    [extraContentPadding],
+  )
+  // Scroll props follow the keyboard-controller chat guide. The sticky
+  // offset deliberately stays at the develop value: netting the margin out
+  // of it stranded a gap where the GIF picker had collapsed, because this
+  // sticky already owns its bottom padding (8 + bottom).
   const renderScrollComponent = useCallback(
     (props: ScrollViewProps) => (
-      <KeyboardChatScrollView {...props} inverted keyboardLiftBehavior="whenAtEnd" />
+      <KeyboardChatScrollView
+        {...props}
+        inverted
+        keyboardLiftBehavior="whenAtEnd"
+        offset={bottom - CHAT_MARGIN}
+        keyboardDismissMode="interactive"
+        extraContentPadding={extraContentPadding}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+      />
     ),
-    [],
+    [bottom, extraContentPadding],
   )
   const { clusterId = '', message: deepLinkMessageId } = useLocalSearchParams<{ clusterId: string; message?: string }>()
   const auth = useAuth()
@@ -145,9 +196,26 @@ function RoomScreenContent() {
       setSuppressedPushCluster(clusterId || null)
       if (clusterId) void clearClusterPushNotifications(clusterId)
       return () => {
+        // Never hand the next focus a lingering panel.
+        setGifPickerOpen(false)
+        setMenuOpen(false)
         if (getSuppressedPushCluster() === (clusterId || null)) setSuppressedPushCluster(null)
       }
     }, [clusterId]),
+  )
+  // Hardware Back closes open composer panels first instead of leaving the
+  // room with a panel still applied.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (panelsOpen) {
+          closeComposerPanels()
+          return true
+        }
+        return false
+      })
+      return () => sub.remove()
+    }, [panelsOpen, closeComposerPanels]),
   )
   const cluster = useCluster(authedClusterId)
   const messages = useClusterMessages(authedClusterId)
@@ -246,6 +314,10 @@ function RoomScreenContent() {
     setPendingJumpId(null)
     jumpInFlight.current = false
     jumpFailureRef.current = null
+    setGifPickerOpen(false)
+    setMenuOpen(false)
+    composerBaselineRef.current = null
+    extraContentPadding.value = 0
     if (jumpTimer.current) {
       clearTimeout(jumpTimer.current)
       jumpTimer.current = null
@@ -254,7 +326,7 @@ function RoomScreenContent() {
       clearTimeout(jumpRetryTimer.current)
       jumpRetryTimer.current = null
     }
-  }, [clusterId])
+  }, [clusterId, extraContentPadding])
 
   const memberMap = useMemo(() => {
     const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
@@ -1105,6 +1177,12 @@ function RoomScreenContent() {
           </Pressable>
         </View>
 
+        <KeyboardGestureArea
+          interpolator="ios"
+          offset={CHAT_GESTURE_OFFSET}
+          style={{ flex: 1 }}
+          textInputNativeID={CHAT_INPUT_NATIVE_ID}
+        >
         <View style={{ flex: 1 }}>
           {messages.isLoading || myMutes.isLoading ? (
             <View style={{ padding: 16 }}>
@@ -1128,8 +1206,14 @@ function RoomScreenContent() {
               maxToRenderPerBatch={10}
               removeClippedSubviews={false}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}
               renderScrollComponent={renderScrollComponent}
+              onTouchStart={() => {
+                if (panelsOpen) closeComposerPanels()
+              }}
+              onScrollBeginDrag={() => {
+                if (panelsOpen) closeComposerPanels()
+              }}
               onScrollToIndexFailed={(info) => {
                 // Variable-height rows without getItemLayout: land near the
                 // target so it renders, then retry the exact jump once.
@@ -1320,6 +1404,12 @@ function RoomScreenContent() {
             members={parseMembers}
             selfId={userId}
             surfaceColor={composerSurface ?? undefined}
+            inputNativeID={CHAT_INPUT_NATIVE_ID}
+            gifPickerOpen={gifPickerOpen}
+            onPickerOpenChange={handlePickerOpenChange}
+            menuOpen={menuOpen}
+            onMenuOpenChange={setMenuOpen}
+            onInputLayout={handleComposerInputLayout}
             pending={send.isPending}
             raisePending={raise.isPending}
             error={error}
@@ -1338,6 +1428,7 @@ function RoomScreenContent() {
             onCancelEdit={() => setEditingId(null)}
           />
         </KeyboardStickyView>
+        </KeyboardGestureArea>
 
         <RaiseSignalModal
           open={signalOpen}
