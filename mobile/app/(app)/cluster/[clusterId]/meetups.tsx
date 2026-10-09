@@ -18,6 +18,7 @@ import {
 import { ConfirmSheet } from '../../../../src/components/ConfirmSheet'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider, useClusterOnAccent } from '../../../../src/lib/cluster-theme'
 import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, successHaptic } from '../../../../src/lib/haptics'
@@ -33,6 +34,15 @@ import { MEETUP_ENABLED, MEETUP_JOIN_LEAD_MS, MEETUP_QUORUM, canJoinMeetup, form
 const ACTIVE_STATUSES = ['proposed', 'voting', 'confirmed', 'starting', 'active']
 
 export default function MeetupsScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <MeetupsScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function MeetupsScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const id = MEETUP_ENABLED ? clusterId || null : null
@@ -107,12 +117,13 @@ export default function MeetupsScreen() {
 
 function ProposeCard({ clusterId }: { clusterId: string }) {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
 
   return (
     <Card>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ width: 48, height: 48, borderRadius: radii.lg, backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <CalendarDays size={24} color={t.onPrimary} strokeWidth={1.5} />
+          <CalendarDays size={24} color={onAccent} strokeWidth={1.5} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface }}>Cluster Meetup</Text>
@@ -145,6 +156,7 @@ function MeetupDetail({
 }) {
   const memberCount = members.length
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const state = useMeetupState(meetup.id)
@@ -579,9 +591,9 @@ function MeetupDetail({
                     >
                       {activeSlot ? (
                         editing ? (
-                          <Check size={12} color={t.onPrimary} strokeWidth={3} />
+                          <Check size={12} color={onAccent} strokeWidth={3} />
                         ) : (
-                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.onPrimary }} />
+                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: onAccent }} />
                         )
                       ) : null}
                     </View>
@@ -648,7 +660,7 @@ function MeetupDetail({
                             </Text>
                             {isMine ? (
                               <View style={{ flexShrink: 0, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
-                                <Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 14, fontWeight: '600', color: t.onPrimary }}>
+                                <Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 14, fontWeight: '600', color: onAccent }}>
                                   Your pick
                                 </Text>
                               </View>

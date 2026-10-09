@@ -6,6 +6,7 @@ import { Sparkles, X } from 'lucide-react-native'
 import { useMyMembership, useIntroProgress } from '../features/introductions'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { useClusterOnAccent } from '../lib/cluster-theme'
 import { Card } from './ui'
 
 const DISMISS_PREFIX = 'intro-nudge-dismissed:'
@@ -26,6 +27,7 @@ export function IntroChecklistBanner({
   dismissible?: boolean
 }) {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const membership = useMyMembership(clusterId || null)
   const progress = useIntroProgress(clusterId || null, clusterId !== '')
   const [dismissed, setDismissed] = useState<boolean | null>(dismissible ? null : false)
@@ -71,7 +73,7 @@ export function IntroChecklistBanner({
             justifyContent: 'center',
           }}
         >
-          <Sparkles size={16} color={t.onPrimary} strokeWidth={1.5} />
+          <Sparkles size={16} color={onAccent} strokeWidth={1.5} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
@@ -99,7 +101,7 @@ export function IntroChecklistBanner({
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onPrimary }}>Answer</Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: onAccent }}>Answer</Text>
           </Pressable>
         </Link>
         {dismissible ? (

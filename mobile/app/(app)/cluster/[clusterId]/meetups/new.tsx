@@ -8,6 +8,7 @@ import { useClusterMembers } from '../../../../../src/features/matching'
 import { useCreateMeetup } from '../../../../../src/features/meetups'
 import { Avatar } from '../../../../../src/components/Avatar'
 import { ClusterSectionHeader } from '../../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider, useClusterOnAccent } from '../../../../../src/lib/cluster-theme'
 import { TimezonePicker } from '../../../../../src/components/TimezonePicker'
 import { mutateWithRetry } from '../../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../../src/lib/error'
@@ -86,7 +87,17 @@ function PickerPill({
 
 /** Ballot builder: the proposer adds 2-5 custom times, each previewed per member. */
 export default function NewMeetupScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <NewMeetupScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function NewMeetupScreenContent() {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const scheme = useResolvedScheme()
   const amber = scheme === 'dark' ? '#fbbf24' : '#b45309'
   const sky = scheme === 'dark' ? '#7dd3fc' : '#0369a1'
@@ -202,7 +213,7 @@ export default function NewMeetupScreen() {
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ width: 48, height: 48, borderRadius: radii.lg, backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center' }}>
-              <CalendarPlus size={24} color={t.onPrimary} strokeWidth={1.5} />
+              <CalendarPlus size={24} color={onAccent} strokeWidth={1.5} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface }}>Propose times</Text>
@@ -283,7 +294,7 @@ export default function NewMeetupScreen() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                               {m.id === userId ? (
                                 <View style={{ backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
-                                  <Text style={{ fontSize: 11, lineHeight: 14, fontWeight: '600', color: t.onPrimary }}>
+                                  <Text style={{ fontSize: 11, lineHeight: 14, fontWeight: '600', color: onAccent }}>
                                     You
                                   </Text>
                                 </View>

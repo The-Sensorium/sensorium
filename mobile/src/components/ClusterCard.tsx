@@ -7,6 +7,7 @@ import { useMyMembership } from '../features/introductions'
 import { modeInfo } from '../lib/modes'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { useClusterTheme } from '../lib/use-cluster-appearance'
 
 function statusLabel(status: string): string {
   if (status === 'archived') return 'Archived'
@@ -24,6 +25,11 @@ export function ClusterCard({
 }) {
   const t = useTheme()
   const { cluster } = item
+  const clusterTheme = useClusterTheme(cluster.id)
+  const themed = clusterTheme.appearanceId !== 'default'
+  const accent = clusterTheme.tokens.accent
+  const accentText = clusterTheme.tokens.accentText
+  const cardBg = clusterTheme.appearanceId === 'default' ? t.surfaceContainer : clusterTheme.tokens.surface
   const info = modeInfo(cluster.matching_mode)
   const Icon = info.icon
   const needsIntros = myIntroCompletedAt === null
@@ -38,7 +44,7 @@ export function ClusterCard({
         accessibilityRole="button"
         accessibilityLabel={`Open ${cluster.name}`}
         style={{
-          backgroundColor: t.surfaceContainer,
+          backgroundColor: cardBg,
           borderRadius: radii.xl,
           padding: 16,
           marginBottom: 16,
@@ -50,9 +56,9 @@ export function ClusterCard({
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {created ? (
-                <Users size={20} color={t.primary} strokeWidth={1.5} />
+                <Users size={20} color={accent} strokeWidth={1.5} />
               ) : (
-                <Icon size={20} color={t.primary} strokeWidth={1.5} />
+                <Icon size={20} color={accent} strokeWidth={1.5} />
               )}
               <Text
                 style={{
@@ -61,7 +67,7 @@ export function ClusterCard({
                   fontWeight: '600',
                   textTransform: 'uppercase',
                   letterSpacing: 1,
-                  color: t.primary,
+                  color: accentText,
                   flexShrink: 1,
                 }}
                 numberOfLines={1}
@@ -84,6 +90,8 @@ export function ClusterCard({
               alignItems: 'center',
               gap: 6,
               backgroundColor: t.surfaceLowest,
+              borderWidth: 1,
+              borderColor: themed ? t.outlineVariant : 'transparent',
               borderRadius: radii.pill,
               paddingHorizontal: 12,
               paddingVertical: 6,
@@ -118,6 +126,8 @@ export function ClusterCard({
                 flexDirection: 'row',
                 alignItems: 'center',
                 backgroundColor: t.surfaceLowest,
+                borderWidth: 1,
+                borderColor: themed ? t.outlineVariant : 'transparent',
                 borderRadius: radii.pill,
                 paddingHorizontal: 12,
                 paddingVertical: 6,

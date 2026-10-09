@@ -5,10 +5,12 @@ import { useAuth } from '../auth-context'
 import { useIsMuted, useMuteUser, useUnmuteUser } from '../features/moderation'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { useClusterOnAccent } from '../lib/cluster-theme'
 import { ConfirmSheet } from './ConfirmSheet'
 
 export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogClose }: { targetUserId: string; targetName: string; fill?: boolean; menuItem?: boolean; onDialogClose?: () => void }) {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const auth = useAuth()
   const selfId = auth.state === 'signedIn' ? auth.userId : null
   const muted = useIsMuted(targetUserId)
@@ -92,7 +94,7 @@ export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogC
           error={confirmError}
           confirmTitle={dialogLabel}
           confirmLoadingTitle="Saving…"
-          confirmIcon={<DialogIcon size={16} color={t.onPrimary} strokeWidth={1.5} />}
+          confirmIcon={<DialogIcon size={16} color={onAccent} strokeWidth={1.5} />}
           loading={pending}
           onConfirm={() => void handleConfirm()}
         />
@@ -150,7 +152,7 @@ export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogC
         error={confirmError}
         confirmTitle={dialogLabel}
         confirmLoadingTitle="Saving…"
-        confirmIcon={<DialogIcon size={16} color={t.onPrimary} strokeWidth={1.5} />}
+        confirmIcon={<DialogIcon size={16} color={onAccent} strokeWidth={1.5} />}
         loading={pending}
         onConfirm={() => void handleConfirm()}
       />

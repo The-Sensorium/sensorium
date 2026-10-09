@@ -178,7 +178,7 @@ export function ReportModal({
             style={{
               backgroundColor: t.surfaceContainer,
               borderWidth: 1,
-              borderColor: t.outlineVariant,
+              borderColor: t.outline,
               borderRadius: radii.md,
               paddingHorizontal: 14,
               paddingVertical: 10,

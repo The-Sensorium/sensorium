@@ -15,6 +15,7 @@ import { MemberMenuButton, MemberMenuPopover, type MemberMenuTarget } from '../.
 import { PronounBadge } from '../../../../src/components/PronounBadge'
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider, useProvidedAppearanceId } from '../../../../src/lib/cluster-theme'
 import { countryName } from '../../../../src/lib/countries'
 import { isValidTimeZone } from '../../../../src/lib/timezones'
 import { radii, shadowShape } from '../../../../src/lib/theme-tokens'
@@ -25,7 +26,17 @@ import { CreatedPendingSection } from '../../../../src/components/created/Create
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 
 export default function MembersScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <MembersScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function MembersScreenContent() {
   const t = useTheme()
+  const themed = useProvidedAppearanceId() !== 'default'
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -104,7 +115,9 @@ export default function MembersScreen() {
             <View
               key={member.id}
               style={{
-                backgroundColor: t.surfaceLowest,
+                backgroundColor: themed ? t.surface : t.surfaceLowest,
+                borderWidth: 1,
+                borderColor: themed ? t.outlineVariant : 'transparent',
                 borderRadius: radii.xl,
                 padding: 16,
                 marginBottom: 12,

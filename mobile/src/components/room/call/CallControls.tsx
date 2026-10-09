@@ -5,6 +5,7 @@ import { ConnectionState } from 'livekit-client'
 import { Mic, MicOff, MessageSquare, PhoneOff, Video, VideoOff, Volume2, VolumeX } from 'lucide-react-native'
 import { hasExternalAudioOutputLive, setSpeakerEnabledLive } from '../../../lib/call-audio'
 import { useTheme } from '../../../lib/use-theme'
+import { useClusterOnAccent } from '../../../lib/cluster-theme'
 import { useResolvedScheme } from '../../../lib/theme-choice'
 
 interface CallControlsProps {
@@ -26,6 +27,7 @@ export function CallControls({
   onChatPress,
 }: CallControlsProps) {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const scheme = useResolvedScheme()
   const { localParticipant } = useLocalParticipant()
   const room = useRoomContext()
@@ -170,7 +172,7 @@ export function CallControls({
           >
             <MessageSquare
               size={20}
-              color={chatOpen ? '#fff' : t.onSurfaceVariant}
+              color={chatOpen ? onAccent : t.onSurfaceVariant}
               strokeWidth={2}
             />
           </Pressable>
@@ -190,7 +192,7 @@ export function CallControls({
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 10, fontWeight: '700', color: t.onPrimary }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: onAccent }}>
                 {unread > 9 ? '9+' : unread}
               </Text>
             </View>

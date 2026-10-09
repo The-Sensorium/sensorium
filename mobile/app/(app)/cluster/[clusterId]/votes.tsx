@@ -21,6 +21,7 @@ import { Modal } from '../../../../src/components/Modal'
 import { Avatar } from '../../../../src/components/Avatar'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider, useClusterOnAccent } from '../../../../src/lib/cluster-theme'
 import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../src/lib/error'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -43,6 +44,15 @@ const VOTE_TYPE_LABEL: Record<GovernableVoteType, string> = {
 const YES_TALLY = { light: '#047857', dark: '#6ee7b7' }
 
 export default function VotesScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <VotesScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function VotesScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const auth = useAuth()
@@ -387,6 +397,7 @@ function ReplacementBanner({
   memberById: Map<string, MemberCard>
 }) {
   const t = useTheme()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
   const invited =
     round.invited_user_id && memberById.get(round.invited_user_id)?.display_name
 
@@ -397,11 +408,11 @@ function ReplacementBanner({
           <View
             style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center' }}
           >
-            {round.status === 'selecting_candidates' ? (
-              <ActivityIndicator size="small" color={t.onPrimary} />
-            ) : (
-              <Hourglass size={20} color={t.onPrimary} strokeWidth={1.5} />
-            )}
+              {round.status === 'selecting_candidates' ? (
+                <ActivityIndicator size="small" color={onAccent} />
+              ) : (
+                <Hourglass size={20} color={onAccent} strokeWidth={1.5} />
+              )}
           </View>
           <View style={{ flex: 1 }}>
             {round.status === 'selecting_candidates' ? (

@@ -6,6 +6,7 @@ import { CheckCheck, X } from 'lucide-react-native'
 import { radii } from '../../lib/theme-tokens'
 import { AvatarLink } from '../AvatarLink'
 import { dateTimeFormatter } from './format'
+import { useClusterAccentText } from '../../lib/cluster-theme'
 import type { SeenByMember } from './seen-by'
 import { useTheme } from '../../lib/use-theme'
 
@@ -19,6 +20,7 @@ function MemberList({
   clusterId: string
 }) {
   const t = useTheme()
+  const accentText = useClusterAccentText() ?? t.primary
   if (members.length === 0) {
     return <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>{empty}</Text>
   }
@@ -30,9 +32,9 @@ function MemberList({
           <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
             {m.display_name}
           </Text>
-          {m.read_at ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <CheckCheck size={14} color={t.primary} strokeWidth={2} />
+              {m.read_at ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <CheckCheck size={14} color={accentText} strokeWidth={2} />
               <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
                 {dateTimeFormatter.format(new Date(m.read_at))}
               </Text>

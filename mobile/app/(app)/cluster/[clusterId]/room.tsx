@@ -2,14 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   AppState,
+  BackHandler,
   FlatList,
   Keyboard,
   Pressable,
   Text,
   View,
+  type LayoutChangeEvent,
   type ScrollViewProps,
 } from 'react-native'
-import { KeyboardChatScrollView, KeyboardStickyView } from 'react-native-keyboard-controller'
+import {
+  KeyboardChatScrollView,
+  KeyboardGestureArea,
+  KeyboardStickyView,
+} from 'react-native-keyboard-controller'
+import { useSharedValue, withTiming } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -68,6 +75,7 @@ import { Modal } from '../../../../src/components/Modal'
 import { PrimaryButton } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
+import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface, useClusterOnAccent, useClusterAccentText } from '../../../../src/lib/cluster-theme'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 
@@ -87,20 +95,82 @@ function dayKey(iso: string) {
 // conversational turn.
 const GROUP_WINDOW_MS = 30 * 60 * 1000
 
+// Errors set only by the reply/deep-link jump flow. A successful jump clears
+// these so a stale jump failure does not stick, but never wipes unrelated
+// banner errors (reactions, edits, sends). The constants are shared between
+// the setters and the set so a copy edit cannot silently break the clearing.
+const JUMP_TOO_OLD = 'Could not find that message. It may be very old.'
+const JUMP_UNAVAILABLE = 'That message is no longer available.'
+const JUMP_LOADING = 'That message is still loading. Try again in a moment.'
+const JUMP_ERRORS = new Set([JUMP_TOO_OLD, JUMP_UNAVAILABLE, JUMP_LOADING])
+
+// Chat chrome metrics. GESTURE_OFFSET is the baseline input height the
+// gesture area uses, matching the keyboard-controller chat guide.
+// CHAT_MARGIN is the visual gap around the sticky composer.
+const CHAT_MARGIN = 8
+const CHAT_GESTURE_OFFSET = 42
+const CHAT_INPUT_NATIVE_ID = 'cluster-chat-input'
+
 export default function RoomScreen() {
+  const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  return (
+    <ClusterThemeProvider clusterId={clusterId || null}>
+      <RoomScreenContent />
+    </ClusterThemeProvider>
+  )
+}
+
+function RoomScreenContent() {
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
-  // Sticky composer pattern: the composer rides a native frame-synced
-  // translate (no whole-screen resize). The footer is in-flow, so the flex
-  // layout already clears it - no extraContentPadding. (Post detail passes
-  // its full footer height, but that list is top-down; on this inverted
-  // list it would push short conversations up and leave a dead gap above
-  // the composer.)
+  // Sticky composer pattern from the keyboard-controller chat guide: the
+  // composer rides a native frame-synced translate (no whole-screen resize)
+  // while the chat scroll view extends its scroll range via contentInset.
+  // Multiline input growth is reported through extraContentPadding so the
+  // newest messages never clip under a taller input. Inline panels (GIF
+  // picker, actions menu) stay pure flex changes with no freeze: freezing
+  // across a panel collapse stranded a gap where the panel had been.
+  const extraContentPadding = useSharedValue(0)
+  const [gifPickerOpen, setGifPickerOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const composerBaselineRef = useRef<number | null>(null)
+  const handlePickerOpenChange = useCallback((open: boolean) => {
+    setGifPickerOpen(open)
+  }, [])
+  // One path closes every composer panel, so thread taps, scrolls, Back,
+  // and blur can never leave one lingering without its trigger visible.
+  const closeComposerPanels = useCallback(() => {
+    setMenuOpen(false)
+    setGifPickerOpen(false)
+  }, [])
+  const panelsOpen = gifPickerOpen || menuOpen
+  const handleComposerInputLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const height = e.nativeEvent.layout.height
+      if (composerBaselineRef.current === null) composerBaselineRef.current = height
+      const baseline = composerBaselineRef.current ?? height
+      extraContentPadding.value = withTiming(Math.max(height - baseline, 0), { duration: 250 })
+    },
+    [extraContentPadding],
+  )
+  // Scroll props follow the keyboard-controller chat guide. The sticky
+  // offset deliberately stays at the develop value: netting the margin out
+  // of it stranded a gap where the GIF picker had collapsed, because this
+  // sticky already owns its bottom padding (8 + bottom).
   const renderScrollComponent = useCallback(
     (props: ScrollViewProps) => (
-      <KeyboardChatScrollView {...props} inverted keyboardLiftBehavior="whenAtEnd" />
+      <KeyboardChatScrollView
+        {...props}
+        inverted
+        keyboardLiftBehavior="whenAtEnd"
+        offset={bottom - CHAT_MARGIN}
+        keyboardDismissMode="interactive"
+        extraContentPadding={extraContentPadding}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
+      />
     ),
-    [],
+    [bottom, extraContentPadding],
   )
   const { clusterId = '', message: deepLinkMessageId } = useLocalSearchParams<{ clusterId: string; message?: string }>()
   const auth = useAuth()
@@ -110,6 +180,14 @@ export default function RoomScreen() {
   // request fails RLS (permanent error, no retry) and a pre-session channel
   // receives nothing, leaving a push-tapped room stuck without its message.
   const authedClusterId = authed ? clusterId || null : null
+  // Single theme source: t already carries the provider override. Only the
+  // main background needs a gate, since the provider leaves surfaceLowest
+  // (cards, menus) on the global theme.
+  const themed = useProvidedAppearanceId() !== 'default'
+  const composerSurface = useClusterComposerSurface()
+  const onAccent = useClusterOnAccent() ?? t.onPrimary
+  const accentText = useClusterAccentText() ?? t.primary
+  const roomBg = themed ? t.background : t.surfaceLowest
 
   useClusterChannel(authedClusterId)
   useDismissKeyboardOnBlur()
@@ -118,9 +196,26 @@ export default function RoomScreen() {
       setSuppressedPushCluster(clusterId || null)
       if (clusterId) void clearClusterPushNotifications(clusterId)
       return () => {
+        // Never hand the next focus a lingering panel.
+        setGifPickerOpen(false)
+        setMenuOpen(false)
         if (getSuppressedPushCluster() === (clusterId || null)) setSuppressedPushCluster(null)
       }
     }, [clusterId]),
+  )
+  // Hardware Back closes open composer panels first instead of leaving the
+  // room with a panel still applied.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (panelsOpen) {
+          closeComposerPanels()
+          return true
+        }
+        return false
+      })
+      return () => sub.remove()
+    }, [panelsOpen, closeComposerPanels]),
   )
   const cluster = useCluster(authedClusterId)
   const messages = useClusterMessages(authedClusterId)
@@ -188,6 +283,11 @@ export default function RoomScreen() {
   const jumpRetryCount = useRef(0)
   const jumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const jumpRetryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Exact text of a jump-flow failure that is not one of the fixed strings
+  // above (a network error while paging back). Lets a later successful jump
+  // clear exactly that banner without touching unrelated errors, even when
+  // the text collides with a manual "Load earlier" failure.
+  const jumpFailureRef = useRef<string | null>(null)
 
   useEffect(() => {
     lastLenRef.current = null
@@ -213,6 +313,11 @@ export default function RoomScreen() {
     setJumpHighlightId(null)
     setPendingJumpId(null)
     jumpInFlight.current = false
+    jumpFailureRef.current = null
+    setGifPickerOpen(false)
+    setMenuOpen(false)
+    composerBaselineRef.current = null
+    extraContentPadding.value = 0
     if (jumpTimer.current) {
       clearTimeout(jumpTimer.current)
       jumpTimer.current = null
@@ -221,7 +326,7 @@ export default function RoomScreen() {
       clearTimeout(jumpRetryTimer.current)
       jumpRetryTimer.current = null
     }
-  }, [clusterId])
+  }, [clusterId, extraContentPadding])
 
   const memberMap = useMemo(() => {
     const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
@@ -284,6 +389,14 @@ export default function RoomScreen() {
     setReplyTo(m)
   }
 
+  const clearJumpError = useCallback(() => {
+    const failure = jumpFailureRef.current
+    jumpFailureRef.current = null
+    setError((prev) =>
+      prev !== null && (JUMP_ERRORS.has(prev) || prev === failure) ? null : prev,
+    )
+  }, [])
+
   function flashJumpHighlight(messageId: string) {
     setJumpHighlightId(messageId)
     if (jumpTimer.current) clearTimeout(jumpTimer.current)
@@ -328,11 +441,18 @@ export default function RoomScreen() {
         }
         if (result.added === 0) break
       }
+      // A realtime arrival may have delivered the target while the last page
+      // was in flight (the pending effect already scrolled to it). Re-check
+      // before failing so success is never clobbered by a stale error.
+      const latest = queryClient.getQueryData<Message[]>(key) ?? []
+      if (latest.some((m) => m.id === parentId && !m.deleted_at)) return
       setPendingJumpId((cur) => (cur === parentId ? null : cur))
-      setError('Could not find that message. It may be very old.')
+      setError(JUMP_TOO_OLD)
     } catch (e) {
       setPendingJumpId((cur) => (cur === parentId ? null : cur))
-      setError(toErrorMessage(e, 'Could not load earlier messages.'))
+      const message = toErrorMessage(e, 'Could not load earlier messages.')
+      jumpFailureRef.current = message
+      setError(message)
     } finally {
       jumpInFlight.current = false
     }
@@ -342,22 +462,23 @@ export default function RoomScreen() {
     if (jumpInFlight.current) return
     const index = rows.findIndex((r) => r.key === parentId)
     if (index !== -1) {
+      clearJumpError()
       scrollToRowIndex(index, parentId)
       return
     }
     // Outside the loaded window: only page back for a parent we know exists
     // (a rendered preview). Anything else is deleted or unavailable.
     if (loadEarlier.isPending) {
-      setError('That message is still loading. Try again in a moment.')
+      setError(JUMP_LOADING)
       return
     }
     const known = replyById.get(parentId)
     if (!known || known.deleted_at || !clusterId) {
-      setError('That message is no longer available.')
+      setError(JUMP_UNAVAILABLE)
       return
     }
     jumpInFlight.current = true
-    setError(null)
+    clearJumpError()
     setPendingJumpId(parentId)
     void pageBackToParent(parentId, ['cluster-messages', clusterId])
   }
@@ -502,15 +623,21 @@ export default function RoomScreen() {
     if (index === -1) return
     setPendingJumpId(null)
     jumpInFlight.current = false
+    clearJumpError()
     scrollToRowIndex(index, pendingJumpId)
-  }, [rows, pendingJumpId])
+  }, [rows, pendingJumpId, clearJumpError])
 
   // Notification deep link (?message=): same scroll plus highlight as a reply
   // jump, for any message. The param is consumed (cleared) on every run, so
   // each new value fires exactly once even when the screen is reused across
   // taps, and re-tapping the same notification works too.
+  // The isFetching wait matters for push taps onto a warm cache: the room
+  // remounts with stale rows while the latest page refetches, and a target
+  // newer than that window (e.g. the just-sent GIF) would otherwise page
+  // backwards and fail with "very old". Holding the param until the refetch
+  // settles lets the normal scroll path below land on it.
   useEffect(() => {
-    if (typeof deepLinkMessageId !== 'string' || !deepLinkMessageId || !clusterId || messages.isLoading) return
+    if (typeof deepLinkMessageId !== 'string' || !deepLinkMessageId || !clusterId || messages.isLoading || messages.isFetching) return
     router.setParams({ message: undefined })
     if (jumpInFlight.current) return
     // Known but deleted: no point paging back for it. A muted-hidden target
@@ -518,23 +645,24 @@ export default function RoomScreen() {
     // lands on it.
     const known = replyById.get(deepLinkMessageId)
     if (known && known.deleted_at) {
-      setError('That message is no longer available.')
+      setError(JUMP_UNAVAILABLE)
       return
     }
     const index = rows.findIndex((r) => r.key === deepLinkMessageId)
     if (index !== -1) {
+      clearJumpError()
       scrollToRowIndex(index, deepLinkMessageId)
       return
     }
     if (loadEarlier.isPending) {
-      setError('That message is still loading. Try again in a moment.')
+      setError(JUMP_LOADING)
       return
     }
     jumpInFlight.current = true
-    setError(null)
+    clearJumpError()
     setPendingJumpId(deepLinkMessageId)
     void pageBackRef.current(deepLinkMessageId, ['cluster-messages', clusterId])
-  }, [deepLinkMessageId, clusterId, messages.isLoading, rows, loadEarlier.isPending, replyById])
+  }, [deepLinkMessageId, clusterId, messages.isLoading, messages.isFetching, rows, loadEarlier.isPending, replyById, clearJumpError])
 
   useEffect(() => {
     const list = messages.data
@@ -843,8 +971,8 @@ export default function RoomScreen() {
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+            <ArrowLeft size={18} color={accentText} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: accentText }}>
               Home
             </Text>
           </Pressable>
@@ -868,7 +996,7 @@ export default function RoomScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.surfaceLowest }}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: roomBg }}>
       <View style={{ flex: 1 }}>
         <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 }}>
           <Pressable
@@ -883,8 +1011,8 @@ export default function RoomScreen() {
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
           >
-            <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
+            <ArrowLeft size={18} color={accentText} strokeWidth={2} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: accentText }}>
               Home
             </Text>
           </Pressable>
@@ -937,7 +1065,7 @@ export default function RoomScreen() {
                   backgroundColor: t.primary,
                 }}
               >
-                <Phone size={16} color="#fff" strokeWidth={2} />
+                <Phone size={16} color={onAccent} strokeWidth={2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
@@ -969,7 +1097,7 @@ export default function RoomScreen() {
                   opacity: callPending || callRefreshing ? 0.6 : 1,
                 }}
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: onAccent }}>
                   {joinedCall ? 'Open' : 'Join'}
                 </Text>
               </Pressable>
@@ -1021,14 +1149,14 @@ export default function RoomScreen() {
                   return (
                     <View key={m.id}>
                       {isMe ? (
-                        <View
-                          style={{
-                            borderWidth: 2,
-                            borderColor: t.primary,
-                            borderRadius: 14,
-                            margin: -2,
-                          }}
-                        >
+                          <View
+                            style={{
+                              borderWidth: 2,
+                              borderColor: t.primary,
+                              borderRadius: 14,
+                              margin: -2,
+                            }}
+                          >
                           {face}
                         </View>
                       ) : (
@@ -1049,6 +1177,12 @@ export default function RoomScreen() {
           </Pressable>
         </View>
 
+        <KeyboardGestureArea
+          interpolator="ios"
+          offset={CHAT_GESTURE_OFFSET}
+          style={{ flex: 1 }}
+          textInputNativeID={CHAT_INPUT_NATIVE_ID}
+        >
         <View style={{ flex: 1 }}>
           {messages.isLoading || myMutes.isLoading ? (
             <View style={{ padding: 16 }}>
@@ -1072,8 +1206,14 @@ export default function RoomScreen() {
               maxToRenderPerBatch={10}
               removeClippedSubviews={false}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}
               renderScrollComponent={renderScrollComponent}
+              onTouchStart={() => {
+                if (panelsOpen) closeComposerPanels()
+              }}
+              onScrollBeginDrag={() => {
+                if (panelsOpen) closeComposerPanels()
+              }}
               onScrollToIndexFailed={(info) => {
                 // Variable-height rows without getItemLayout: land near the
                 // target so it renders, then retry the exact jump once.
@@ -1242,8 +1382,8 @@ export default function RoomScreen() {
                 minHeight: 48,
               }}
             >
-              <ArrowDown size={16} color={t.onPrimary} strokeWidth={2} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onPrimary }}>
+              <ArrowDown size={16} color={onAccent} strokeWidth={2} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: onAccent }}>
                 {newCount} new message{newCount === 1 ? '' : 's'}
               </Text>
             </Pressable>
@@ -1253,7 +1393,7 @@ export default function RoomScreen() {
         <KeyboardStickyView
           offset={{ closed: 0, opened: bottom }}
           style={{
-            backgroundColor: t.surfaceLowest,
+            backgroundColor: roomBg,
             paddingHorizontal: 12,
             paddingTop: 8,
             paddingBottom: 8 + bottom,
@@ -1263,6 +1403,13 @@ export default function RoomScreen() {
             key={clusterId}
             members={parseMembers}
             selfId={userId}
+            surfaceColor={composerSurface ?? undefined}
+            inputNativeID={CHAT_INPUT_NATIVE_ID}
+            gifPickerOpen={gifPickerOpen}
+            onPickerOpenChange={handlePickerOpenChange}
+            menuOpen={menuOpen}
+            onMenuOpenChange={setMenuOpen}
+            onInputLayout={handleComposerInputLayout}
             pending={send.isPending}
             raisePending={raise.isPending}
             error={error}
@@ -1281,6 +1428,7 @@ export default function RoomScreen() {
             onCancelEdit={() => setEditingId(null)}
           />
         </KeyboardStickyView>
+        </KeyboardGestureArea>
 
         <RaiseSignalModal
           open={signalOpen}

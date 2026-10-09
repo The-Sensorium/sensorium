@@ -163,13 +163,16 @@ export default function AppTabs() {
         options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }}
       />
       <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/appearance" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/meetups" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/meetups/new" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="profile/[userId]" options={{ href: null }} />
+      {/* Profile always opens with a cluster param (and redirects home
+          without one), so it hides the tab bar like every cluster screen. */}
+      <Tabs.Screen name="profile/[userId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       {/* No tab bar on post detail (Instagram pattern): the sticky comment
           composer must sit directly above the keyboard. With a tab bar between
           the list and the screen bottom, the keyboard-glued footer would float
