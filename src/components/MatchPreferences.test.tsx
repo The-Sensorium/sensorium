@@ -1,18 +1,21 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AgeRangePicker, MatchPreferencesSheet } from './MatchPreferences'
-import { useLocalCompatibleCount } from '../features/matching'
+import { useLocalCompatibleCount, useOpenMixCompatibleCount } from '../features/matching'
 
 vi.mock('../features/matching', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../features/matching')>()
   return {
     ...actual,
     useLocalCompatibleCount: vi.fn(() => ({ count: 3, isLoading: false, isError: false })),
+    useOpenMixCompatibleCount: vi.fn(() => ({ count: 3, isLoading: false, isError: false })),
     useSetLocalAgePrefs: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+    useSetOpenMixAgePrefs: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
   }
 })
 
 const countMock = vi.mocked(useLocalCompatibleCount)
+const openMixCountMock = vi.mocked(useOpenMixCompatibleCount)
 
 describe('AgeRangePicker', () => {
   it('shows Any age on the full span', () => {
@@ -121,5 +124,25 @@ describe('MatchPreferencesSheet', () => {
     )
     expect(screen.queryByText('Match count unavailable right now.')).toBeNull()
     expect(screen.queryByText(/saved/)).toBeNull()
+  })
+
+  it('renders open_mix copy with the open-mix count', () => {
+    openMixCountMock.mockReturnValueOnce({ count: 5, isLoading: false, isError: false })
+    render(
+      <MatchPreferencesSheet
+        open
+        onClose={() => undefined}
+        queueKey="open"
+        initialMin={25}
+        initialMax={35}
+        mode="open_mix"
+      />,
+    )
+    expect(screen.getByText('5 people currently match')).toBeDefined()
+    expect(
+      screen.getByText(
+        'Join the Open Mix queue to be grouped with 7 people who match your preferences.',
+      ),
+    ).toBeDefined()
   })
 })

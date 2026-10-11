@@ -28,7 +28,7 @@ export const MATCHING_MODES: ModeInfo[] = [
   { value: 'birth_year', label: 'Birth Year', detail: 'Born in the same year, any month', icon: CalendarCheck },
   { value: 'generation', label: 'Generation', detail: 'Born within the same 5 years', icon: Users },
   { value: 'local', label: 'Local Radius', detail: 'Within a radius you choose', icon: MapPin },
-  { value: 'open_mix', label: 'Open Mix', detail: 'First 8 in, no birth-date or location filter', icon: Shuffle },
+  { value: 'open_mix', label: 'Open Mix', detail: 'First 8 in, no location filter, optional age prefs', icon: Shuffle },
 ]
 
 export function modeInfo(value: MatchingMode): ModeInfo {

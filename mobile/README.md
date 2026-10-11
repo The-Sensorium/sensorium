@@ -221,6 +221,17 @@ npm test
 - The app points at the **staging** Supabase project for preview builds and the
   **production** project for release builds, matching the web environments.
 
+### Release notes (Play closed testing)
+
+- Tester-facing notes live in [`CHANGELOG.md`](CHANGELOG.md), one section per
+  version (`Added` / `Fixed` / `Changed`). Add entries under `Unreleased`
+  with each user-visible change; keep them short and jargon-free.
+- Release ritual: bump `expo.version` in `app.json` plus `package.json`
+  (semver, codes +1 per `AGENTS.md`), move the `Unreleased` entries into the
+  new versioned section, then copy that section into the Play Console
+  testing-track release notes (500 characters max, English). No backfill for
+  already-shipped versions beyond the baseline stub.
+
 ### Beta testing via Firebase App Distribution
 
 - Build a **staging** APK: run the `Android APK (CI build)` workflow with

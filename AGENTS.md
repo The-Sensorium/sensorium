@@ -19,6 +19,7 @@ Env is just `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` (both public). The br
 - App version lives in `mobile/app.json` (`expo.version`) and `mobile/package.json`; keep the two in sync.
 - Follow semver: minor for backwards-compatible features, patch for fixes, major for breaking changes.
 - With every version bump, also increment `android.versionCode` (+1) and `ios.buildNumber` (+1) in `mobile/app.json`. Production EAS builds auto-increment store codes (`autoIncrement` in `mobile/eas.json`); the `versionCode` still matters for preview APK builds.
+- With every version bump, move the `mobile/CHANGELOG.md` `Unreleased` entries into a new versioned section. Play Console release notes for the testing track are copied from that section (500 characters max, English).
 
 ## Local stack
 

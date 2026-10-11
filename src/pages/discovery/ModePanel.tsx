@@ -10,7 +10,7 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount, useLocalMatchLine, formatAgePrefs } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, useLocalMatchLine, formatAgePrefs, LOCAL_AGE_MIN, LOCAL_AGE_MAX, OPEN_MIX_AGE_MIN, OPEN_MIX_AGE_MAX } from '../../features/matching'
 import { Modal } from '../../components/Modal'
 import { MatchPreferencesSheet } from '../../components/MatchPreferences'
 import { WhatsNextSteps } from '../../components/WhatsNextSteps'
@@ -26,7 +26,7 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
     !!profile.data?.local_area && profile.data?.local_radius_km != null
 
   let body: ReactNode
-  if (status.isLoading || (mode === 'local' && profile.isLoading)) {
+  if (status.isLoading || ((mode === 'local' || mode === 'open_mix') && profile.isLoading)) {
     body = (
       <div className="flex items-center gap-2 text-sm text-on-surface-variant">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Loading…
@@ -109,12 +109,24 @@ function JoinCard({
   const count = live.count ?? waiting
   const profile = useProfile()
   const [prefsOpen, setPrefsOpen] = useState(false)
-  const prefMin = profile.data?.local_pref_age_min ?? null
-  const prefMax = profile.data?.local_pref_age_max ?? null
+  const prefMin =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_min ?? null)
+      : (profile.data?.local_pref_age_min ?? null)
+  const prefMax =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_max ?? null)
+      : (profile.data?.local_pref_age_max ?? null)
+  const rangeMin = mode === 'open_mix' ? OPEN_MIX_AGE_MIN : LOCAL_AGE_MIN
+  const rangeMax = mode === 'open_mix' ? OPEN_MIX_AGE_MAX : LOCAL_AGE_MAX
+  const prefsNarrowed =
+    prefMin != null && prefMax != null && !(prefMin === rangeMin && prefMax === rangeMax)
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
   const displayBlurb =
     mode === 'open_mix'
-      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
+      ? prefsNarrowed
+        ? `Join and you’ll be grouped with 7 people who match your preferences (${formatAgePrefs(prefMin, prefMax)}).`
+        : 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
       : 'Join this queue and you’ll be grouped with 7 people sharing this match.'
 
   return (
@@ -131,12 +143,12 @@ function JoinCard({
         </span>
       </div>
       <p className="mt-3 text-sm leading-6 text-on-surface-variant">{displayBlurb}</p>
-      {mode === 'local' && (
+      {(mode === 'local' || mode === 'open_mix') && (
         <div className="mt-4 rounded-2xl border border-outline-variant/60 p-4">
           <button
             type="button"
             onClick={() => setPrefsOpen(true)}
-            data-e2e="open-match-prefs"
+            data-e2e={mode === 'open_mix' ? 'open-mix-match-prefs' : 'open-match-prefs'}
             className="flex w-full items-center justify-between gap-3 text-left"
           >
             <span>
@@ -181,13 +193,14 @@ function JoinCard({
           {joinQueueErrorMessage(join.error, mode)}
         </p>
       )}
-      {mode === 'local' && prefsOpen && (
+      {(mode === 'local' || mode === 'open_mix') && prefsOpen && (
         <MatchPreferencesSheet
           open={prefsOpen}
           onClose={() => setPrefsOpen(false)}
           queueKey={queueKey}
           initialMin={prefMin}
           initialMax={prefMax}
+          mode={mode === 'open_mix' ? 'open_mix' : 'local'}
         />
       )}
     </div>
@@ -210,8 +223,14 @@ function JoinedCard({
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
   const profile = useProfile()
   const [prefsOpen, setPrefsOpen] = useState(false)
-  const prefMin = profile.data?.local_pref_age_min ?? null
-  const prefMax = profile.data?.local_pref_age_max ?? null
+  const prefMin =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_min ?? null)
+      : (profile.data?.local_pref_age_min ?? null)
+  const prefMax =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_max ?? null)
+      : (profile.data?.local_pref_age_max ?? null)
   const matchLine = useLocalMatchLine(mode, queueKey, prefMin, prefMax)
 
   return (
@@ -225,12 +244,12 @@ function JoinedCard({
           {`${count} of ${CLUSTER_SIZE} in queue`}
         </span>
       </div>
-      {mode === 'local' && (
+      {(mode === 'local' || mode === 'open_mix') && (
         <div className="mt-4 rounded-2xl border border-outline-variant/60 bg-surface p-4">
           <button
             type="button"
             onClick={() => setPrefsOpen(true)}
-            data-e2e="open-match-prefs"
+            data-e2e={mode === 'open_mix' ? 'open-mix-match-prefs' : 'open-match-prefs'}
             className="flex w-full items-center justify-between gap-3 text-left"
           >
             <span>
@@ -268,13 +287,14 @@ function JoinedCard({
           Update my location
         </button>
       )}
-      {mode === 'local' && prefsOpen && (
+      {(mode === 'local' || mode === 'open_mix') && prefsOpen && (
         <MatchPreferencesSheet
           open={prefsOpen}
           onClose={() => setPrefsOpen(false)}
           queueKey={queueKey}
           initialMin={prefMin}
           initialMax={prefMax}
+          mode={mode === 'open_mix' ? 'open_mix' : 'local'}
         />
       )}
     </div>
