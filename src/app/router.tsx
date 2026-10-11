@@ -21,6 +21,7 @@ import { LandingPage } from '../pages/LandingPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage'
 import { TermsPage } from '../pages/TermsPage'
+import { ChildSafetyPage } from '../pages/ChildSafetyPage'
 
 // Route code-splitting: every page behind auth (and the auth pages themselves)
 // loads on demand, so the first paint only ships the landing shell. The public
@@ -90,6 +91,7 @@ export function AppRouter() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/child-safety" element={<ChildSafetyPage />} />
         {/* Challenge solver for the native app WebView (no session, no layout chrome) */}
         <Route
           path="/auth/mobile-challenge"
