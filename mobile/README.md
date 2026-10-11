@@ -218,6 +218,14 @@ npm test
 - **Android APK CI workflow**: builds a release APK artifact on a Linux runner,
   reading `EXPO_PUBLIC_*` values per environment from repo variables and restoring
   `google-services.json` from the `GOOGLE_SERVICES_JSON` secret.
+- **Android AAB CI workflow** (`android-aab-build.yml`): same approach but runs
+  `bundleRelease` for Google Play, with R8 minify/shrink from
+  `expo-build-properties`. Takes an explicit `version-code` (must exceed the
+  last Play upload) and signs with the upload keystore when the
+  `ANDROID_KEYSTORE_*` secrets exist (debug-signed otherwise, for DEX
+  measurement only). It only produces the AAB artifact; Play Console upload
+  is always manual. This is the default path for Play releases so the
+  limited EAS quota is spared.
 - The app points at the **staging** Supabase project for preview builds and the
   **production** project for release builds, matching the web environments.
 
