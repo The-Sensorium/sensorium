@@ -207,3 +207,77 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
     },
   ],
 }
+
+export const SAFETY_DOCUMENT: LegalDocument = {
+  title: 'Child Safety Standards',
+  updated: 'October 11, 2026',
+  intro:
+    'Sensorium is 18+ only. We have zero tolerance for child sexual abuse and exploitation (CSAE) and child sexual abuse material (CSAM). This page describes our published standards, reporting, enforcement, and contact.',
+  sections: [
+    {
+      title: '1. Zero tolerance',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'Child sexual abuse and exploitation (CSAE), including the sharing, solicitation, or sexualization of minors and any child sexual abuse material (CSAM), is prohibited on Sensorium. We remove CSAM after we obtain actual knowledge of it, under these standards and applicable law.',
+        },
+      ],
+    },
+    {
+      title: '2. 18+ only',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'You must be at least 18 years old to use Sensorium. We collect date of birth at signup and restrict accounts that do not meet the minimum age. Only birth year is shown to other members.',
+        },
+      ],
+    },
+    {
+      title: '3. How to report',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'In the app you can report a member or a specific message. Reports go only to our moderation team.',
+        },
+        {
+          kind: 'email',
+          before:
+            'You can also email ',
+          address: 'support@thesensoriumapp.com',
+          after:
+            " with the subject 'Child safety concern' and include the profile name, date, and description.",
+        },
+      ],
+    },
+    {
+      title: '4. What we do',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'Our moderation team reviews each report and may dismiss it or take action: hide or restore a message, issue a warning, suspend an account for up to 7 days, or permanently ban an account (bans applied by administrators). We notify you in the app when your message is hidden or your account is warned or suspended. Suspended or banned accounts see a restricted screen with status and suspension expiry, and can appeal from inside the app.',
+        },
+      ],
+    },
+    {
+      title: '5. Reports to authorities',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'We comply with applicable child safety laws. Where we confirm CSAM, we report it to the National Center for Missing and Exploited Children (NCMEC) in the US or the relevant regional authority, and we preserve evidence as required by law. Moderation records are retained up to 24 months to keep the community safe; if you delete your account we remove personal identifiers from those records rather than destroy the audit trail.',
+        },
+      ],
+    },
+    {
+      title: '6. Contact',
+      blocks: [
+        {
+          kind: 'email',
+          before: 'Child safety point of contact: ',
+          address: 'support@thesensoriumapp.com',
+          after:
+            '. This contact can speak to our enforcement and review procedures and take action.',
+        },
+      ],
+    },
+  ],
+}

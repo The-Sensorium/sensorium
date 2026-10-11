@@ -100,6 +100,7 @@ function RootLayout() {
           <Stack.Screen name="appeal" />
           <Stack.Screen name="privacy-policy" />
           <Stack.Screen name="terms" />
+          <Stack.Screen name="child-safety" />
         </Stack>
       </ThemedNavigator>
     </AppProviders>
