@@ -111,6 +111,7 @@ export function LandingPage() {
           <div className="flex gap-6">
             <Link to="/privacy-policy" className="hover:text-on-surface">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-on-surface">Terms</Link>
+            <Link to="/child-safety" className="hover:text-on-surface">Child Safety</Link>
           </div>
         </div>
       </footer>

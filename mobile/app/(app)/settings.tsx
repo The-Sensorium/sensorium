@@ -118,6 +118,12 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>Terms of Service</Text>
           </Pressable>
         </Link>
+        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>·</Text>
+        <Link href="/child-safety" asChild>
+          <Pressable hitSlop={8} style={{ padding: 12, minHeight: 44, justifyContent: 'center' }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>Child Safety</Text>
+          </Pressable>
+        </Link>
       </View>
 
       <DeleteAccountModal open={deleteOpen} onClose={() => setDeleteOpen(false)} />
