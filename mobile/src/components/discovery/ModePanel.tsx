@@ -10,7 +10,7 @@ import { getCurrentPosition, reverseGeocode } from '../../lib/geo'
 import { requireSupabase } from '../../lib/supabase'
 import { joinQueueErrorMessage, toErrorMessage } from '../../lib/error'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMyQueueStatus, useJoinQueue, useQueueCount, useLocalMatchLine, formatAgePrefs } from '../../features/matching'
+import { useMyQueueStatus, useJoinQueue, useQueueCount, useLocalMatchLine, formatAgePrefs, LOCAL_AGE_MIN, LOCAL_AGE_MAX, OPEN_MIX_AGE_MIN, OPEN_MIX_AGE_MAX } from '../../features/matching'
 import { profileKey, useProfile, type Profile } from '../../lib/use-profile'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
@@ -27,7 +27,7 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
   const hasLocalLocation =
     !!profile.data?.local_area && profile.data?.local_radius_km != null
 
-  if (status.isLoading || (mode === 'local' && profile.isLoading)) {
+  if (status.isLoading || ((mode === 'local' || mode === 'open_mix') && profile.isLoading)) {
     return (
       <Card>
         <LoadingView />
@@ -122,12 +122,24 @@ function JoinCard({
   const profile = useProfile()
   const [prefsOpen, setPrefsOpen] = useState(false)
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
+  const prefMin =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_min ?? null)
+      : (profile.data?.local_pref_age_min ?? null)
+  const prefMax =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_max ?? null)
+      : (profile.data?.local_pref_age_max ?? null)
+  const rangeMin = mode === 'open_mix' ? OPEN_MIX_AGE_MIN : LOCAL_AGE_MIN
+  const rangeMax = mode === 'open_mix' ? OPEN_MIX_AGE_MAX : LOCAL_AGE_MAX
+  const prefsNarrowed =
+    prefMin != null && prefMax != null && !(prefMin === rangeMin && prefMax === rangeMax)
   const displayBlurb =
     mode === 'open_mix'
-      ? 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
+      ? prefsNarrowed
+        ? `Join and you’ll be grouped with 7 people who match your preferences (${formatAgePrefs(prefMin, prefMax)}).`
+        : 'Join and you’ll be grouped with the next 7 people in line, whoever they are.'
       : 'Join this queue and you’ll be grouped with 7 people sharing this match.'
-  const prefMin = profile.data?.local_pref_age_min ?? null
-  const prefMax = profile.data?.local_pref_age_max ?? null
 
   return (
     <Card>
@@ -143,7 +155,7 @@ function JoinCard({
       <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
         {displayBlurb}
       </Text>
-      {mode === 'local' ? (
+      {mode === 'local' || mode === 'open_mix' ? (
         <>
           <Pressable
             accessibilityRole="button"
@@ -175,6 +187,7 @@ function JoinCard({
             open={prefsOpen}
             queueKey={queueKey}
             onClose={() => setPrefsOpen(false)}
+            mode={mode === 'open_mix' ? 'open_mix' : 'local'}
           />
         </>
       ) : null}
@@ -222,8 +235,14 @@ function JoinedCard({ mode,
   const count = live.count ?? 0
   const displayKey = mode === 'open_mix' ? 'Open pool' : mode === 'local' && label ? label : queueKey
   const profile = useProfile()
-  const prefMin = profile.data?.local_pref_age_min ?? null
-  const prefMax = profile.data?.local_pref_age_max ?? null
+  const prefMin =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_min ?? null)
+      : (profile.data?.local_pref_age_min ?? null)
+  const prefMax =
+    mode === 'open_mix'
+      ? (profile.data?.open_mix_pref_age_max ?? null)
+      : (profile.data?.local_pref_age_max ?? null)
   const [joinedPrefsOpen, setJoinedPrefsOpen] = useState(false)
   const matchLine = useLocalMatchLine(mode, queueKey, prefMin, prefMax)
 
@@ -238,7 +257,7 @@ function JoinedCard({ mode,
       <Text style={{ marginTop: 8, fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
         {`${count} of ${CLUSTER_SIZE} in queue`}
       </Text>
-      {mode === 'local' ? (
+      {mode === 'local' || mode === 'open_mix' ? (
         <>
           <Pressable
             accessibilityRole="button"
@@ -276,6 +295,7 @@ function JoinedCard({ mode,
             open={joinedPrefsOpen}
             queueKey={queueKey}
             onClose={() => setJoinedPrefsOpen(false)}
+            mode={mode === 'open_mix' ? 'open_mix' : 'local'}
           />
         </>
       ) : null}

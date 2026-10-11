@@ -749,4 +749,172 @@ describe('matching', () => {
       expect(m.birth_year).toBeNull()
     }
   })
+
+  it('rejects invalid open_mix age pref ranges', async () => {
+    const u = await onboarded('m-omagepref-bad')
+    const { error: rangeErr } = await u.client.rpc('set_open_mix_age_prefs', {
+      p_min: 90,
+      p_max: 20,
+    })
+    expect(rangeErr?.message).toContain('invalid_age_range')
+
+    const { error: lowErr } = await u.client.rpc('set_open_mix_age_prefs', {
+      p_min: 10,
+      p_max: 30,
+    })
+    expect(lowErr?.message).toContain('invalid_age_range')
+  })
+
+  it('rejects open_mix age prefs outside 18 to 99 at the CHECK level', async () => {
+    const u = await onboarded('m-omagepref-check')
+    const { error } = await admin
+      .from('profiles')
+      .update({ open_mix_pref_age_min: 10, open_mix_pref_age_max: 30 })
+      .eq('id', u.id)
+    expect(error).not.toBeNull()
+  })
+
+  it('counts only mutually compatible open_mix waiters', async () => {
+    async function openMixUser(prefix: string, dob: string, pref: [number, number] | null) {
+      const u = await createUser(admin, prefix)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob })
+      await admin
+        .from('profiles')
+        .update({
+          open_mix_pref_age_min: pref?.[0] ?? null,
+          open_mix_pref_age_max: pref?.[1] ?? null,
+        })
+        .eq('id', u.id)
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'open_mix' })
+      expect(error).toBeNull()
+      return u
+    }
+
+    const seeker = await openMixUser('m-om-seeker', '1996-06-15', [25, 35])
+    await openMixUser('m-om-friend', '1998-02-10', null)
+    await openMixUser('m-om-old', '1960-01-01', [55, 70])
+
+    const { data: count, error } = await seeker.client.rpc('get_open_mix_compatible_count', {
+      p_queue_key: 'open',
+      p_min: 25,
+      p_max: 35,
+    })
+    expect(error).toBeNull()
+    expect(count).toBe(1)
+  })
+
+  it('forms an open_mix cluster from 8 mutually compatible waiters', async () => {
+    const users: TestUser[] = []
+    for (let i = 0; i < 8; i++) {
+      const u = await createUser(admin, `m-omform-ok-${i}`)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob: `1994-05-${String((i % 27) + 1).padStart(2, '0')}` })
+      await admin
+        .from('profiles')
+        .update({ open_mix_pref_age_min: 25, open_mix_pref_age_max: 35 })
+        .eq('id', u.id)
+      users.push(u)
+    }
+
+    for (const u of users) {
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'open_mix' })
+      expect(error).toBeNull()
+    }
+
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id')
+      .eq('matching_mode', 'open_mix')
+      .eq('queue_key', 'open')
+    expect(clusters).toHaveLength(1)
+    clusterIds.push(clusters![0].id)
+
+    const { data: members } = await admin
+      .from('cluster_members')
+      .select('user_id')
+      .eq('cluster_id', clusters![0].id)
+      .is('left_at', null)
+    expect(members).toHaveLength(8)
+  })
+
+  it('does not merge cross-age open_mix waiters', async () => {
+    const users: TestUser[] = []
+    for (let i = 0; i < 7; i++) {
+      const u = await createUser(admin, `m-omform-${i}`)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob: `1994-05-${String((i % 27) + 1).padStart(2, '0')}` })
+      await admin
+        .from('profiles')
+        .update({ open_mix_pref_age_min: 25, open_mix_pref_age_max: 35 })
+        .eq('id', u.id)
+      users.push(u)
+    }
+    const outsider = await createUser(admin, 'm-omform-out')
+    userIds.push(outsider.id)
+    await onboardUser(admin, outsider.id, { dob: '1960-01-01' })
+    await admin
+      .from('profiles')
+      .update({ open_mix_pref_age_min: 55, open_mix_pref_age_max: 70 })
+      .eq('id', outsider.id)
+
+    for (const u of [...users, outsider]) {
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'open_mix' })
+      expect(error).toBeNull()
+    }
+
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id')
+      .eq('matching_mode', 'open_mix')
+      .eq('queue_key', 'open')
+    expect(clusters).toHaveLength(0)
+  })
+
+  it('forms around an incompatible open_mix head waiter instead of stalling', async () => {
+    async function openMixUser(prefix: string, dob: string, pref: [number, number]) {
+      const u = await createUser(admin, prefix)
+      userIds.push(u.id)
+      await onboardUser(admin, u.id, { dob })
+      await admin
+        .from('profiles')
+        .update({
+          open_mix_pref_age_min: pref[0],
+          open_mix_pref_age_max: pref[1],
+        })
+        .eq('id', u.id)
+      return u
+    }
+
+    const head = await openMixUser('m-omhead', '1960-01-01', [55, 70])
+    const { error: headErr } = await head.client.rpc('join_queue', { p_mode: 'open_mix' })
+    expect(headErr).toBeNull()
+
+    const rest: TestUser[] = []
+    for (let i = 0; i < 8; i++) {
+      const u = await openMixUser(`m-ombehind-${i}`, `1994-06-${String((i % 27) + 1).padStart(2, '0')}`, [25, 35])
+      const { error } = await u.client.rpc('join_queue', { p_mode: 'open_mix' })
+      expect(error).toBeNull()
+      rest.push(u)
+    }
+
+    const { data: clusters } = await admin
+      .from('clusters')
+      .select('id')
+      .eq('matching_mode', 'open_mix')
+      .eq('queue_key', 'open')
+    expect(clusters).toHaveLength(1)
+    clusterIds.push(clusters![0].id)
+
+    const { data: members } = await admin
+      .from('cluster_members')
+      .select('user_id')
+      .eq('cluster_id', clusters![0].id)
+      .is('left_at', null)
+    expect(members).toHaveLength(8)
+    expect(members!.map((m) => m.user_id)).not.toContain(head.id)
+
+    const { data: headKeys } = await head.client.rpc('get_my_queue_keys')
+    expect(headKeys).toHaveLength(1)
+  })
 })

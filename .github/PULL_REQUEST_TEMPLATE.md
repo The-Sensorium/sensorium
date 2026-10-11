@@ -14,6 +14,7 @@
 - [ ] `npm run test:integration` passes (if schema/RLS/RPC changed)
 - [ ] `npm run test:e2e` passes (if UI flows changed)
 - [ ] Mobile: `cd mobile && npm run lint && npx tsc --noEmit && npm test` passes (if `mobile/` changed)
+- [ ] Mobile: `mobile/CHANGELOG.md` `Unreleased` entry added (if user-visible mobile changes)
 
 ## Type of change
 

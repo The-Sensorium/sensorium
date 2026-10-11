@@ -231,13 +231,29 @@ export function useLatestClusterFormed(enabled = true) {
   })
 }
 
-export const LOCAL_AGE_MIN = 18
-export const LOCAL_AGE_MAX = 99
+export const AGE_MIN = 18
+export const AGE_MAX = 99
+export const LOCAL_AGE_MIN = AGE_MIN
+export const LOCAL_AGE_MAX = AGE_MAX
+export const OPEN_MIX_AGE_MIN = AGE_MIN
+export const OPEN_MIX_AGE_MAX = AGE_MAX
+
+export type AgePrefMode = 'local' | 'open_mix'
 
 export function formatAgePrefs(min: number | null, max: number | null): string {
   if (min == null || max == null) return 'Any age'
-  if (min === LOCAL_AGE_MIN && max === LOCAL_AGE_MAX) return 'Any age'
+  if (min === AGE_MIN && max === AGE_MAX) return 'Any age'
   return `${min} to ${max} years`
+}
+
+function compatibleCountRpc(
+  mode: AgePrefMode,
+): 'get_local_compatible_count' | 'get_open_mix_compatible_count' {
+  return mode === 'local' ? 'get_local_compatible_count' : 'get_open_mix_compatible_count'
+}
+
+function compatibleCountKey(mode: AgePrefMode): string {
+  return mode === 'local' ? 'local-compatible-count' : 'open-mix-compatible-count'
 }
 
 export function useSetLocalAgePrefs() {
@@ -265,13 +281,39 @@ export function useSetLocalAgePrefs() {
   })
 }
 
-export function useLocalCompatibleCount(
+export function useSetOpenMixAgePrefs() {
+  const auth = useAuth()
+  const userId = auth.state === 'signedIn' ? auth.userId : null
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ min, max }: { min: number | null; max: number | null }) => {
+      const supabase = requireSupabase()
+      const { error } = await supabase.rpc('set_open_mix_age_prefs', {
+        p_min: min,
+        p_max: max,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      if (userId) {
+        void queryClient.invalidateQueries({ queryKey: profileKey(userId) })
+        void queryClient.invalidateQueries({ queryKey: ['my-queues', userId] })
+        void queryClient.invalidateQueries({ queryKey: ['matching-status', userId] })
+        void queryClient.invalidateQueries({ queryKey: ['open-mix-compatible-count'] })
+      }
+    },
+  })
+}
+
+export function useCompatibleCount(
+  mode: AgePrefMode,
   queueKey: string | null,
   min: number | null,
   max: number | null,
 ) {
   const query = useQuery({
-    queryKey: ['local-compatible-count', queueKey ?? 'none', min ?? 'any', max ?? 'any'],
+    queryKey: [compatibleCountKey(mode), queueKey ?? 'none', min ?? 'any', max ?? 'any'],
     enabled: queueKey !== null,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
@@ -282,7 +324,7 @@ export function useLocalCompatibleCount(
     queryFn: async () => {
       if (!queueKey) return 0
       const supabase = requireSupabase()
-      const { data, error } = await supabase.rpc('get_local_compatible_count', {
+      const { data, error } = await supabase.rpc(compatibleCountRpc(mode), {
         p_queue_key: queueKey,
         p_min: min,
         p_max: max,
@@ -299,9 +341,25 @@ export function useLocalCompatibleCount(
   }
 }
 
-/** Match-count line for a local queue card's preferences row.
+export function useLocalCompatibleCount(
+  queueKey: string | null,
+  min: number | null,
+  max: number | null,
+) {
+  return useCompatibleCount('local', queueKey, min, max)
+}
+
+export function useOpenMixCompatibleCount(
+  queueKey: string | null,
+  min: number | null,
+  max: number | null,
+) {
+  return useCompatibleCount('open_mix', queueKey, min, max)
+}
+
+/** Match-count line for a local or open_mix queue card's preferences row.
  * Reports how many *other* waiters match saved narrowed prefs (same RPC the
- * preferences sheet uses). Returns null for non-local modes, Any-age prefs
+ * preferences sheet uses). Returns null for other modes, Any-age prefs
  * (null/null or full-span 18/99), and until the first count loads. Across
  * range changes the previous count is kept (keepPreviousData) instead of
  * flashing to nothing. */
@@ -311,12 +369,15 @@ export function useLocalMatchLine(
   min: number | null,
   max: number | null,
 ): string | null {
+  const filterable = mode === 'local' || mode === 'open_mix'
   const narrowed =
-    mode === 'local' &&
-    min != null &&
-    max != null &&
-    !(min === LOCAL_AGE_MIN && max === LOCAL_AGE_MAX)
-  const compat = useLocalCompatibleCount(narrowed ? queueKey : null, min, max)
+    filterable && min != null && max != null && !(min === AGE_MIN && max === AGE_MAX)
+  const compat = useCompatibleCount(
+    mode === 'open_mix' ? 'open_mix' : 'local',
+    narrowed ? queueKey : null,
+    min,
+    max,
+  )
   if (!narrowed || compat.count == null) return null
   return compat.count === 1 ? '1 other match' : `${compat.count} other matches`
 }

@@ -2,15 +2,22 @@ import { useEffect, useState } from 'react'
 import { CalendarDays, Clock, Loader2, Users } from 'lucide-react'
 import { Modal } from './Modal'
 import {
+  AGE_MAX,
+  AGE_MIN,
   LOCAL_AGE_MAX,
   LOCAL_AGE_MIN,
+  OPEN_MIX_AGE_MAX,
+  OPEN_MIX_AGE_MIN,
   useLocalCompatibleCount,
+  useOpenMixCompatibleCount,
   useSetLocalAgePrefs,
+  useSetOpenMixAgePrefs,
+  type AgePrefMode,
 } from '../features/matching'
 import { toErrorMessage } from '../lib/error'
 
 function clampValue(v: number): number {
-  return Math.min(Math.max(LOCAL_AGE_MIN, v), LOCAL_AGE_MAX)
+  return Math.min(Math.max(AGE_MIN, v), AGE_MAX)
 }
 
 export function AgeRangePicker({
@@ -22,14 +29,14 @@ export function AgeRangePicker({
   max: number
   onChange: (nextMin: number, nextMax: number) => void
 }) {
-  const span = LOCAL_AGE_MAX - LOCAL_AGE_MIN
-  const loPct = ((min - LOCAL_AGE_MIN) / span) * 100
-  const hiPct = ((max - LOCAL_AGE_MIN) / span) * 100
+  const span = AGE_MAX - AGE_MIN
+  const loPct = ((min - AGE_MIN) / span) * 100
+  const hiPct = ((max - AGE_MIN) / span) * 100
 
   return (
     <div>
       <p aria-live="polite" className="text-center font-display text-lg font-semibold text-on-surface">
-        {min === LOCAL_AGE_MIN && max === LOCAL_AGE_MAX ? 'Any age' : `${min} to ${max} years`}
+        {min === AGE_MIN && max === AGE_MAX ? 'Any age' : `${min} to ${max} years`}
       </p>
       <div className="age-dual mt-2" role="group" aria-label="Age range">
         <div aria-hidden className="absolute top-1/2 right-0 left-0 h-2 -translate-y-1/2 rounded-pill bg-surface-highest" />
@@ -40,28 +47,28 @@ export function AgeRangePicker({
         />
         <input
           type="range"
-          min={LOCAL_AGE_MIN}
-          max={LOCAL_AGE_MAX}
+          min={AGE_MIN}
+          max={AGE_MAX}
           value={min}
           aria-label="Minimum age"
           data-e2e="age-min-slider"
-          style={{ zIndex: min === max && min > LOCAL_AGE_MIN ? 5 : 3 }}
+          style={{ zIndex: min === max && min > AGE_MIN ? 5 : 3 }}
           onChange={(e) => onChange(Math.min(clampValue(Number(e.target.value)), max), max)}
         />
         <input
           type="range"
-          min={LOCAL_AGE_MIN}
-          max={LOCAL_AGE_MAX}
+          min={AGE_MIN}
+          max={AGE_MAX}
           value={max}
           aria-label="Maximum age"
           data-e2e="age-max-slider"
           style={{ zIndex: 4 }}
           onChange={(e) => onChange(min, Math.max(clampValue(Number(e.target.value)), min))}
         />
-      </div>
+        </div>
       <div className="flex justify-between text-xs text-on-surface-variant" aria-hidden>
-        <span>{LOCAL_AGE_MIN}</span>
-        <span>{LOCAL_AGE_MAX}</span>
+        <span>{AGE_MIN}</span>
+        <span>{AGE_MAX}</span>
       </div>
     </div>
   )
@@ -73,20 +80,29 @@ export function MatchPreferencesSheet({
   queueKey,
   initialMin,
   initialMax,
+  mode = 'local',
 }: {
   open: boolean
   onClose: () => void
   queueKey: string | null
   initialMin: number | null
   initialMax: number | null
+  mode?: AgePrefMode
 }) {
+  // Per-mode Any-age bounds (both 18/99 today): the draft, the narrowed
+  // check, and the save payload all read the active mode's constants so a
+  // future range divergence cannot desync the UI from the DB CHECK.
+  const rangeMin = mode === 'local' ? LOCAL_AGE_MIN : OPEN_MIX_AGE_MIN
+  const rangeMax = mode === 'local' ? LOCAL_AGE_MAX : OPEN_MIX_AGE_MAX
   // Fresh draft per mount (callers only render while open), so background
   // profile refetches can never clobber an in-progress drag.
-  const [min, setMin] = useState(initialMin ?? LOCAL_AGE_MIN)
-  const [max, setMax] = useState(initialMax ?? LOCAL_AGE_MAX)
+  const [min, setMin] = useState(initialMin ?? rangeMin)
+  const [max, setMax] = useState(initialMax ?? rangeMax)
   const [error, setError] = useState<string | null>(null)
-  const save = useSetLocalAgePrefs()
-  const narrowed = min !== LOCAL_AGE_MIN || max !== LOCAL_AGE_MAX
+  const saveLocal = useSetLocalAgePrefs()
+  const saveOpenMix = useSetOpenMixAgePrefs()
+  const save = mode === 'local' ? saveLocal : saveOpenMix
+  const narrowed = min !== rangeMin || max !== rangeMax
   // Debounce the draft before counting (same 300ms as staff search), so one
   // query fires per pause instead of one per slider tick.
   const [debMin, setDebMin] = useState<number | null>(narrowed ? min : null)
@@ -98,15 +114,23 @@ export function MatchPreferencesSheet({
     }, 300)
     return () => clearTimeout(timer)
   }, [min, max, narrowed])
-  const live = useLocalCompatibleCount(open ? queueKey : null, debMin, debMax)
+  const localLive = useLocalCompatibleCount(
+    mode === 'local' && open ? queueKey : null,
+    debMin,
+    debMax,
+  )
+  const openMixLive = useOpenMixCompatibleCount(
+    mode === 'open_mix' && open ? queueKey : null,
+    debMin,
+    debMax,
+  )
+  const live = mode === 'local' ? localLive : openMixLive
 
   async function onSave() {
     setError(null)
     try {
       const payload =
-        min === LOCAL_AGE_MIN && max === LOCAL_AGE_MAX
-          ? { min: null, max: null }
-          : { min, max }
+        min === rangeMin && max === rangeMax ? { min: null, max: null } : { min, max }
       await save.mutateAsync(payload)
       onClose()
     } catch (err) {
@@ -134,8 +158,8 @@ export function MatchPreferencesSheet({
               type="button"
               disabled={!narrowed}
               onClick={() => {
-                setMin(LOCAL_AGE_MIN)
-                setMax(LOCAL_AGE_MAX)
+                setMin(rangeMin)
+                setMax(rangeMax)
               }}
               className="min-h-[44px] text-sm font-semibold text-primary hover:underline disabled:opacity-40"
             >
@@ -165,7 +189,9 @@ export function MatchPreferencesSheet({
                   : null}
             </p>
             <p className="mt-1 text-sm leading-6 text-on-surface-variant">
-              Join the Local Radius queue to be grouped with 7 people who match your preferences.
+              {mode === 'local'
+                ? 'Join the Local Radius queue to be grouped with 7 people who match your preferences.'
+                : 'Join the Open Mix queue to be grouped with 7 people who match your preferences.'}
             </p>
           </div>
         </div>
