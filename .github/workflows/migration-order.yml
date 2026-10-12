@@ -1,0 +1,70 @@
+name: Migration order
+
+# Guards the order-dependent supabase/migrations history: every migration file
+# added by a PR must be numbered above the target branch's current max. This
+# catches the failure mode where two branches add migrations concurrently and
+# merge in reverse numeric order (a lower number landing after higher ones),
+# which supabase db push rejects as out of order on already-migrated databases.
+# Compare against the base branch at merge time, not at PR open time: rebase
+# and re-run before merging.
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'supabase/migrations/**'
+
+concurrency:
+  group: migration-order-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migration-order:
+    name: migration numbers above base max
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check added migration numbers
+        run: |
+          set -euo pipefail
+          BASE="${{ github.base_ref }}"
+          BASE_MAX=$(git ls-tree --name-only "origin/$BASE" -- supabase/migrations/ | sed 's#^.*/##' | grep -oE '^[0-9]{4}' | sort -n | tail -1)
+          if [ -z "${BASE_MAX:-}" ]; then
+            echo "::error::Could not determine the base branch max migration number"
+            exit 1
+          fi
+          echo "Base branch '$BASE' max migration: $BASE_MAX"
+          ADDED=$(git diff --name-only --diff-filter=ACR "origin/$BASE...HEAD" -- supabase/migrations/)
+          if [ -z "$ADDED" ]; then
+            echo "No added migration files; nothing to check."
+            exit 0
+          fi
+          FAIL=0
+          SEEN=""
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            name=$(basename "$file")
+            if ! [[ "$name" =~ ^[0-9]{4}_.+\.sql$ ]]; then
+              echo "::error file=$file::Migration file name must match NNNN_description.sql"
+              FAIL=1
+              continue
+            fi
+            num=$((10#${name:0:4}))
+            base=$((10#$BASE_MAX))
+            if [ "$num" -le "$base" ]; then
+              echo "::error file=$file::Migration $name is not above the $BASE max ($BASE_MAX); renumber it above $BASE_MAX (rebase first, then rename)."
+              FAIL=1
+            fi
+            SEEN="$SEEN $num"
+          done <<< "$ADDED"
+          DUPES=$(echo "$SEEN" | tr ' ' '\n' | grep -E '^[0-9]+$' | sort -n | uniq -d || true)
+          if [ -n "$DUPES" ]; then
+            echo "::error::Duplicate migration numbers added in this PR:$DUPES"
+            FAIL=1
+          fi
+          exit $FAIL
