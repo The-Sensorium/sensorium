@@ -7,12 +7,16 @@ name: Migration order
 # which supabase db push rejects as out of order on already-migrated databases.
 # Compare against the base branch at merge time, not at PR open time: rebase
 # and re-run before merging.
+#
+# No `paths` filter on purpose: this job must report a status on every PR so
+# it can be a required branch-protection check. A paths-filtered workflow never
+# runs on PRs that skip those paths, and GitHub would then wait forever on the
+# missing status. The job itself exits 0 immediately when a PR adds no
+# migrations.
 
 on:
   pull_request:
     branches: [main, develop]
-    paths:
-      - 'supabase/migrations/**'
 
 concurrency:
   group: migration-order-${{ github.ref }}
