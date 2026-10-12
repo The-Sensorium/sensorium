@@ -89,6 +89,7 @@ describe('moderation', () => {
   })
 
   it('useDeleteAccount signs out and clears the cache', async () => {
+    mockResult.value = { data: [], error: null }
     const client = makeSupabaseClient(mockResult)
     const signOut = vi.fn()
     client.auth = { signOut } as never
@@ -97,45 +98,86 @@ describe('moderation', () => {
     const { result } = renderHook(() => useDeleteAccount(), { wrapper })
     result.current.mutate()
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    // No stored objects: the edge function is skipped and only the RPC runs.
+    expect(requireSupabaseMock.mock.results[0].value.functions.invoke).not.toHaveBeenCalled()
     expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('delete_my_account')
     expect(signOut).toHaveBeenCalled()
     expect(queryClient.getQueryState(['anything'])).toBeUndefined()
   })
 
-  it('useDeleteAccount reclaims the avatar and authored chat images', async () => {
-    const removeAvatar = vi.fn(() => Promise.resolve({ data: [], error: null }))
-    const removeChatImage = vi.fn(() => Promise.resolve({ data: [], error: null }))
-    const chain = (value: MockSupabaseResult) => {
-      const ship: Record<string, unknown> = {
-        then: (resolve: (v: unknown) => void) => resolve(value),
-      }
-      for (const m of ['select', 'eq', 'maybeSingle', 'not', 'order', 'limit']) ship[m] = vi.fn(() => ship)
-      return ship
-    }
-    const tables: Record<string, MockSupabaseResult> = {
-      profiles: { data: { avatar_url: 'u1/av.png' }, error: null },
-      messages: {
-        data: [{ image_url: 'c1/a.png' }, { image_url: 'c2/b.png' }],
-        error: null,
-      },
+  it('useDeleteAccount runs storage cleanup before deleting the account when objects exist', async () => {
+    const invoke = vi.fn(() => Promise.resolve({ data: { ok: true, deleted: 5 }, error: null }))
+    const deleteAccount = vi.fn(() => Promise.resolve({ data: null, error: null }))
+    const calls: string[] = []
+    const record = (name: string) => (value: unknown) => {
+      calls.push(name)
+      return Promise.resolve(value)
     }
     requireSupabaseMock.mockReturnValue({
-      from: vi.fn((table: string) => chain(tables[table])),
-      rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      functions: { invoke: vi.fn((fn: string) => record(fn)(invoke())) },
+      rpc: vi.fn((fn: string) =>
+        fn === 'get_my_storage_objects'
+          ? record(fn)([ { bucket: 'avatars', path: 'u1/av.png' } ])
+          : record(fn)(deleteAccount()),
+      ),
       auth: { signOut: vi.fn(() => Promise.resolve()) },
-      storage: {
-        from: vi.fn((bucket: string) => ({
-          remove: bucket === 'avatars' ? removeAvatar : removeChatImage,
-        })),
-      },
     } as never)
 
     const { result } = renderHook(() => useDeleteAccount(), { wrapper })
     result.current.mutate()
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(removeAvatar).toHaveBeenCalledWith(['u1/av.png'])
-    expect(removeChatImage).toHaveBeenCalledWith(['c1/a.png'])
-    expect(removeChatImage).toHaveBeenCalledWith(['c2/b.png'])
+    expect(requireSupabaseMock.mock.results[0].value.functions.invoke).toHaveBeenCalledWith(
+      'delete-account-storage',
+    )
+    expect(calls).toEqual([
+      'get_my_storage_objects',
+      'delete-account-storage',
+      'delete_my_account',
+    ])
+  })
+
+  it('useDeleteAccount aborts before deleting the account when cleanup reports failure', async () => {
+    const deleteAccount = vi.fn(() => Promise.resolve({ data: null, error: null }))
+    requireSupabaseMock.mockReturnValue({
+      rpc: vi.fn((fn: string) =>
+        fn === 'get_my_storage_objects'
+          ? Promise.resolve({ data: [{ bucket: 'posts-images', path: 'c1/p.png' }], error: null })
+          : deleteAccount(),
+      ),
+      functions: {
+        invoke: vi.fn(() =>
+          Promise.resolve({ data: { ok: false, error: 'object_still_exists' }, error: null }),
+        ),
+      },
+      auth: { signOut: vi.fn(() => Promise.resolve()) },
+    } as never)
+
+    const { result } = renderHook(() => useDeleteAccount(), { wrapper })
+    result.current.mutate()
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(String(result.current.error)).toContain('object_still_exists')
+    expect(deleteAccount).not.toHaveBeenCalled()
+  })
+
+  it('useDeleteAccount aborts before deleting the account when the cleanup call fails', async () => {
+    const deleteAccount = vi.fn(() => Promise.resolve({ data: null, error: null }))
+    requireSupabaseMock.mockReturnValue({
+      rpc: vi.fn((fn: string) =>
+        fn === 'get_my_storage_objects'
+          ? Promise.resolve({ data: [{ bucket: 'avatars', path: 'u1/av.png' }], error: null })
+          : deleteAccount(),
+      ),
+      functions: {
+        invoke: vi.fn(() => Promise.resolve({ data: null, error: new Error('edge down') })),
+      },
+      auth: { signOut: vi.fn(() => Promise.resolve()) },
+    } as never)
+
+    const { result } = renderHook(() => useDeleteAccount(), { wrapper })
+    result.current.mutate()
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(String(result.current.error)).toContain('edge down')
+    expect(deleteAccount).not.toHaveBeenCalled()
   })
 
   it('isMutedAuthor matches only muted ids', () => {

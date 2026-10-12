@@ -1,0 +1,236 @@
+name: Android AAB (Play build)
+
+# Builds a signed release AAB in CI (no EAS) for Google Play upload.
+# Same prebuild + Gradle approach as the APK workflow, but runs
+# `bundleRelease` instead of `assembleRelease` so Play can generate
+# split APKs itself. This exists to spare the limited EAS build quota:
+# verifying the R8 / DEX optimisation fix and iterating on alpha
+# releases happens here; EAS stays for iOS and emergencies.
+#
+# One-time setup before your first console upload:
+#   Signing continuity: Play rejects bundles signed with a different
+#   upload key than the current alpha (built by EAS). Either export
+#   the EAS upload keystore into the ANDROID_KEYSTORE_BASE64 +
+#   ANDROID_STORE_PASSWORD + ANDROID_KEY_ALIAS +
+#   ANDROID_KEY_PASSWORD secrets, or register a new upload key in
+#   Play Console (Release > Setup > App integrity) and store that.
+#   Without those secrets the AAB is debug-signed: fine for measuring
+#   DEX size locally, rejected by Play, so set them before uploading
+#   any artifact by hand.
+#
+# Play Console is always manual: this workflow only produces the AAB
+# artifact, never uploads it anywhere.
+#
+# version-code must be higher than anything already on Play (the EAS
+# alpha ended at 8). There is no auto-increment off EAS, so pass it
+# explicitly on every run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment for EXPO_PUBLIC_* env vars'
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      version-code:
+        description: 'Android versionCode (must exceed last Play upload)'
+        required: true
+        default: '9'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-aab:
+    name: Build release AAB (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_PUBLIC_APP_ENV: ${{ inputs.environment }}
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars[format('EXPO_PUBLIC_SUPABASE_URL_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars[format('EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_KLIPY_APP_KEY: ${{ vars[format('EXPO_PUBLIC_KLIPY_APP_KEY_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_KLIPY_ENDPOINT: ${{ vars[format('EXPO_PUBLIC_KLIPY_ENDPOINT_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_WEB_URL: ${{ vars[format('EXPO_PUBLIC_WEB_URL_{0}', inputs.environment)] }}
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars[format('EXPO_PUBLIC_SENTRY_DSN_{0}', inputs.environment)] }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore google-services.json from secret
+        working-directory: mobile
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > google-services.json
+        shell: bash
+
+      - name: Check Sentry config
+        # Production must never ship blind: fail fast on missing Sentry config
+        # instead of discovering it on the first crash. Staging is single-tester
+        # and Sentry-optional, so a missing config only warns and the build
+        # proceeds without crash reporting (the app skips Sentry.init without
+        # a DSN). A missing auth token only blocks sourcemap upload, so it
+        # warns loudly but still builds. Matters doubly here: with R8 minify
+        # on, an unmapped stack trace is unreadable.
+        run: |
+          fail=""
+          [ -n "$EXPO_PUBLIC_SENTRY_DSN" ] || fail="$fail EXPO_PUBLIC_SENTRY_DSN_${{ inputs.environment }}"
+          [ -n "$SENTRY_ORG" ] || fail="$fail SENTRY_ORG"
+          [ -n "$SENTRY_PROJECT" ] || fail="$fail SENTRY_PROJECT"
+          if [ -n "$fail" ]; then
+            if [ "${{ inputs.environment }}" = "production" ]; then
+              echo "Missing required Sentry config:$fail"
+              echo "Set the repo variables (and rerun), or production ships blind."
+              exit 1
+            fi
+            echo "::warning::Sentry is not configured for ${{ inputs.environment }} ($fail ). This build ships without crash reporting."
+          fi
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "::warning::SENTRY_AUTH_TOKEN secret is not set. The build will succeed but sourcemaps will not upload, so stack traces will be unreadable."
+          fi
+        shell: bash
+
+      - name: Prebuild Android project
+        run: npx expo prebuild --platform android --clean
+
+      - name: Tune Gradle for CI release
+        # Prebuild regenerates mobile/android from the Expo template, so patch
+        # the generated files here rather than committing android/.
+        # Unlike the APK workflow this keeps all four ABIs: Play splits the
+        # AAB per device itself, so trimming here would only shrink the
+        # developer artifact while changing what Play ships. R8 minify is
+        # hungry, so the 4g heap from the APK workflow stays.
+        working-directory: mobile/android
+        run: |
+          sed -i "s/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g/" gradle.properties
+          cat gradle.properties
+        shell: bash
+
+      - name: Set versionCode and versionName
+        # Play rejects reused version codes, and EAS auto-incremented remotely
+        # (alpha ended at 8) while app.json still says 2, so the input wins.
+        # versionName is cosmetic on Play but keep it honest anyway.
+        working-directory: mobile
+        run: |
+          VERSION_NAME="$(node -p "require('./app.json').expo.version")"
+          sed -i "s/^\(\s*\)versionCode .*/\1versionCode ${{ inputs.version-code }}/" android/app/build.gradle
+          sed -i "s/^\(\s*\)versionName .*/\1versionName \"$VERSION_NAME\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+        shell: bash
+
+      - name: Configure release signing
+        # The Expo template signs release builds with the public debug key.
+        # With upload-keystore secrets present, point the release build type
+        # at them; without, keep debug signing (artifact is fine for DEX
+        # measurement and sideloading, Play will reject it).
+        working-directory: mobile
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::warning::No upload keystore secret (ANDROID_KEYSTORE_BASE64). Building debug-signed: use it to measure DEX size, do not upload it to Play."
+            exit 0
+          fi
+          for v in ANDROID_STORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "ANDROID_KEYSTORE_BASE64 is set but $v is missing."
+              exit 1
+            fi
+          done
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/upload.keystore
+          python3 - <<'EOF'
+          p = 'android/app/build.gradle'
+          s = open(p).read()
+          debug_block = """    signingConfigs {
+                  debug {
+                      storeFile file('debug.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+          """
+          release_signing = """    signingConfigs {
+                  debug {
+                      storeFile file('debug.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+                  release {
+                      storeFile file('upload.keystore')
+                      storePassword System.getenv('ANDROID_STORE_PASSWORD')
+                      keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                      keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+                  }
+          """
+          assert debug_block in s, 'signingConfigs debug block not found, template changed'
+          s = s.replace(debug_block, release_signing, 1)
+          old = """            // see https://reactnative.dev/docs/signed-apk-android.
+                      signingConfig signingConfigs.debug"""
+          new = """            // see https://reactnative.dev/docs/signed-apk-android.
+                      signingConfig signingConfigs.release"""
+          assert old in s, 'release buildType signing line not found, template changed'
+          s = s.replace(old, new, 1)
+          open(p, 'w').write(s)
+          print('release signing configured')
+          EOF
+        shell: bash
+
+      - name: Install project NDK
+        run: yes | sdkmanager "ndk;27.1.12297006" 2>/dev/null || true
+
+      - name: Build release AAB
+        working-directory: mobile/android
+        env:
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew app:bundleRelease -x lint --no-daemon --stacktrace
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: sensorium-${{ inputs.environment }}-aab-v${{ inputs.version-code }}
+          path: mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload R8 mapping file
+        # With minify on, this is the only way to de-obfuscate a stack trace
+        # if the Sentry upload did not run (missing SENTRY_AUTH_TOKEN).
+        uses: actions/upload-artifact@v4
+        with:
+          name: sensorium-${{ inputs.environment }}-mapping-v${{ inputs.version-code }}
+          path: mobile/android/app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+          retention-days: 30
+

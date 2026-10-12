@@ -74,7 +74,7 @@ Cluster formation is modular across multiple matching modes, each forming its ow
 | Generation | Matched with people born within the same 5 years |
 | Birth Year | Matched with people born in the same year, any month |
 | Local Radius | Matched with people within a user selected radius of their location. Radius is one of 10, 50, or 100 km. The queue key uses the located country (from reverse geocode), not profile country, so travelers match locals where they are. Users may optionally set a mutual age range (Any age by default); clusters form only from mutually compatible sets of 8. No ages are displayed for Local Radius |
-| Open Mix | First 8 people in line, no birth-date or location filter (onboarding bridge) |
+| Open Mix | First 8 people in line, no location filter (onboarding bridge). Users may optionally set a mutual age range (Any age by default, stored separately from Local prefs); clusters form only from mutually compatible sets of 8 |
 
 A user can be active in multiple clusters at once, each formed via a different mode. For example, someone could be in a Birth Year cluster and a Local Radius cluster at the same time.
 

@@ -8,6 +8,7 @@ import { makeSupabaseClient, initialMockResult, asError, type MockSupabaseResult
 import {
   useClusterMembers,
   formatAgePrefs,
+  useCompatibleCount,
   useJoinQueue,
   useLatestClusterFormed,
   useLeaveQueue,
@@ -16,8 +17,10 @@ import {
   useMyClusters,
   useMyQueueKeys,
   useMyQueueStatus,
+  useOpenMixCompatibleCount,
   useQueueCount,
   useSetLocalAgePrefs,
+  useSetOpenMixAgePrefs,
 } from './matching'
 
 vi.mock('../lib/supabase', () => ({ requireSupabase: vi.fn() }))
@@ -242,13 +245,63 @@ it('useQueueCount stays disabled without a queue key', () => {
     await waitFor(() => expect(result.current).toBe('1 other match'))
   })
 
-  it('useLocalMatchLine stays null for Any age, full span, and non-local', () => {
+  it('useLocalMatchLine stays null for Any age, full span, and non-filterable modes', () => {
     const { result: any } = renderHook(() => useLocalMatchLine('local', 'k1', null, null), { wrapper })
     expect(any.current).toBeNull()
     const { result: full } = renderHook(() => useLocalMatchLine('local', 'k1', 18, 99), { wrapper })
     expect(full.current).toBeNull()
-    const { result: other } = renderHook(() => useLocalMatchLine('open_mix', 'open', null, null), { wrapper })
+    const { result: other } = renderHook(() => useLocalMatchLine('birth_year', 'k1', 25, 35), { wrapper })
     expect(other.current).toBeNull()
     expect(requireSupabaseMock).not.toHaveBeenCalled()
+  })
+
+  it('useSetOpenMixAgePrefs calls the RPC and invalidates open-mix counts', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useSetOpenMixAgePrefs(), { wrapper })
+    result.current.mutate({ min: 25, max: 35 })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith('set_open_mix_age_prefs', {
+      p_min: 25,
+      p_max: 35,
+    })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['open-mix-compatible-count'] })
+  })
+
+  it('useSetOpenMixAgePrefs propagates an invalid range error', async () => {
+    mockResult.value = asError('invalid_age_range')
+    const { result } = renderHook(() => useSetOpenMixAgePrefs(), { wrapper })
+    await expect(result.current.mutateAsync({ min: 90, max: 20 })).rejects.toThrow('invalid_age_range')
+  })
+
+  it('useOpenMixCompatibleCount queries the open-mix count RPC', async () => {
+    mockResult.value = { data: 3, error: null }
+    const { result } = renderHook(() => useOpenMixCompatibleCount('open', 25, 35), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith(
+      'get_open_mix_compatible_count',
+      { p_queue_key: 'open', p_min: 25, p_max: 35 },
+    )
+    await waitFor(() => expect(result.current.count).toBe(3))
+  })
+
+  it('useCompatibleCount routes local mode to the local RPC', async () => {
+    mockResult.value = { data: 2, error: null }
+    const { result } = renderHook(() => useCompatibleCount('local', 'k1', 25, 35), { wrapper })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith(
+      'get_local_compatible_count',
+      { p_queue_key: 'k1', p_min: 25, p_max: 35 },
+    )
+    await waitFor(() => expect(result.current.count).toBe(2))
+  })
+
+  it('useLocalMatchLine reports other matches for narrowed open_mix prefs', async () => {
+    mockResult.value = { data: 3, error: null }
+    const { result } = renderHook(() => useLocalMatchLine('open_mix', 'open', 25, 35), { wrapper })
+    await waitFor(() => expect(result.current).toBe('3 other matches'))
+    expect(requireSupabaseMock.mock.results[0].value.rpc).toHaveBeenCalledWith(
+      'get_open_mix_compatible_count',
+      { p_queue_key: 'open', p_min: 25, p_max: 35 },
+    )
   })
 })

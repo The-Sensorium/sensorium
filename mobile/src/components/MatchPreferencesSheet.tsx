@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import { Modal as RNModal, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CalendarDays, Clock, Users, X } from 'lucide-react-native'
-import { AgeRangeSlider, AGE_MAX, AGE_MIN } from './AgeRangeSlider'
+import { AgeRangeSlider } from './AgeRangeSlider'
 import {
+  LOCAL_AGE_MAX,
+  LOCAL_AGE_MIN,
+  OPEN_MIX_AGE_MAX,
+  OPEN_MIX_AGE_MIN,
   useLocalCompatibleCount,
+  useOpenMixCompatibleCount,
   useSetLocalAgePrefs,
+  useSetOpenMixAgePrefs,
+  type AgePrefMode,
 } from '../features/matching'
 import { useProfile } from '../lib/use-profile'
 import { toErrorMessage } from '../lib/error'
@@ -21,10 +28,12 @@ export function MatchPreferencesSheet({
   open,
   queueKey,
   onClose,
+  mode = 'local',
 }: {
   open: boolean
   queueKey: string | null
   onClose: () => void
+  mode?: AgePrefMode
 }) {
   const t = useTheme()
   const { bottom } = useSafeAreaInsets()
@@ -74,7 +83,7 @@ export function MatchPreferencesSheet({
               }}
             />
           </Pressable>
-          {open ? <MatchPreferencesForm queueKey={queueKey} onClose={onClose} /> : null}
+          {open ? <MatchPreferencesForm queueKey={queueKey} onClose={onClose} mode={mode} /> : null}
         </View>
       </View>
     </RNModal>
@@ -84,30 +93,43 @@ export function MatchPreferencesSheet({
 function MatchPreferencesForm({
   queueKey,
   onClose,
+  mode,
 }: {
   queueKey: string | null
   onClose: () => void
+  mode: AgePrefMode
 }) {
   const t = useTheme()
   const profile = useProfile()
-  const save = useSetLocalAgePrefs()
+  const saveLocal = useSetLocalAgePrefs()
+  const saveOpenMix = useSetOpenMixAgePrefs()
+  const save = mode === 'local' ? saveLocal : saveOpenMix
   // Warning amber, matching the Sun/Moon time cue and status dots: amber-500
   // light, amber-400 dark, with a 10% tinted wash behind it.
   const scheme = useResolvedScheme()
   const amber = scheme === 'dark' ? '#fbbf24' : '#b45309'
   const amberWash = scheme === 'dark' ? '#fbbf241a' : '#f59e0b1a'
 
-  const savedMin = profile.data?.local_pref_age_min ?? null
-  const savedMax = profile.data?.local_pref_age_max ?? null
+  const savedMin =
+    mode === 'local'
+      ? (profile.data?.local_pref_age_min ?? null)
+      : (profile.data?.open_mix_pref_age_min ?? null)
+  const savedMax =
+    mode === 'local'
+      ? (profile.data?.local_pref_age_max ?? null)
+      : (profile.data?.open_mix_pref_age_max ?? null)
+
+  const rangeMin = mode === 'local' ? LOCAL_AGE_MIN : OPEN_MIX_AGE_MIN
+  const rangeMax = mode === 'local' ? LOCAL_AGE_MAX : OPEN_MIX_AGE_MAX
 
   // Fresh draft per open (the form only mounts while the sheet is open), so
   // background profile refetches can never clobber an in-progress edit and
   // polls/timers die with the sheet.
-  const [min, setMin] = useState(savedMin ?? AGE_MIN)
-  const [max, setMax] = useState(savedMax ?? AGE_MAX)
+  const [min, setMin] = useState(savedMin ?? rangeMin)
+  const [max, setMax] = useState(savedMax ?? rangeMax)
   const [error, setError] = useState<string | null>(null)
 
-  const narrowed = min !== AGE_MIN || max !== AGE_MAX
+  const narrowed = min !== rangeMin || max !== rangeMax
   // Debounce the draft before counting (same 300ms as web staff search), so
   // one query fires per pause instead of one per slider tick.
   const [debMin, setDebMin] = useState<number | null>(narrowed ? min : null)
@@ -119,12 +141,14 @@ function MatchPreferencesForm({
     }, 300)
     return () => clearTimeout(timer)
   }, [min, max, narrowed])
-  const live = useLocalCompatibleCount(queueKey, debMin, debMax)
+  const localLive = useLocalCompatibleCount(mode === 'local' ? queueKey : null, debMin, debMax)
+  const openMixLive = useOpenMixCompatibleCount(mode === 'open_mix' ? queueKey : null, debMin, debMax)
+  const live = mode === 'local' ? localLive : openMixLive
 
   async function onSave() {
     setError(null)
     try {
-      const fullSpan = min === AGE_MIN && max === AGE_MAX
+      const fullSpan = min === rangeMin && max === rangeMax
       await save.mutateAsync(fullSpan ? { min: null, max: null } : { min, max })
       onClose()
     } catch (err) {
@@ -170,8 +194,8 @@ function MatchPreferencesForm({
           <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: t.onSurface }}>Age range</Text>
           <Pressable
             onPress={() => {
-              setMin(AGE_MIN)
-              setMax(AGE_MAX)
+              setMin(rangeMin)
+              setMax(rangeMax)
             }}
             disabled={!narrowed}
             accessibilityRole="button"
@@ -207,7 +231,9 @@ function MatchPreferencesForm({
                   : null}
             </Text>
             <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-              Join the Local Radius queue to be grouped with 7 people who match your preferences.
+              {mode === 'local'
+                ? 'Join the Local Radius queue to be grouped with 7 people who match your preferences.'
+                : 'Join the Open Mix queue to be grouped with 7 people who match your preferences.'}
             </Text>
           </View>
         </View>

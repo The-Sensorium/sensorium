@@ -113,7 +113,7 @@ export const TERMS_DOCUMENT: LegalDocument = {
 
 export const PRIVACY_DOCUMENT: LegalDocument = {
   title: 'Privacy Policy',
-  updated: 'August 20, 2026',
+  updated: 'October 12, 2026',
   intro:
     'Sensorium connects you with a small, permanent group of people (a “cluster”). This policy explains what personal data we collect, why, and the choices you have. You must be at least 18 years old to use Sensorium.',
   sections: [
@@ -122,7 +122,7 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
       blocks: [
         {
           kind: 'p',
-          text: 'When you create an account we collect your email, display name, date of birth, country, and any details you add to your profile. If you enable Local Radius matching, we store a coarse location (city area) and the matching radius you choose, never your precise coordinates. We also record your activity on the service, such as messages, reactions, signals, votes, and notifications.',
+          text: "When you create an account we collect your email, display name, date of birth, country, and any details you add to your profile. If you enable Local Radius matching, your device's approximate location is sent temporarily to our geocoding service to determine your local area and country, and we store that area plus the matching radius you choose. Your precise coordinates are never stored in your profile. We also record your activity on the service, such as messages, reactions, signals, votes, and notifications.",
         },
         {
           kind: 'p',
@@ -154,6 +154,29 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
         {
           kind: 'p',
           text: 'We do not sell your personal data. Within a cluster, your profile and answers to the introduction phase are visible only to that cluster. Reports you submit are shared only with our moderation team.',
+        },
+        {
+          kind: 'p',
+          text: 'We also use a small number of third-party services to operate Sensorium. Each provider processes the limited information needed to deliver its service, subject to that provider’s own terms and privacy practices:',
+        },
+        {
+          kind: 'bullets',
+          items: [
+            'Supabase: our hosting and database provider. It stores your account, profile, messages, photos, and other application data needed to run the service.',
+            'LiveKit: provides real-time voice and video for cluster calls. Call audio and video are transmitted live and are not recorded by Sensorium.',
+            'BigDataCloud: temporarily receives your approximate coordinates during Local Radius setup to determine your local area and country. Raw coordinates are not stored in your profile.',
+            'Expo Push Notifications and Firebase Cloud Messaging (a Google service): deliver push notifications to your device, which can include the sender’s display name and a short preview of a new message.',
+            "KLIPY: performs GIF searches and serves the GIF results you choose.",
+            'Sentry: receives crash reports and technical diagnostics from your device to help keep the app stable.',
+            'Resend: sends account-related and transactional emails, such as verification and moderation notices, to your email address.',
+            'Cloudflare Turnstile: verifies that a signup is human to prevent abuse. It may receive device and browser signals from the verification page.',
+            'Google: if you sign in with Google, Google handles the sign-in and we receive the basic profile information you approve.',
+            "Vercel Analytics: the sign-in verification page is served by our web app, which uses Vercel's web analytics. Opening that page inside the app may report standard, anonymized web-analytics data, such as page views and device or region information.",
+          ],
+        },
+        {
+          kind: 'p',
+          text: 'Where a feature uses one of these services, only the information needed to provide that feature is involved, and each provider’s privacy policy governs how that provider handles it. If you have questions, contact us using the details at the end of this policy.',
         },
       ],
     },

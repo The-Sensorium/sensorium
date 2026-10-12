@@ -1590,6 +1590,8 @@ export type Database = {
           longitude: number | null
           manual_status: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at: string | null
+          open_mix_pref_age_max: number | null
+          open_mix_pref_age_min: number | null
           pronouns: string | null
           timezone: string | null
           updated_at: string
@@ -1616,6 +1618,8 @@ export type Database = {
           longitude?: number | null
           manual_status?: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at?: string | null
+          open_mix_pref_age_max?: number | null
+          open_mix_pref_age_min?: number | null
           pronouns?: string | null
           timezone?: string | null
           updated_at?: string
@@ -1642,6 +1646,8 @@ export type Database = {
           longitude?: number | null
           manual_status?: Database["public"]["Enums"]["profile_status"]
           onboarding_completed_at?: string | null
+          open_mix_pref_age_max?: number | null
+          open_mix_pref_age_min?: number | null
           pronouns?: string | null
           timezone?: string | null
           updated_at?: string
@@ -3094,6 +3100,24 @@ export type Database = {
           target_kind: string
         }[]
       }
+      get_my_storage_objects: {
+        Args: never
+        Returns: {
+          bucket: string
+          path: string
+        }[]
+      }
+      get_storage_objects_for_account: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_user_id: string
+        }
+        Returns: {
+          bucket: string
+          path: string
+        }[]
+      }
       get_pending_invitations: {
         Args: never
         Returns: {
@@ -3132,6 +3156,14 @@ export type Database = {
         }[]
       }
       get_local_compatible_count: {
+        Args: {
+          p_max?: number | null
+          p_min?: number | null
+          p_queue_key: string
+        }
+        Returns: number
+      }
+      get_open_mix_compatible_count: {
         Args: {
           p_max?: number | null
           p_min?: number | null
@@ -3590,6 +3622,13 @@ export type Database = {
           p_reason: string
           p_report_id: string
           p_severity: Database["public"]["Enums"]["moderation_severity"]
+        }
+        Returns: undefined
+      }
+      set_open_mix_age_prefs: {
+        Args: {
+          p_max?: number | null
+          p_min?: number | null
         }
         Returns: undefined
       }
