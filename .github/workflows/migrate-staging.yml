@@ -37,12 +37,8 @@ jobs:
       # Target the project directly instead of `supabase link` first: link
       # fetches the project's legacy api-keys and the platform 403s that call
       # even for owners (supabase/cli#6392). db push does not need those keys.
-      # One-time repair: 0192 landed after 0193-0195, so a plain db push rejects
-      # it as out of order. --include-all applies it anyway (verified safe: the
-      # 0192 statements are independent of 0193-0195). Revert this flag once the
-      # remote history is linear again.
       - name: Apply migrations to staging
-        run: npx supabase db push --include-all --project-ref "$SUPABASE_STAGING_PROJECT_ID" --password "$SUPABASE_STAGING_DB_PASSWORD"
+        run: npx supabase db push --project-ref "$SUPABASE_STAGING_PROJECT_ID" --password "$SUPABASE_STAGING_DB_PASSWORD"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_STAGING_ACCESS_TOKEN }}
           SUPABASE_STAGING_PROJECT_ID: ${{ secrets.SUPABASE_STAGING_PROJECT_ID }}
