@@ -376,8 +376,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         const { error: upErr } = await supabase
           .from('profiles')
           .update({
-            latitude: coords.lat,
-            longitude: coords.lng,
             local_area: found.slug,
             local_country_code: found.countryCode,
           })
@@ -389,8 +387,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
             old
               ? {
                   ...old,
-                  latitude: coords.lat,
-                  longitude: coords.lng,
                   local_area: found.slug,
                   local_country_code: found.countryCode,
                 }
