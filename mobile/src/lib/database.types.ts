@@ -3100,6 +3100,24 @@ export type Database = {
           target_kind: string
         }[]
       }
+      get_my_storage_objects: {
+        Args: never
+        Returns: {
+          bucket: string
+          path: string
+        }[]
+      }
+      get_storage_objects_for_account: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_user_id: string
+        }
+        Returns: {
+          bucket: string
+          path: string
+        }[]
+      }
       get_pending_invitations: {
         Args: never
         Returns: {

@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth-context'
 import type { Database } from '../lib/database.types'
 import { requireSupabase } from '../lib/supabase'
-import { deleteAvatarObject } from './avatars'
-import { deleteChatImage } from './cluster'
 
 export type ReportReason = Database['public']['Enums']['report_reason']
 
@@ -179,13 +177,22 @@ export function useReportMember() {
   })
 }
 
+export type DeleteAccountStorageResult = {
+  ok: boolean
+  deleted: number
+  error?: string
+}
+
 /** Delete the signed-in user's account (cascades to all owned rows). Storage
- * objects live outside the database cascade, so the user's avatar and every
- * chat image they authored are reclaimed up front (owner/member-scoped deletes,
- * migration 0050) before the account row is removed. This ordering is required:
- * delete_my_account departs the user from every cluster first, and the
- * chat-images delete policy demands active membership, so reclamation would be
- * blocked if it ran after the RPC. */
+ * objects live outside the database cascade, and the member-scoped delete
+ * policies cannot reach objects in clusters the user has already left, so
+ * physical cleanup runs through the delete-account-storage edge function: it
+ * verifies the caller's JWT, lists every object the account owns (avatar, chat
+ * images, post and comment images) server-side, and deletes them under the
+ * service-role key. Only a fully successful cleanup lets the account RPC run;
+ * any failure aborts so a retry re-runs the same idempotent deletion. An
+ * account with nothing stored skips the edge function, so a missing function
+ * deployment cannot block deleting an account that has no media. */
 export function useDeleteAccount() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -196,25 +203,24 @@ export function useDeleteAccount() {
       if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', userId)
-        .maybeSingle()
-      await deleteAvatarObject(profile?.avatar_url ?? null).catch(() => {})
-
-      const { data: images } = await supabase
-        .from('messages')
-        .select('image_url')
-        .eq('author_id', userId)
-        .not('image_url', 'is', null)
-      for (const row of images ?? []) {
-        await deleteChatImage(row.image_url).catch(() => {})
+      const { data: owned, error: ownedError } = await supabase.rpc('get_my_storage_objects')
+      const nothingStored = !ownedError && Array.isArray(owned) && owned.length === 0
+      if (!nothingStored) {
+        const { data, error } = await supabase.functions.invoke<DeleteAccountStorageResult>(
+          'delete-account-storage',
+        )
+        if (error) throw new Error(error instanceof Error ? error.message : 'Storage cleanup failed')
+        if (!data?.ok) throw new Error(data?.error ?? 'Storage cleanup failed')
       }
 
-      const { error } = await supabase.rpc('delete_my_account')
-      if (error) throw error
-      await supabase.auth.signOut()
+      const { error: delError } = await supabase.rpc('delete_my_account')
+      if (delError) throw delError
+      // The account row is already gone. The auth-js client always posts a
+      // /logout request regardless of scope and treats the resulting 401/403/404
+      // as benign, clearing the local session either way; local scope additionally
+      // ends only this device's session instead of broadcasting a global sign-out
+      // for a user that no longer exists.
+      await supabase.auth.signOut({ scope: 'local' })
       queryClient.clear()
     },
   })
