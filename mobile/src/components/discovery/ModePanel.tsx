@@ -393,8 +393,6 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         const { error: upErr } = await supabase
           .from('profiles')
           .update({
-            latitude: coords.lat,
-            longitude: coords.lng,
             local_area: found.slug,
             local_country_code: found.countryCode,
           })
@@ -403,7 +401,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         {
           const uid = auth.userId
           queryClient.setQueryData(profileKey(uid), (old: Profile | null | undefined) =>
-            old ? { ...old, latitude: coords.lat, longitude: coords.lng, local_area: found.slug, local_country_code: found.countryCode } : old,
+            old ? { ...old, local_area: found.slug, local_country_code: found.countryCode } : old,
           )
           await Promise.all([
             queryClient.invalidateQueries({ queryKey: profileKey(uid) }),

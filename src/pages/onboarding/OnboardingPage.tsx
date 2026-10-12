@@ -130,8 +130,6 @@ export function OnboardingPage() {
             timezone: draft.timezone || null,
             bio: draft.bio.trim() || null,
             avatar_url: draft.avatarUrl,
-            latitude: draft.coordinates?.lat ?? null,
-            longitude: draft.coordinates?.lng ?? null,
             local_area: draft.localArea ?? null,
             local_country_code: draft.localCountryCode ?? null,
             local_radius_km: draft.radiusKm ?? null,
