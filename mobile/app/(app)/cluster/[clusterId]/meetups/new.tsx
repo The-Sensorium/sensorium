@@ -18,6 +18,7 @@ import { useTheme } from '../../../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../../../src/lib/theme-choice'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen, SecondaryButton } from '../../../../../src/components/ui'
 import { MEETUP_ENABLED, MEETUP_MAX_SLOTS, MEETUP_SLOT_LENGTH_MS, defaultCustomStart, formatPillDate, isCustomSlotValid, previewSlotMembers } from '../../../../../src/lib/meetup'
+import { useClusterBack } from '../../../../../src/lib/use-cluster-back'
 import { defaultTimeZone, isValidTimeZone, zonedDateInput, zonedTimeInput, zonedTimeToISO } from '../../../../../src/lib/timezones'
 
 interface CustomRow {
@@ -102,6 +103,7 @@ function NewMeetupScreenContent() {
   const amber = scheme === 'dark' ? '#fbbf24' : '#b45309'
   const sky = scheme === 'dark' ? '#7dd3fc' : '#0369a1'
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  const goBack = useClusterBack({ pathname: '/cluster/[clusterId]/meetups', params: { clusterId } })
   const id = MEETUP_ENABLED ? clusterId || null : null
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -391,7 +393,7 @@ function NewMeetupScreenContent() {
               disabled={!canPropose}
               onPress={() => void handlePropose()}
             />
-            <SecondaryButton title="Back" onPress={() => router.back()} />
+            <SecondaryButton title="Back" onPress={goBack} />
           </View>
         </Card>
       )}

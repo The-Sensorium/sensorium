@@ -25,6 +25,7 @@ import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { ClusterThemeProvider, useClusterAccentText, useClusterOnAccent } from '../../../src/lib/cluster-theme'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
+import { useClusterBack } from '../../../src/lib/use-cluster-back'
 
 const INTRO_ICONS = [Briefcase, Heart, Target, Users, Telescope]
 
@@ -43,6 +44,11 @@ function ProfileScreenContent() {
   const accentText = useClusterAccentText() ?? t.primary
   const { userId = '', cluster = '' } = useLocalSearchParams<{ userId: string; cluster: string }>()
   const clusterId = cluster
+  useClusterBack(
+    clusterId
+      ? { pathname: '/cluster/[clusterId]/members', params: { clusterId } }
+      : '/(app)/home',
+  )
   const members = useClusterMembers(clusterId || null)
   const introAnswers = useMemberIntroAnswers(clusterId || null, userId || null)
   const questions = useIntroQuestionMap()

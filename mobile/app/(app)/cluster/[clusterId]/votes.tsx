@@ -30,6 +30,7 @@ import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 type MemberCard = { id: string; display_name: string; avatar_url: string | null }
 type GovernableVoteType = Exclude<VoteRow['type'], 'select_candidate'>
@@ -55,6 +56,7 @@ export default function VotesScreen() {
 function VotesScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
