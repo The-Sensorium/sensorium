@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, FlatList, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native'
+import { ActivityIndicator, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { Check, CornerUpLeft, ImagePlus, Megaphone, Pencil, Phone, Plus, Send, Users, X } from 'lucide-react-native'
-import { Avatar } from '../Avatar'
+import { Check, CornerUpLeft, ImagePlus, Megaphone, Pencil, Phone, Plus, Send, X } from 'lucide-react-native'
 import { CollapsibleChrome } from '../CollapsibleChrome'
+import { MentionSuggestions, type MentionOption } from './MentionSuggestions'
 import {
   EVERYONE_NAME,
   filterMentionCandidates,
@@ -28,8 +28,6 @@ export interface PickedImage {
   width: number
   height: number
 }
-
-type MentionOption = { key: string; kind: 'everyone' } | { key: string; kind: 'member'; member: MentionMember }
 
 export function Composer({
   members,
@@ -395,58 +393,11 @@ export function Composer({
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {mentionOpen ? (
-          <View
-            accessibilityLabel={`Mention suggestions, ${mentionOptions.length} available`}
-            style={{
-              position: 'absolute',
-              bottom: '100%',
-              start: 0,
-              minWidth: 176,
-              maxWidth: '85%',
-              marginBottom: 8,
-              maxHeight: 216,
-              backgroundColor: t.surface,
-              borderRadius: radii.xl,
-            }}
-          >
-            <FlatList
-              data={mentionOptions}
-              keyExtractor={(option) => option.key}
-              keyboardShouldPersistTaps="always"
-              contentContainerStyle={{ padding: 4 }}
-              renderItem={({ item: option }) =>
-                option.kind === 'everyone' ? (
-                  <Pressable
-                    onPress={() => insertEveryone()}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Mention everyone"
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
-                  >
-                    <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surfaceContainer, alignItems: 'center', justifyContent: 'center' }}>
-                      <Users size={16} color={t.primary} strokeWidth={1.5} />
-                    </View>
-                    <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
-                      everyone
-                    </Text>
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    onPress={() => insertMention(option.member)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Mention ${option.member.display_name}`}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
-                  >
-                    <Avatar name={option.member.display_name} src={option.member.avatar_url} size={24} />
-                    <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
-                      {option.member.display_name}
-                    </Text>
-                  </Pressable>
-                )
-              }
-            />
-          </View>
+          <MentionSuggestions
+            options={mentionOptions}
+            onSelectEveryone={insertEveryone}
+            onSelectMember={insertMention}
+          />
         ) : null}
         <View
           style={{

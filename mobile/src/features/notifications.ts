@@ -451,13 +451,18 @@ export function notificationTarget(
     case 'post_like':
       return postId ? { to: `/posts/${postId}` } : clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'message':
-    case 'mention':
     case 'reaction':
+      if (clusterId && messageId) return { to: `/cluster/${clusterId}?message=${messageId}` }
+      return clusterId ? { to: `/cluster/${clusterId}` } : null
+    case 'mention':
+      if (clusterId && signalId) return { to: `/cluster/${clusterId}/signals/${signalId}` }
       if (clusterId && messageId) return { to: `/cluster/${clusterId}?message=${messageId}` }
       return clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'unlocked':
       return clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'signal_new':
+    case 'signal_reply':
+    case 'signal_status':
       return clusterId && signalId ? { to: `/cluster/${clusterId}/signals/${signalId}` } : clusterId ? { to: `/cluster/${clusterId}/signals` } : null
     case 'vote_started':
     case 'vote_result':

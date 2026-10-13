@@ -58,6 +58,8 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   cluster_formed: PartyPopper,
   invitation_received: MailOpen,
   signal_new: Megaphone,
+  signal_reply: Megaphone,
+  signal_status: Megaphone,
   replacement: UserPlus,
   unlocked: LockOpen,
   queue_update: Users,
