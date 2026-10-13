@@ -24,6 +24,7 @@ import { ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { CreatedPendingSection } from '../../../../src/components/created/CreatedPendingSection'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 export default function MembersScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -38,6 +39,7 @@ function MembersScreenContent() {
   const t = useTheme()
   const themed = useProvidedAppearanceId() !== 'default'
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const members = useClusterMembers(clusterId || null)

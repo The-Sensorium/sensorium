@@ -21,6 +21,7 @@ import {
   PrimaryButton,
   Screen,
 } from '../../../../src/components/ui'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 export default function IntroductionsScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -35,6 +36,7 @@ function IntroductionsScreenContent() {
   const t = useTheme()
   const themed = useProvidedAppearanceId() !== 'default'
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const auth = useAuth()
   const authUserId = auth.state === 'signedIn' ? auth.userId : null
   const cluster = useCluster(clusterId || null)

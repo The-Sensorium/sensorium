@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
-import { router, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, MessageSquare } from 'lucide-react-native'
 import { useClusterMembers } from '../../../../../src/features/matching'
 import { useCluster } from '../../../../../src/features/introductions'
@@ -34,6 +34,7 @@ import { useTheme } from '../../../../../src/lib/use-theme'
 import { useDismissKeyboardOnBlur } from '../../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../../src/components/created/CreatedPendingGate'
+import { useClusterBack } from '../../../../../src/lib/use-cluster-back'
 
 const statusMeta: Record<SignalStatus, { label: string }> = {
   open: { label: 'Open' },
@@ -54,6 +55,7 @@ function SignalDetailScreenContent() {
   const t = useTheme()
   const onAccent = useClusterOnAccent() ?? t.onPrimary
   const { clusterId = '', signalId = '' } = useLocalSearchParams<{ clusterId: string; signalId: string }>()
+  const goBack = useClusterBack({ pathname: '/cluster/[clusterId]/signals', params: { clusterId } })
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
@@ -239,10 +241,7 @@ function SignalDetailScreenContent() {
     <Screen avoiding>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <Pressable
-          onPress={() => {
-            if (router.canGoBack()) router.back()
-            else router.replace({ pathname: '/cluster/[clusterId]/signals', params: { clusterId } })
-          }}
+          onPress={goBack}
           accessibilityRole="button"
           accessibilityLabel="Back to signals"
           hitSlop={8}

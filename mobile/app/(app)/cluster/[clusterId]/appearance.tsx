@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { useAuth } from '../../../../src/auth-context'
 import {
   CLUSTER_APPEARANCE_IDS,
@@ -18,6 +18,7 @@ import { ClusterThemeProvider, useGlobalTheme } from '../../../../src/lib/cluste
 import { errorHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { LoadingView, PrimaryButton, Screen } from '../../../../src/components/ui'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 function paletteFor(
   id: ClusterAppearanceId,
@@ -41,6 +42,7 @@ function ClusterAppearanceScreenContent() {
   const g = useGlobalTheme()
   const scheme = useResolvedScheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  const goBackToRoom = useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const [stored, setStored] = useState<ClusterAppearanceId | null>(null)
@@ -67,11 +69,6 @@ function ClusterAppearanceScreenContent() {
 
   useEffect(load, [load])
   useFocusEffect(load)
-
-  function goBackToRoom() {
-    if (router.canGoBack()) router.back()
-    else router.replace({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
-  }
 
   async function handleApply() {
     if (!clusterId || !userId || saving || stored === null) return
