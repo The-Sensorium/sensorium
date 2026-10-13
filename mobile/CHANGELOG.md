@@ -24,6 +24,7 @@ release) for the release ritual.
 - Fullscreen profile photos are now sharp instead of blurry.
 - Fixed profile photos sometimes showing only on the edit screen and as initials everywhere else.
 - Fixed uploading a profile photo crashing on Android.
+- Fixed the chat composer sometimes floating mid-screen after returning from the app switcher on Android.
 
 ## [1.1.0]
 

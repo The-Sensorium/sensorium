@@ -55,6 +55,7 @@ export function Composer({
   menuOpen,
   onMenuOpenChange,
   onInputLayout,
+  onInputFocusChange,
 }: {
   members: MentionMember[]
   selfId: string | null
@@ -71,6 +72,7 @@ export function Composer({
   menuOpen: boolean
   onMenuOpenChange?(open: boolean): void
   onInputLayout?(e: LayoutChangeEvent): void
+  onInputFocusChange?(focused: boolean): void
   onError(message: string | null): void
   onSend(content: string): Promise<void>
   onSaveEdit(content: string): void
@@ -449,7 +451,11 @@ export function Composer({
             value={editing ? editText : draft}
             onChangeText={editing ? handleEditChange : handleInputChange}
             onSelectionChange={(e) => setCaret(e.nativeEvent.selection.start)}
+            onFocus={() => {
+              onInputFocusChange?.(true)
+            }}
             onBlur={() => {
+              onInputFocusChange?.(false)
               setMention(null)
             }}
             placeholder={editing ? 'Edit message…' : stagedImage ? 'Add a caption…' : 'Write to your cluster…'}
