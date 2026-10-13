@@ -33,7 +33,7 @@ vi.mock('../../features/created-clusters', async (importOriginal) => {
     useCancelCreatedInvitation: hooks.useCancelCreatedInvitation,
   }
 })
-vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, useAvatarThumbUrl: hooks.useAvatarUrl, useAvatarFullUrl: hooks.useAvatarUrl, avatarThumbFor: (s: string | null | undefined) => s ?? null, avatarFullFor: (s: string | null | undefined) => s ?? null }))
 vi.mock('../../components/MuteButton', () => ({
   MuteButton: ({ targetName }: { targetName: string }) => (
     <button type="button" role="menuitem">

@@ -14,10 +14,14 @@ release) for the release ritual.
 ### Added
 
 - Open Mix now has optional match preferences: choose an age range you are comfortable being grouped with (Any age by default).
+- Profile photos can now be cropped to a square and taken with the camera, not just picked from the gallery.
 
 ### Fixed
 
 - Deleting your account now also removes the photos you shared in clusters you had already left.
+- Fullscreen profile photos are now sharp instead of blurry.
+- Fixed profile photos sometimes showing only on the edit screen and as initials everywhere else.
+- Fixed uploading a profile photo crashing on Android.
 
 ## [1.1.0]
 

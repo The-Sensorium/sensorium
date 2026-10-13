@@ -28,9 +28,17 @@ vi.mock('../lib/use-profile', () => ({ useProfile: hooks.useProfile }))
 vi.mock('../features/cluster', () => ({ useUpdateProfile: hooks.useUpdateProfile }))
 vi.mock('../features/moderation', () => ({ useDeleteAccount: hooks.useDeleteAccount, useMyMutes: hooks.useMyMutes, useUnmuteUser: hooks.useUnmuteUser }))
 vi.mock('../features/matching', () => ({ useMyClusters: hooks.useMyClusters }))
-vi.mock('../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, deleteAvatarObject: hooks.deleteAvatarObject }))
+vi.mock('../features/avatars', () => ({
+  useAvatarUrl: hooks.useAvatarUrl,
+  useAvatarThumbUrl: hooks.useAvatarUrl,
+  useAvatarFullUrl: hooks.useAvatarUrl,
+  avatarThumbFor: (s: string | null | undefined) => s ?? null,
+  avatarFullFor: (s: string | null | undefined) => s ?? null,
+  deleteAvatarObject: hooks.deleteAvatarObject,
+  deleteAvatarObjects: hooks.deleteAvatarObject,
+}))
 vi.mock('../lib/supabase', () => ({ requireSupabase: hooks.requireSupabase }))
-vi.mock('../lib/image', () => ({ AVATAR_MAX_DIMENSION: 256, prepareImage: hooks.prepareImage }))
+vi.mock('../lib/image', () => ({ prepareImage: hooks.prepareImage }))
 vi.mock('../components/MuteButton', () => ({ MuteButton: () => <button type="button">Unmute</button> }))
 vi.mock('../features/notifications', () => {
   const PREF_TOGGLES = ['messages', 'mentions', 'reactions', 'votes', 'invitations', 'signals']

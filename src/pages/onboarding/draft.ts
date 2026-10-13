@@ -36,6 +36,7 @@ export interface OnboardingDraft {
   timezone: string
   photo: File | null
   avatarUrl: string | null
+  avatarThumbUrl: string | null
   bio: string
   selectedModes: MatchingMode[]
   shareLocation: boolean
@@ -54,6 +55,7 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   timezone: '',
   photo: null,
   avatarUrl: null,
+  avatarThumbUrl: null,
   bio: '',
   selectedModes: ['open_mix'],
   shareLocation: false,

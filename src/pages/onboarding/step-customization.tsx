@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ImagePlus, Loader2, X } from 'lucide-react'
-import { requireSupabase } from '../../lib/supabase'
-import { AVATAR_MAX_DIMENSION, prepareImage } from '../../lib/image'
+import { prepareAvatarVariants, validateAvatarFile } from '../../lib/image'
 import { toErrorMessage } from '../../lib/error'
-import { useAvatarUrl, deleteAvatarObject } from '../../features/avatars'
+import { useAvatarThumbUrl, deleteAvatarObjects, uploadAvatarPair } from '../../features/avatars'
+import { AvatarCropModal } from '../../components/AvatarCropModal'
 import type { OnboardingDraft } from './draft'
 
 interface Props {
@@ -12,49 +12,52 @@ interface Props {
   patch: (updates: Partial<OnboardingDraft>) => void
 }
 
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-
-async function uploadAvatar(userId: string, file: File): Promise<string> {
-  const supabase = requireSupabase()
-  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-  const path = `${userId}/${Date.now()}.${ext}`
-  const { data, error } = await supabase.storage.from('avatars').upload(path, file, {
-    cacheControl: '31536000',
-    upsert: false,
-    contentType: file.type,
-  })
-  if (error) throw error
-  return data.path
-}
-
 export function StepCustomization({ userId, draft, patch }: Props) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { data: avatarSrc } = useAvatarUrl(draft.avatarUrl)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [cropFileName, setCropFileName] = useState('avatar.jpg')
+  const { data: avatarSrc } = useAvatarThumbUrl(draft.avatarThumbUrl ?? draft.avatarUrl, draft.avatarUrl)
 
-  async function onFile(file: File | undefined) {
-    if (!file) return
-    if (!ACCEPTED.includes(file.type)) {
-      setError('Please choose a JPG, PNG, WebP, or GIF image.')
-      return
+  useEffect(() => {
+    return () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc)
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError('That image is larger than 5 MB.')
-      return
-    }
+  }, [cropSrc])
+
+  async function uploadCroppedAvatar(file: File) {
     setUploading(true)
     setError(null)
+    let uploaded: { fullPath: string; thumbPath: string } | null = null
     try {
-      const prepared = await prepareImage(file, { maxDimension: AVATAR_MAX_DIMENSION })
-      const url = await uploadAvatar(userId, prepared)
-      // Reclaim a photo uploaded earlier in this session before it is replaced.
-      await deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
-      patch({ photo: prepared, avatarUrl: url })
+      const variants = await prepareAvatarVariants(file)
+      uploaded = await uploadAvatarPair(userId, variants.full, variants.thumb)
+      await deleteAvatarObjects(draft.avatarUrl ?? null, draft.avatarThumbUrl ?? null).catch(() => {})
+      patch({ photo: variants.full, avatarUrl: uploaded.fullPath, avatarThumbUrl: uploaded.thumbPath })
     } catch (err) {
+      if (uploaded) {
+        await deleteAvatarObjects(uploaded.fullPath, uploaded.thumbPath).catch(() => {})
+      }
       setError(toErrorMessage(err, 'Couldn’t upload your photo.'))
     } finally {
       setUploading(false)
     }
+  }
+
+  function onFile(file: File | undefined) {
+    if (!file) return
+    const invalid = validateAvatarFile(file)
+    if (invalid) {
+      setError(invalid)
+      return
+    }
+    if (file.type === 'image/gif') {
+      void uploadCroppedAvatar(file)
+      return
+    }
+    if (cropSrc) URL.revokeObjectURL(cropSrc)
+    setCropFileName(file.name)
+    setCropSrc(URL.createObjectURL(file))
   }
 
   return (
@@ -89,7 +92,11 @@ export function StepCustomization({ userId, draft, patch }: Props) {
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 className="sr-only"
-                onChange={(e) => onFile(e.target.files?.[0])}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  onFile(file)
+                }}
               />
             </label>
             {draft.avatarUrl && (
@@ -97,8 +104,8 @@ export function StepCustomization({ userId, draft, patch }: Props) {
                 type="button"
                 aria-label="Remove photo"
                 onClick={() => {
-                  void deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
-                  patch({ photo: null, avatarUrl: null })
+                  void deleteAvatarObjects(draft.avatarUrl ?? null, draft.avatarThumbUrl ?? null).catch(() => {})
+                  patch({ photo: null, avatarUrl: null, avatarThumbUrl: null })
                 }}
                 className="flex h-9 w-9 items-center justify-center rounded-pill text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
               >
@@ -125,6 +132,21 @@ export function StepCustomization({ userId, draft, patch }: Props) {
           {draft.bio.length}/500
         </span>
       </label>
+
+      <AvatarCropModal
+        open={cropSrc !== null}
+        imageSrc={cropSrc}
+        fileName={cropFileName}
+        onClose={() => {
+          if (cropSrc) URL.revokeObjectURL(cropSrc)
+          setCropSrc(null)
+        }}
+        onCropped={(file) => {
+          if (cropSrc) URL.revokeObjectURL(cropSrc)
+          setCropSrc(null)
+          void uploadCroppedAvatar(file)
+        }}
+      />
     </div>
   )
 }

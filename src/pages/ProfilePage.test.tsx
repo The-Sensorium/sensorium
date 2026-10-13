@@ -35,7 +35,7 @@ vi.mock('../features/posts', () => ({
   useUserPosts: hooks.useUserPosts,
   usePostCountsForClusters: hooks.usePostCountsForClusters,
 }))
-vi.mock('../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, useAvatarThumbUrl: hooks.useAvatarUrl, useAvatarFullUrl: hooks.useAvatarUrl, avatarThumbFor: (s: string | null | undefined) => s ?? null, avatarFullFor: (s: string | null | undefined) => s ?? null }))
 vi.mock('../components/ReportModal', () => ({ ReportModal: () => null }))
 vi.mock('../components/MuteButton', () => ({ MuteButton: () => null }))
 

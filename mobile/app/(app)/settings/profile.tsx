@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native'
 import { router } from 'expo-router'
-import * as ImagePicker from 'expo-image-picker'
 import { ArrowLeft, Clock, ImageMinus, ImagePlus, Save, UserRound } from 'lucide-react-native'
 import { useProfile } from '../../../src/lib/use-profile'
 import { toErrorMessage } from '../../../src/lib/error'
 import { useUpdateProfile } from '../../../src/features/cluster'
-import { deleteAvatarObject, uploadAvatar } from '../../../src/features/avatars'
+import { deleteAvatarObjects, uploadAvatar } from '../../../src/features/avatars'
+import { validateAvatarAsset } from '../../../src/lib/upload-image'
+import { pickAvatarFromLibrary, takeAvatarPhoto, type PickedAvatar } from '../../../src/lib/pick-avatar'
 import { Avatar } from '../../../src/components/Avatar'
 import { Modal } from '../../../src/components/Modal'
 import { PronounField } from '../../../src/components/PronounField'
@@ -15,8 +16,6 @@ import { Field, PrimaryButton } from '../../../src/components/ui'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, Screen } from '../../../src/components/ui'
-
-const ACCEPTED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 export default function EditProfileScreen() {
   const t = useTheme()
@@ -37,32 +36,58 @@ export default function EditProfileScreen() {
     setTimezone(profile.data?.timezone ?? '')
   }, [profile.data?.timezone])
 
-  async function handleAvatar() {
-    setAvatarError(null)
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 })
-    if (result.canceled || result.assets.length === 0) return
-    const asset = result.assets[0]
-    const mime = asset.mimeType ?? 'image/jpeg'
-    if (!ACCEPTED_MIME.includes(mime)) {
-      setAvatarError('Please choose a JPG, PNG, WebP, or GIF image.')
-      return
-    }
-    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-      setAvatarError('That image is larger than 5 MB.')
+  async function uploadPicked(picked: PickedAvatar) {
+    const invalid = validateAvatarAsset(picked.mime, picked.fileSize)
+    if (invalid) {
+      setAvatarError(invalid)
       return
     }
     setAvatarUploading(true)
+    setAvatarError(null)
+    let uploaded: { fullPath: string; thumbPath: string } | null = null
+    const prevFull = profile.data?.avatar_url ?? null
+    const prevThumb = profile.data?.avatar_thumb_url ?? null
     try {
       const userId = profile.data?.id
       if (!userId) throw new Error('Profile not loaded yet.')
-      const path = await uploadAvatar(userId, asset.uri, mime, asset.width ?? 0, asset.height ?? 0)
-      await updateProfile.mutateAsync({ avatar_url: path })
-      await deleteAvatarObject(profile.data?.avatar_url ?? null).catch(() => {})
+      uploaded = await uploadAvatar(userId, picked.uri, picked.mime, picked.width, picked.height)
+      await updateProfile.mutateAsync({ avatar_url: uploaded.fullPath, avatar_thumb_url: uploaded.thumbPath })
+      await deleteAvatarObjects(prevFull, prevThumb).catch(() => {})
     } catch (err) {
+      if (uploaded) {
+        await deleteAvatarObjects(uploaded.fullPath, uploaded.thumbPath).catch(() => {})
+      }
       setAvatarError(toErrorMessage(err, 'Couldn’t upload your photo.'))
     } finally {
       setAvatarUploading(false)
     }
+  }
+
+  function handleAvatar() {
+    setAvatarError(null)
+    Alert.alert('Add photo', 'Choose a square photo for your profile.', [
+      {
+        text: 'Choose from library',
+        onPress: () => {
+          void pickAvatarFromLibrary()
+            .then((picked) => {
+              if (picked) void uploadPicked(picked)
+            })
+            .catch((err) => setAvatarError(toErrorMessage(err, 'Couldn’t upload your photo.')))
+        },
+      },
+      {
+        text: 'Take photo',
+        onPress: () => {
+          void takeAvatarPhoto()
+            .then((picked) => {
+              if (picked) void uploadPicked(picked)
+            })
+            .catch((err) => setAvatarError(toErrorMessage(err, 'Couldn’t upload your photo.')))
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ])
   }
 
   const profileDirty =
@@ -96,7 +121,7 @@ export default function EditProfileScreen() {
       <Card>
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-            <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} size={56} />
+            <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url} size={56} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
                 {profile.data?.display_name ?? 'You'}
@@ -259,12 +284,13 @@ export default function EditProfileScreen() {
         open={removeAvatarOpen}
         onClose={() => setRemoveAvatarOpen(false)}
         avatarUrl={profile.data?.avatar_url ?? null}
+        avatarThumbUrl={profile.data?.avatar_thumb_url ?? null}
       />
     </Screen>
   )
 }
 
-function RemoveAvatarModal({ open, onClose, avatarUrl }: { open: boolean; onClose: () => void; avatarUrl: string | null }) {
+function RemoveAvatarModal({ open, onClose, avatarUrl, avatarThumbUrl }: { open: boolean; onClose: () => void; avatarUrl: string | null; avatarThumbUrl: string | null }) {
   const t = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -274,8 +300,8 @@ function RemoveAvatarModal({ open, onClose, avatarUrl }: { open: boolean; onClos
     setError(null)
     setPending(true)
     try {
-      await updateProfile.mutateAsync({ avatar_url: null })
-      await deleteAvatarObject(avatarUrl).catch(() => {})
+      await updateProfile.mutateAsync({ avatar_url: null, avatar_thumb_url: null })
+      await deleteAvatarObjects(avatarUrl, avatarThumbUrl).catch(() => {})
       onClose()
     } catch {
       setError('Could not remove your photo. Please try again.')

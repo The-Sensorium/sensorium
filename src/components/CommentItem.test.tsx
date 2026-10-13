@@ -6,7 +6,14 @@ import type { PostComment } from '../features/posts'
 vi.mock('../features/posts', () => ({
   useDeleteComment: vi.fn(),
 }))
-vi.mock('../features/avatars', () => ({ useAvatarUrl: vi.fn() }))
+const avatarHook = vi.hoisted(() => vi.fn())
+vi.mock('../features/avatars', () => ({
+  useAvatarUrl: avatarHook,
+  useAvatarThumbUrl: avatarHook,
+  useAvatarFullUrl: avatarHook,
+  avatarThumbFor: (s: string | null | undefined) => s ?? null,
+  avatarFullFor: (s: string | null | undefined) => s ?? null,
+}))
 vi.mock('../app/auth-context', () => ({ useAuth: vi.fn() }))
 vi.mock('./ReportModal', () => ({
   ReportModal: ({ open }: { open: boolean }) =>
