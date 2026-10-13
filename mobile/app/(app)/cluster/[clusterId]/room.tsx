@@ -133,6 +133,7 @@ function RoomScreenContent() {
   const extraContentPadding = useSharedValue(0)
   const [gifPickerOpen, setGifPickerOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [composerInputFocused, setComposerInputFocused] = useState(false)
   const composerBaselineRef = useRef<number | null>(null)
   const handlePickerOpenChange = useCallback((open: boolean) => {
     setGifPickerOpen(open)
@@ -199,6 +200,7 @@ function RoomScreenContent() {
         // Never hand the next focus a lingering panel.
         setGifPickerOpen(false)
         setMenuOpen(false)
+        setComposerInputFocused(false)
         if (getSuppressedPushCluster() === (clusterId || null)) setSuppressedPushCluster(null)
       }
     }, [clusterId]),
@@ -212,10 +214,16 @@ function RoomScreenContent() {
           closeComposerPanels()
           return true
         }
-        return false
+        if (composerInputFocused) {
+          Keyboard.dismiss()
+          setComposerInputFocused(false)
+          return true
+        }
+        router.replace('/(app)/home')
+        return true
       })
       return () => sub.remove()
-    }, [panelsOpen, closeComposerPanels]),
+    }, [panelsOpen, composerInputFocused, closeComposerPanels]),
   )
   const cluster = useCluster(authedClusterId)
   const messages = useClusterMessages(authedClusterId)
@@ -316,6 +324,7 @@ function RoomScreenContent() {
     jumpFailureRef.current = null
     setGifPickerOpen(false)
     setMenuOpen(false)
+    setComposerInputFocused(false)
     composerBaselineRef.current = null
     extraContentPadding.value = 0
     if (jumpTimer.current) {
@@ -745,13 +754,16 @@ function RoomScreenContent() {
     if (!focused || !clusterId) return
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'background') {
+        Keyboard.dismiss()
+        closeComposerPanels()
+        setComposerInputFocused(false)
         if (!pinned || auth.state !== 'signedIn') return
         clearMarkTimer()
         fireMark(clusterId)
       }
     })
     return () => sub.remove()
-  }, [focused, pinned, clusterId, auth.state, fireMark, clearMarkTimer])
+  }, [focused, pinned, clusterId, auth.state, fireMark, clearMarkTimer, closeComposerPanels])
 
   useFocusEffect(
     useCallback(() => {
@@ -1391,6 +1403,7 @@ function RoomScreenContent() {
         </View>
 
         <KeyboardStickyView
+          enabled={composerInputFocused}
           offset={{ closed: 0, opened: bottom }}
           style={{
             backgroundColor: roomBg,
@@ -1410,6 +1423,7 @@ function RoomScreenContent() {
             menuOpen={menuOpen}
             onMenuOpenChange={setMenuOpen}
             onInputLayout={handleComposerInputLayout}
+            onInputFocusChange={setComposerInputFocused}
             pending={send.isPending}
             raisePending={raise.isPending}
             error={error}
