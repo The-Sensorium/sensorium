@@ -461,6 +461,7 @@ export interface ProfilePatch {
   display_name?: string
   bio?: string | null
   avatar_url?: string | null
+  avatar_thumb_url?: string | null
   current_status?: string | null
   manual_status?: Database['public']['Enums']['profile_status']
   pronouns?: string | null

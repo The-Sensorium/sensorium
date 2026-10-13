@@ -3,25 +3,26 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { AvatarViewer } from './AvatarViewer'
 
 vi.mock('../features/avatars', () => ({
-  useAvatarUrl: vi.fn(),
+  useAvatarFullUrl: vi.fn(),
+  avatarFullFor: (s: string | null | undefined) => s ?? null,
 }))
 
 vi.mock('./Avatar', () => ({
   Avatar: ({ name }: { name: string }) => <img alt={name} />,
 }))
 
-import { useAvatarUrl } from '../features/avatars'
+import { useAvatarFullUrl } from '../features/avatars'
 
 describe('AvatarViewer', () => {
   it('renders a plain avatar without a viewer button when there is no photo', () => {
-    vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
+    vi.mocked(useAvatarFullUrl).mockReturnValue({ data: undefined } as never)
     render(<AvatarViewer name="Alice" src={null} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Alice' })).toBeInTheDocument()
   })
 
   it('opens the photo in a lightbox and closes it again', () => {
-    vi.mocked(useAvatarUrl).mockReturnValue({
+    vi.mocked(useAvatarFullUrl).mockReturnValue({
       data: 'https://cdn.test/avatar.webp',
     } as never)
     render(<AvatarViewer name="Bob" src="bob.webp" />)
@@ -31,8 +32,16 @@ describe('AvatarViewer', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('resolves the full variant for the dialog', () => {
+    vi.mocked(useAvatarFullUrl).mockReturnValue({
+      data: 'https://cdn.test/full.webp',
+    } as never)
+    render(<AvatarViewer name="Bob" src="u1/a_full.webp" />)
+    expect(vi.mocked(useAvatarFullUrl)).toHaveBeenCalledWith('u1/a_full.webp', 'u1/a_full.webp')
+  })
+
   it('portals the lightbox to document.body so ancestors cannot cap it', () => {
-    vi.mocked(useAvatarUrl).mockReturnValue({
+    vi.mocked(useAvatarFullUrl).mockReturnValue({
       data: 'https://cdn.test/avatar.webp',
     } as never)
     const { container } = render(
@@ -46,7 +55,7 @@ describe('AvatarViewer', () => {
   })
 
   it('moves focus into the lightbox and restores it on Escape', () => {
-    vi.mocked(useAvatarUrl).mockReturnValue({
+    vi.mocked(useAvatarFullUrl).mockReturnValue({
       data: 'https://cdn.test/avatar.webp',
     } as never)
     render(<AvatarViewer name="Bob" src="bob.webp" />)

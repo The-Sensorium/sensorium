@@ -14,10 +14,22 @@ release) for the release ritual.
 ### Added
 
 - Open Mix now has optional match preferences: choose an age range you are comfortable being grouped with (Any age by default).
+- Profile photos can now be cropped to a square and taken with the camera, not just picked from the gallery.
+- You now get notified when someone replies to a Signal you raised, and when a Signal you helped with is marked in progress or resolved.
+- You can now @-mention members in signal replies, with suggestions as you type and tappable names, just like in chat.
+
+### Changed
+
+- The chat room member strip now shows as many whole faces as fit your screen, with a +N badge for the rest, instead of spilling onto a second row on narrower phones. The message box also uses a shorter hint that fits on one line.
 
 ### Fixed
 
 - Deleting your account now also removes the photos you shared in clusters you had already left.
+- Fullscreen profile photos are now sharp instead of blurry.
+- Fixed profile photos sometimes showing only on the edit screen and as initials everywhere else.
+- Fixed uploading a profile photo crashing on Android.
+- Fixed the chat composer sometimes floating mid-screen after returning from the app switcher on Android.
+- Fixed the back button closing the app from cluster screens (chat sections, signal detail, meetup planner, member profiles) opened from a notification. It now returns to the chat room instead.
 
 ## [1.1.0]
 

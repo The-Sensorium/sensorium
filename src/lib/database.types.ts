@@ -1569,6 +1569,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_thumb_url: string | null
           avatar_url: string | null
           bio: string | null
           birth_day: number | null
@@ -1597,6 +1598,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_thumb_url?: string | null
           avatar_url?: string | null
           bio?: string | null
           birth_day?: number | null
@@ -1625,6 +1627,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_thumb_url?: string | null
           avatar_url?: string | null
           bio?: string | null
           birth_day?: number | null
@@ -2664,6 +2667,7 @@ export type Database = {
       get_candidate_profiles: {
         Args: { p_round_id: string }
         Returns: {
+          avatar_thumb_url: string
           avatar_url: string
           display_name: string
           user_id: string
@@ -2735,6 +2739,7 @@ export type Database = {
       get_created_pending_invites: {
         Args: { p_cluster_id: string }
         Returns: {
+          avatar_thumb_url: string
           avatar_url: string
           created_at: string
           display_name: string
@@ -2746,6 +2751,7 @@ export type Database = {
       get_eligible_comembers: {
         Args: never
         Returns: {
+          avatar_thumb_url: string
           avatar_url: string
           display_name: string
           user_id: string
@@ -2771,6 +2777,7 @@ export type Database = {
       get_member_profiles: {
         Args: { p_cluster_id: string }
         Returns: {
+          avatar_thumb_url: string
           avatar_url: string
           bio: string
           birth_year: number
@@ -2788,6 +2795,7 @@ export type Database = {
       get_message_reads: {
         Args: { p_message_id: string }
         Returns: {
+          avatar_thumb_url: string
           avatar_url: string
           display_name: string
           id: string
@@ -3048,6 +3056,7 @@ export type Database = {
       get_my_mutes: {
         Args: never
         Returns: {
+          avatar_thumb_url: string
           avatar_url: string
           display_name: string
           muted_user_id: string
@@ -3745,6 +3754,8 @@ export type Database = {
         | "cluster_formed"
         | "invitation_received"
         | "signal_new"
+        | "signal_reply"
+        | "signal_status"
         | "replacement"
         | "unlocked"
         | "queue_update"
@@ -3975,6 +3986,8 @@ export const Constants = {
         "cluster_formed",
         "invitation_received",
         "signal_new",
+        "signal_reply",
+        "signal_status",
         "replacement",
         "unlocked",
         "queue_update",

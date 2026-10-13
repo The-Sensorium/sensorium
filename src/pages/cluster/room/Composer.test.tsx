@@ -6,6 +6,10 @@ import type { MentionMember } from '../../../features/mentions'
 
 vi.mock('../../../features/avatars', () => ({
   useAvatarUrl: () => ({ data: undefined }),
+  useAvatarThumbUrl: () => ({ data: undefined }),
+  useAvatarFullUrl: () => ({ data: undefined }),
+  avatarThumbFor: (s: string | null | undefined) => s ?? null,
+  avatarFullFor: (s: string | null | undefined) => s ?? null,
 }))
 
 vi.mock('../../../features/gifs', () => ({

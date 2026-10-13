@@ -221,7 +221,7 @@ describe('moderation', () => {
     result.current.mutate({ targetUserId: 'u2', displayName: 'Bo' })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(queryClient.getQueryData(['my-mutes', 'u1'])).toEqual([
-      { muted_user_id: 'u2', display_name: 'Bo', avatar_url: '' },
+      { muted_user_id: 'u2', display_name: 'Bo', avatar_url: '', avatar_thumb_url: '' },
     ])
   })
 

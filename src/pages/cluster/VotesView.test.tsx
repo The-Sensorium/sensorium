@@ -23,7 +23,7 @@ vi.mock('react-router', async (importOriginal) => {
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
 vi.mock('../../features/introductions', () => ({ useCluster: hooks.useCluster }))
-vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, useAvatarThumbUrl: hooks.useAvatarUrl, useAvatarFullUrl: hooks.useAvatarUrl, avatarThumbFor: (s: string | null | undefined) => s ?? null, avatarFullFor: (s: string | null | undefined) => s ?? null }))
 vi.mock('../../features/votes', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../features/votes')>()
   return {

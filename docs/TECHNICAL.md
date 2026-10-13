@@ -97,7 +97,7 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 | `access.ts` | the caller's platform role and capabilities (staff guards) |
 | `moderation.ts` | reporting, moderation queue and case actions, account restriction status, per-user mute + "My Reports" |
 | `admin-moderation.ts` | admin-only moderation/role administration queries |
-| `avatars.ts` | avatar signed URLs and storage paths |
+| `avatars.ts` | avatar signed URLs (thumb + full variants) and storage paths |
 | `mentions.ts` | mention parsing and linkification (per-member plus `@everyone` broadcast) |
 | `gifs.ts` | KLIPY GIF search and result parsing |
 | `appeals.ts` | in-app appeals (restricted users) and the admin appeal queue |
@@ -262,7 +262,7 @@ Media is stored in private buckets and served through short-lived signed URLs, n
 | Bucket | Access rule |
 |---|---|
 | `chat-images` | readable only by active members of the owning cluster (`is_active_member(cluster_id)`) |
-| `avatars` | readable by any authenticated user |
+| `avatars` | readable by any authenticated user; each upload stores a 1024px full (`avatar_url`) plus a 256px thumb (`avatar_thumb_url`) |
 | `posts-images` | readable only by active members of the owning cluster (`is_active_member(cluster_id)`) |
 
 The browser obtains a signed URL with a short TTL, uses it to render the image, and requests a fresh URL before expiry. Uploads store the bare storage path so URLs are never persisted. See `src/features/avatars.ts`, `src/features/cluster.ts`, and `src/features/posts.ts`.

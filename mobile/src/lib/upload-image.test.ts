@@ -19,7 +19,14 @@ vi.mock('./supabase', () => ({
   requireSupabase: vi.fn(),
 }))
 
-import { maybeResize } from './upload-image'
+import {
+  AVATAR_FULL_MAX_DIMENSION,
+  AVATAR_THUMB_MAX_DIMENSION,
+  maybeResize,
+  newStorageId,
+  prepareAvatarPair,
+  validateAvatarAsset,
+} from './upload-image'
 
 beforeEach(() => {
   manipulateAsync.mockReset()
@@ -82,5 +89,90 @@ describe('maybeResize', () => {
       mime: 'image/jpeg',
     })
     expect(manipulateAsync).not.toHaveBeenCalled()
+  })
+})
+
+describe('validateAvatarAsset', () => {  it('accepts JPG, PNG, WebP, and GIF', () => {
+    for (const mime of ['image/jpeg', 'image/png', 'image/webp', 'image/gif']) {
+      expect(validateAvatarAsset(mime, 100)).toBeNull()
+    }
+  })
+
+  it('calls out HEIC explicitly', () => {
+    expect(validateAvatarAsset('image/heic', 100)).toBe(
+      'Please choose a JPG, PNG, WebP, or GIF image (HEIC is not supported yet).',
+    )
+  })
+
+  it('rejects oversized assets', () => {
+    expect(validateAvatarAsset('image/jpeg', 5 * 1024 * 1024 + 1)).toBe(
+      'That image is larger than 5 MB.',
+    )
+  })
+})
+
+describe('prepareAvatarPair', () => {
+  it('returns the same uri for GIFs and small images', async () => {
+    await expect(prepareAvatarPair('u', 'image/gif', 4000, 3000)).resolves.toEqual({
+      fullUri: 'u',
+      fullMime: 'image/gif',
+      thumbUri: 'u',
+      thumbMime: 'image/gif',
+    })
+    await expect(prepareAvatarPair('u', 'image/jpeg', 200, 200)).resolves.toEqual({
+      fullUri: 'u',
+      fullMime: 'image/jpeg',
+      thumbUri: 'u',
+      thumbMime: 'image/jpeg',
+    })
+    expect(manipulateAsync).not.toHaveBeenCalled()
+    expect(AVATAR_FULL_MAX_DIMENSION).toBe(1024)
+    expect(AVATAR_THUMB_MAX_DIMENSION).toBe(256)
+  })
+
+  it('builds full 1024 plus thumb 256 for large photos', async () => {
+    manipulateAsync
+      .mockResolvedValueOnce({ uri: 'full-out', width: 1024, height: 512 })
+      .mockResolvedValueOnce({ uri: 'thumb-out', width: 256, height: 128 })
+    const pair = await prepareAvatarPair('u', 'image/jpeg', 2048, 1024)
+    expect(pair).toEqual({
+      fullUri: 'full-out',
+      fullMime: 'image/webp',
+      thumbUri: 'thumb-out',
+      thumbMime: 'image/webp',
+    })
+    expect(manipulateAsync).toHaveBeenNthCalledWith(
+      1,
+      'u',
+      [{ resize: { width: 1024 } }],
+      expect.anything(),
+    )
+    expect(manipulateAsync).toHaveBeenNthCalledWith(
+      2,
+      'full-out',
+      [{ resize: { width: 256 } }],
+      expect.anything(),
+    )
+  })
+
+  it('keeps the original as full and resizes only the thumb for mid-size photos', async () => {
+    manipulateAsync.mockResolvedValue({ uri: 'thumb-out', width: 256, height: 256 })
+    const pair = await prepareAvatarPair('u', 'image/jpeg', 800, 800)
+    expect(pair.fullUri).toBe('u')
+    expect(pair.thumbUri).toBe('thumb-out')
+    expect(manipulateAsync).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('newStorageId', () => {
+  it('falls back when globalThis.crypto is missing (Android Hermes)', () => {
+    vi.stubGlobal('crypto', undefined)
+    try {
+      const id = newStorageId()
+      expect(typeof id).toBe('string')
+      expect(id.length).toBeGreaterThan(0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

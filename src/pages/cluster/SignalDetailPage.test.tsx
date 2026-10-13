@@ -24,7 +24,7 @@ vi.mock('react-router', async (importOriginal) => {
 })
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
-vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, useAvatarThumbUrl: hooks.useAvatarUrl, useAvatarFullUrl: hooks.useAvatarUrl, avatarThumbFor: (s: string | null | undefined) => s ?? null, avatarFullFor: (s: string | null | undefined) => s ?? null }))
 vi.mock('../../features/signals', () => ({
   useClusterSignals: hooks.useClusterSignals,
   useSignalReplies: hooks.useSignalReplies,
@@ -114,6 +114,53 @@ describe('SignalDetailPage', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Reply' }))
     await waitFor(() => expect(reply.mutateAsync).toHaveBeenCalledWith('I can help'))
+  })
+
+  it('suggests members while typing @ and inserts the mention on select', () => {
+    hooks.useClusterMembers.mockReturnValue(
+      queryStub([
+        { id: 'm1', display_name: 'Bo', avatar_url: null },
+        { id: 'u1', display_name: 'Ally', avatar_url: null },
+        { id: 'm2', display_name: 'Albert', avatar_url: null },
+      ]),
+    )
+    renderPage()
+    const box = screen.getByLabelText('Reply to this signal') as HTMLTextAreaElement
+    fireEvent.change(box, { target: { value: 'Hi @A' } })
+    box.setSelectionRange(5, 5)
+    fireEvent.change(box, { target: { value: 'Hi @Al' } })
+    expect(screen.getByRole('listbox', { name: 'Mention a member' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('option', { name: 'Albert' }))
+    expect(box.value).toBe('Hi @Albert ')
+  })
+
+  it('renders @-mentions in replies as profile links', () => {
+    hooks.useClusterMembers.mockReturnValue(
+      queryStub([
+        { id: 'm1', display_name: 'Bo', avatar_url: null },
+        { id: 'u1', display_name: 'Ally', avatar_url: null },
+        { id: 'm2', display_name: 'Albert', avatar_url: null },
+      ]),
+    )
+    hooks.useSignalReplies.mockReturnValue(
+      queryStub([{ id: 'r1', signal_id: 's1', author_id: 'm1', content: 'Hey @Albert, on it', created_at: '2026-01-01T01:00:00Z' }]),
+    )
+    renderPage()
+    expect(screen.getByRole('link', { name: '@Albert' })).toHaveAttribute(
+      'href',
+      '/profile/m2?cluster=c1',
+    )
+  })
+
+  it('renders mentions of the viewer in replies', () => {
+    hooks.useSignalReplies.mockReturnValue(
+      queryStub([{ id: 'r2', signal_id: 's1', author_id: 'm1', content: 'Hey @Ally, thanks', created_at: '2026-01-01T01:00:00Z' }]),
+    )
+    renderPage()
+    expect(screen.getByRole('link', { name: '@Ally' })).toHaveAttribute(
+      'href',
+      '/profile/u1?cluster=c1',
+    )
   })
 
   it('surfaces an error when the reply fails', async () => {

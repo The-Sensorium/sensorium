@@ -134,22 +134,30 @@ describe('storage security', () => {
     const a = await member('s-av-a')
     const b = await member('s-av-b')
 
-    const path = `${a.id}/${crypto.randomUUID()}.png`
-    const { error: upErr } = await a.client.storage
+    const id = crypto.randomUUID()
+    const fullPath = `${a.id}/${id}_full.webp`
+    const thumbPath = `${a.id}/${id}_thumb.webp`
+    const { error: fullErr } = await a.client.storage
       .from('avatars')
-      .upload(path, TINY_PNG, { contentType: 'image/png' })
-    expect(upErr).toBeNull()
-
-    // Another authenticated user can sign it.
-    const { data: signed, error } = await b.client.storage
+      .upload(fullPath, TINY_PNG, { contentType: 'image/png' })
+    expect(fullErr).toBeNull()
+    const { error: thumbErr } = await a.client.storage
       .from('avatars')
-      .createSignedUrl(path, 60)
-    expect(error).toBeNull()
-    expect(signed?.signedUrl).toContain(a.id)
+      .upload(thumbPath, TINY_PNG, { contentType: 'image/png' })
+    expect(thumbErr).toBeNull()
 
-    const res = await fetch(signed!.signedUrl)
-    expect(res.ok).toBe(true)
-    expect((await res.arrayBuffer()).byteLength).toBe(TINY_PNG.length)
+    // Another authenticated user can sign both variants.
+    for (const path of [fullPath, thumbPath]) {
+      const { data: signed, error } = await b.client.storage
+        .from('avatars')
+        .createSignedUrl(path, 60)
+      expect(error).toBeNull()
+      expect(signed?.signedUrl).toContain(a.id)
+
+      const res = await fetch(signed!.signedUrl)
+      expect(res.ok).toBe(true)
+      expect((await res.arrayBuffer()).byteLength).toBe(TINY_PNG.length)
+    }
   })
 
   it('a user cannot upload an avatar into another user folder', async () => {

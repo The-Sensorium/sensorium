@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, Users, X } from 'lucide-react'
+import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import { Avatar } from '../../../components/Avatar'
+import { MentionListbox } from '../../../components/MentionListbox'
 import {
   EVERYONE_NAME,
   filterMentionCandidates,
@@ -330,59 +330,13 @@ export function Composer({
         </label>
         <div className="relative min-w-0 flex-1">
           {mention && mentionTotal > 0 && (
-            <div
-              id="mention-listbox"
-              role="listbox"
-              aria-label="Mention a member"
-              className="absolute bottom-full left-0 z-20 mb-2 w-max min-w-44 max-w-full overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface p-2 shadow-soft"
-            >
-              {showEveryone && (
-                <button
-                  key="everyone"
-                  id="mention-option-0"
-                  type="button"
-                  role="option"
-                  aria-selected={mentionIndex === 0}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => insertEveryone()}
-                  className={cn(
-                    'flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-sm text-on-surface transition-colors sm:min-h-0 sm:py-2',
-                    mentionIndex === 0 ? 'bg-surface-container' : 'hover:bg-surface-container/60',
-                  )}
-                >
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-container/25 text-primary" aria-hidden>
-                    <Users className="h-4 w-4" strokeWidth={1.5} />
-                  </span>
-                  <span className="truncate">everyone</span>
-                </button>
-              )}
-              {mentionCandidates.map((candidate, i) => {
-                const index = i + (showEveryone ? 1 : 0)
-                return (
-                  <button
-                    key={candidate.id}
-                    id={`mention-option-${index}`}
-                    type="button"
-                    role="option"
-                    aria-selected={index === mentionIndex}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => insertMention(candidate)}
-                    className={cn(
-                      'flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2.5 py-2.5 text-left text-sm text-on-surface transition-colors sm:min-h-0 sm:py-2',
-                      index === mentionIndex ? 'bg-surface-container' : 'hover:bg-surface-container/60',
-                    )}
-                  >
-                    <Avatar
-                      name={candidate.display_name}
-                      src={candidate.avatar_url}
-                      className="h-6 w-6"
-                      textClassName="text-xs"
-                    />
-                    <span className="truncate">{candidate.display_name}</span>
-                  </button>
-                )
-              })}
-            </div>
+            <MentionListbox
+              candidates={mentionCandidates}
+              showEveryone={showEveryone}
+              mentionIndex={mentionIndex}
+              onSelectEveryone={insertEveryone}
+              onSelectMember={insertMention}
+            />
           )}
           {/* 16px on phones stops iOS auto-zooming the page on focus - that zoom
               sticks after the keyboard closes and strands a gap below the composer. */}

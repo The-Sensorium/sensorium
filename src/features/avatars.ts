@@ -32,7 +32,35 @@ export function avatarStoragePath(stored: string | null | undefined): string | n
   return sanitizeAvatarPath(stored)
 }
 
-/** Delete an avatar object (owner scoped by the 0050 storage policy). */
+/**
+ * Derive the thumb path from a full path (`{id}_full.webp` to
+ * `{id}_thumb.webp`). Returns null when the input is not a variant path.
+ * Lets existing call sites that only hold `avatar_url` load the thumbnail
+ * without threading a second prop through every list.
+ */
+export function avatarThumbFor(stored: string | null | undefined): string | null {
+  const path = avatarStoragePath(stored)
+  if (!path) return null
+  if (path.match(/^(.*)_thumb\.([a-z0-9]+)$/)) return path
+  const full = path.match(/^(.*)_full\.([a-z0-9]+)$/)
+  if (full) return `${full[1]}_thumb.${full[2]}`
+  return null
+}
+
+/**
+ * Derive the full path from a thumb path. Returns null when the input is
+ * not a variant path.
+ */
+export function avatarFullFor(stored: string | null | undefined): string | null {
+  const path = avatarStoragePath(stored)
+  if (!path) return null
+  if (path.match(/^(.*)_full\.([a-z0-9]+)$/)) return path
+  const thumb = path.match(/^(.*)_thumb\.([a-z0-9]+)$/)
+  if (thumb) return `${thumb[1]}_full.${thumb[2]}`
+  return null
+}
+
+/** Delete one avatar object (owner scoped by the 0050 storage policy). */
 export async function deleteAvatarObject(stored: string | null | undefined): Promise<void> {
   const path = avatarStoragePath(stored)
   if (!path) return
@@ -41,12 +69,82 @@ export async function deleteAvatarObject(stored: string | null | undefined): Pro
   if (error) throw error
 }
 
-/** A short-lived signed URL for an avatar, refreshed before it expires. */
-export function useAvatarUrl(stored: string | null | undefined) {
-  const path = avatarStoragePath(stored)
+/**
+ * Delete an avatar pair (full + thumb). Tolerates one side missing so legacy
+ * single-file rows and GIF rows (same path twice) clean up safely.
+ */
+export async function deleteAvatarObjects(
+  full: string | null | undefined,
+  thumb: string | null | undefined,
+): Promise<void> {
+  const paths = [...new Set([avatarStoragePath(full), avatarStoragePath(thumb)])].filter(
+    (p): p is string => p !== null,
+  )
+  if (paths.length === 0) return
+  const supabase = requireSupabase()
+  const { error } = await supabase.storage.from('avatars').remove(paths)
+  if (error) throw error
+}
+
+function newAvatarId(): string {
+  try {
+    const uuid = globalThis.crypto?.randomUUID?.()
+    if (uuid) return uuid
+  } catch {
+    // fall through to timestamp fallback
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+/**
+ * Upload a prepared full + thumb pair; returns both storage paths.
+ * Callers persist both columns, then delete the superseded pair.
+ */
+export async function uploadAvatarPair(
+  userId: string,
+  full: File,
+  thumb: File,
+): Promise<{ fullPath: string; thumbPath: string }> {
+  const supabase = requireSupabase()
+  const safeUser = /^[A-Za-z0-9_-]+$/.test(userId) ? userId : 'me'
+  const id = newAvatarId()
+  const fullExt = (full.name.split('.').pop()?.toLowerCase() || 'webp').replace(/[^a-z0-9]/g, '') || 'webp'
+  const thumbExt = (thumb.name.split('.').pop()?.toLowerCase() || 'webp').replace(/[^a-z0-9]/g, '') || 'webp'
+  const fullPath = `${safeUser}/${id}_full.${fullExt}`
+  const sameFile = full === thumb || (full.size === thumb.size && full.type === thumb.type && full.name === thumb.name)
+  const thumbPath = sameFile ? fullPath : `${safeUser}/${id}_thumb.${thumbExt}`
+
+  const { error: fullError } = await supabase.storage.from('avatars').upload(fullPath, full, {
+    cacheControl: '31536000',
+    upsert: false,
+    contentType: full.type,
+  })
+  if (fullError) throw fullError
+  if (sameFile) return { fullPath, thumbPath: fullPath }
+
+  const { error: thumbError } = await supabase.storage.from('avatars').upload(thumbPath, thumb, {
+    cacheControl: '31536000',
+    upsert: false,
+    contentType: thumb.type,
+  })
+  if (thumbError) {
+    // Best-effort orphan cleanup; the upload already failed, so a failed
+    // cleanup must not mask the original error.
+    await supabase.storage.from('avatars').remove([fullPath])
+    throw thumbError
+  }
+  return { fullPath, thumbPath }
+}
+
+function useAvatarPath(
+  stored: string | null | undefined,
+  thumbFallback: string | null | undefined,
+  opts?: { enabled?: boolean },
+) {
+  const path = avatarStoragePath(stored) ?? avatarStoragePath(thumbFallback)
   return useQuery({
     queryKey: ['avatar-url', path ?? 'none'],
-    enabled: path !== null,
+    enabled: path !== null && (opts?.enabled ?? true),
     queryFn: async () => {
       if (!path) return null
       const supabase = requireSupabase()
@@ -62,4 +160,26 @@ export function useAvatarUrl(stored: string | null | undefined) {
     refetchInterval: AVATAR_STALE_MS,
     refetchIntervalInBackground: false,
   })
+}
+
+/** A short-lived signed URL for an avatar, refreshed before it expires. */
+export function useAvatarUrl(stored: string | null | undefined) {
+  return useAvatarPath(stored, null)
+}
+
+/** List thumbnail URL: prefers the 256px thumb, falls back to the full file. */
+export function useAvatarThumbUrl(
+  thumb: string | null | undefined,
+  full?: string | null | undefined,
+) {
+  return useAvatarPath(thumb, full ?? null)
+}
+
+/** Fullscreen viewer URL: prefers the 1024px full file, falls back to thumb. */
+export function useAvatarFullUrl(
+  full: string | null | undefined,
+  thumb?: string | null | undefined,
+  opts?: { enabled?: boolean },
+) {
+  return useAvatarPath(full, thumb ?? null, opts)
 }

@@ -25,7 +25,7 @@ vi.mock('react-router', async (importOriginal) => {
   return { ...actual, useParams: () => ({ clusterId: 'c1' }) }
 })
 vi.mock('../../app/auth-context', () => ({ useAuth: hooks.useAuth }))
-vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl }))
+vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, useAvatarThumbUrl: hooks.useAvatarUrl, useAvatarFullUrl: hooks.useAvatarUrl, avatarThumbFor: (s: string | null | undefined) => s ?? null, avatarFullFor: (s: string | null | undefined) => s ?? null }))
 vi.mock('../../features/matching', () => ({ useClusterMembers: hooks.useClusterMembers }))
 vi.mock('../../features/cluster-calls', () => ({
   useActiveCall: hooks.useActiveCall,

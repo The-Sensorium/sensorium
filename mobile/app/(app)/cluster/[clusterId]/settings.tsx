@@ -16,6 +16,7 @@ import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { Card, PrimaryButton, Screen } from '../../../../src/components/ui'
 import { Modal } from '../../../../src/components/Modal'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 export default function ClusterSettingsScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -29,6 +30,7 @@ export default function ClusterSettingsScreen() {
 function ClusterSettingsScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const cluster = useCluster(clusterId || null)
   const members = useClusterMembers(clusterId || null)
   const leave = useLeaveCluster()

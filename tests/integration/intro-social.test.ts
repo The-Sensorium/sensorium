@@ -365,6 +365,295 @@ describe('introductions and social', () => {
     expect(signal?.resolved_by).toBe(a.id)
   })
 
+  it('reply_signal notifies the signal author but not the replier', async () => {
+    const [a, b] = [await member('i-srep-a'), await member('i-srep-b')]
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help with moving',
+    })
+
+    const { error: replyErr } = await b.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: 'I can help on Saturday',
+    })
+    expect(replyErr).toBeNull()
+
+    const { data: authorNotifs } = await admin
+      .from('notifications')
+      .select('user_id, type, payload')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'signal_reply')
+    expect(authorNotifs).toHaveLength(1)
+    expect(authorNotifs![0].user_id).toBe(a.id)
+    expect((authorNotifs![0].payload as { signal_id: string }).signal_id).toBe(signalId)
+
+    const { data: authorList } = await a.client.rpc('get_my_notifications')
+    expect(((authorList ?? []) as { type: string }[]).filter((n) => n.type === 'signal_reply')).toHaveLength(1)
+
+    const { data: replierList } = await b.client.rpc('get_my_notifications')
+    expect(((replierList ?? []) as { type: string }[]).filter((n) => n.type === 'signal_reply')).toHaveLength(0)
+  })
+
+  it('set_signal_status notifies distinct repliers but not the raiser', async () => {
+    const [a, b, c] = [await member('i-sstat-a'), await member('i-sstat-b'), await member('i-sstat-c')]
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help packing',
+    })
+
+    for (const replier of [b, c]) {
+      const { error } = await replier.client.rpc('reply_signal', {
+        p_signal_id: signalId,
+        p_content: 'I can help',
+      })
+      expect(error).toBeNull()
+    }
+
+    const { error: resolveErr } = await a.client.rpc('set_signal_status', {
+      p_signal_id: signalId,
+      p_status: 'resolved',
+    })
+    expect(resolveErr).toBeNull()
+
+    const { data: statusNotifs } = await admin
+      .from('notifications')
+      .select('user_id, type, payload')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'signal_status')
+    expect(statusNotifs).toHaveLength(2)
+    expect(statusNotifs!.map((n: { user_id: string }) => n.user_id).sort()).toEqual([b.id, c.id].sort())
+    for (const n of statusNotifs ?? []) {
+      expect((n.payload as { signal_id: string }).signal_id).toBe(signalId)
+    }
+
+    const { error: repeatErr } = await a.client.rpc('set_signal_status', {
+      p_signal_id: signalId,
+      p_status: 'resolved',
+    })
+    expect(repeatErr).toBeNull()
+
+    const { data: after } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'signal_status')
+    expect(after).toHaveLength(2)
+  })
+
+  it('signal reply and status rows respect the signals pref at read time', async () => {
+    const [a, b] = [await member('i-spref-a'), await member('i-spref-b')]
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help',
+    })
+    const { error: replyErr } = await b.client.rpc('reply_signal', { p_signal_id: signalId, p_content: 'on my way' })
+    expect(replyErr).toBeNull()
+    const { error: statusErr } = await a.client.rpc('set_signal_status', { p_signal_id: signalId, p_status: 'resolved' })
+    expect(statusErr).toBeNull()
+
+    const { error: prefErr } = await admin.from('notification_prefs').insert({
+      user_id: a.id,
+      cluster_id: clusterId,
+      signals: false,
+    })
+    expect(prefErr).toBeNull()
+
+    const { data: aList } = await a.client.rpc('get_my_notifications')
+    expect(((aList ?? []) as { type: string }[]).filter((n) => n.type.startsWith('signal'))).toHaveLength(0)
+
+    const { data: bList } = await b.client.rpc('get_my_notifications')
+    expect(((bList ?? []) as { type: string }[]).filter((n) => n.type === 'signal_status')).toHaveLength(1)
+  })
+
+  it('reply_signal notifies @-mentioned members with a signal mention', async () => {
+    const [a, b, c] = [await member('i-men-a'), await member('i-men-b'), await member('i-men-c')]
+    await admin.from('profiles').update({ display_name: 'Bea Mention' }).eq('id', b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help moving',
+    })
+
+    const { error: replyErr } = await c.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: 'Hey @Bea Mention, can you help on Saturday?',
+    })
+    expect(replyErr).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id, type, title, payload')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(1)
+    expect(mentions![0].user_id).toBe(b.id)
+    expect(mentions![0].title).toContain('mentioned you')
+    expect((mentions![0].payload as { signal_id: string }).signal_id).toBe(signalId)
+
+    const { data: target } = await b.client.rpc('get_my_notifications')
+    expect(((target ?? []) as { type: string }[]).filter((n) => n.type === 'mention')).toHaveLength(1)
+
+    const { data: authorReplies } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'signal_reply')
+    expect(authorReplies).toHaveLength(1)
+    expect(authorReplies![0].user_id).toBe(a.id)
+  })
+
+  it('reply_signal skips signal_reply when the author is mentioned (no double notify)', async () => {
+    const [a, b] = [await member('i-mend-a'), await member('i-mend-b')]
+    await admin.from('profiles').update({ display_name: 'Aid Author' }).eq('id', a.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help packing',
+    })
+
+    const { error: replyErr } = await b.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: 'On it @Aid Author, see you at noon',
+    })
+    expect(replyErr).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(1)
+    expect(mentions![0].user_id).toBe(a.id)
+
+    const { data: authorReplies } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'signal_reply')
+    expect(authorReplies).toHaveLength(0)
+  })
+
+  it('reply_signal @everyone notifies every other member', async () => {
+    const [a, b, c] = [await member('i-mene-a'), await member('i-mene-b'), await member('i-mene-c')]
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help this weekend',
+    })
+
+    const { error: replyErr } = await b.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: 'Hi @everyone, who is free on Saturday?',
+    })
+    expect(replyErr).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id, title')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(2)
+    expect(mentions!.map((n: { user_id: string }) => n.user_id).sort()).toEqual([a.id, c.id].sort())
+    for (const n of mentions ?? []) {
+      expect((n as { title: string }).title).toContain('mentioned everyone')
+    }
+  })
+
+  it('reply_signal mentions respect mutes and the mentions pref', async () => {
+    const [a, b, c] = [await member('i-menm-a'), await member('i-menm-b'), await member('i-menm-c')]
+    await admin.from('profiles').update({ display_name: 'Bo Mute' }).eq('id', b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    const { error: muteErr } = await b.client.from('user_mutes').insert({
+      user_id: b.id,
+      muted_user_id: c.id,
+    })
+    expect(muteErr).toBeNull()
+
+    const { data: signalId } = await a.client.rpc('raise_signal', {
+      p_cluster_id: clusterId,
+      p_prompt: 'need help lifting',
+    })
+
+    const { error: replyErr } = await c.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: '@Bo Mute can you bring the van?',
+    })
+    expect(replyErr).toBeNull()
+
+    const { data: muted } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', b.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(muted).toHaveLength(0)
+
+    const { error: prefErr } = await admin.from('notification_prefs').insert({
+      user_id: c.id,
+      cluster_id: clusterId,
+      mentions: false,
+    })
+    expect(prefErr).toBeNull()
+
+    const { error: reply2Err } = await b.client.rpc('reply_signal', {
+      p_signal_id: signalId,
+      p_content: 'Hi @everyone, I can drive',
+    })
+    expect(reply2Err).toBeNull()
+
+    const { data: stored } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', c.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(stored ?? []).toHaveLength(1)
+
+    const { data: visible } = await c.client.rpc('get_my_notifications')
+    expect(((visible ?? []) as { type: string }[]).filter((n) => n.type === 'mention')).toHaveLength(0)
+
+    const { data: aVisible } = await a.client.rpc('get_my_notifications')
+    expect(((aVisible ?? []) as { type: string }[]).filter((n) => n.type === 'mention')).toHaveLength(1)
+  })
+
   it('get_signal_reply_counts returns per-signal reply counts to members only', async () => {
     const [a, b] = [await member('i-src-a'), await member('i-src-b')]
     const outsider = await createUser(admin, 'i-src-out')

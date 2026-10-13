@@ -1,13 +1,23 @@
+import { useState } from 'react'
 import { Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { useAvatarUrl } from '../features/avatars'
+import { avatarFullFor, avatarThumbFor, useAvatarFullUrl, useAvatarThumbUrl } from '../features/avatars'
 import { useTheme } from '../lib/use-theme'
 import { useClusterAccentText } from '../lib/cluster-theme'
 
-export function Avatar({ name, src, size = 28 }: { name: string; src?: string | null; size?: number }) {
+export function Avatar({ name, src, thumbSrc, size = 28 }: { name: string; src?: string | null; thumbSrc?: string | null; size?: number }) {
   const t = useTheme()
   const accentText = useClusterAccentText() ?? t.primary
-  const { data: resolved } = useAvatarUrl(src)
+  // Same resilient fallback as the web Avatar: a derived thumb path that
+  // does not exist fails at signing time, so fall back on query error as
+  // well as on image load error.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  const thumb = thumbSrc ?? avatarThumbFor(src) ?? src
+  const full = avatarFullFor(src) ?? src ?? thumb
+  const thumbQuery = useAvatarThumbUrl(thumb, src)
+  const thumbFailed = thumbQuery.isError || failedSrc === thumbQuery.data
+  const { data: fullUrl } = useAvatarFullUrl(full, thumb, { enabled: thumbFailed })
+  const resolved = thumbFailed && fullUrl ? fullUrl : thumbQuery.data
   if (resolved) {
     return (
       <Image
@@ -18,6 +28,7 @@ export function Avatar({ name, src, size = 28 }: { name: string; src?: string | 
         cachePolicy="memory-disk"
         recyclingKey={resolved}
         transition={200}
+        onError={() => setFailedSrc(thumbQuery.data ?? null)}
       />
     )
   }

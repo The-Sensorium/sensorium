@@ -19,6 +19,7 @@ import { useTheme } from '../../../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, Screen } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 const statusMeta: Record<SignalStatus, { label: string; colorKey: 'primary' | 'tertiary' | 'onSurfaceVariant' }> = {
   open: { label: 'Open', colorKey: 'primary' },
@@ -39,6 +40,7 @@ function SignalsScreenContent() {
   const t = useTheme()
   const onAccent = useClusterOnAccent() ?? t.onPrimary
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 

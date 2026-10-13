@@ -29,6 +29,7 @@ import { Avatar } from '../../../../src/components/Avatar'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 import { getSuppressedPushCluster, setSuppressedPushCluster } from '../../../../src/lib/push-suppress'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 import { MEETUP_ENABLED, MEETUP_JOIN_LEAD_MS, MEETUP_QUORUM, canJoinMeetup, formatSlotCompact24, hasEnded, hasStarted, isLive, pluralize } from '../../../../src/lib/meetup'
 
 const ACTIVE_STATUSES = ['proposed', 'voting', 'confirmed', 'starting', 'active']
@@ -45,6 +46,7 @@ export default function MeetupsScreen() {
 function MeetupsScreenContent() {
   const t = useTheme()
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const id = MEETUP_ENABLED ? clusterId || null : null
 
   const meetups = useClusterMeetups(id)

@@ -8,16 +8,28 @@ const hooks = vi.hoisted(() => ({
   useProfile: vi.fn(),
   useUpdateProfile: vi.fn(),
   useAvatarUrl: vi.fn(),
-  deleteAvatarObject: vi.fn(),
-  requireSupabase: vi.fn(),
-  prepareImage: vi.fn(),
+  deleteAvatarObjects: vi.fn(),
+  uploadAvatarPair: vi.fn(),
+  validateAvatarFile: vi.fn(),
+  prepareAvatarVariants: vi.fn(),
 }))
 
 vi.mock('../../lib/use-profile', () => ({ useProfile: hooks.useProfile }))
 vi.mock('../../features/cluster', () => ({ useUpdateProfile: hooks.useUpdateProfile }))
-vi.mock('../../features/avatars', () => ({ useAvatarUrl: hooks.useAvatarUrl, deleteAvatarObject: hooks.deleteAvatarObject }))
-vi.mock('../../lib/supabase', () => ({ requireSupabase: hooks.requireSupabase }))
-vi.mock('../../lib/image', () => ({ AVATAR_MAX_DIMENSION: 256, prepareImage: hooks.prepareImage }))
+vi.mock('../../features/avatars', () => ({
+  useAvatarUrl: hooks.useAvatarUrl,
+  useAvatarThumbUrl: hooks.useAvatarUrl,
+  useAvatarFullUrl: hooks.useAvatarUrl,
+  avatarThumbFor: (s: string | null | undefined) => s ?? null,
+  avatarFullFor: (s: string | null | undefined) => s ?? null,
+  deleteAvatarObject: hooks.deleteAvatarObjects,
+  deleteAvatarObjects: hooks.deleteAvatarObjects,
+  uploadAvatarPair: hooks.uploadAvatarPair,
+}))
+vi.mock('../../lib/image', () => ({
+  validateAvatarFile: hooks.validateAvatarFile,
+  prepareAvatarVariants: hooks.prepareAvatarVariants,
+}))
 
 const profile = {
   id: 'u1',
@@ -47,14 +59,10 @@ describe('EditProfilePage', () => {
     hooks.useProfile.mockReturnValue({ data: profile, isLoading: false })
     hooks.useUpdateProfile.mockReturnValue(updateProfile)
     hooks.useAvatarUrl.mockReturnValue({ data: undefined })
-    hooks.deleteAvatarObject.mockResolvedValue(undefined)
-    hooks.requireSupabase.mockReturnValue({
-      storage: {
-        from: vi.fn().mockReturnValue({
-          upload: vi.fn().mockResolvedValue({ data: { path: 'u1/123.png' }, error: null }),
-        }),
-      },
-    })
+    hooks.deleteAvatarObjects.mockResolvedValue(undefined)
+    hooks.validateAvatarFile.mockReturnValue(null)
+    hooks.uploadAvatarPair.mockResolvedValue({ fullPath: 'u1/id_full.webp', thumbPath: 'u1/id_thumb.webp' })
+    hooks.prepareAvatarVariants.mockImplementation(async (file: File) => ({ full: file, thumb: file }))
   })
 
   it('renders the profile display name and email with a back button', () => {
@@ -190,41 +198,68 @@ describe('EditProfilePage', () => {
   })
 
   it('rejects an avatar with an unsupported type', async () => {
+    hooks.validateAvatarFile.mockReturnValue('Please choose a JPG, PNG, WebP, or GIF image.')
     renderPage()
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, {
       target: { files: [new File(['x'], 'photo.bmp', { type: 'image/bmp' })] },
     })
     await waitFor(() => expect(screen.getByText('Please choose a JPG, PNG, WebP, or GIF image.')).toBeInTheDocument())
-    expect(hooks.requireSupabase().storage.from).not.toHaveBeenCalled()
+    expect(hooks.uploadAvatarPair).not.toHaveBeenCalled()
   })
 
   it('rejects an avatar larger than 5 MB', async () => {
+    hooks.validateAvatarFile.mockReturnValue('That image is larger than 5 MB.')
     renderPage()
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     const big = new File([new ArrayBuffer(5 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' })
     fireEvent.change(input, { target: { files: [big] } })
     await waitFor(() => expect(screen.getByText('That image is larger than 5 MB.')).toBeInTheDocument())
+    expect(hooks.uploadAvatarPair).not.toHaveBeenCalled()
   })
 
-  it('uploads an avatar and saves the new URL', async () => {
-    hooks.prepareImage.mockResolvedValue(new File(['x'], 'photo.png', { type: 'image/png' }))
+  it('uploads an avatar pair and saves both URLs', async () => {
     renderPage()
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
     fireEvent.change(input, {
-      target: { files: [new File(['x'], 'photo.png', { type: 'image/png' })] },
+      target: { files: [new File(['x'], 'photo.gif', { type: 'image/gif' })] },
     })
     await waitFor(() =>
-      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ avatar_url: 'u1/123.png' }),
+      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({
+        avatar_url: 'u1/id_full.webp',
+        avatar_thumb_url: 'u1/id_thumb.webp',
+      }),
+    )
+    expect(hooks.prepareAvatarVariants).toHaveBeenCalled()
+    expect(hooks.uploadAvatarPair).toHaveBeenCalled()
+  })
+
+  it('cleans up the new pair when saving fails', async () => {
+    updateProfile.mutateAsync.mockRejectedValueOnce(new Error('save failed'))
+    renderPage()
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    fireEvent.change(input, {
+      target: { files: [new File(['x'], 'photo.gif', { type: 'image/gif' })] },
+    })
+    await waitFor(() =>
+      expect(hooks.deleteAvatarObjects).toHaveBeenCalledWith('u1/id_full.webp', 'u1/id_thumb.webp'),
     )
   })
 
   it('removes the avatar photo', async () => {
-    hooks.useProfile.mockReturnValue({ data: { ...profile, avatar_url: 'u1/a.png' }, isLoading: false })
+    hooks.useProfile.mockReturnValue({
+      data: { ...profile, avatar_url: 'u1/a_full.webp', avatar_thumb_url: 'u1/a_thumb.webp' },
+      isLoading: false,
+    })
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Remove photo' }))
     const dialog = screen.getByRole('dialog', { name: 'Remove photo?' })
     fireEvent.click(within(dialog).getByRole('button', { name: 'Remove photo' }))
-    await waitFor(() => expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ avatar_url: null }))
+    await waitFor(() =>
+      expect(updateProfile.mutateAsync).toHaveBeenCalledWith({ avatar_url: null, avatar_thumb_url: null }),
+    )
+    await waitFor(() =>
+      expect(hooks.deleteAvatarObjects).toHaveBeenCalledWith('u1/a_full.webp', 'u1/a_thumb.webp'),
+    )
   })
 })

@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { useCluster } from '../../../../src/features/introductions'
 import { Screen, LoadingView } from '../../../../src/components/ui'
 import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
+import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 /**
  * Compatibility route only: clusters open at formation, so there is no
@@ -19,6 +20,7 @@ export default function WaitingScreen() {
 
 function WaitingScreenContent() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
+  useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const cluster = useCluster(clusterId || null)
 
   useEffect(() => {

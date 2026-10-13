@@ -3,8 +3,14 @@ import { File as ExpoFile } from 'expo-file-system'
 import { cacheDirectory, copyAsync } from 'expo-file-system/legacy'
 import { requireSupabase } from './supabase'
 
-/** Longest edge for avatar uploads; they render at <=80 px, so 256 is ample. */
-export const AVATAR_MAX_DIMENSION = 256
+/** Longest edge for the fullscreen avatar variant shown in AvatarViewer. */
+export const AVATAR_FULL_MAX_DIMENSION = 1024
+/** Longest edge for the list thumbnail variant shown in Avatar. */
+export const AVATAR_THUMB_MAX_DIMENSION = 256
+/** Kept for existing imports; equals the thumbnail dimension. */
+export const AVATAR_MAX_DIMENSION = AVATAR_THUMB_MAX_DIMENSION
+
+export const AVATAR_UPLOAD_LIMIT_BYTES = 5 * 1024 * 1024
 
 export const ALLOWED_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const
 export type AllowedImageMime = (typeof ALLOWED_IMAGE_MIME)[number]
@@ -15,7 +21,8 @@ const READ_TIMEOUT_MS = 30_000
 const ALLOWED_BUCKETS = new Set(['avatars', 'chat-images', 'posts-images'])
 const PATH_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\.[a-z0-9]+$/
 
-function newId(): string {
+/** Crypto-safe id for storage paths; falls back when `globalThis.crypto` is missing (Android Hermes). */
+export function newStorageId(): string {
   const g = globalThis as { crypto?: { randomUUID?: () => string; getRandomValues?: (a: Uint8Array) => void } }
   try {
     const uuid = g.crypto?.randomUUID?.()
@@ -48,10 +55,24 @@ export function extFor(mime: string): string {
   throw new Error('Please choose a JPG, PNG, WebP, or GIF image.')
 }
 
+/** Validate a picked avatar asset; returns the error copy or null when valid. */
+export function validateAvatarAsset(mime: string, fileSize?: number | null): string | null {
+  if (mime === 'image/heic' || mime === 'image/heif') {
+    return 'Please choose a JPG, PNG, WebP, or GIF image (HEIC is not supported yet).'
+  }
+  if (!(ALLOWED_IMAGE_MIME as readonly string[]).includes(mime)) {
+    return 'Please choose a JPG, PNG, WebP, or GIF image.'
+  }
+  if (typeof fileSize === 'number' && fileSize > AVATAR_UPLOAD_LIMIT_BYTES) {
+    return 'That image is larger than 5 MB.'
+  }
+  return null
+}
+
 export function storagePath(prefix: string, ext: string): string {
   if (!/^[A-Za-z0-9_-]+$/.test(prefix)) throw new Error('Invalid upload destination.')
   if (!/^[a-z0-9]+$/.test(ext)) throw new Error('Invalid upload destination.')
-  return prefix + '/' + newId() + '.' + ext
+  return prefix + '/' + newStorageId() + '.' + ext
 }
 
 export function assertStoragePath(path: string): void {
@@ -96,6 +117,44 @@ export async function maybeResize(
   } catch {
     return { uri, mime }
   }
+}
+
+export interface AvatarPair {
+  fullUri: string
+  fullMime: string
+  thumbUri: string
+  thumbMime: string
+}
+
+/**
+ * Build the dual avatar variants from a picked asset.
+ * Full is capped at 1024px; thumb is drawn from the full output at 256px.
+ * GIFs and small images return the same uri for both sides.
+ */
+export async function prepareAvatarPair(
+  uri: string,
+  mime: string,
+  width: number,
+  height: number,
+): Promise<AvatarPair> {
+  assertAllowedMime(mime)
+  if (mime === 'image/gif') return { fullUri: uri, fullMime: mime, thumbUri: uri, thumbMime: mime }
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return { fullUri: uri, fullMime: mime, thumbUri: uri, thumbMime: mime }
+  }
+  if (Math.max(width, height) <= AVATAR_THUMB_MAX_DIMENSION) {
+    return { fullUri: uri, fullMime: mime, thumbUri: uri, thumbMime: mime }
+  }
+  if (Math.max(width, height) <= AVATAR_FULL_MAX_DIMENSION) {
+    const thumb = await maybeResize(uri, mime, width, height, AVATAR_THUMB_MAX_DIMENSION)
+    return { fullUri: uri, fullMime: mime, thumbUri: thumb.uri, thumbMime: thumb.mime }
+  }
+  const full = await maybeResize(uri, mime, width, height, AVATAR_FULL_MAX_DIMENSION)
+  const scale = AVATAR_FULL_MAX_DIMENSION / Math.max(width, height)
+  const fullW = Math.max(1, Math.round(width * scale))
+  const fullH = Math.max(1, Math.round(height * scale))
+  const thumb = await maybeResize(full.uri, full.mime, fullW, fullH, AVATAR_THUMB_MAX_DIMENSION)
+  return { fullUri: full.uri, fullMime: full.mime, thumbUri: thumb.uri, thumbMime: thumb.mime }
 }
 
 async function localFileUri(uri: string): Promise<string> {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
-import { useAvatarUrl } from '../features/avatars'
+import { avatarFullFor, useAvatarFullUrl } from '../features/avatars'
 import { Avatar } from './Avatar'
 
 export function AvatarViewer({
@@ -15,7 +15,8 @@ export function AvatarViewer({
   className?: string
   textClassName?: string
 }) {
-  const { data: resolved } = useAvatarUrl(src)
+  const full = avatarFullFor(src) ?? src
+  const { data: resolved } = useAvatarFullUrl(full, src)
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const closeBtnRef = useRef<HTMLButtonElement>(null)
