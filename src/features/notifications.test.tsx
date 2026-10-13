@@ -89,6 +89,13 @@ describe('notificationTarget', () => {
     expect(notificationTarget(withPayload('mention', 'c1', { message_id: 42 }))).toEqual({ to: '/cluster/c1' })
   })
 
+  it('deep-links signal mentions to the signal thread', () => {
+    expect(notificationTarget(withPayload('mention', 'c1', { signal_id: 'sig7' }))).toEqual({
+      to: '/cluster/c1/signals/sig7',
+    })
+    expect(notificationTarget(withPayload('mention', null, { signal_id: 'sig7' }))).toBeNull()
+  })
+
   it('deep-links post comments to the exact comment, likes to the post', () => {
     expect(notificationTarget(withPayload('post_comment', 'c1', { post_id: 'p1', comment_id: 'cm1' }))).toEqual({
       to: '/posts/p1?comment=cm1',
@@ -100,6 +107,10 @@ describe('notificationTarget', () => {
   it('links signal_new to the signal thread when present', () => {
     expect(notificationTarget(n('signal_new', 'c1', 'sig9'))).toEqual({ to: '/cluster/c1/signals/sig9' })
     expect(notificationTarget(n('signal_new', 'c1'))).toEqual({ to: '/cluster/c1/signals' })
+    expect(notificationTarget(n('signal_reply', 'c1', 'sig9'))).toEqual({ to: '/cluster/c1/signals/sig9' })
+    expect(notificationTarget(n('signal_status', 'c1', 'sig9'))).toEqual({ to: '/cluster/c1/signals/sig9' })
+    expect(notificationTarget(n('signal_reply', 'c1'))).toEqual({ to: '/cluster/c1/signals' })
+    expect(notificationTarget(n('signal_status', null, 'sig9'))).toBeNull()
   })
 
   it('links vote notifications to the votes view', () => {

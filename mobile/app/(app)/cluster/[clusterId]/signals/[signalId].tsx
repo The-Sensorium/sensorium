@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, Text, TextInput, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, MessageSquare } from 'lucide-react-native'
@@ -17,6 +17,15 @@ import { Avatar } from '../../../../../src/components/Avatar'
 import { MutedHideBar, MutedPlaceholder } from '../../../../../src/components/MutedPlaceholder'
 import { ClusterMenu, ClusterSectionHeader } from '../../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useClusterOnAccent } from '../../../../../src/lib/cluster-theme'
+import {
+  EVERYONE_NAME,
+  filterMentionCandidates,
+  matchesEveryone,
+  parseMentionQuery,
+  type MentionMember,
+} from '../../../../../src/features/mentions'
+import { MentionSuggestions, type MentionOption } from '../../../../../src/components/room/MentionSuggestions'
+import { MentionText } from '../../../../../src/components/room/MentionText'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../../../src/features/moderation'
 import { useClusterChannel } from '../../../../../src/features/realtime'
 import { dateTimeFormatter } from '../../../../../src/components/room/format'
@@ -65,6 +74,13 @@ function SignalDetailScreenContent() {
   const [error, setError] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
   const [confirmResolve, setConfirmResolve] = useState(false)
+  const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
+  const [sel, setSel] = useState<{ start: number; end: number } | null>(null)
+  // onChangeText fires before onSelectionChange, so the caret state lags one
+  // keystroke. Track both in refs and parse from the selection handler, which
+  // carries the fresh position for the new text.
+  const draftRef = useRef('')
+  const focusedRef = useRef(false)
   const myMutes = useMyMutes(clusterId !== '')
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
@@ -75,9 +91,12 @@ function SignalDetailScreenContent() {
   // transient reply state for the new signal instead of showing the old draft.
   useEffect(() => {
     setDraft('')
+    draftRef.current = ''
     setError(null)
     setStatusError(null)
     setConfirmResolve(false)
+    setMention(null)
+    setSel(null)
     setRevealed(new Set())
     setArticleRevealed(false)
   }, [clusterId, signalId])
@@ -86,9 +105,70 @@ function SignalDetailScreenContent() {
   }
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
+  // Rendering needs every member (a reply can mention the viewer, who is
+  // excluded from the autocomplete candidates below).
+  const allMentionMembers = useMemo<MentionMember[]>(
+    () =>
+      (members.data ?? []).map((m) => ({
+        id: m.id,
+        display_name: m.display_name,
+        avatar_url: m.avatar_url ?? null,
+      })),
+    [members.data],
+  )
+  const mentionMembers = useMemo<MentionMember[]>(
+    () => allMentionMembers.filter((m) => m.id !== userId),
+    [allMentionMembers, userId],
+  )
+  const showEveryone = mention !== null && matchesEveryone(mention.query)
+  const mentionCandidates = useMemo(() => {
+    if (!mention || mentionMembers.length === 0) return []
+    return filterMentionCandidates(mention.query, mentionMembers, userId ?? '').slice(
+      0,
+      showEveryone ? 7 : 8,
+    )
+  }, [mention, mentionMembers, userId, showEveryone])
+  const mentionOpen = mention !== null && (showEveryone || mentionCandidates.length > 0)
+  const mentionOptions = useMemo<MentionOption[]>(
+    () => [
+      ...(showEveryone ? [{ key: 'everyone', kind: 'everyone' as const }] : []),
+      ...mentionCandidates.map((member) => ({ key: member.id, kind: 'member' as const, member })),
+    ],
+    [showEveryone, mentionCandidates],
+  )
   const s = (signals.data ?? []).find((x) => x.id === signalId)
   const isRaiser = !!s && s.author_id === userId
   const raiser = s ? memberById.get(s.author_id) : undefined
+
+  function handleDraftChange(value: string) {
+    setDraft(value)
+    draftRef.current = value
+  }
+
+  function handleSelectionChange(pos: number) {
+    // A programmatic insert drives the cursor itself; any other move means
+    // the user took over, so release the controlled selection.
+    if (sel && pos !== sel.start) setSel(null)
+    if (focusedRef.current) setMention(parseMentionQuery(draftRef.current, pos))
+  }
+
+  function insertToken(name: string) {
+    if (!mention) return
+    const pos = mention.start + 1 + name.length + 1
+    const next = `${draft.slice(0, mention.start)}@${name} ${draft.slice(mention.end)}`
+    setDraft(next)
+    draftRef.current = next
+    setMention(null)
+    setSel({ start: pos, end: pos })
+  }
+
+  function insertMention(member: MentionMember) {
+    insertToken(member.display_name)
+  }
+
+  function insertEveryone() {
+    insertToken(EVERYONE_NAME)
+  }
 
   async function handleReply() {
     const trimmed = draft.trim()
@@ -98,6 +178,8 @@ function SignalDetailScreenContent() {
     try {
       await reply.mutateAsync(trimmed)
       setDraft('')
+      draftRef.current = ''
+      setMention(null)
     } catch {
       setError('Something went wrong. Please try again.')
     }
@@ -346,9 +428,7 @@ function SignalDetailScreenContent() {
                         · {dateTimeFormatter.format(new Date(r.created_at))}
                       </Text>
                     </View>
-                    <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 22, color: t.onSurface }}>
-                      {r.content}
-                    </Text>
+                    <MentionText content={r.content} members={allMentionMembers} />
                   </View>
                 </View>
               </View>
@@ -359,15 +439,32 @@ function SignalDetailScreenContent() {
 
       <View style={{ marginTop: 16 }}>
         <Card>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            maxLength={2000}
-            multiline
-            placeholder="Offer a hand or share a thought…"
-            accessibilityLabel="Reply to this signal"
-            placeholderTextColor={t.onSurfaceVariant}
-            style={{
+          <View style={{ position: 'relative' }}>
+            {mentionOpen ? (
+              <MentionSuggestions
+                options={mentionOptions}
+                onSelectEveryone={insertEveryone}
+                onSelectMember={insertMention}
+              />
+            ) : null}
+            <TextInput
+              value={draft}
+              onChangeText={handleDraftChange}
+              onSelectionChange={(e) => handleSelectionChange(e.nativeEvent.selection.start)}
+              onFocus={() => {
+                focusedRef.current = true
+              }}
+              onBlur={() => {
+                focusedRef.current = false
+                setMention(null)
+              }}
+              selection={sel ?? undefined}
+              maxLength={2000}
+              multiline
+              placeholder="Offer a hand or share a thought…"
+              accessibilityLabel="Reply to this signal"
+              placeholderTextColor={t.onSurfaceVariant}
+              style={{
               backgroundColor: t.surfaceContainer,
               borderWidth: 1,
               borderColor: t.outlineVariant,
@@ -381,6 +478,7 @@ function SignalDetailScreenContent() {
               color: t.onSurface,
             }}
           />
+          </View>
           <View style={{ marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>{draft.length}/2000</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

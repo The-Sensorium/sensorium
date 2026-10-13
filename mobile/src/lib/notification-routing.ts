@@ -53,7 +53,7 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
       params: { clusterId: data.clusterId },
     }
   }
-  if (data.clusterId && data.kind === 'signal_new') {
+  if (data.clusterId && (data.kind === 'signal_new' || data.kind === 'signal_reply' || data.kind === 'signal_status')) {
     return { pathname: '/cluster/[clusterId]/signals', params: { clusterId: data.clusterId } }
   }
   if (data.clusterId) {

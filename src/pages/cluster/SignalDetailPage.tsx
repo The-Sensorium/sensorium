@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { ArrowLeft, Loader2, MessageSquare } from 'lucide-react'
@@ -12,8 +12,17 @@ import {
   SIGNAL_STATUS_ORDER,
 } from '../../features/signals'
 import type { SignalStatus } from '../../features/signals'
+import {
+  EVERYONE_NAME,
+  filterMentionCandidates,
+  matchesEveryone,
+  parseMentionQuery,
+  type MentionMember,
+} from '../../features/mentions'
 import { useAuth } from '../../app/auth-context'
 import { Avatar } from '../../components/Avatar'
+import { MentionListbox } from '../../components/MentionListbox'
+import { MentionText } from './room/MentionText'
 import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholder'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../features/moderation'
 
@@ -48,6 +57,9 @@ export function SignalDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
   const [confirmResolve, setConfirmResolve] = useState(false)
+  const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
+  const [mentionIndex, setMentionIndex] = useState(0)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const myMutes = useMyMutes(clusterId !== '')
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
@@ -57,9 +69,86 @@ export function SignalDetailPage() {
   }
 
   const memberById = new Map((members.data ?? []).map((m) => [m.id, m]))
+  // Rendering needs every member (a reply can mention the viewer, who is
+  // excluded from the autocomplete candidates below).
+  const allMentionMembers = useMemo<MentionMember[]>(
+    () =>
+      (members.data ?? []).map((m) => ({
+        id: m.id,
+        display_name: m.display_name,
+        avatar_url: m.avatar_url ?? null,
+      })),
+    [members.data],
+  )
+  const mentionMembers = useMemo<MentionMember[]>(
+    () => allMentionMembers.filter((m) => m.id !== userId),
+    [allMentionMembers, userId],
+  )
+  const showEveryone = mention !== null && matchesEveryone(mention.query)
+  const mentionCandidates = useMemo(() => {
+    if (!mention || mentionMembers.length === 0) return []
+    return filterMentionCandidates(mention.query, mentionMembers, userId ?? '').slice(
+      0,
+      showEveryone ? 7 : 8,
+    )
+  }, [mention, mentionMembers, userId, showEveryone])
+  const mentionTotal = (showEveryone ? 1 : 0) + mentionCandidates.length
   const s = (signals.data ?? []).find((x) => x.id === signalId)
   const isRaiser = !!s && s.author_id === userId
   const raiser = s ? memberById.get(s.author_id) : undefined
+
+  function handleDraftChange(value: string) {
+    setDraft(value)
+    const caret = inputRef.current?.selectionStart ?? value.length
+    setMention(parseMentionQuery(value, caret))
+    setMentionIndex(0)
+  }
+
+  function insertToken(name: string) {
+    if (!mention) return
+    const next = `${draft.slice(0, mention.start)}@${name} ${draft.slice(mention.end)}`
+    setDraft(next)
+    setMention(null)
+    setMentionIndex(0)
+    requestAnimationFrame(() => {
+      const el = inputRef.current
+      if (el) {
+        const pos = mention.start + 1 + name.length + 1
+        el.setSelectionRange(pos, pos)
+        el.focus()
+      }
+    })
+  }
+
+  function insertMention(member: MentionMember) {
+    insertToken(member.display_name)
+  }
+
+  function insertEveryone() {
+    insertToken(EVERYONE_NAME)
+  }
+
+  function handleDraftKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (mention && mentionTotal > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionIndex((i) => (i + 1) % mentionTotal)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionIndex((i) => (i - 1 + mentionTotal) % mentionTotal)
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        if (showEveryone && mentionIndex === 0) insertEveryone()
+        else {
+          const candidate = mentionCandidates[mentionIndex - (showEveryone ? 1 : 0)]
+          if (candidate) insertMention(candidate)
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setMention(null)
+      }
+    }
+  }
 
   async function handleReply() {
     const trimmed = draft.trim()
@@ -69,6 +158,8 @@ export function SignalDetailPage() {
     try {
       await reply.mutateAsync(trimmed)
       setDraft('')
+      setMention(null)
+      setMentionIndex(0)
     } catch {
       setError('Something went wrong. Please try again.')
     }
@@ -264,7 +355,9 @@ export function SignalDetailPage() {
                         · {timeAgo.format(new Date(r.created_at))}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm leading-6 text-on-surface">{r.content}</p>
+                    <p className="mt-1 text-sm leading-6 text-on-surface">
+                      <MentionText content={r.content} members={allMentionMembers} clusterId={clusterId} />
+                    </p>
                   </div>
                 </div>
               </li>
@@ -283,15 +376,36 @@ export function SignalDetailPage() {
           <label htmlFor="signal-reply" className="sr-only">
             Reply to this signal
           </label>
-          <textarea
-            id="signal-reply"
-            rows={3}
-            maxLength={2000}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Offer a hand or share a thought…"
-            className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
-          />
+          <div className="relative">
+            {mention && mentionTotal > 0 && (
+              <MentionListbox
+                candidates={mentionCandidates}
+                showEveryone={showEveryone}
+                mentionIndex={mentionIndex}
+                onSelectEveryone={insertEveryone}
+                onSelectMember={insertMention}
+              />
+            )}
+            <textarea
+              id="signal-reply"
+              ref={inputRef}
+              role="combobox"
+              aria-expanded={mention !== null && mentionTotal > 0}
+              aria-controls="mention-listbox"
+              aria-autocomplete="list"
+              aria-activedescendant={
+                mention && mentionTotal > 0 ? `mention-option-${mentionIndex}` : undefined
+              }
+              rows={3}
+              maxLength={2000}
+              value={draft}
+              onChange={(e) => handleDraftChange(e.target.value)}
+              onKeyDown={handleDraftKeyDown}
+              onBlur={() => setMention(null)}
+              placeholder="Offer a hand or share a thought…"
+              className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-3 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm"
+            />
+          </div>
           <div className="mt-2.5 flex items-center justify-between gap-3">
             <span className="text-xs tabular-nums text-on-surface-variant" aria-live="polite">{draft.length}/2000</span>
             <div className="flex items-center gap-2">

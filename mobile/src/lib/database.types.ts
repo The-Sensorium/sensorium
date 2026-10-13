@@ -3754,6 +3754,8 @@ export type Database = {
         | "cluster_formed"
         | "invitation_received"
         | "signal_new"
+        | "signal_reply"
+        | "signal_status"
         | "replacement"
         | "unlocked"
         | "queue_update"
@@ -3984,6 +3986,8 @@ export const Constants = {
         "cluster_formed",
         "invitation_received",
         "signal_new",
+        "signal_reply",
+        "signal_status",
         "replacement",
         "unlocked",
         "queue_update",

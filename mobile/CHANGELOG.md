@@ -15,6 +15,8 @@ release) for the release ritual.
 
 - Open Mix now has optional match preferences: choose an age range you are comfortable being grouped with (Any age by default).
 - Profile photos can now be cropped to a square and taken with the camera, not just picked from the gallery.
+- You now get notified when someone replies to a Signal you raised, and when a Signal you helped with is marked in progress or resolved.
+- You can now @-mention members in signal replies, with suggestions as you type and tappable names, just like in chat.
 
 ### Fixed
 
