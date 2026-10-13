@@ -111,6 +111,11 @@ const CHAT_MARGIN = 8
 const CHAT_GESTURE_OFFSET = 42
 const CHAT_INPUT_NATIVE_ID = 'cluster-chat-input'
 
+// Member strip metrics. Avatars are fixed-size, so the strip measures its
+// row at runtime and fits whole avatars dynamically instead of a fixed cap.
+const STRIP_AVATAR = 24
+const STRIP_GAP = 8
+
 export default function RoomScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   return (
@@ -134,6 +139,7 @@ function RoomScreenContent() {
   const [gifPickerOpen, setGifPickerOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [composerInputFocused, setComposerInputFocused] = useState(false)
+  const [stripWidth, setStripWidth] = useState(0)
   const composerBaselineRef = useRef<number | null>(null)
   const handlePickerOpenChange = useCallback((open: boolean) => {
     setGifPickerOpen(open)
@@ -265,6 +271,15 @@ function RoomScreenContent() {
   const callRefreshing = activeCall.isFetching
 
   const memberCount = (members.data ?? []).length
+  // Single-row strip that fits itself: show only whole avatars that fit the
+  // measured row width, with a +N chip for the rest. A fixed cap wastes
+  // space on wide screens yet still wraps on narrow ones under display zoom.
+  const memberList = members.data ?? []
+  const stripFit = stripWidth > 0 ? Math.floor((stripWidth + STRIP_GAP) / (STRIP_AVATAR + STRIP_GAP)) : 8
+  const stripHasOverflow = stripFit < memberList.length
+  const stripVisibleCount = stripHasOverflow ? Math.max(0, stripFit - 1) : memberList.length
+  const stripVisible = memberList.slice(0, stripVisibleCount)
+  const stripRemainder = memberList.length - stripVisibleCount
 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -1151,10 +1166,16 @@ function RoomScreenContent() {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-                {(members.data ?? []).slice(0, 8).map((m) => {
+              <View
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: STRIP_GAP, overflow: 'hidden' }}
+                onLayout={(e) => {
+                  const w = e.nativeEvent.layout.width
+                  setStripWidth((prev) => (prev === w ? prev : w))
+                }}
+              >
+                {stripVisible.map((m) => {
                   const isMe = m.id === userId
-                  const face = <Avatar name={m.display_name} src={m.avatar_url} size={24} />
+                  const face = <Avatar name={m.display_name} src={m.avatar_url} size={STRIP_AVATAR} />
                   // Own avatar gets a primary ring, mirroring web's
                   // `ring-2 ring-primary`. The -2 margin keeps the ring
                   // layout-neutral so the strip doesn't reshuffle.
@@ -1177,6 +1198,28 @@ function RoomScreenContent() {
                     </View>
                   )
                 })}
+                {stripRemainder > 0 ? (
+                  <View
+                    accessibilityLabel={`${stripRemainder} more members`}
+                    style={{
+                      width: STRIP_AVATAR,
+                      height: STRIP_AVATAR,
+                      borderRadius: STRIP_AVATAR / 2,
+                      backgroundColor: t.surfaceContainer,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text
+                      style={{ fontSize: 10, fontWeight: '700', color: t.onSurfaceVariant }}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                    >
+                      +{stripRemainder}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Users size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
