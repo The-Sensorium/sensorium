@@ -75,7 +75,7 @@ export function useMuteUser() {
           ? existing
           : [
               ...(existing ?? []),
-              { muted_user_id: targetUserId, display_name: displayName ?? '', avatar_url: '' },
+              { muted_user_id: targetUserId, display_name: displayName ?? '', avatar_url: '', avatar_thumb_url: '' },
             ],
       )
       return { previous }

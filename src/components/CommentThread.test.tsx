@@ -4,7 +4,14 @@ import { CommentThread } from './CommentThread'
 import type { PostComment } from '../features/posts'
 
 vi.mock('../app/auth-context', () => ({ useAuth: vi.fn() }))
-vi.mock('../features/avatars', () => ({ useAvatarUrl: vi.fn() }))
+const avatarHook = vi.hoisted(() => vi.fn())
+vi.mock('../features/avatars', () => ({
+  useAvatarUrl: avatarHook,
+  useAvatarThumbUrl: avatarHook,
+  useAvatarFullUrl: avatarHook,
+  avatarThumbFor: (s: string | null | undefined) => s ?? null,
+  avatarFullFor: (s: string | null | undefined) => s ?? null,
+}))
 vi.mock('../features/posts', () => ({
   useClusterCommentLikes: vi.fn(),
   useCreateComment: vi.fn(),

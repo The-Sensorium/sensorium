@@ -7,6 +7,10 @@ import type { Message, Reaction } from '../../../features/cluster'
 
 vi.mock('../../../features/avatars', () => ({
   useAvatarUrl: () => ({ data: undefined }),
+  useAvatarThumbUrl: () => ({ data: undefined }),
+  useAvatarFullUrl: () => ({ data: undefined }),
+  avatarThumbFor: (s: string | null | undefined) => s ?? null,
+  avatarFullFor: (s: string | null | undefined) => s ?? null,
 }))
 
 vi.mock('../../../features/cluster', () => ({

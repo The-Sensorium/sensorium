@@ -130,7 +130,7 @@ vi.mock('./room/CallOverlay', () => ({
     </div>
   ),
 }))
-vi.mock('../../features/avatars', () => ({ useAvatarUrl: () => ({ data: undefined }) }))
+vi.mock('../../features/avatars', () => ({ useAvatarUrl: () => ({ data: undefined }), useAvatarThumbUrl: () => ({ data: undefined }), useAvatarFullUrl: () => ({ data: undefined }), avatarThumbFor: (s: string | null | undefined) => s ?? null, avatarFullFor: (s: string | null | undefined) => s ?? null }))
 vi.mock('../../features/gifs', () => ({
   gifSearchEnabled: false,
   useSearchGifs: () => ({ data: [], isPending: false }),

@@ -3,12 +3,12 @@ import { useLocation, useNavigate } from 'react-router'
 import { ArrowLeft, ChevronDown, Clock, ImageMinus, ImagePlus, Loader2, Save, UserRound } from 'lucide-react'
 import { useDocumentTitle } from '../../lib/use-document-title'
 import { useProfile } from '../../lib/use-profile'
-import { requireSupabase } from '../../lib/supabase'
-import { AVATAR_MAX_DIMENSION, prepareImage } from '../../lib/image'
+import { prepareAvatarVariants, validateAvatarFile } from '../../lib/image'
 import { toErrorMessage } from '../../lib/error'
 import { useUpdateProfile } from '../../features/cluster'
-import { deleteAvatarObject } from '../../features/avatars'
+import { deleteAvatarObjects, uploadAvatarPair } from '../../features/avatars'
 import { Avatar } from '../../components/Avatar'
+import { AvatarCropModal } from '../../components/AvatarCropModal'
 import { Modal } from '../../components/Modal'
 import { PronounSelect } from '../../components/PronounSelect'
 import { timeZoneList } from '../../lib/timezones'
@@ -26,6 +26,8 @@ export function EditProfilePage() {
   const [removeAvatarOpen, setRemoveAvatarOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
+  const [cropFileName, setCropFileName] = useState('avatar.jpg')
   const updateProfile = useUpdateProfile()
   const zones = useMemo(() => timeZoneList(), [])
 
@@ -35,39 +37,49 @@ export function EditProfilePage() {
     setTimezone(profile.data?.timezone ?? '')
   }, [profile.data?.timezone])
 
-  async function handleAvatar(file: File | undefined) {
-    if (!file) return
-    const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-    if (!ACCEPTED.includes(file.type)) {
-      setAvatarError('Please choose a JPG, PNG, WebP, or GIF image.')
-      return
+  useEffect(() => {
+    return () => {
+      if (cropSrc) URL.revokeObjectURL(cropSrc)
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setAvatarError('That image is larger than 5 MB.')
-      return
-    }
+  }, [cropSrc])
+
+  async function uploadCroppedAvatar(file: File) {
     setAvatarUploading(true)
     setAvatarError(null)
+    let uploaded: { fullPath: string; thumbPath: string } | null = null
+    const prevFull = profile.data?.avatar_url ?? null
+    const prevThumb = profile.data?.avatar_thumb_url ?? null
     try {
-      const supabase = requireSupabase()
-      const prepared = await prepareImage(file, { maxDimension: AVATAR_MAX_DIMENSION })
-      const ext = prepared.name.split('.').pop()?.toLowerCase() || 'webp'
-      const path = `${profile.data?.id ?? 'me'}/${Date.now()}.${ext}`
-      const { data, error } = await supabase.storage.from('avatars').upload(path, prepared, {
-        cacheControl: '31536000',
-        upsert: false,
-        contentType: prepared.type,
-      })
-      if (error) throw error
-      await updateProfile.mutateAsync({ avatar_url: data.path })
-      // Reclaim the superseded object (owner-scoped delete, migration 0050). The
-      // new avatar is already persisted, so a failed cleanup must not block it.
-      await deleteAvatarObject(profile.data?.avatar_url ?? null).catch(() => {})
+      const variants = await prepareAvatarVariants(file)
+      uploaded = await uploadAvatarPair(profile.data?.id ?? 'me', variants.full, variants.thumb)
+      await updateProfile.mutateAsync({ avatar_url: uploaded.fullPath, avatar_thumb_url: uploaded.thumbPath })
+      // Reclaim the superseded pair (owner-scoped delete). The new avatar is
+      // already persisted, so a failed cleanup must not block it.
+      await deleteAvatarObjects(prevFull, prevThumb).catch(() => {})
     } catch (err) {
+      if (uploaded) {
+        await deleteAvatarObjects(uploaded.fullPath, uploaded.thumbPath).catch(() => {})
+      }
       setAvatarError(toErrorMessage(err, 'Couldn’t upload your photo.'))
     } finally {
       setAvatarUploading(false)
     }
+  }
+
+  function handleAvatar(file: File | undefined) {
+    if (!file) return
+    const invalid = validateAvatarFile(file)
+    if (invalid) {
+      setAvatarError(invalid)
+      return
+    }
+    if (file.type === 'image/gif') {
+      void uploadCroppedAvatar(file)
+      return
+    }
+    if (cropSrc) URL.revokeObjectURL(cropSrc)
+    setCropFileName(file.name)
+    setCropSrc(URL.createObjectURL(file))
   }
 
   return (
@@ -86,7 +98,7 @@ export function EditProfilePage() {
 
       <section aria-label="Profile" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
         <div className="flex items-start gap-4">
-          <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} className="h-14 w-14" textClassName="text-xl" />
+          <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url} className="h-14 w-14" textClassName="text-xl" />
           <div className="min-w-0 flex-1">
             <h2 className="truncate font-display text-lg font-semibold text-on-surface">
               {profile.data?.display_name ?? 'You'}
@@ -103,7 +115,13 @@ export function EditProfilePage() {
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               className="sr-only"
-              onChange={(e) => void handleAvatar(e.target.files?.[0])}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                // Clear so picking the same file again (e.g. after closing
+                // the crop dialog) still fires a change event.
+                e.target.value = ''
+                void handleAvatar(file)
+              }}
             />
           </label>
           {profile.data?.avatar_url && (
@@ -274,6 +292,21 @@ export function EditProfilePage() {
         onClose={() => setRemoveAvatarOpen(false)}
         onRemoved={() => setRemoveAvatarOpen(false)}
         avatarUrl={profile.data?.avatar_url ?? null}
+        avatarThumbUrl={profile.data?.avatar_thumb_url ?? null}
+      />
+      <AvatarCropModal
+        open={cropSrc !== null}
+        imageSrc={cropSrc}
+        fileName={cropFileName}
+        onClose={() => {
+          if (cropSrc) URL.revokeObjectURL(cropSrc)
+          setCropSrc(null)
+        }}
+        onCropped={(file) => {
+          if (cropSrc) URL.revokeObjectURL(cropSrc)
+          setCropSrc(null)
+          void uploadCroppedAvatar(file)
+        }}
       />
     </div>
   )
@@ -284,11 +317,13 @@ function RemoveAvatarModal({
   onClose,
   onRemoved,
   avatarUrl,
+  avatarThumbUrl,
 }: {
   open: boolean
   onClose: () => void
   onRemoved: () => void
   avatarUrl: string | null
+  avatarThumbUrl: string | null
 }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -298,9 +333,9 @@ function RemoveAvatarModal({
     setError(null)
     setPending(true)
     try {
-      await updateProfile.mutateAsync({ avatar_url: null })
-      // Reclaim the object behind the removed photo (owner-scoped delete).
-      await deleteAvatarObject(avatarUrl).catch(() => {})
+      await updateProfile.mutateAsync({ avatar_url: null, avatar_thumb_url: null })
+      // Reclaim the pair behind the removed photo (owner-scoped delete).
+      await deleteAvatarObjects(avatarUrl, avatarThumbUrl).catch(() => {})
       onRemoved()
     } catch {
       setError('Could not remove your photo. Please try again.')

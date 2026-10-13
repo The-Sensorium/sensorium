@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable } from 'react-native'
-import { useAvatarUrl } from '../features/avatars'
+import { avatarFullFor, useAvatarFullUrl } from '../features/avatars'
 import { Avatar } from './Avatar'
 import { ZoomableImage } from './ZoomableImage'
 
@@ -13,7 +13,8 @@ export function AvatarViewer({
   src?: string | null
   size?: number
 }) {
-  const { data: resolved } = useAvatarUrl(src)
+  const full = avatarFullFor(src) ?? src
+  const { data: resolved } = useAvatarFullUrl(full, src)
   const [open, setOpen] = useState(false)
 
   if (!resolved) {

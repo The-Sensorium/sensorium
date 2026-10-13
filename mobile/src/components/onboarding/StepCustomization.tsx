@@ -1,15 +1,14 @@
 import { useState } from 'react'
-import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
-import * as ImagePicker from 'expo-image-picker'
+import { ActivityIndicator, Alert, Image, Pressable, Text, View } from 'react-native'
 import { ImagePlus, X } from 'lucide-react-native'
 import { toErrorMessage } from '../../lib/error'
-import { deleteAvatarObject, uploadAvatar, useAvatarUrl } from '../../features/avatars'
+import { deleteAvatarObjects, uploadAvatar, useAvatarThumbUrl } from '../../features/avatars'
+import { validateAvatarAsset } from '../../lib/upload-image'
+import { pickAvatarFromLibrary, takeAvatarPhoto, type PickedAvatar } from '../../lib/pick-avatar'
 import type { OnboardingDraft } from '../../lib/onboarding-draft'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { Field } from '../ui'
-
-const ACCEPTED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 export function StepCustomization({
   userId,
@@ -23,36 +22,60 @@ export function StepCustomization({
   const t = useTheme()
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { data: avatarSrc } = useAvatarUrl(draft.avatarUrl)
+  const { data: avatarSrc } = useAvatarThumbUrl(
+    draft.avatarThumbUrl ?? draft.avatarUrl,
+    draft.avatarUrl,
+  )
   const preview = draft.photoUri ?? avatarSrc ?? null
 
-  async function pick() {
-    setError(null)
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.9,
-    })
-    if (result.canceled || result.assets.length === 0) return
-    const asset = result.assets[0]
-    const mime = asset.mimeType ?? 'image/jpeg'
-    if (!ACCEPTED_MIME.includes(mime)) {
-      setError('Please choose a JPG, PNG, WebP, or GIF image.')
-      return
-    }
-    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-      setError('That image is larger than 5 MB.')
+  async function uploadPicked(picked: PickedAvatar) {
+    const invalid = validateAvatarAsset(picked.mime, picked.fileSize)
+    if (invalid) {
+      setError(invalid)
       return
     }
     setUploading(true)
+    setError(null)
+    let uploaded: { fullPath: string; thumbPath: string } | null = null
     try {
-      const url = await uploadAvatar(userId, asset.uri, mime, asset.width ?? 0, asset.height ?? 0)
-      await deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
-      patch({ photoUri: asset.uri, avatarUrl: url })
+      uploaded = await uploadAvatar(userId, picked.uri, picked.mime, picked.width, picked.height)
+      await deleteAvatarObjects(draft.avatarUrl ?? null, draft.avatarThumbUrl ?? null).catch(() => {})
+      patch({ photoUri: picked.uri, avatarUrl: uploaded.fullPath, avatarThumbUrl: uploaded.thumbPath })
     } catch (err) {
+      if (uploaded) {
+        await deleteAvatarObjects(uploaded.fullPath, uploaded.thumbPath).catch(() => {})
+      }
       setError(toErrorMessage(err, 'Couldn’t upload your photo.'))
     } finally {
       setUploading(false)
     }
+  }
+
+  function pick() {
+    setError(null)
+    Alert.alert('Add photo', 'Choose a square photo for your profile.', [
+      {
+        text: 'Choose from library',
+        onPress: () => {
+          void pickAvatarFromLibrary()
+            .then((picked) => {
+              if (picked) void uploadPicked(picked)
+            })
+            .catch((err) => setError(toErrorMessage(err, 'Couldn’t upload your photo.')))
+        },
+      },
+      {
+        text: 'Take photo',
+        onPress: () => {
+          void takeAvatarPhoto()
+            .then((picked) => {
+              if (picked) void uploadPicked(picked)
+            })
+            .catch((err) => setError(toErrorMessage(err, 'Couldn’t upload your photo.')))
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ])
   }
 
   return (
@@ -103,8 +126,8 @@ export function StepCustomization({
             <Pressable
               accessibilityLabel="Remove photo"
               onPress={() => {
-                void deleteAvatarObject(draft.avatarUrl ?? null).catch(() => {})
-                patch({ photoUri: null, avatarUrl: null })
+                void deleteAvatarObjects(draft.avatarUrl ?? null, draft.avatarThumbUrl ?? null).catch(() => {})
+                patch({ photoUri: null, avatarUrl: null, avatarThumbUrl: null })
               }}
               hitSlop={12}
               style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
@@ -114,6 +137,9 @@ export function StepCustomization({
         ) : null}
         {uploading ? <ActivityIndicator color={t.primary} /> : null}
       </View>
+      <Text style={{ marginTop: 8, fontSize: 12, color: t.onSurfaceVariant }}>
+        Square crop is applied automatically.
+      </Text>
       {error ? <Text style={{ marginTop: 8, fontSize: 14, color: t.error }}>{error}</Text> : null}
 
       <View style={{ marginTop: 16 }}>

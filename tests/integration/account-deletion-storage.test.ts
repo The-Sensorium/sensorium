@@ -74,16 +74,20 @@ describe('account deletion storage cleanup', () => {
     }
   }
 
-  /** Give user `u` an avatar, chat image, post image, and comment image. */
+  /** Give user `u` an avatar pair, chat image, post image, and comment image. */
   async function seedOwnedObjects(u: TestUser, clusterId: string): Promise<{
-    avatar: string
+    avatarFull: string
+    avatarThumb: string
     chat: string
     post: string
     comment: string
   }> {
-    const avatar = `${u.id}/avatar.png`
-    await u.client.storage.from('avatars').upload(avatar, TINY_PNG, { contentType: 'image/png' })
-    await u.client.from('profiles').update({ avatar_url: avatar }).eq('id', u.id)
+    const id = crypto.randomUUID()
+    const avatarFull = `${u.id}/${id}_full.webp`
+    const avatarThumb = `${u.id}/${id}_thumb.webp`
+    await u.client.storage.from('avatars').upload(avatarFull, TINY_PNG, { contentType: 'image/png' })
+    await u.client.storage.from('avatars').upload(avatarThumb, TINY_PNG, { contentType: 'image/png' })
+    await u.client.from('profiles').update({ avatar_url: avatarFull, avatar_thumb_url: avatarThumb }).eq('id', u.id)
 
     const chat = `${clusterId}/chat-${u.id}.png`
     await u.client.storage.from('chat-images').upload(chat, TINY_PNG, { contentType: 'image/png' })
@@ -111,7 +115,7 @@ describe('account deletion storage cleanup', () => {
     })
     expect(commentErr).toBeNull()
 
-    return { avatar, chat, post, comment }
+    return { avatarFull, avatarThumb, chat, post, comment }
   }
 
   it('deletes every owned object across all buckets and leaves other users untouched', async () => {
@@ -130,7 +134,8 @@ describe('account deletion storage cleanup', () => {
     const list = await ownedBy(a.id)
     expect(keys(list)).toEqual(
       [
-        `avatars/${aOwned.avatar}`,
+        `avatars/${aOwned.avatarFull}`,
+        `avatars/${aOwned.avatarThumb}`,
         `chat-images/${aOwned.chat}`,
         `posts-images/${aOwned.post}`,
         `posts-images/${aOwned.comment}`,
@@ -157,7 +162,8 @@ describe('account deletion storage cleanup', () => {
     expect((await ownedBy(a.id)).length).toBe(0)
 
     // 4) B's objects survive the whole deletion.
-    expect(await signable(b.client, 'avatars', bOwned.avatar)).toBe(true)
+    expect(await signable(b.client, 'avatars', bOwned.avatarFull)).toBe(true)
+    expect(await signable(b.client, 'avatars', bOwned.avatarThumb)).toBe(true)
     expect(await signable(b.client, 'chat-images', bOwned.chat)).toBe(true)
     expect(await signable(b.client, 'posts-images', bOwned.post)).toBe(true)
     expect(await signable(b.client, 'posts-images', bOwned.comment)).toBe(true)
@@ -195,7 +201,8 @@ describe('account deletion storage cleanup', () => {
     const list = await ownedBy(a.id)
     expect(keys(list)).toEqual(
       [
-        `avatars/${aOwned.avatar}`,
+        `avatars/${aOwned.avatarFull}`,
+        `avatars/${aOwned.avatarThumb}`,
         `chat-images/${aOwned.chat}`,
         `posts-images/${aOwned.post}`,
         `posts-images/${aOwned.comment}`,
@@ -211,7 +218,8 @@ describe('account deletion storage cleanup', () => {
     expect((await ownedBy(a.id)).length).toBe(0)
 
     // B's objects remain untouched.
-    expect(await signable(b.client, 'avatars', bOwned.avatar)).toBe(true)
+    expect(await signable(b.client, 'avatars', bOwned.avatarFull)).toBe(true)
+    expect(await signable(b.client, 'avatars', bOwned.avatarThumb)).toBe(true)
     expect(await signable(b.client, 'chat-images', bOwned.chat)).toBe(true)
     expect(await signable(b.client, 'posts-images', bOwned.post)).toBe(true)
   })
@@ -232,7 +240,8 @@ describe('account deletion storage cleanup', () => {
     const { data: aList } = await a.client.rpc('get_my_storage_objects')
     expect(keys((aList ?? []) as OwnedObject[])).toEqual(
       [
-        `avatars/${aOwned.avatar}`,
+        `avatars/${aOwned.avatarFull}`,
+        `avatars/${aOwned.avatarThumb}`,
         `chat-images/${aOwned.chat}`,
         `posts-images/${aOwned.post}`,
         `posts-images/${aOwned.comment}`,
