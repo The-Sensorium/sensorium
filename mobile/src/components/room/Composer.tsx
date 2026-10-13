@@ -458,7 +458,7 @@ export function Composer({
               onInputFocusChange?.(false)
               setMention(null)
             }}
-            placeholder={editing ? 'Edit message…' : stagedImage ? 'Add a caption…' : 'Write to your cluster…'}
+            placeholder={editing ? 'Edit message…' : stagedImage ? 'Add a caption…' : 'Message…'}
             placeholderTextColor={t.onSurfaceVariant}
             maxLength={2000}
             multiline

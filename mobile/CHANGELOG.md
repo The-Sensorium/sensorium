@@ -18,6 +18,10 @@ release) for the release ritual.
 - You now get notified when someone replies to a Signal you raised, and when a Signal you helped with is marked in progress or resolved.
 - You can now @-mention members in signal replies, with suggestions as you type and tappable names, just like in chat.
 
+### Changed
+
+- The chat room member strip now shows as many whole faces as fit your screen, with a +N badge for the rest, instead of spilling onto a second row on narrower phones. The message box also uses a shorter hint that fits on one line.
+
 ### Fixed
 
 - Deleting your account now also removes the photos you shared in clusters you had already left.
