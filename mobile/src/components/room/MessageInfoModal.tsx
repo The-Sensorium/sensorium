@@ -28,7 +28,7 @@ function MemberList({
     <View style={{ gap: 8 }}>
       {members.map((m) => (
         <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <AvatarLink userId={m.id} clusterId={clusterId} name={m.display_name} src={m.avatar_url} size={32} />
+          <AvatarLink userId={m.id} clusterId={clusterId} name={m.display_name} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} size={32} />
           <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
             {m.display_name}
           </Text>

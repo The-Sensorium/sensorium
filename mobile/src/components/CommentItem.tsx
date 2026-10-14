@@ -29,7 +29,7 @@ export function CommentItem({
 }: {
   comment: PostComment
   clusterId: string
-  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   repliedToName?: string
   onReply?: (comment: PostComment) => void
   onLike?: (commentId: string) => void
@@ -66,7 +66,7 @@ export function CommentItem({
         gap: 12,
       }}
     >
-      <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={32} />
+      <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url} size={32} />
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>

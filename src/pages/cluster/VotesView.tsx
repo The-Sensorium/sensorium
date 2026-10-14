@@ -230,7 +230,7 @@ export function VotesView() {
                         : 'border-outline-variant/60 hover:bg-surface-container',
                     )}
                   >
-                    <Avatar name={m.display_name} src={m.avatar_url} className="h-9 w-9" />
+                    <Avatar name={m.display_name} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} className="h-9 w-9" />
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-semibold text-on-surface">
                         {m.display_name}

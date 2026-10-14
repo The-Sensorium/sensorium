@@ -261,7 +261,7 @@ export default function NewClusterScreen() {
                       minHeight: 56,
                     }}
                   >
-                    <Avatar name={person.display_name} src={person.avatar_url} size={44} />
+                    <Avatar name={person.display_name} src={person.avatar_url} thumbSrc={person.avatar_thumb_url ?? person.avatar_url} size={44} />
                     <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
                       {person.display_name}
                     </Text>
@@ -324,6 +324,7 @@ export default function NewClusterScreen() {
               <Avatar
                 name={profile.data?.display_name ?? 'You'}
                 src={profile.data?.avatar_url ?? null}
+                thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url ?? null}
                 size={40}
               />
               <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
@@ -335,7 +336,7 @@ export default function NewClusterScreen() {
             </View>
             {selectedPeople.map((person) => (
               <View key={person.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 }}>
-                <Avatar name={person.display_name} src={person.avatar_url} size={40} />
+                <Avatar name={person.display_name} src={person.avatar_url} thumbSrc={person.avatar_thumb_url ?? person.avatar_url} size={40} />
                 <Text style={{ flex: 1, fontSize: 14, color: t.onSurface }} numberOfLines={1}>
                   {person.display_name}
                 </Text>

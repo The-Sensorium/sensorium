@@ -25,7 +25,7 @@ function MemberList({
             to={`/profile/${m.id}?cluster=${clusterId}`}
             className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-surface-container"
           >
-            <Avatar name={m.display_name} src={m.avatar_url} className="h-8 w-8" textClassName="text-sm" />
+            <Avatar name={m.display_name} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} className="h-8 w-8" textClassName="text-sm" />
             <span className="min-w-0 flex-1 truncate text-sm font-semibold text-on-surface">
               {m.display_name}
             </span>

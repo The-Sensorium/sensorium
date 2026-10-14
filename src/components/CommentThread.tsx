@@ -33,8 +33,8 @@ export function CommentThread({
   clusterId: string
   postId: string
   comments: PostComment[]
-  memberById: Map<string, { id: string; display_name: string; avatar_url: string | null }>
-  selfAvatar: { display_name: string; avatar_url: string | null }
+  memberById: Map<string, { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }>
+  selfAvatar: { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }
   deepLinkCommentId?: string | null
   onDeepLinkHandled?: (commentId: string) => void
 }) {
@@ -266,6 +266,7 @@ export function CommentThread({
         <Avatar
           name={selfAvatar.display_name}
           src={selfAvatar.avatar_url}
+          thumbSrc={selfAvatar.avatar_thumb_url ?? selfAvatar.avatar_url}
           className="h-8 w-8"
           textClassName="text-sm"
         />

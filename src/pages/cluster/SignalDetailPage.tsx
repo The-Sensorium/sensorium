@@ -77,6 +77,7 @@ export function SignalDetailPage() {
         id: m.id,
         display_name: m.display_name,
         avatar_url: m.avatar_url ?? null,
+        avatar_thumb_url: m.avatar_thumb_url ?? null,
       })),
     [members.data],
   )
@@ -229,6 +230,7 @@ export function SignalDetailPage() {
           <Avatar
             name={raiser?.display_name ?? 'Member'}
             src={raiser?.avatar_url}
+            thumbSrc={raiser?.avatar_thumb_url ?? raiser?.avatar_url}
             className="h-6 w-6 shrink-0"
             textClassName="text-xs"
           />
@@ -319,11 +321,12 @@ export function SignalDetailPage() {
           <ul className="mt-1 divide-y divide-outline-variant/60">
             {(replies.data ?? []).map((r) => {
               const rMuted = isMutedAuthor(mutedSet, r.author_id)
+              const replyAuthor = memberById.get(r.author_id)
               if (rMuted && !revealed.has(r.id)) {
                 return (
                   <li key={r.id} className="py-3">
                     <MutedPlaceholder
-                      name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      name={replyAuthor?.display_name ?? 'Member'}
                       onToggle={() => toggleReveal(r.id)}
                     />
                   </li>
@@ -334,22 +337,23 @@ export function SignalDetailPage() {
                 {rMuted ? (
                   <div className="mb-2">
                     <MutedHideBar
-                      name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      name={replyAuthor?.display_name ?? 'Member'}
                       onToggle={() => toggleReveal(r.id)}
                     />
                   </div>
                 ) : null}
                 <div className="flex gap-3">
                   <Avatar
-                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                    src={memberById.get(r.author_id)?.avatar_url}
+                    name={replyAuthor?.display_name ?? 'Member'}
+                    src={replyAuthor?.avatar_url}
+                    thumbSrc={replyAuthor?.avatar_thumb_url ?? replyAuthor?.avatar_url}
                     className="h-8 w-8 shrink-0"
                     textClassName="text-xs"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                       <span className="text-sm font-semibold text-on-surface">
-                        {memberById.get(r.author_id)?.display_name ?? 'Member'}
+                        {replyAuthor?.display_name ?? 'Member'}
                       </span>
                       <span className="text-xs text-on-surface-variant">
                         · {timeAgo.format(new Date(r.created_at))}

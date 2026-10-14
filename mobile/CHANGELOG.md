@@ -30,6 +30,8 @@ release) for the release ritual.
 - Fixed uploading a profile photo crashing on Android.
 - Fixed the chat composer sometimes floating mid-screen after returning from the app switcher on Android.
 - Fixed the back button closing the app from cluster screens (chat sections, signal detail, meetup planner, member profiles) opened from a notification. It now returns to the chat room instead.
+- Fixed your own profile photo flashing back to your initial on every screen. Avatars now load from the cache again.
+- Fixed faces in the chat room member strip looking cut off at the top and bottom.
 
 ## [1.1.0]
 

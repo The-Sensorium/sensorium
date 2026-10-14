@@ -151,6 +151,7 @@ export function PostDetailPage() {
         selfAvatar={{
           display_name: memberById.get(userId!)?.display_name ?? 'Member',
           avatar_url: memberById.get(userId!)?.avatar_url ?? null,
+          avatar_thumb_url: memberById.get(userId!)?.avatar_thumb_url ?? null,
         }}
       />
     </div>

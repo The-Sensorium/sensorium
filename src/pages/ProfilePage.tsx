@@ -142,6 +142,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
           <AvatarViewer
             name={member.display_name}
             src={member.avatar_url}
+            thumbSrc={member.avatar_thumb_url ?? member.avatar_url}
             className="h-32 w-32 md:h-36 md:w-36"
           />
           {member.pronouns && (
@@ -362,6 +363,7 @@ function MemberProfile({ clusterId, userId }: { clusterId: string; userId: strin
                       <Avatar
                         name={member.display_name}
                         src={member.avatar_url}
+                        thumbSrc={member.avatar_thumb_url ?? member.avatar_url}
                         className="h-5 w-5"
                         textClassName="text-[11px]"
                       />

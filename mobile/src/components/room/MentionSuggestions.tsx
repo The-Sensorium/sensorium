@@ -67,7 +67,7 @@ export function MentionSuggestions({
               accessibilityLabel={`Mention ${option.member.display_name}`}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 12, minHeight: 48 }}
             >
-              <Avatar name={option.member.display_name} src={option.member.avatar_url} size={24} />
+              <Avatar name={option.member.display_name} src={option.member.avatar_url} thumbSrc={option.member.avatar_thumb_url ?? option.member.avatar_url} size={24} />
               <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
                 {option.member.display_name}
               </Text>

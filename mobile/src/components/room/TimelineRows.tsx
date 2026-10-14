@@ -26,7 +26,7 @@ export function SignalRow({
   showDay,
 }: {
   signal: Signal
-  author: { display_name: string; avatar_url: string | null } | undefined
+  author: { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   isMine: boolean
   replyCount: number
   clusterId: string
@@ -56,7 +56,7 @@ export function SignalRow({
       >
         <View>
           {author?.avatar_url ? (
-            <Avatar name={author?.display_name ?? 'Member'} src={author.avatar_url} size={24} />
+            <Avatar name={author?.display_name ?? 'Member'} src={author.avatar_url} thumbSrc={author.avatar_thumb_url ?? author.avatar_url} size={24} />
           ) : (
             <View
               style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center' }}

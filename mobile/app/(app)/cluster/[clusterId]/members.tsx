@@ -138,7 +138,7 @@ function MembersScreenContent() {
                     style={{ flex: 1 }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
-                      <Avatar name={member.display_name} src={member.avatar_url} size={56} />
+                      <Avatar name={member.display_name} src={member.avatar_url} thumbSrc={member.avatar_thumb_url ?? member.avatar_url} size={56} />
                       <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
                           <Text style={{ flexShrink: 1, fontSize: 16, lineHeight: 22, fontWeight: '600', color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>

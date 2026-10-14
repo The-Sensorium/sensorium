@@ -30,15 +30,6 @@ export function avatarStoragePath(stored: string | null | undefined): string | n
   return sanitizeAvatarPath(stored)
 }
 
-export function avatarThumbFor(stored: string | null | undefined): string | null {
-  const path = avatarStoragePath(stored)
-  if (!path) return null
-  if (path.match(/^(.*)_thumb\.([a-z0-9]+)$/)) return path
-  const full = path.match(/^(.*)_full\.([a-z0-9]+)$/)
-  if (full) return `${full[1]}_thumb.${full[2]}`
-  return null
-}
-
 export function avatarFullFor(stored: string | null | undefined): string | null {
   const path = avatarStoragePath(stored)
   if (!path) return null

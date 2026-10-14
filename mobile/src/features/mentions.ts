@@ -11,6 +11,7 @@ export interface MentionMember {
   id: string
   display_name: string
   avatar_url?: string | null
+  avatar_thumb_url?: string | null
 }
 
 export type MentionPart =

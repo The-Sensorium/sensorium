@@ -7,10 +7,12 @@ import { ZoomableImage } from './ZoomableImage'
 export function AvatarViewer({
   name,
   src,
+  thumbSrc,
   size,
 }: {
   name: string
   src?: string | null
+  thumbSrc?: string | null
   size?: number
 }) {
   const full = avatarFullFor(src) ?? src
@@ -18,7 +20,7 @@ export function AvatarViewer({
   const [open, setOpen] = useState(false)
 
   if (!resolved) {
-    return <Avatar name={name} src={src} size={size} />
+    return <Avatar name={name} src={src} thumbSrc={thumbSrc} size={size} />
   }
 
   const label = `View ${name}'s profile photo`
@@ -26,7 +28,7 @@ export function AvatarViewer({
   return (
     <>
       <Pressable onPress={() => setOpen(true)} accessibilityLabel={label} accessibilityRole="button">
-        <Avatar name={name} src={src} size={size} />
+        <Avatar name={name} src={src} thumbSrc={thumbSrc} size={size} />
       </Pressable>
       <ZoomableImage uri={resolved} accessibilityLabel={label} open={open} onClose={() => setOpen(false)} />
     </>
