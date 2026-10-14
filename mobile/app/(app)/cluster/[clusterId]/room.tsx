@@ -1447,7 +1447,13 @@ function RoomScreenContent() {
         </View>
 
         <KeyboardStickyView
-          enabled={composerInputFocused}
+          // Stays enabled while a composer panel is open so the GIF search
+          // keyboard still lifts the picker grid into view. The search field
+          // is a separate input, so focus-only gating drops the sticky the
+          // moment the main input blurs and the keyboard covers the results.
+          // Closed panels plus a blurred input still disable the sticky, so
+          // the app-switcher float fix is preserved.
+          enabled={composerInputFocused || panelsOpen}
           offset={{ closed: 0, opened: bottom }}
           style={{
             backgroundColor: roomBg,
