@@ -30,7 +30,7 @@ export function MessageItem({
 }: {
   message: Message
   mine: boolean
-  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   clusterId: string
   reactions: Reaction[]
   myReactionKeys: ReadonlySet<string>
@@ -64,6 +64,7 @@ export function MessageItem({
             clusterId={clusterId}
             name={author.display_name}
             src={author.avatar_url}
+            thumbSrc={author.avatar_thumb_url ?? author.avatar_url}
             size={28}
           />
         ) : (

@@ -1,18 +1,22 @@
 import { useState } from 'react'
 import { Text, View } from 'react-native'
 import { Image } from 'expo-image'
-import { avatarFullFor, avatarThumbFor, useAvatarFullUrl, useAvatarThumbUrl } from '../features/avatars'
+import { avatarFullFor, useAvatarFullUrl, useAvatarThumbUrl } from '../features/avatars'
 import { useTheme } from '../lib/use-theme'
 import { useClusterAccentText } from '../lib/cluster-theme'
 
 export function Avatar({ name, src, thumbSrc, size = 28 }: { name: string; src?: string | null; thumbSrc?: string | null; size?: number }) {
   const t = useTheme()
   const accentText = useClusterAccentText() ?? t.primary
-  // Same resilient fallback as the web Avatar: a derived thumb path that
-  // does not exist fails at signing time, so fall back on query error as
-  // well as on image load error.
+  // The thumb is only requested when the caller threads the explicit
+  // `avatar_thumb_url` column through. Guessing it from the full path by
+  // swapping the extension is wrong whenever the pair was stored with mixed
+  // extensions (full JPG + thumb WebP): the signature for the guessed path
+  // fails on every mount and the image visibly reloads on each navigation.
+  // Without an explicit thumb the stored path itself is loaded directly, as
+  // before the dual-variant upgrade.
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
-  const thumb = thumbSrc ?? avatarThumbFor(src) ?? src
+  const thumb = thumbSrc ?? src
   const full = avatarFullFor(src) ?? src ?? thumb
   const thumbQuery = useAvatarThumbUrl(thumb, src)
   const thumbFailed = thumbQuery.isError || failedSrc === thumbQuery.data

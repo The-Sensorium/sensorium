@@ -78,6 +78,13 @@ describe('Avatar', () => {
     )
   })
 
+  it('loads the stored path directly when no explicit thumb is given', () => {
+    vi.mocked(useAvatarThumbUrl).mockReturnValue({
+      data: 'https://cdn.test/full.webp',
+    } as never)
+    render(<Avatar name="Bob" src="u1/a_full.jpg" />)
+    expect(vi.mocked(useAvatarThumbUrl)).toHaveBeenCalledWith('u1/a_full.jpg', 'u1/a_full.jpg')
+  })
   it('uppercases the initial', () => {
     vi.mocked(useAvatarThumbUrl).mockReturnValue({ data: undefined } as never)
     render(<Avatar name="carol" className="h-8 w-8" />)

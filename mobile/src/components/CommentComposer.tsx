@@ -41,7 +41,7 @@ export function CommentComposer({
   postId: string
   comments: PostComment[]
   replyTo: ReplyTarget | null
-  selfAvatar: { display_name: string; avatar_url: string | null }
+  selfAvatar: { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }
   onCancelReply(): void
   onPosted(): void
 }) {
@@ -231,7 +231,7 @@ export function CommentComposer({
           }}
         >
           <CollapsibleChrome shown={!isTyping} width={32}>
-            <Avatar name={selfAvatar.display_name} src={selfAvatar.avatar_url} size={32} />
+            <Avatar name={selfAvatar.display_name} src={selfAvatar.avatar_url} thumbSrc={selfAvatar.avatar_thumb_url ?? selfAvatar.avatar_url} size={32} />
           </CollapsibleChrome>
           <TextInput
             ref={inputRef}

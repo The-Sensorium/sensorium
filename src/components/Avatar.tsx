@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { cn } from '../lib/utils'
-import { avatarFullFor, avatarThumbFor, useAvatarFullUrl, useAvatarThumbUrl } from '../features/avatars'
+import { avatarFullFor, useAvatarFullUrl, useAvatarThumbUrl } from '../features/avatars'
 
 export function Avatar({
   name,
@@ -15,13 +15,16 @@ export function Avatar({
   className?: string
   textClassName?: string
 }) {
-  // The derived thumb path may not exist (GIF/small single-file rows, or a
-  // mismatched extension). Signing a missing object errors, so the thumb
-  // query fails without ever rendering an image: fall back on query error
-  // as well as on image load error. Both comparisons reset on their own
-  // when the avatar changes (new query key, new signed URL).
+  // The thumb is only requested when the caller threads the explicit
+  // `avatar_thumb_url` column through. Guessing it from the full path by
+  // swapping the extension is wrong whenever the pair was stored with mixed
+  // extensions (full JPG + thumb WebP): the signature for the guessed path
+  // fails on every mount and the image visibly reloads on each navigation.
+  // Without an explicit thumb the stored path itself is loaded directly, as
+  // before the dual-variant upgrade. Fallback still covers an explicit thumb
+  // that fails at signing or load time.
   const [failedSrc, setFailedSrc] = useState<string | null>(null)
-  const thumb = thumbSrc ?? avatarThumbFor(src) ?? src
+  const thumb = thumbSrc ?? src
   const full = avatarFullFor(src) ?? src ?? thumb
   const thumbQuery = useAvatarThumbUrl(thumb, src)
   const thumbFailed = thumbQuery.isError || failedSrc === thumbQuery.data

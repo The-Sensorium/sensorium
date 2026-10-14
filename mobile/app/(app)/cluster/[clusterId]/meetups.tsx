@@ -372,7 +372,7 @@ function MeetupDetail({
                       borderRadius: 16,
                     }}
                   >
-                    <Avatar name={m.display_name ?? ''} src={m.avatar_url} size={28} />
+                    <Avatar name={m.display_name ?? ''} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} size={28} />
                   </View>
                 ))}
                 {joiningOverflow > 0 ? (

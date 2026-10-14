@@ -115,6 +115,7 @@ function SignalDetailScreenContent() {
         id: m.id,
         display_name: m.display_name,
         avatar_url: m.avatar_url ?? null,
+        avatar_thumb_url: m.avatar_thumb_url ?? null,
       })),
     [members.data],
   )
@@ -270,7 +271,7 @@ function SignalDetailScreenContent() {
           ) : null}
           <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Avatar name={raiser?.display_name ?? 'Member'} src={raiser?.avatar_url} size={24} />
+            <Avatar name={raiser?.display_name ?? 'Member'} src={raiser?.avatar_url} thumbSrc={raiser?.avatar_thumb_url ?? raiser?.avatar_url} size={24} />
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, flexShrink: 1 }} numberOfLines={1}>
               {raiser?.display_name ?? 'Member'}
             </Text>
@@ -377,6 +378,7 @@ function SignalDetailScreenContent() {
         <View>
           {(replies.data ?? []).map((r, index) => {
             const rMuted = isMutedAuthor(mutedSet, r.author_id)
+            const replyAuthor = memberById.get(r.author_id)
             const isLast = index === (replies.data ?? []).length - 1
             if (rMuted && !revealed.has(r.id)) {
               return (
@@ -389,7 +391,7 @@ function SignalDetailScreenContent() {
                   }}
                 >
                   <MutedPlaceholder
-                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                    name={replyAuthor?.display_name ?? 'Member'}
                     onToggle={() => toggleReveal(r.id)}
                   />
                 </View>
@@ -407,21 +409,22 @@ function SignalDetailScreenContent() {
                 {rMuted ? (
                   <View style={{ marginBottom: 8 }}>
                     <MutedHideBar
-                      name={memberById.get(r.author_id)?.display_name ?? 'Member'}
+                      name={replyAuthor?.display_name ?? 'Member'}
                       onToggle={() => toggleReveal(r.id)}
                     />
                   </View>
                 ) : null}
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <Avatar
-                    name={memberById.get(r.author_id)?.display_name ?? 'Member'}
-                    src={memberById.get(r.author_id)?.avatar_url}
+                    name={replyAuthor?.display_name ?? 'Member'}
+                    src={replyAuthor?.avatar_url}
+                    thumbSrc={replyAuthor?.avatar_thumb_url ?? replyAuthor?.avatar_url}
                     size={32}
                   />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 }}>
                       <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                        {memberById.get(r.author_id)?.display_name ?? 'Member'}
+                        {replyAuthor?.display_name ?? 'Member'}
                       </Text>
                       <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
                         · {dateTimeFormatter.format(new Date(r.created_at))}

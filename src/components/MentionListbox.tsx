@@ -68,6 +68,7 @@ export function MentionListbox({
             <Avatar
               name={candidate.display_name}
               src={candidate.avatar_url}
+              thumbSrc={candidate.avatar_thumb_url ?? candidate.avatar_url}
               className="h-6 w-6"
               textClassName="text-xs"
             />

@@ -7,11 +7,13 @@ import { Avatar } from './Avatar'
 export function AvatarViewer({
   name,
   src,
+  thumbSrc,
   className,
   textClassName,
 }: {
   name: string
   src?: string | null
+  thumbSrc?: string | null
   className?: string
   textClassName?: string
 }) {
@@ -46,7 +48,7 @@ export function AvatarViewer({
   }, [open])
 
   if (!resolved) {
-    return <Avatar name={name} src={src} className={className} textClassName={textClassName} />
+    return <Avatar name={name} src={src} thumbSrc={thumbSrc} className={className} textClassName={textClassName} />
   }
 
   const label = `View ${name}'s profile photo`
@@ -60,7 +62,7 @@ export function AvatarViewer({
         onClick={() => setOpen(true)}
         className="cursor-pointer rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <Avatar name={name} src={src} className={className} textClassName={textClassName} />
+        <Avatar name={name} src={src} thumbSrc={thumbSrc} className={className} textClassName={textClassName} />
       </button>
       {open &&
         createPortal(

@@ -256,7 +256,7 @@ function SignalCard({
   mutedBanner,
 }: {
   signal: Signal
-  memberById: Map<string, { display_name: string; avatar_url: string | null }>
+  memberById: Map<string, { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }>
   replyCount: number
   isMine: boolean
   compact?: boolean
@@ -279,6 +279,7 @@ function SignalCard({
           <Avatar
             name={author?.display_name ?? 'Member'}
             src={author?.avatar_url}
+            thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url}
             className="h-6 w-6 shrink-0"
             textClassName="text-[11px]"
           />

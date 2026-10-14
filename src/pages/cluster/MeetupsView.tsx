@@ -133,7 +133,7 @@ function MeetupDetail({
 }: {
   clusterId: string
   meetupId: string
-  members: Array<{ id: string; display_name: string | null; avatar_url: string | null }>
+  members: Array<{ id: string; display_name: string | null; avatar_url: string | null; avatar_thumb_url?: string | null }>
   onRetryMembers: () => void
 }) {
   const memberCount = members.length
@@ -373,7 +373,7 @@ function MeetupDetail({
             >
               <div className="flex -space-x-2">
                 {shownJoining.map((m) => (
-                  <Avatar key={m.id} name={m.display_name ?? ''} src={m.avatar_url} className="h-7 w-7 ring-2 ring-surface" />
+                  <Avatar key={m.id} name={m.display_name ?? ''} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} className="h-7 w-7 ring-2 ring-surface" />
                 ))}
                 {joiningOverflow > 0 && (
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface-container text-[11px] font-semibold text-on-surface-variant ring-2 ring-surface">

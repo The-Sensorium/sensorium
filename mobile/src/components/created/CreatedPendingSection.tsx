@@ -103,7 +103,7 @@ export function CreatedPendingSection({
             marginBottom: 8,
           }}
         >
-          <Avatar name={inv.display_name} src={inv.avatar_url} size={40} />
+          <Avatar name={inv.display_name} src={inv.avatar_url} thumbSrc={inv.avatar_thumb_url ?? inv.avatar_url} size={40} />
           <Text style={{ flex: 1, fontSize: 14, color: t.onSurfaceVariant }} numberOfLines={1}>
             {inv.display_name}
           </Text>
@@ -188,7 +188,7 @@ export function CreatedPendingSection({
                     }}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, minHeight: 48, opacity: invite.isPending ? 0.6 : 1 }}
                   >
-                    <Avatar name={person.display_name} src={person.avatar_url} size={36} />
+                    <Avatar name={person.display_name} src={person.avatar_url} thumbSrc={person.avatar_thumb_url ?? person.avatar_url} size={36} />
                     <Text style={{ flex: 1, fontSize: 14, color: t.onSurface }} numberOfLines={1}>
                       {person.display_name}
                     </Text>

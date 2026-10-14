@@ -23,7 +23,7 @@ export function SignalRow({
   mutedBanner,
 }: {
   signal: Signal
-  author: { display_name: string; avatar_url: string | null } | undefined
+  author: { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   isMine: boolean
   replyCount: number
   clusterId: string
@@ -43,6 +43,7 @@ export function SignalRow({
             <Avatar
               name={author?.display_name ?? 'Member'}
               src={author.avatar_url}
+              thumbSrc={author.avatar_thumb_url ?? author.avatar_url}
               className="h-6 w-6"
               textClassName="text-[11px]"
             />

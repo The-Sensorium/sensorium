@@ -7,12 +7,14 @@ export function AvatarLink({
   clusterId,
   name,
   src,
+  thumbSrc,
   size,
 }: {
   userId: string
   clusterId: string
   name: string
   src?: string | null
+  thumbSrc?: string | null
   size?: number
 }) {
   return (
@@ -20,7 +22,7 @@ export function AvatarLink({
       <Pressable hitSlop={12} accessibilityRole="button" accessibilityLabel={`Open ${name}'s profile`}>
         {({ pressed }) => (
           <View style={{ opacity: pressed ? 0.6 : 1 }}>
-            <Avatar name={name} src={src} size={size} />
+            <Avatar name={name} src={src} thumbSrc={thumbSrc} size={size} />
           </View>
         )}
       </Pressable>

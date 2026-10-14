@@ -45,7 +45,7 @@ export function MessageItem({
 }: {
   message: Message
   mine: boolean
-  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   reactions: Reaction[]
   myReactionKeys: ReadonlySet<string>
   members: MentionMember[]
@@ -102,6 +102,7 @@ export function MessageItem({
             <Avatar
               name={author.display_name}
               src={author.avatar_url}
+              thumbSrc={author.avatar_thumb_url ?? author.avatar_url}
               className="h-7 w-7"
               textClassName="text-xs"
             />

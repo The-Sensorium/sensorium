@@ -353,9 +353,9 @@ function RoomScreenContent() {
   }, [clusterId, extraContentPadding])
 
   const memberMap = useMemo(() => {
-    const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
+    const map = new Map<string, { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url: string | null }>()
     for (const m of members.data ?? []) {
-      map.set(m.id, { id: m.id, display_name: m.display_name, avatar_url: m.avatar_url })
+      map.set(m.id, { id: m.id, display_name: m.display_name, avatar_url: m.avatar_url, avatar_thumb_url: m.avatar_thumb_url ?? null })
     }
     return map
   }, [members.data])
@@ -518,6 +518,7 @@ function RoomScreenContent() {
       id: m.id,
       display_name: m.display_name,
       avatar_url: m.avatar_url,
+      avatar_thumb_url: m.avatar_thumb_url ?? null,
     }))
   }, [members.data])
 
@@ -1167,7 +1168,7 @@ function RoomScreenContent() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: STRIP_GAP, overflow: 'hidden' }}
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: STRIP_GAP, overflow: 'hidden', paddingVertical: 2, marginVertical: -2 }}
                 onLayout={(e) => {
                   const w = e.nativeEvent.layout.width
                   setStripWidth((prev) => (prev === w ? prev : w))
@@ -1175,7 +1176,7 @@ function RoomScreenContent() {
               >
                 {stripVisible.map((m) => {
                   const isMe = m.id === userId
-                  const face = <Avatar name={m.display_name} src={m.avatar_url} size={STRIP_AVATAR} />
+                  const face = <Avatar name={m.display_name} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} size={STRIP_AVATAR} />
                   // Own avatar gets a primary ring, mirroring web's
                   // `ring-2 ring-primary`. The -2 margin keeps the ring
                   // layout-neutral so the strip doesn't reshuffle.

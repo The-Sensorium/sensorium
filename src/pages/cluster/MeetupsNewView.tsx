@@ -374,7 +374,7 @@ export function MeetupsNewView() {
                         {previewSlotMembers(members.data ?? [], iso).map((m) => {
                           return (
                             <li key={m.id} className="flex items-center gap-2.5">
-                              <Avatar name={m.display_name} src={m.avatar_url} className="h-8 w-8" />
+                              <Avatar name={m.display_name} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} className="h-8 w-8" />
                               <span className="min-w-0 flex-1 truncate text-sm text-on-surface">
                                 {m.display_name}
                               </span>

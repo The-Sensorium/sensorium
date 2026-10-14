@@ -33,21 +33,6 @@ export function avatarStoragePath(stored: string | null | undefined): string | n
 }
 
 /**
- * Derive the thumb path from a full path (`{id}_full.webp` to
- * `{id}_thumb.webp`). Returns null when the input is not a variant path.
- * Lets existing call sites that only hold `avatar_url` load the thumbnail
- * without threading a second prop through every list.
- */
-export function avatarThumbFor(stored: string | null | undefined): string | null {
-  const path = avatarStoragePath(stored)
-  if (!path) return null
-  if (path.match(/^(.*)_thumb\.([a-z0-9]+)$/)) return path
-  const full = path.match(/^(.*)_full\.([a-z0-9]+)$/)
-  if (full) return `${full[1]}_thumb.${full[2]}`
-  return null
-}
-
-/**
  * Derive the full path from a thumb path. Returns null when the input is
  * not a variant path.
  */

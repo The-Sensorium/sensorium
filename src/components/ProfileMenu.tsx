@@ -46,7 +46,7 @@ export function ProfileMenu({ className, accountLinks = true }: { className?: st
             : 'hover:ring-2 hover:ring-primary/40 hover:ring-offset-2 hover:ring-offset-surface',
         )}
       >
-        <Avatar name={name} src={profile.data?.avatar_url} className="h-9 w-9" textClassName="text-sm" />
+        <Avatar name={name} src={profile.data?.avatar_url} thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url} className="h-9 w-9" textClassName="text-sm" />
       </button>
       {open && (
         <div

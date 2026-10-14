@@ -57,7 +57,7 @@ export default function SettingsScreen() {
             shadowColor: t.shadowColor,
           }}
         >
-          <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} size={56} />
+          <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url} size={56} />
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
               {profile.data?.display_name ?? 'You'}
@@ -364,7 +364,7 @@ function SafetySection() {
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.md, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 8 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                    <Avatar name={m.display_name ?? 'Member'} src={m.avatar_url} size={32} />
+                    <Avatar name={m.display_name ?? 'Member'} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} size={32} />
                     <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
                       {m.display_name ?? 'Member'}
                     </Text>

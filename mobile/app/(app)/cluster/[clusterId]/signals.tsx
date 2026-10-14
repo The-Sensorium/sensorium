@@ -238,7 +238,7 @@ function SignalCard({
 }: {
   signal: Signal
   clusterId: string
-  memberById: Map<string, { display_name: string; avatar_url: string | null }>
+  memberById: Map<string, { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }>
   replyCount: number
   isMine: boolean
   compact?: boolean
@@ -256,7 +256,7 @@ function SignalCard({
         style={{ backgroundColor: themed ? t.surface : t.surfaceLowest, borderWidth: 1, borderColor: themed ? t.outlineVariant : 'transparent', borderRadius: radii.xl, padding: compact ? 12 : 16, marginBottom: 12 }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={24} />
+          <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url} size={24} />
           <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurface, flexShrink: 1 }} numberOfLines={1}>
             {author?.display_name ?? 'Member'}
           </Text>
