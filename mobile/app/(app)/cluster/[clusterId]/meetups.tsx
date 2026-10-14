@@ -153,7 +153,7 @@ function MeetupDetail({
 }: {
   clusterId: string
   meetup: Meetup
-  members: Array<{ id: string; display_name: string | null; avatar_url: string | null }>
+  members: Array<{ id: string; display_name: string | null; avatar_url: string | null; avatar_thumb_url?: string | null }>
   onRetryMembers: () => void
 }) {
   const memberCount = members.length
