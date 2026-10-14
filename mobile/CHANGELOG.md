@@ -32,6 +32,7 @@ release) for the release ritual.
 - Fixed the back button closing the app from cluster screens (chat sections, signal detail, meetup planner, member profiles) opened from a notification. It now returns to the chat room instead.
 - Fixed your own profile photo flashing back to your initial on every screen. Avatars now load from the cache again.
 - Fixed faces in the chat room member strip looking cut off at the top and bottom.
+- Fixed GIF search results hiding behind the keyboard in chat. The results now stay visible while you type.
 
 ## [1.1.0]
 
