@@ -2,6 +2,7 @@ export interface SeenByMember {
   id: string
   display_name: string
   avatar_url: string | null
+  avatar_thumb_url?: string | null
   read_at: string | null
 }
 
@@ -9,6 +10,7 @@ export interface ReadMember {
   id: string
   display_name: string
   avatar_url: string | null
+  avatar_thumb_url?: string | null
   read_at: string
 }
 
@@ -16,6 +18,7 @@ interface PlainMember {
   id: string
   display_name: string
   avatar_url: string | null
+  avatar_thumb_url?: string | null
 }
 
 interface DatedMessage {
@@ -26,7 +29,7 @@ interface DatedMessage {
 export function seenByMembers(reads: readonly ReadMember[], excludeAuthorId: string): SeenByMember[] {
   return [...reads]
     .filter((r) => r.id !== excludeAuthorId)
-    .map((r) => ({ id: r.id, display_name: r.display_name, avatar_url: r.avatar_url, read_at: r.read_at }))
+    .map((r) => ({ id: r.id, display_name: r.display_name, avatar_url: r.avatar_url, avatar_thumb_url: r.avatar_thumb_url ?? null, read_at: r.read_at }))
     .sort((a, b) => (b.read_at ?? '').localeCompare(a.read_at ?? ''))
 }
 
@@ -37,5 +40,5 @@ export function notSeenByMembers(
 ): SeenByMember[] {
   return members
     .filter((m) => m.id !== message.author_id && !readUserIds.has(m.id))
-    .map((m) => ({ id: m.id, display_name: m.display_name, avatar_url: m.avatar_url, read_at: null }))
+    .map((m) => ({ id: m.id, display_name: m.display_name, avatar_url: m.avatar_url, avatar_thumb_url: m.avatar_thumb_url ?? null, read_at: null }))
 }

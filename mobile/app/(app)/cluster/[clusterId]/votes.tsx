@@ -335,7 +335,7 @@ function VotesScreenContent() {
                     paddingVertical: 10,
                   }}
                 >
-                  <Avatar name={m.display_name} src={m.avatar_url} size={36} />
+                  <Avatar name={m.display_name} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} size={36} />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
                       {m.display_name}

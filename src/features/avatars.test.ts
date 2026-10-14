@@ -4,7 +4,6 @@ import { makeSupabaseClient, initialMockResult } from '../test/supabase-client'
 import {
   avatarFullFor,
   avatarStoragePath,
-  avatarThumbFor,
   deleteAvatarObject,
   deleteAvatarObjects,
   uploadAvatarPair,
@@ -45,24 +44,18 @@ describe('avatarStoragePath', () => {
   })
 })
 
-describe('avatarThumbFor / avatarFullFor', () => {
-  it('derives the thumb path from a full path', () => {
-    expect(avatarThumbFor('u1/abc_full.webp')).toBe('u1/abc_thumb.webp')
-  })
-
+describe('avatarFullFor', () => {
   it('derives the full path from a thumb path', () => {
     expect(avatarFullFor('u1/abc_thumb.webp')).toBe('u1/abc_full.webp')
   })
 
-  it('returns the path itself when already the requested variant', () => {
-    expect(avatarThumbFor('u1/abc_thumb.webp')).toBe('u1/abc_thumb.webp')
+  it('returns the path itself when already the full variant', () => {
     expect(avatarFullFor('u1/abc_full.webp')).toBe('u1/abc_full.webp')
   })
 
   it('returns null for legacy single-file paths and empty values', () => {
-    expect(avatarThumbFor('u1/photo.webp')).toBeNull()
     expect(avatarFullFor('u1/photo.webp')).toBeNull()
-    expect(avatarThumbFor(null)).toBeNull()
+    expect(avatarFullFor(null)).toBeNull()
     expect(avatarFullFor(undefined)).toBeNull()
   })
 })

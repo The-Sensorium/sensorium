@@ -41,7 +41,7 @@ export function SettingsPage() {
         aria-label="Edit profile"
         className="flex items-center gap-4 rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft transition-colors hover:border-outline/60"
       >
-        <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} className="h-14 w-14" textClassName="text-xl" />
+        <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url} className="h-14 w-14" textClassName="text-xl" />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-display text-lg font-semibold text-on-surface">
             {profile.data?.display_name ?? 'You'}
@@ -284,6 +284,7 @@ function SafetySection() {
                     <Avatar
                       name={m.display_name ?? 'Member'}
                       src={m.avatar_url}
+                      thumbSrc={m.avatar_thumb_url ?? m.avatar_url}
                       className="h-8 w-8"
                       textClassName="text-sm"
                     />

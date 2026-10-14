@@ -31,7 +31,7 @@ export function PostCard({
 }: {
   post: Post
   clusterId: string
-  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   likeCount: number
   likedByMe: boolean
   commentCount: number
@@ -104,7 +104,7 @@ export function PostCard({
           {/* Header is shared by compact and full cards so the avatar,
               author, date, and cluster label match on every page. */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} size={40} />
+            <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url} size={40} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
                 <Text style={{ fontWeight: '500' }}>{author?.display_name ?? 'Member'}</Text>

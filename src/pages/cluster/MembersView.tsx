@@ -88,6 +88,7 @@ export function MembersView() {
                       <Avatar
                         name={member.display_name}
                         src={member.avatar_url}
+                        thumbSrc={member.avatar_thumb_url ?? member.avatar_url}
                         className="h-14 w-14"
                       />
                       <div className="min-w-0 flex-1">
@@ -237,7 +238,7 @@ function CreatedPendingSection({
               key={inv.invitation_id}
               className="flex items-center gap-3 rounded-2xl border border-dashed border-outline-variant/60 bg-surface-container/40 p-3"
             >
-              <Avatar name={inv.display_name} src={inv.avatar_url} className="h-10 w-10 opacity-80" />
+              <Avatar name={inv.display_name} src={inv.avatar_url} thumbSrc={inv.avatar_thumb_url ?? inv.avatar_url} className="h-10 w-10 opacity-80" />
               <span className="min-w-0 flex-1 truncate text-sm text-on-surface-variant">
                 {inv.display_name}
               </span>
@@ -312,7 +313,7 @@ function CreatedPendingSection({
                         }}
                         className="flex w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left transition-colors hover:bg-surface-container disabled:opacity-60"
                       >
-                        <Avatar name={person.display_name} src={person.avatar_url} className="h-9 w-9" />
+                        <Avatar name={person.display_name} src={person.avatar_url} thumbSrc={person.avatar_thumb_url ?? person.avatar_url} className="h-9 w-9" />
                         <span className="min-w-0 flex-1 truncate text-sm text-on-surface">
                           {person.display_name}
                         </span>

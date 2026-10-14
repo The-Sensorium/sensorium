@@ -169,7 +169,7 @@ export function CreateClusterPage() {
                         aria-pressed={checked}
                         className="flex w-full items-center gap-3 rounded-2xl border border-outline-variant/60 bg-surface p-3 text-left transition-colors hover:bg-surface-high"
                       >
-                        <Avatar name={person.display_name} src={person.avatar_url} className="h-11 w-11" />
+                        <Avatar name={person.display_name} src={person.avatar_url} thumbSrc={person.avatar_thumb_url ?? person.avatar_url} className="h-11 w-11" />
                         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-on-surface">
                           {person.display_name}
                         </span>
@@ -239,6 +239,7 @@ export function CreateClusterPage() {
                 <Avatar
                   name={profile.data?.display_name ?? 'You'}
                   src={profile.data?.avatar_url ?? null}
+                  thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url ?? null}
                   className="h-10 w-10"
                 />
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-on-surface">
@@ -250,7 +251,7 @@ export function CreateClusterPage() {
               </li>
               {selectedPeople.map((person) => (
                 <li key={person.user_id} className="flex items-center gap-3">
-                  <Avatar name={person.display_name} src={person.avatar_url} className="h-10 w-10" />
+                  <Avatar name={person.display_name} src={person.avatar_url} thumbSrc={person.avatar_thumb_url ?? person.avatar_url} className="h-10 w-10" />
                   <span className="min-w-0 flex-1 truncate text-sm text-on-surface">
                     {person.display_name}
                   </span>

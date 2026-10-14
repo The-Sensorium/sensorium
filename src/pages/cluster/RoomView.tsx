@@ -154,9 +154,9 @@ export function RoomView() {
   const jumpFailureRef = useRef<string | null>(null)
 
   const memberMap = useMemo(() => {
-    const map = new Map<string, { id: string; display_name: string; avatar_url: string | null }>()
+    const map = new Map<string, { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url: string | null }>()
     for (const m of members.data ?? []) {
-      map.set(m.id, { id: m.id, display_name: m.display_name, avatar_url: m.avatar_url })
+      map.set(m.id, { id: m.id, display_name: m.display_name, avatar_url: m.avatar_url, avatar_thumb_url: m.avatar_thumb_url ?? null })
     }
     return map
   }, [members.data])
@@ -231,6 +231,7 @@ export function RoomView() {
       id: m.id,
       display_name: m.display_name,
       avatar_url: m.avatar_url,
+      avatar_thumb_url: m.avatar_thumb_url ?? null,
     }))
   }, [members.data])
 
@@ -918,6 +919,7 @@ export function RoomView() {
                     <Avatar
                       name={m.display_name}
                       src={m.avatar_url}
+                      thumbSrc={m.avatar_thumb_url ?? m.avatar_url}
                       className={cn('h-7 w-7', isMe && 'ring-2 ring-primary')}
                       textClassName="text-xs"
                     />
@@ -952,6 +954,7 @@ export function RoomView() {
                   <Avatar
                     name={m.display_name}
                     src={m.avatar_url}
+                    thumbSrc={m.avatar_thumb_url ?? m.avatar_url}
                     className={cn('h-6 w-6', isMe && 'ring-2 ring-primary')}
                     textClassName="text-[10px]"
                   />

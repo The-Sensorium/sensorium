@@ -32,7 +32,7 @@ export function CommentItem({
 }: {
   comment: PostComment
   clusterId: string
-  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   repliedToName?: string
   onReply?: (comment: PostComment) => void
   onLike?: (commentId: string) => void
@@ -66,6 +66,7 @@ export function CommentItem({
       <Avatar
         name={author?.display_name ?? 'Member'}
         src={author?.avatar_url}
+        thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url}
         className="h-8 w-8"
         textClassName="text-sm"
       />

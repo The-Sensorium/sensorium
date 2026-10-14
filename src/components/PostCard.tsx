@@ -34,7 +34,7 @@ export function PostCard({
 }: {
   post: Post
   clusterId: string
-  author: { id: string; display_name: string; avatar_url: string | null } | undefined
+  author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
   likeCount: number
   likedByMe: boolean
   commentCount: number
@@ -152,6 +152,7 @@ export function PostCard({
             <Avatar
               name={author?.display_name ?? 'Member'}
               src={author?.avatar_url}
+              thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url}
               className="h-10 w-10"
               textClassName="text-sm"
             />
@@ -170,6 +171,7 @@ export function PostCard({
             <Avatar
               name={author?.display_name ?? 'Member'}
               src={author?.avatar_url}
+              thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url}
               className="h-10 w-10"
               textClassName="text-sm"
             />

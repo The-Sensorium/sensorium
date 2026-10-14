@@ -289,7 +289,7 @@ function NewMeetupScreenContent() {
                       {previewSlotMembers(members.data ?? [], iso).map((m) => {
                         return (
                           <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                            <Avatar name={m.display_name} src={m.avatar_url} size={32} />
+                            <Avatar name={m.display_name} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} size={32} />
                             <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface, flexShrink: 1, flex: 1 }} numberOfLines={1}>
                               {m.display_name}
                             </Text>

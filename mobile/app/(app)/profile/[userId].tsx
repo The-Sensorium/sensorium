@@ -135,7 +135,7 @@ function ProfileScreenContent() {
 
       <Card>
         <View style={{ alignItems: 'center' }}>
-          <AvatarViewer name={member.display_name} src={member.avatar_url} size={128} />
+          <AvatarViewer name={member.display_name} src={member.avatar_url} thumbSrc={member.avatar_thumb_url ?? member.avatar_url} size={128} />
           {member.pronouns ? (
             <View style={{ marginTop: 12, alignItems: 'center' }}>
               <PronounBadge pronouns={member.pronouns} />
