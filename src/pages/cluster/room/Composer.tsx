@@ -62,6 +62,7 @@ export function Composer({
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const sendingRef = useRef(false)
 
   const mentionMembers = useMemo(() => {
     if (!selfId) return []
@@ -154,14 +155,26 @@ export function Composer({
   }
 
   async function handleSend() {
-    const content = draft.trim()
-    if (!content || pending || uploading) return
+    if (pending || uploading || sendingRef.current) return
+    const raw = draft
+    const content = raw.trim()
+    if (!content) return
+    const text = content
     onError(null)
+    // Snapshot and clear synchronously, before any await. Clearing after the
+    // send resolves leaves the old text in the input while the request is in
+    // flight, so refocusing (or a second Enter) in that window can resend it.
+    sendingRef.current = true
+    setDraft('')
+    setMention(null)
+    setMentionIndex(0)
     try {
-      await onSend(content)
-      setDraft('')
+      await onSend(text)
     } catch (e) {
+      setDraft(raw)
       onError(rateLimitMessage(e, 'Could not send your message. Try again.'))
+    } finally {
+      sendingRef.current = false
     }
   }
 

@@ -101,6 +101,7 @@ export function Composer({
   const [voiceSending, setVoiceSending] = useState(false)
   const inputRef = useRef<TextInput>(null)
   const focusedEditId = useRef<string | null>(null)
+  const sendingRef = useRef(false)
 
   // Edit mode borrows the composer: the draft stays untouched in state while
   // the original text loads here, where the keyboard can never cover it.
@@ -200,25 +201,36 @@ export function Composer({
   }
 
   async function handleSend() {
-    if (pending || uploading) return
-    const content = draft.trim()
+    if (pending || uploading || sendingRef.current) return
+    const raw = draft
+    const content = raw.trim()
     if (!content && !stagedImage) return
+    const text = content
+    const image = stagedImage
     onError(null)
+    // Snapshot and clear synchronously, before any await. Clearing after the
+    // send resolves leaves the old text in the controlled input while the
+    // request is in flight: refocusing (or an IME re-emitting its buffer)
+    // in that window restores the stale text, and a second tap can resend it.
+    sendingRef.current = true
+    setDraft('')
+    setMention(null)
+    setStagedImage(null)
+    if (image) setUploading(true)
     try {
-      if (stagedImage) {
-        setUploading(true)
-        await onSendImage(stagedImage, content || null)
-        setStagedImage(null)
+      if (image) {
+        await onSendImage(image, text || null)
       } else {
-        await onSend(content)
+        await onSend(text)
       }
-      setDraft('')
-      setMention(null)
       lightHaptic()
     } catch (e) {
       errorHaptic()
+      setDraft(raw)
+      if (image) setStagedImage(image)
       onError(toErrorMessage(e, 'Could not send your message. Try again.'))
     } finally {
+      sendingRef.current = false
       setUploading(false)
     }
   }

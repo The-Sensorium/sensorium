@@ -34,6 +34,7 @@ release) for the release ritual.
 - Fixed your own profile photo flashing back to your initial on every screen. Avatars now load from the cache again.
 - Fixed faces in the chat room member strip looking cut off at the top and bottom.
 - Fixed GIF search results hiding behind the keyboard in chat. The results now stay visible while you type.
+- Fixed sent chat text reappearing in the message box when you tap it again right after sending, which could resend the same message twice.
 
 ## [1.1.0]
 
