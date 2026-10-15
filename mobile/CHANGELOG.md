@@ -17,6 +17,9 @@ release) for the release ritual.
 - Profile photos can now be cropped to a square and taken with the camera, not just picked from the gallery.
 - You now get notified when someone replies to a Signal you raised, and when a Signal you helped with is marked in progress or resolved.
 - You can now @-mention members in signal replies, with suggestions as you type and tappable names, just like in chat.
+- You can now send voice notes in cluster chat: record up to 2 minutes, preview before sending, and play back with a simple player showing the time.
+- Required onboarding fields are now marked with a red asterisk.
+- The email verification screen now mentions checking your spam or junk folder if the confirmation email is missing.
 
 ### Changed
 
@@ -30,9 +33,11 @@ release) for the release ritual.
 - Fixed uploading a profile photo crashing on Android.
 - Fixed the chat composer sometimes floating mid-screen after returning from the app switcher on Android.
 - Fixed the back button closing the app from cluster screens (chat sections, signal detail, meetup planner, member profiles) opened from a notification. It now returns to the chat room instead.
+- Fixed the phone back button leaving the app to the phone home screen from posts, queues, invites, discovery, settings pages, legal pages, and later onboarding and cluster creation steps. System back now follows the same trail as in-app back, with a sensible parent when there is no history. The chat room no longer forces home when history exists.
 - Fixed your own profile photo flashing back to your initial on every screen. Avatars now load from the cache again.
 - Fixed faces in the chat room member strip looking cut off at the top and bottom.
 - Fixed GIF search results hiding behind the keyboard in chat. The results now stay visible while you type.
+- Fixed sent chat text reappearing in the message box when you tap it again right after sending, which could resend the same message twice.
 
 ## [1.1.0]
 

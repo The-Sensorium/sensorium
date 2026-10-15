@@ -4,6 +4,7 @@ import { Avatar } from '../Avatar'
 import { AvatarLink } from '../AvatarLink'
 import { DayDivider } from './DayDivider'
 import { MessageGif, MessageImage } from './MessageMedia'
+import { VoiceBubble } from './VoiceBubble'
 import { MentionText } from './MentionText'
 import type { Message, Reaction } from '../../features/cluster'
 import type { MentionMember } from '../../features/mentions'
@@ -47,7 +48,8 @@ export function MessageItem({
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
   const gifUrl = message.content?.startsWith('gif:') ? message.content.slice(4) : null
-  const hasMedia = Boolean(message.image_url) || Boolean(gifUrl)
+  const hasAudio = Boolean(message.audio_url)
+  const hasMedia = Boolean(message.image_url) || Boolean(gifUrl) || hasAudio
   const toneMine = mine && !hasMedia
   // The quote jumps to the original message, but only when there is a real,
   // visible parent to land on (deleted, muted-hidden, and unfetched parents
@@ -179,7 +181,24 @@ export function MessageItem({
                 </View>
               </Pressable>
             ) : null}
-            {message.image_url ? (
+            {message.audio_url ? (
+              <>
+                {message.moderation_status === 'approved' ? (
+                  <VoiceBubble
+                    path={message.audio_url}
+                    durationSec={message.audio_duration_sec}
+                    mine={toneMine}
+                  />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}>
+                    <ShieldOff size={16} color={toneMine ? t.onPrimary : t.onSurfaceVariant} strokeWidth={1.5} />
+                    <Text style={{ fontSize: 12, color: toneMine ? t.onPrimary : t.onSurfaceVariant }}>
+                      This voice note was hidden by moderation.
+                    </Text>
+                  </View>
+                )}
+              </>
+            ) : message.image_url ? (
               <>
                 {message.moderation_status === 'approved' ? (
                   <MessageImage

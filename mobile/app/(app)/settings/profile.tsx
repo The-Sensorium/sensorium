@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native'
-import { router } from 'expo-router'
 import { ArrowLeft, Clock, ImageMinus, ImagePlus, Save, UserRound } from 'lucide-react-native'
 import { useProfile } from '../../../src/lib/use-profile'
 import { toErrorMessage } from '../../../src/lib/error'
@@ -13,6 +12,7 @@ import { Modal } from '../../../src/components/Modal'
 import { PronounField } from '../../../src/components/PronounField'
 import { TimezonePicker } from '../../../src/components/TimezonePicker'
 import { Field, PrimaryButton } from '../../../src/components/ui'
+import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, Screen } from '../../../src/components/ui'
@@ -29,6 +29,7 @@ export default function EditProfileScreen() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const updateProfile = useUpdateProfile()
+  const goBack = useClusterBack('/(app)/settings')
 
   // Profile loads async; pick up the saved zone once it arrives so saving
   // another field never wipes a value the user never touched.
@@ -100,10 +101,7 @@ export default function EditProfileScreen() {
   return (
     <Screen avoiding>
       <Pressable
-        onPress={() => {
-          if (router.canGoBack()) router.back()
-          else router.replace('/(app)/settings')
-        }}
+        onPress={goBack}
         accessibilityRole="button"
         accessibilityLabel="Back"
         hitSlop={8}

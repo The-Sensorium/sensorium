@@ -1,20 +1,18 @@
 import { Pressable, Text, View } from 'react-native'
-import { router } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import * as Linking from 'expo-linking'
 import { useTheme } from '../src/lib/use-theme'
 import { Card, Screen } from '../src/components/ui'
+import { useClusterBack } from '../src/lib/use-cluster-back'
 import { TERMS_DOCUMENT } from '../src/legal/content'
 
 export default function TermsScreen() {
   const t = useTheme()
+  const goBack = useClusterBack('/(app)/settings')
   return (
     <Screen>
       <Pressable
-        onPress={() => {
-          if (router.canGoBack()) router.back()
-          else router.replace('/(app)/settings')
-        }}
+        onPress={goBack}
         accessibilityRole="button"
         accessibilityLabel="Back to settings"
         hitSlop={8}

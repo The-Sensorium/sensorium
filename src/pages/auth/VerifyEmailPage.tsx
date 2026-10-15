@@ -60,6 +60,7 @@ export function VerifyEmailPage() {
       <h1 className="text-2xl font-semibold">Verify your email address</h1>
       <p className="mt-3 text-sm leading-6 text-on-surface-variant">
         We sent a confirmation link to your inbox. Click it to activate your account, then sign in.
+        If you do not see it, check your spam or junk folder.
       </p>
       <button
         type="button"

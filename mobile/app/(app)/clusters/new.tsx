@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
-import { router } from 'expo-router'
+import { useCallback, useMemo, useState } from 'react'
+import { BackHandler, Pressable, Text, TextInput, View } from 'react-native'
+import { router, useFocusEffect } from 'expo-router'
 import { ArrowLeft, Check, Search, Users } from 'lucide-react-native'
 import { useProfile } from '../../../src/lib/use-profile'
 import { Avatar } from '../../../src/components/Avatar'
@@ -19,6 +19,7 @@ import {
   useCreateCluster,
   useEligibleComembers,
 } from '../../../src/features/created-clusters'
+import { goBackWithFallback } from '../../../src/lib/use-cluster-back'
 
 const NAME_LIMIT = 50
 const MIN_INVITEES = 2
@@ -90,6 +91,22 @@ export default function NewClusterScreen() {
   const [capped, setCapped] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
+  // Step wizards own their trail: system back steps back first, and only
+  // leaves the form when on the first step.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (step > 0) {
+          setStep((s) => Math.max(s - 1, 0))
+          return true
+        }
+        goBackWithFallback('/(app)/clusters')
+        return true
+      })
+      return () => sub.remove()
+    }, [step]),
+  )
+
   const trimmed = name.trim()
   const nameValid = trimmed.length >= 1 && trimmed.length <= NAME_LIMIT
 
@@ -140,7 +157,7 @@ export default function NewClusterScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => (step === 0 ? router.back() : setStep(step - 1))}
+          onPress={() => (step === 0 ? goBackWithFallback('/(app)/clusters') : setStep((s) => Math.max(s - 1, 0)))}
           hitSlop={8}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
         >

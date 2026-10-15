@@ -86,7 +86,7 @@ The app is organized into feature modules in `src/features/`. Each module owns o
 |---|---|
 | `matching.ts` | queue entry, matching status |
 | `introductions.ts` | the five-question shared intro checklist (optional, never gates access) |
-| `cluster.ts` | cluster data, realtime chat, chat-image signed URLs, message send/edit/delete/reactions |
+| `cluster.ts` | cluster data, realtime chat, chat-image and voice-note signed URLs, message send/edit/delete/reactions |
 | `cluster-calls.ts` | cluster call state (active call, participants), start/join/leave mutations, LiveKit token fetch |
 | `meetups.ts` | cluster meetup proposals, slot voting, confirmation, join/check-in, reminders, feedback |
 | `realtime.ts` | shared realtime subscription plumbing |
@@ -264,6 +264,7 @@ Media is stored in private buckets and served through short-lived signed URLs, n
 | `chat-images` | readable only by active members of the owning cluster (`is_active_member(cluster_id)`) |
 | `avatars` | readable by any authenticated user; each upload stores a 1024px full (`avatar_url`) plus a 256px thumb (`avatar_thumb_url`) |
 | `posts-images` | readable only by active members of the owning cluster (`is_active_member(cluster_id)`) |
+| `voice-notes` | readable only by active members of the owning cluster (`is_active_member(cluster_id)`); 5 MB cap, up to 2 minute notes, AAC-first (`audio/mp4`, `audio/m4a`) with Opus containers tolerated on ingest |
 
 The browser obtains a signed URL with a short TTL, uses it to render the image, and requests a fresh URL before expiry. Uploads store the bare storage path so URLs are never persisted. See `src/features/avatars.ts`, `src/features/cluster.ts`, and `src/features/posts.ts`.
 

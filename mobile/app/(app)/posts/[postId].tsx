@@ -22,6 +22,7 @@ import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPla
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../../src/features/moderation'
 import { useTheme } from '../../../src/lib/use-theme'
 import { useDismissKeyboardOnBlur } from '../../../src/lib/use-dismiss-keyboard-on-blur'
+import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
 
 export default function PostDetailScreen() {
@@ -57,6 +58,7 @@ export default function PostDetailScreen() {
 
   useClusterChannel(clusterId)
   useDismissKeyboardOnBlur()
+  const goBack = useClusterBack('/(app)/posts')
 
   // The footer height is measured into a shared value for the chat scroll
   // view. Reset it on post change so the next post does not inherit the
@@ -132,10 +134,7 @@ export default function PostDetailScreen() {
           keep their own margins, so layout is unchanged. */}
       <View ref={contentRef} collapsable={false}>
         <Pressable
-          onPress={() => {
-            if (router.canGoBack()) router.back()
-            else router.replace('/(app)/posts')
-          }}
+          onPress={goBack}
           accessibilityRole="button"
           accessibilityLabel="Back"
           hitSlop={12}
@@ -168,7 +167,7 @@ export default function PostDetailScreen() {
               likedByMe={likeInfo.mine}
               commentCount={comments.data?.length ?? 0}
               onLike={(id) => void toggle.mutateAsync(id)}
-              onDeleted={() => router.back()}
+              onDeleted={goBack}
               clusterName={cluster.data?.name}
             />
           </View>

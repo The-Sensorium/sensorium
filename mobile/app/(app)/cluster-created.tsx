@@ -14,12 +14,14 @@ import { useCluster } from '../../src/features/introductions'
 import { radii } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
+import { useClusterBack } from '../../src/lib/use-cluster-back'
 
 export default function ClusterCreatedScreen() {
   const t = useTheme()
   const queryClient = useQueryClient()
   const formed = useLatestClusterFormed()
   const [notif, setNotif] = useState<ClusterFormedNotification | null>(null)
+  const goBack = useClusterBack('/(app)/home')
 
   useEffect(() => {
     if (formed.data && !notif) {
@@ -75,9 +77,7 @@ export default function ClusterCreatedScreen() {
               matched soon.
             </Text>
             <View style={{ marginTop: 20, width: '100%' }}>
-              <Link href="/(app)/home" asChild>
-                <PrimaryButton title="Back to home" onPress={() => {}} />
-              </Link>
+              <PrimaryButton title="Back" onPress={goBack} />
             </View>
           </View>
         </Card>

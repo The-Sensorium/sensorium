@@ -61,6 +61,8 @@ import { errorHaptic, lightHaptic, successHaptic } from '../../../../src/lib/hap
 import { useClusterChannel } from '../../../../src/features/realtime'
 import { useDismissKeyboardOnBlur } from '../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
+import { replyPreviewForMessage, useSendVoiceNote } from '../../../../src/features/voice-notes'
+import type { VoiceRecording } from '../../../../src/components/room/VoiceRecorder'
 import { IntroChecklistBanner } from '../../../../src/components/IntroChecklistBanner'
 import { MeetupEntry } from '../../../../src/components/meetups/MeetupEntry'
 import { type Gif } from '../../../../src/features/gifs'
@@ -74,6 +76,7 @@ import { ReportModal } from '../../../../src/components/ReportModal'
 import { Modal } from '../../../../src/components/Modal'
 import { PrimaryButton } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
+import { goBackWithFallback } from '../../../../src/lib/use-cluster-back'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface, useClusterOnAccent, useClusterAccentText } from '../../../../src/lib/cluster-theme'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -211,8 +214,9 @@ function RoomScreenContent() {
       }
     }, [clusterId]),
   )
-  // Hardware Back closes open composer panels first instead of leaving the
-  // room with a panel still applied.
+  // Hardware Back closes open composer panels first, then walks the visit
+  // trail so system back mirrors in-app back instead of forcing home. Only a
+  // cold start with no history falls back to home.
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -225,7 +229,7 @@ function RoomScreenContent() {
           setComposerInputFocused(false)
           return true
         }
-        router.replace('/(app)/home')
+        goBackWithFallback('/(app)/home')
         return true
       })
       return () => sub.remove()
@@ -242,6 +246,7 @@ function RoomScreenContent() {
   const votes = useClusterVotes(authedClusterId)
   const members = useClusterMembers(authedClusterId)
   const send = useSendMessage()
+  const sendVoice = useSendVoiceNote()
   const toggleReaction = useToggleReaction(clusterId || null)
   const editMessage = useEditMessage(clusterId || null)
   const deleteMessage = useDeleteMessage(clusterId || null)
@@ -387,6 +392,8 @@ function RoomScreenContent() {
           author_id: string
           content: string | null
           image_url: string | null
+          audio_url?: string | null
+          audio_duration_sec?: number | null
           deleted_at: string | null
         }
       | null
@@ -398,11 +405,12 @@ function RoomScreenContent() {
     // whitespace-only content, so normalize them to the missing-target text.
     const rawName = memberMap.get(target.author_id)?.display_name
     const authorName = rawName && rawName.trim() ? rawName : 'Member'
-    const rawPreview = target.content?.startsWith('gif:')
-      ? 'GIF'
-      : target.image_url
-        ? 'Image'
-        : (target.content ?? '')
+    const rawPreview = replyPreviewForMessage({
+      content: target.content,
+      image_url: target.image_url,
+      audio_url: target.audio_url ?? null,
+      audio_duration_sec: target.audio_duration_sec ?? null,
+    })
     const preview = rawPreview.trim() ? rawPreview : 'message'
     return { authorName, preview }
   }
@@ -558,8 +566,10 @@ function RoomScreenContent() {
   )
   const menuMine = menuMessage?.author_id === userId
   // GIF messages carry the URL in content (`gif:…`), so there is no text to
-  // edit. Image captions remain editable.
-  const menuCanEdit = menuMessage ? !(menuMessage.content?.startsWith('gif:') ?? false) : false
+  // edit. Image captions remain editable. Voice notes are never editable.
+  const menuCanEdit = menuMessage
+    ? !(menuMessage.content?.startsWith('gif:') ?? false) && !menuMessage.audio_url
+    : false
   const editingMessage = useMemo(
     () => (editingId ? (messages.data ?? []).find((m) => m.id === editingId) ?? null : null),
     [editingId, messages.data],
@@ -815,6 +825,21 @@ function RoomScreenContent() {
     setReplyTo(null)
   }
 
+  async function persistSendVoice(recording: VoiceRecording) {
+    if (!clusterId) return
+    await sendVoice.mutateAsync({
+      clusterId,
+      draft: {
+        uri: recording.uri,
+        mime: recording.mime,
+        durationSec: recording.durationSec,
+        waveform: recording.waveform,
+      },
+      replyToId: replyTo?.id ?? undefined,
+    })
+    setReplyTo(null)
+  }
+
   async function handleToggleReaction(messageId: string, emoji: string) {
     setError(null)
     try {
@@ -826,7 +851,8 @@ function RoomScreenContent() {
     }
   }
 
-  function startEdit(m: { id: string }) {
+  function startEdit(m: { id: string; audio_url?: string | null }) {
+    if (m.audio_url) return
     setMenuFor(null)
     setReplyTo(null)
     setEditingId(m.id)
@@ -1485,6 +1511,7 @@ function RoomScreenContent() {
             onSaveEdit={(content) => void saveEdit(content)}
             onSendImage={persistSendImage}
             onSendGif={persistSendGif}
+            onSendVoice={persistSendVoice}
             onOpenSignal={() => setSignalOpen(true)}
             onStartCall={() => void handleStartCall()}
             callActive={callActive}

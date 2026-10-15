@@ -6,6 +6,7 @@ import { Avatar } from '../../../components/Avatar'
 import { DayDivider } from './DayDivider'
 import { MessageImage } from './MessageImage'
 import { MessageGif } from './MessageGif'
+import { VoiceBubble } from './VoiceBubble'
 import { MentionText } from './MentionText'
 import type { Message, Reaction } from '../../../features/cluster'
 import type { MentionMember } from '../../../features/mentions'
@@ -75,7 +76,8 @@ export function MessageItem({
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
   const gifUrl = message.content?.startsWith('gif:') ? message.content.slice(4) : null
-  const hasMedia = Boolean(message.image_url) || Boolean(gifUrl)
+  const hasAudio = Boolean(message.audio_url)
+  const hasMedia = Boolean(message.image_url) || Boolean(gifUrl) || hasAudio
   const toneMine = mine && !hasMedia
   // The quote jumps to the original message, but only when there is a real,
   // visible parent to land on (deleted, muted-hidden, and unfetched parents
@@ -160,6 +162,7 @@ export function MessageItem({
                     <Info className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                     <span className="hidden sm:inline">Info</span>
                   </button>
+                  {!message.audio_url && (
                   <button
                     type="button"
                     role="menuitem"
@@ -170,6 +173,7 @@ export function MessageItem({
                     <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                     <span className="hidden sm:inline">Edit</span>
                   </button>
+                  )}
                   <button
                     type="button"
                     role="menuitem"
@@ -295,6 +299,21 @@ export function MessageItem({
                   </button>
                 </div>
               </div>
+            ) : message.audio_url ? (
+              <>
+                {message.moderation_status === 'approved' ? (
+                  <VoiceBubble
+                    path={message.audio_url}
+                    durationSec={message.audio_duration_sec}
+                    mine={toneMine}
+                  />
+                ) : (
+                  <span className={cn('flex items-center gap-2 rounded-xl px-4 py-3 text-xs', toneMine ? 'bg-black/15 text-on-primary' : 'bg-surface-container/50 text-on-surface-variant')}>
+                    <ShieldOff className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                    This voice note was hidden by moderation.
+                  </span>
+                )}
+              </>
             ) : message.image_url ? (
               <>
                 {message.moderation_status === 'approved' ? (

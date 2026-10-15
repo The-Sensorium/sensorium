@@ -74,7 +74,7 @@ export default function VerifyEmailScreen() {
   return (
     <AuthShell
       title="Verify your email address"
-      subtitle="We sent a confirmation link to your inbox. Tap it to activate your account, then sign in."
+      subtitle="We sent a confirmation link to your inbox. Tap it to activate your account, then sign in. If you do not see it, check your spam or junk folder."
     >
       <PrimaryButton
         title={cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend email'}

@@ -38,6 +38,7 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
     onSend: vi.fn().mockResolvedValue(undefined),
     onSendImage: vi.fn().mockResolvedValue(undefined),
     onSendGif: vi.fn().mockResolvedValue(undefined),
+    onSendVoice: vi.fn().mockResolvedValue(undefined),
     onCancelReply: vi.fn(),
     onOpenSignal: vi.fn(),
     onStartCall: vi.fn(),
@@ -56,6 +57,7 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
       onSend={props.onSend}
       onSendImage={props.onSendImage}
       onSendGif={props.onSendGif}
+      onSendVoice={props.onSendVoice}
       onCancelReply={props.onCancelReply}
       onOpenSignal={props.onOpenSignal}
       onStartCall={props.onStartCall}
@@ -166,6 +168,51 @@ describe('Composer', () => {
     await waitFor(() =>
       expect(props.onError).toHaveBeenCalledWith('Only JPG, PNG, WebP and GIF images are supported.'),
     )
+  })
+
+  it('clears the input synchronously on send, before the request resolves', async () => {
+    let resolveSend!: () => void
+    const gated = new Promise<void>((resolve) => {
+      resolveSend = resolve
+    })
+    const { props } = setup({ onSend: vi.fn().mockReturnValue(gated) })
+    await userEvent.type(input(), 'hello there')
+    await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    await waitFor(() => expect(props.onSend).toHaveBeenCalledWith('hello there'))
+    expect(input()).toHaveValue('')
+    expect(props.onError).toHaveBeenCalledWith(null)
+    resolveSend()
+    await waitFor(() => expect(gated).resolves.toBeUndefined())
+  })
+
+  it('blocks a second submit while the first send is still in flight', async () => {
+    let resolveSend!: () => void
+    const gated = new Promise<void>((resolve) => {
+      resolveSend = resolve
+    })
+    const { props } = setup({ onSend: vi.fn().mockReturnValue(gated) })
+    await userEvent.type(input(), 'hello there')
+    await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    await waitFor(() => expect(props.onSend).toHaveBeenCalledTimes(1))
+    // New text typed mid-flight re-enables the button, so only the
+    // in-flight guard can block the resubmit. Without it this second send
+    // would go through because the pending prop has not flipped yet.
+    await userEvent.type(input(), 'second message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    await userEvent.keyboard('{Enter}')
+    expect(props.onSend).toHaveBeenCalledTimes(1)
+    expect(input()).toHaveValue('second message')
+    resolveSend()
+    await waitFor(() => expect(gated).resolves.toBeUndefined())
+    expect(input()).toHaveValue('second message')
+  })
+
+  it('restores the draft when the send fails so the message can be retried', async () => {
+    const { props } = setup({ onSend: vi.fn().mockRejectedValueOnce(new Error('nope')) })
+    await userEvent.type(input(), 'hello there')
+    await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    await waitFor(() => expect(props.onError).toHaveBeenCalled())
+    expect(input()).toHaveValue('hello there')
   })
 
   it('shows the replying banner with the target and cancels it', async () => {

@@ -28,12 +28,16 @@ export function StepProfile({ draft, patch }: Props) {
       </div>
 
       <label className="block">
-        <span className="text-sm font-semibold text-on-surface">Display name</span>
+        <span className="text-sm font-semibold text-on-surface">
+          Display name<span aria-hidden="true" className="text-error"> *</span>
+        </span>
         <input
           type="text"
           value={draft.displayName}
           onChange={(e) => patch({ displayName: e.target.value })}
           maxLength={60}
+          required
+          aria-required="true"
           placeholder="How should people call you?"
           className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
@@ -49,11 +53,15 @@ export function StepProfile({ draft, patch }: Props) {
       </div>
 
       <label className="block">
-        <span className="text-sm font-semibold text-on-surface">Date of birth</span>
+        <span className="text-sm font-semibold text-on-surface">
+          Date of birth<span aria-hidden="true" className="text-error"> *</span>
+        </span>
         <input
           type="date"
           value={draft.dob}
           max={todayMinus18Years()}
+          required
+          aria-required="true"
           onChange={(e) => patch({ dob: e.target.value })}
           className="mt-1.5 w-full rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
@@ -64,10 +72,14 @@ export function StepProfile({ draft, patch }: Props) {
       </label>
 
       <label className="block">
-        <span className="text-sm font-semibold text-on-surface">Country</span>
+        <span className="text-sm font-semibold text-on-surface">
+          Country<span aria-hidden="true" className="text-error"> *</span>
+        </span>
         <select
           value={draft.countryCode}
           onChange={(e) => patch({ countryCode: e.target.value })}
+          required
+          aria-required="true"
           className="mt-1.5 w-full appearance-none rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         >
           <option value="">Select your country…</option>
@@ -80,10 +92,14 @@ export function StepProfile({ draft, patch }: Props) {
       </label>
 
       <label className="block">
-        <span className="text-sm font-semibold text-on-surface">Timezone</span>
+        <span className="text-sm font-semibold text-on-surface">
+          Timezone<span aria-hidden="true" className="text-error"> *</span>
+        </span>
         <select
           value={draft.timezone}
           onChange={(e) => patch({ timezone: e.target.value })}
+          required
+          aria-required="true"
           className="mt-1.5 w-full appearance-none rounded-lg border border-outline-variant/70 bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         >
           <option value="">Select your timezone…</option>
