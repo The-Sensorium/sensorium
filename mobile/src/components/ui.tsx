@@ -77,27 +77,31 @@ export function AuthShell({
 
 export function Field({
   label,
+  required,
   style,
   error,
   ...props
 }: {
   label: string
+  required?: boolean
   error?: string | null
 } & TextInputProps) {
   const t = useTheme()
+  const a11yLabel = props.accessibilityLabel ?? (required ? `${label}, required` : label)
   return (
     <View style={{ marginBottom: spacing.gutter }}>
       <Text
         style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
       >
         {label}
+        {required ? <Text style={{ color: t.error }}> *</Text> : null}
       </Text>
       <TextInput
         autoCapitalize="none"
         autoCorrect={false}
         spellCheck={false}
         placeholderTextColor={t.onSurfaceVariant}
-        accessibilityLabel={props.accessibilityLabel ?? label}
+        accessibilityLabel={a11yLabel}
         style={[
           {
             backgroundColor: t.surfaceContainer,

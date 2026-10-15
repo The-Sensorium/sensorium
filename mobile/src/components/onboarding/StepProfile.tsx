@@ -23,6 +23,7 @@ function CountryField({ value, onChange }: { value: string; onChange: (code: str
     <View style={{ marginBottom: spacing.gutter }}>
       <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}>
         Country
+        <Text style={{ color: t.error }}> *</Text>
       </Text>
       <Pressable
         accessibilityRole="button"
@@ -109,6 +110,7 @@ function DobField({ value, onChange }: { value: string; onChange: (dob: string) 
     <View style={{ marginBottom: spacing.gutter }}>
       <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}>
         Date of birth
+        <Text style={{ color: t.error }}> *</Text>
       </Text>
       <Pressable
         accessibilityRole="button"
@@ -173,6 +175,7 @@ export function StepProfile({
       </Text>
       <Field
         label="Display name"
+        required
         value={draft.displayName}
         onChangeText={(displayName) => patch({ displayName })}
         maxLength={60}
@@ -189,6 +192,7 @@ export function StepProfile({
       <View style={{ marginBottom: spacing.gutter }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}>
           Timezone
+          <Text style={{ color: t.error }}> *</Text>
         </Text>
         <TimezonePicker value={draft.timezone} onChange={(timezone) => patch({ timezone })} />
         <Text style={{ fontSize: 12, color: t.onSurfaceVariant, marginTop: 6 }}>
