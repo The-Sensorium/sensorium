@@ -13,7 +13,7 @@
       "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera is used for video during cluster calls.",
-        "NSMicrophoneUsageDescription": "Microphone is used for audio during cluster calls.",
+        "NSMicrophoneUsageDescription": "Microphone is used for voice notes and audio during cluster calls.",
         "UIBackgroundModes": [
           "audio"
         ]
@@ -51,6 +51,13 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for voice notes and calls.",
+          "enableBackgroundPlayback": true
+        }
+      ],
       "expo-location",
       [
         "expo-notifications",

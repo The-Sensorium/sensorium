@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../app/auth-context'
-import type { Database } from '../lib/database.types'
+import type { Database, Json } from '../lib/database.types'
 import { requireSupabase, type MatchingMode } from '../lib/supabase'
 import { prepareImage } from '../lib/image'
 
@@ -109,6 +109,13 @@ export function useLoadEarlierMessages(clusterId: string | null) {
   })
 }
 
+export interface SendVoiceNote {
+  audioUrl: string
+  audioDurationSec: number
+  audioWaveform: number[] | null
+  audioMime: string
+}
+
 export function useSendMessage() {
   const queryClient = useQueryClient()
 
@@ -118,11 +125,13 @@ export function useSendMessage() {
       content,
       imageUrl,
       replyToId,
+      voice,
     }: {
       clusterId: string
       content: string | null
       imageUrl?: string
       replyToId?: string
+      voice?: SendVoiceNote
     }) => {
       const supabase = requireSupabase()
       const { data, error } = await supabase.rpc('send_message', {
@@ -130,6 +139,10 @@ export function useSendMessage() {
         p_content: content ?? undefined,
         p_image_url: imageUrl ?? undefined,
         p_reply_to_id: replyToId ?? undefined,
+        p_audio_url: voice?.audioUrl ?? undefined,
+        p_audio_duration_sec: voice?.audioDurationSec ?? undefined,
+        p_audio_waveform: (voice?.audioWaveform ?? undefined) as Json | undefined,
+        p_audio_mime: voice?.audioMime ?? undefined,
       })
       if (error) throw error
       return data as string
@@ -289,6 +302,8 @@ export function useDeleteMessage(clusterId: string | null) {
   return useMutation({
     mutationFn: async (messageId: string) => {
       const supabase = requireSupabase()
+      // The voice object (if any) is removed server-side inside
+      // delete_message; only the image path comes back for client cleanup.
       const { data: imageUrl, error } = await supabase.rpc('delete_message', {
         p_message_id: messageId,
       })
@@ -382,6 +397,87 @@ export function useChatImageUrl(path: string) {
     refetchInterval: CHAT_IMAGE_STALE_MS,
     refetchIntervalInBackground: false,
   })
+}
+
+const VOICE_TTL_SECONDS = 3600
+const VOICE_STALE_MS = VOICE_TTL_SECONDS * 1000 - 60_000
+
+/** Recover the storage path of a voice note from a stored value. */
+export function voiceNoteStoragePath(stored: string | null | undefined): string | null {
+  if (!stored) return null
+  if (stored.includes('..')) return null
+  const pathRe = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\.[a-z0-9]+$/
+  const sanitize = (raw: string | null): string | null => {
+    if (!raw) return null
+    if (raw.includes('..')) return null
+    if (!pathRe.test(raw)) return null
+    return raw
+  }
+  const marker = '/voice-notes/'
+  const idx = stored.indexOf(marker)
+  if (idx !== -1) {
+    const raw = stored.slice(idx + marker.length).split('?')[0].split('#')[0]
+    try {
+      return sanitize(decodeURIComponent(raw))
+    } catch {
+      return sanitize(raw)
+    }
+  }
+  return sanitize(stored)
+}
+
+/** Delete a voice-note object (member scoped by the 0200 storage policy). */
+export async function deleteVoiceNote(stored: string | null | undefined): Promise<void> {
+  const path = voiceNoteStoragePath(stored)
+  if (!path) return
+  const supabase = requireSupabase()
+  const { error } = await supabase.storage.from('voice-notes').remove([path])
+  if (error) throw error
+}
+
+/**
+ * A short-lived signed URL for a voice note, refreshed before it expires.
+ * Pass `{ refetch: false }` while playing: rotating the URL rebuilds the
+ * audio element and drops the playback position.
+ */
+export function useVoiceNoteUrl(path: string | null | undefined, opts?: { refetch?: boolean }) {
+  const refetch = opts?.refetch ?? true
+  return useQuery({
+    queryKey: ['voice-note-url', path ?? 'none'],
+    enabled: Boolean(path),
+    queryFn: async () => {
+      if (!path) throw new Error('No voice note')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase.storage
+        .from('voice-notes')
+        .createSignedUrl(path, VOICE_TTL_SECONDS)
+      if (error) throw error
+      if (!data?.signedUrl) throw new Error('No signed URL')
+      return data.signedUrl
+    },
+    staleTime: VOICE_STALE_MS,
+    gcTime: VOICE_TTL_SECONDS * 1000,
+    refetchInterval: refetch ? VOICE_STALE_MS : false,
+    refetchIntervalInBackground: false,
+  })
+}
+
+/** Upload a recorded voice blob; returns the bare storage path. */
+export async function uploadVoiceNote(
+  clusterId: string,
+  blob: Blob,
+  mime: string,
+  ext: string,
+): Promise<string> {
+  const supabase = requireSupabase()
+  const safeExt = /^[a-z0-9]+$/.test(ext) ? ext : 'm4a'
+  const path = `${clusterId}/${crypto.randomUUID()}.${safeExt}`
+  const { error } = await supabase.storage.from('voice-notes').upload(path, blob, {
+    contentType: mime,
+    upsert: false,
+  })
+  if (error) throw error
+  return path
 }
 
 /** Upload an image to the cluster's chat-images bucket; returns the storage path. */

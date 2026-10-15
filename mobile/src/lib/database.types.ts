@@ -915,6 +915,10 @@ export type Database = {
       }
       messages: {
         Row: {
+          audio_duration_sec: number | null
+          audio_mime: string | null
+          audio_url: string | null
+          audio_waveform: Json | null
           author_id: string
           cluster_id: string
           content: string | null
@@ -927,6 +931,10 @@ export type Database = {
           reply_to_id: string | null
         }
         Insert: {
+          audio_duration_sec?: number | null
+          audio_mime?: string | null
+          audio_url?: string | null
+          audio_waveform?: Json | null
           author_id: string
           cluster_id: string
           content?: string | null
@@ -939,6 +947,10 @@ export type Database = {
           reply_to_id?: string | null
         }
         Update: {
+          audio_duration_sec?: number | null
+          audio_mime?: string | null
+          audio_url?: string | null
+          audio_waveform?: Json | null
           author_id?: string
           cluster_id?: string
           content?: string | null
@@ -3612,6 +3624,10 @@ export type Database = {
       }
       send_message: {
         Args: {
+          p_audio_duration_sec?: number
+          p_audio_mime?: string
+          p_audio_url?: string
+          p_audio_waveform?: Json
           p_cluster_id: string
           p_content?: string
           p_image_url?: string

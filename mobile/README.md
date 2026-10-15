@@ -26,7 +26,7 @@ and the Android APK CI workflows.
 | Calls | LiveKit (`@livekit/react-native` + `@livekit/react-native-webrtc`); WebRTC globals registered in `src/lib/livekit.ts`; tokens minted by the `create-call-token` Edge Function |
 | Push | `expo-notifications` → Expo Push → FCM on Android |
 | GIFs | KLIPY (`EXPO_PUBLIC_KLIPY_*`) |
-| Media & location | `expo-image-picker` / `expo-image-manipulator`, `expo-camera`, `expo-location` |
+| Media & location | `expo-image-picker` / `expo-image-manipulator`, `expo-camera`, `expo-location`, `expo-audio` (voice notes) |
 | Styling | React Native `StyleSheet` with tokens from `src/lib/theme-tokens.ts` (ported from [`../docs/DESIGN.md`](../docs/DESIGN.md)) |
 | Builds | EAS (`eas.json`: `development`, `preview`, `production` APK profiles) and the Android APK CI workflow |
 
@@ -184,6 +184,16 @@ Everything else is hand-written for mobile. Notable exceptions to keep an eye on
 - `src/features/realtime.ts` is **pinned** (the mobile copy uses a ref-counted
   `useClusterChannel` for tab-kept-mounted screens). If the web copy changes,
   reconcile it by hand.
+- `src/features/voice-notes.ts` is a mobile-maintained fork (the send hook takes
+  a file uri; Blob is unusable with Supabase Storage on React Native) and
+  `scripts/sync-db-types.mjs` swaps the web Blob-based `uploadVoiceNote` for
+  the ArrayBuffer path (`src/lib/upload-audio.ts`) in the generated
+  `src/features/cluster.ts`. Everything else syncs verbatim.
+- Voice-note playback is deliberately simple: play/pause plus an elapsed/total
+  timer, driven by the `expo-audio` player. No waveform is
+  rendered and no third-party waveform library is used: the RN options are
+  either unmaintained or native modules that would break Expo Go. Peaks are
+  still collected at record time and stored server-side.
 - `src/features/cluster-calls.ts` and `src/features/avatars.ts` are
   mobile-maintained forks: the web app has diverged copies at the same paths
   that are intentionally not synced. `admin-moderation.ts`, `admin-accounts.ts`,

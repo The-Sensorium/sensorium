@@ -23,9 +23,12 @@ function short(path) {
 }
 
 planCopy(from('database.types.ts'), to('database.types.ts'))
-for (const f of ['countries.ts', 'constants.ts', 'error.ts', 'utils.ts', 'query-retry.ts', 'timezones.ts', 'links.ts', 'profile-missing.ts']) {
+for (const f of ['countries.ts', 'constants.ts', 'error.ts', 'utils.ts', 'query-retry.ts', 'timezones.ts', 'links.ts', 'profile-missing.ts', 'audio-format.ts', 'audio-waveform.ts']) {
   planCopy(from(f), to(f))
 }
+// NOTE: mobile/src/features/voice-notes.ts is a mobile-maintained fork: the
+// send hook takes a file uri (Blob is unusable with Supabase Storage on React
+// Native). See the pin check below.
 for (const f of ['matching.ts', 'discovery.ts', 'introductions.ts', 'votes.ts', 'signals.ts', 'moderation.ts', 'mentions.ts', 'access.ts', 'appeals.ts', 'created-clusters.ts', 'meetups.ts']) {
   const src = readFileSync(join(root, 'src', 'features', f), 'utf8').replaceAll(
     "from '../app/auth-context'",
@@ -109,7 +112,7 @@ const rnUploads = [
   },
 ]
 for (const { file, anchor, replacement } of rnUploads) {
-  const web = readFileSync(join(root, 'src', 'features', file), 'utf8')
+  let web = readFileSync(join(root, 'src', 'features', file), 'utf8')
     .replaceAll("from '../app/auth-context'", "from '../auth-context'")
     .replace("import { prepareImage } from '../lib/image'", '')
     .replace(
@@ -118,6 +121,64 @@ for (const { file, anchor, replacement } of rnUploads) {
     )
   if (!web.includes(anchor) || web.includes('prepareImage')) {
     throw new Error('upload transform failed for ' + file)
+  }
+  if (file === 'cluster.ts') {
+    // React Native cannot upload Blob/File/FormData to Supabase Storage, so
+    // the web Blob-based voice upload is swapped for the ArrayBuffer path.
+    // Everything else in the voice block syncs verbatim.
+    // Working copies may be CRLF: normalize for matching, restore after.
+    const eol = web.includes('\r\n') ? '\r\n' : '\n'
+    web = web.replaceAll('\r\n', '\n')
+    const voiceUploadAnchor = [
+      '/** Upload a recorded voice blob; returns the bare storage path. */',
+      'export async function uploadVoiceNote(',
+      '  clusterId: string,',
+      '  blob: Blob,',
+      '  mime: string,',
+      '  ext: string,',
+      '): Promise<string> {',
+      '  const supabase = requireSupabase()',
+      "  const safeExt = /^[a-z0-9]+$/.test(ext) ? ext : 'm4a'",
+      '  const path = `${clusterId}/${crypto.randomUUID()}.${safeExt}`',
+      "  const { error } = await supabase.storage.from('voice-notes').upload(path, blob, {",
+      '    contentType: mime,',
+      '    upsert: false,',
+      '  })',
+      '  if (error) throw error',
+      '  return path',
+      '}',
+    ].join('\n')
+    // RN-only imports live at the top of the file, not at the injection
+    // site, keeping the header convention intact.
+    const voiceHeaderImports = [
+      "import { newStorageId, uploadAudioBytes } from '../lib/upload-audio'",
+      "import { extForVoiceMime } from '../lib/audio-format'",
+      '',
+    ].join('\n')
+    if (web.includes('../lib/upload-audio') || web.startsWith('import { newStorageId')) {
+      throw new Error('voice import injection failed for cluster.ts: unexpected existing import')
+    }
+    web = voiceHeaderImports + web
+    const voiceUploadReplacement = [
+      '/** Upload a recorded voice file; returns the bare storage path. */',
+      'export async function uploadVoiceNote(',
+      '  clusterId: string,',
+      '  uri: string,',
+      '  mime: string,',
+      '): Promise<string> {',
+      '  const path = `${clusterId}/${newStorageId()}.${extForVoiceMime(mime)}`',
+      "  await uploadAudioBytes('voice-notes', path, uri, mime)",
+      '  return path',
+      '}',
+    ].join('\n')
+    if (!web.includes(voiceUploadAnchor)) {
+      throw new Error('voice upload transform failed for cluster.ts: uploadVoiceNote anchors changed')
+    }
+    web = web.replace(voiceUploadAnchor, voiceUploadReplacement)
+    if (!web.includes("uploadAudioBytes('voice-notes'")) {
+      throw new Error('voice upload injection failed for cluster.ts')
+    }
+    if (eol === '\r\n') web = web.replaceAll('\n', '\r\n')
   }
   planWrite(join(root, 'mobile', 'src', 'features', file), web)
 }
@@ -128,6 +189,16 @@ for (const { file, anchor, replacement } of rnUploads) {
   const pinned = readFileSync(join(root, 'mobile', 'src', 'features', 'realtime.ts'), 'utf8')
   if (!pinned.includes('clusterChannelEntries')) {
     throw new Error('realtime.ts pin lost: ref-count registry missing')
+  }
+}
+// voice-notes.ts is a mobile-maintained fork: the send hook takes a file uri
+// (Blob is unusable with Supabase Storage on React Native) while the web copy
+// takes a Blob. Pure helpers are shared by convention; reconcile by hand if
+// the web copy changes.
+{
+  const fork = readFileSync(join(root, 'mobile', 'src', 'features', 'voice-notes.ts'), 'utf8')
+  if (!fork.includes('MOBILE_VOICE_NOTES_FORK')) {
+    throw new Error('voice-notes.ts fork lost: RN upload path missing')
   }
 }
 {
