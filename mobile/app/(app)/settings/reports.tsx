@@ -1,8 +1,8 @@
 import { Pressable, Text, View } from 'react-native'
-import { Link, router } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
 import { REPORT_REASONS, useMyReports } from '../../../src/features/moderation'
 import { timeAgo } from '../../../src/features/notifications'
+import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
@@ -25,19 +25,20 @@ function outcomeFor(status: string): string | null {
 export default function MyReportsScreen() {
   const t = useTheme()
   const reports = useMyReports()
+  const goBack = useClusterBack('/(app)/settings')
 
   return (
     <Screen>
       <Pressable
-        onPress={() => router.back()}
+        onPress={goBack}
         accessibilityRole="button"
-        accessibilityLabel="Back to settings"
+        accessibilityLabel="Back"
         hitSlop={12}
         style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 12, minHeight: 48, paddingRight: 16, marginBottom: 12 }}
       >
         <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
-          Back to settings
+          Back
         </Text>
       </Pressable>
 
@@ -109,11 +110,15 @@ export default function MyReportsScreen() {
         })
       )}
       <View style={{ height: 8 }} />
-      <Link href="/(app)/settings" asChild>
-        <Pressable hitSlop={8} style={{ alignItems: 'center', padding: 12, minHeight: 48, justifyContent: 'center' }}>
-          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back to settings</Text>
-        </Pressable>
-      </Link>
+      <Pressable
+        onPress={goBack}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={8}
+        style={{ alignItems: 'center', padding: 12, minHeight: 48, justifyContent: 'center' }}
+      >
+        <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+      </Pressable>
     </Screen>
   )
 }

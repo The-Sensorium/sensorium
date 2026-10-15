@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
-import { ActivityIndicator, Text, View } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, BackHandler, Text, View } from 'react-native'
+import { useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { goHome, goLogin } from '../../src/lib/auth-navigation'
@@ -44,6 +45,26 @@ export default function OnboardingScreen() {
   }))
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  // Onboarding is a stepped form with no prior route (reached via replace):
+  // system back steps back instead of finishing to the phone home screen.
+  // On the first step allow the system default so an accidental press can
+  // still leave; reopening lands back here through the onboarding gate.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (step <= 1) return false
+        setError(null)
+        if (step === 5 && !draft.selectedModes.includes('local')) {
+          setStep(3)
+        } else {
+          setStep((s) => Math.max(s - 1, 1))
+        }
+        return true
+      })
+      return () => sub.remove()
+    }, [step, draft.selectedModes]),
+  )
 
   // Fail closed like the web RequireOnboarded guard: a transient profile
   // fetch error must keep an onboarded user off this form (see home-gating tests).

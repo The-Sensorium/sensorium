@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { Link, router, useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft, Check, Clock, UserPlus } from 'lucide-react-native'
 import { Avatar } from '../../../src/components/Avatar'
 import { toErrorMessage } from '../../../src/lib/error'
@@ -8,6 +8,7 @@ import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../src/lib/theme-choice'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
+import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { Modal } from '../../../src/components/Modal'
 import { useCreatedInviteDetail } from '../../../src/features/created-clusters'
 import { useAcceptInvitation, useDeclineInvitation } from '../../../src/features/votes'
@@ -23,6 +24,7 @@ export default function InviteDetailScreen() {
   const accept = useAcceptInvitation()
   const decline = useDeclineInvitation()
   const [confirmingDecline, setConfirmingDecline] = useState(false)
+  const goBack = useClusterBack('/(app)/home')
 
   const info = detail.data
   const members = ((info?.members ?? []) as DetailMember[]).filter((m) => m && m.id)
@@ -66,15 +68,16 @@ export default function InviteDetailScreen() {
   if (!info) {
     return (
       <Screen>
-        <Link href="/(app)/home" asChild>
-          <Pressable
-            hitSlop={8}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48 }}
-          >
-            <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Home</Text>
-          </Pressable>
-        </Link>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48 }}
+        >
+          <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card plain>
           <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
             This invitation isn’t available. It may have been answered or withdrawn.
@@ -88,15 +91,16 @@ export default function InviteDetailScreen() {
 
   return (
     <Screen>
-      <Link href="/(app)/home" asChild>
-        <Pressable
-          hitSlop={8}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48 }}
-        >
-          <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Home</Text>
-        </Pressable>
-      </Link>
+      <Pressable
+        onPress={goBack}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={8}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48 }}
+      >
+        <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
+        <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>Back</Text>
+      </Pressable>
 
       <View style={{ alignItems: 'center', marginBottom: 16 }}>
         <View
