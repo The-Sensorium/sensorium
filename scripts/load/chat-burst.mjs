@@ -11,8 +11,8 @@
 //     LOAD_CONFIRM=staging. Anything else aborts.
 //   - Creates users as load-<run>-<i>@load.test and deletes them + the
 //     clusters afterwards (skip with LOAD_KEEP=1).
-//   - Stays under the 0138 rate limits: 60 messages/hour/user. Default is
-//     5 messages per user, well under budget.
+//   - Stays under the send_message rate limit: 120 messages/hour/user.
+//     Default is 5 messages per user, well under budget.
 //
 // Usage:
 //   node scripts/load/chat-burst.mjs
@@ -96,8 +96,8 @@ async function main() {
   console.log(
     `[load] run=${RUN} clusters=${CLUSTERS} users=${totalUsers} msgs/user=${MSGS_PER_USER} total_msgs=${totalMsgs} concurrency=${CONCURRENCY} push_tokens=${PUSH_TOKENS}`,
   )
-  if (MSGS_PER_USER > 50) {
-    throw new Error('MSGS_PER_USER too high: keep under the 60/hour rate limit.')
+  if (MSGS_PER_USER > 100) {
+    throw new Error('MSGS_PER_USER too high: keep under the 120/hour rate limit.')
   }
 
   const { url, anonKey, serviceRole, remote } = resolveConfig()
