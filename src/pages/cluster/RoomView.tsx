@@ -39,6 +39,7 @@ import { MutedHideBar, MutedPlaceholder } from '../../components/MutedPlaceholde
 import { rateLimitMessage, toErrorMessage } from '../../lib/error'
 import { Composer } from './room/Composer'
 import { type Gif } from '../../features/gifs'
+import { replyPreviewForMessage, useSendVoiceNote, type VoiceDraft } from '../../features/voice-notes'
 import { MessageItem } from './room/MessageItem'
 import { MessageInfoModal } from './room/MessageInfoModal'
 import { notSeenByMembers, seenByMembers } from './room/seen-by'
@@ -91,6 +92,7 @@ export function RoomView() {
   const votes = useClusterVotes(clusterId)
   const members = useClusterMembers(clusterId)
   const send = useSendMessage()
+  const sendVoice = useSendVoiceNote()
   const toggleReaction = useToggleReaction(clusterId)
   const editMessage = useEditMessage(clusterId)
   const deleteMessage = useDeleteMessage(clusterId)
@@ -190,6 +192,8 @@ export function RoomView() {
           author_id: string
           content: string | null
           image_url: string | null
+          audio_url?: string | null
+          audio_duration_sec?: number | null
           deleted_at: string | null
         }
       | null
@@ -203,11 +207,12 @@ export function RoomView() {
     // display names and whitespace-only content, so normalize them here.
     const rawName = memberMap.get(target.author_id)?.display_name
     const authorName = rawName && rawName.trim() ? rawName : 'Member'
-    const rawPreview = target.content?.startsWith('gif:')
-      ? 'GIF'
-      : target.image_url
-        ? 'Image'
-        : (target.content ?? '')
+    const rawPreview = replyPreviewForMessage({
+      content: target.content,
+      image_url: target.image_url,
+      audio_url: target.audio_url ?? null,
+      audio_duration_sec: target.audio_duration_sec ?? null,
+    })
     const preview = rawPreview.trim() ? rawPreview : 'message'
     return { authorName, preview }
   }
@@ -558,6 +563,12 @@ export function RoomView() {
     setReplyTo(null)
   }
 
+  async function persistSendVoice(draft: VoiceDraft) {
+    if (!clusterId) return
+    await sendVoice.mutateAsync({ clusterId, draft, replyToId: replyTo?.id ?? undefined })
+    setReplyTo(null)
+  }
+
   async function handleToggleReaction(messageId: string, emoji: string) {
     setError(null)
     try {
@@ -567,7 +578,8 @@ export function RoomView() {
     }
   }
 
-  function startEdit(m: { id: string; content: string | null }) {
+  function startEdit(m: { id: string; content: string | null; audio_url?: string | null }) {
+    if (m.audio_url) return
     setMenuFor(null)
     setEditingId(m.id)
     setEditDraft(m.content ?? '')
@@ -1171,6 +1183,7 @@ export function RoomView() {
         onSend={persistSend}
         onSendImage={persistSendImage}
         onSendGif={persistSendGif}
+        onSendVoice={persistSendVoice}
         onOpenSignal={() => setSignalOpen(true)}
         onStartCall={() => void handleStartCall()}
         callActive={Boolean(activeCall.data)}

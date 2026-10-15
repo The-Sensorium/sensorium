@@ -38,6 +38,7 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
     onSend: vi.fn().mockResolvedValue(undefined),
     onSendImage: vi.fn().mockResolvedValue(undefined),
     onSendGif: vi.fn().mockResolvedValue(undefined),
+    onSendVoice: vi.fn().mockResolvedValue(undefined),
     onCancelReply: vi.fn(),
     onOpenSignal: vi.fn(),
     onStartCall: vi.fn(),
@@ -56,6 +57,7 @@ function setup(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
       onSend={props.onSend}
       onSendImage={props.onSendImage}
       onSendGif={props.onSendGif}
+      onSendVoice={props.onSendVoice}
       onCancelReply={props.onCancelReply}
       onOpenSignal={props.onOpenSignal}
       onStartCall={props.onStartCall}

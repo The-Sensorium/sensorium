@@ -234,11 +234,11 @@ Supported:
 - Images
 - GIFs
 - Emoji Reactions
+- Voice Notes (up to 2 minutes, recorded in the room with preview before send, played back with a simple player showing elapsed and total time)
 - Audio / Video Calls (cluster-scoped, started from the room, powered by LiveKit)
 
 Not Supported:
 - Direct Messages
-- Voice Notes
 
 Open question: with a user potentially in multiple clusters, should there be a unified inbox view across clusters, or fully separate spaces?
 

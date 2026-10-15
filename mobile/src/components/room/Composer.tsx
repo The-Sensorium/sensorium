@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { Check, CornerUpLeft, ImagePlus, Megaphone, Pencil, Phone, Plus, Send, X } from 'lucide-react-native'
+import { Check, CornerUpLeft, ImagePlus, Megaphone, Mic, Pencil, Phone, Plus, Send, X } from 'lucide-react-native'
+import { VoiceRecorder, type VoiceRecording } from './VoiceRecorder'
 import { CollapsibleChrome } from '../CollapsibleChrome'
 import { MentionSuggestions, type MentionOption } from './MentionSuggestions'
 import {
@@ -43,6 +44,7 @@ export function Composer({
   onSaveEdit,
   onSendImage,
   onSendGif,
+  onSendVoice,
   onOpenSignal,
   onStartCall,
   callActive,
@@ -78,6 +80,7 @@ export function Composer({
   onSaveEdit(content: string): void
   onSendImage(image: PickedImage, caption: string | null): Promise<void>
   onSendGif(gif: Gif): Promise<void>
+  onSendVoice(recording: VoiceRecording): Promise<void>
   onOpenSignal(): void
   onStartCall(): void
   callActive: boolean
@@ -94,6 +97,8 @@ export function Composer({
   const [caret, setCaret] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [stagedImage, setStagedImage] = useState<PickedImage | null>(null)
+  const [voiceOpen, setVoiceOpen] = useState(false)
+  const [voiceSending, setVoiceSending] = useState(false)
   const inputRef = useRef<TextInput>(null)
   const focusedEditId = useRef<string | null>(null)
 
@@ -215,6 +220,21 @@ export function Composer({
       onError(toErrorMessage(e, 'Could not send your message. Try again.'))
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function handleSendVoice(recording: VoiceRecording) {
+    onError(null)
+    setVoiceSending(true)
+    try {
+      await onSendVoice(recording)
+      setVoiceOpen(false)
+      lightHaptic()
+    } catch (e) {
+      errorHaptic()
+      onError(toErrorMessage(e, 'Could not send that voice note. Try again.'))
+    } finally {
+      setVoiceSending(false)
     }
   }
 
@@ -359,6 +379,24 @@ export function Composer({
           <GifPicker pending={pending} onSelect={(gif) => void handleSendGif(gif)} />
         </View>
       ) : null}
+      {editing ? null : voiceOpen ? (
+        <View
+          style={{
+            backgroundColor: t.surfaceContainer,
+            borderRadius: radii.md,
+            paddingHorizontal: 12,
+            paddingVertical: 4,
+            marginBottom: 8,
+          }}
+        >
+          <VoiceRecorder
+            sending={voiceSending}
+            onSend={handleSendVoice}
+            onCancel={() => setVoiceOpen(false)}
+            onError={onError}
+          />
+        </View>
+      ) : null}
       {menuOpen ? (
         <View
           style={{
@@ -391,8 +429,19 @@ export function Composer({
               <Phone size={16} color={t.onSurface} strokeWidth={1.5} />
             </MenuRow>
           ) : null}
+          <MenuRow
+            label="Record Audio"
+            onPress={() => {
+              onMenuOpenChange?.(false)
+              onError(null)
+              setVoiceOpen(true)
+            }}
+          >
+            <Mic size={16} color={t.onSurface} strokeWidth={1.5} />
+          </MenuRow>
         </View>
       ) : null}
+      {!voiceOpen ? (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {mentionOpen ? (
           <MentionSuggestions
@@ -535,6 +584,7 @@ export function Composer({
           )}
         </Pressable>
       </View>
+      ) : null}
     </View>
   )
 }

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import TextareaAutosize from 'react-textarea-autosize'
-import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Phone, Plus, Send, X } from 'lucide-react'
+import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Megaphone, Mic, Phone, Plus, Send, X } from 'lucide-react'
+import { VoiceRecorder } from './VoiceRecorder'
+import type { VoiceDraft } from '../../../features/voice-notes'
 import { cn } from '../../../lib/utils'
 import { MentionListbox } from '../../../components/MentionListbox'
 import {
@@ -28,6 +30,7 @@ export function Composer({
   onSend,
   onSendImage,
   onSendGif,
+  onSendVoice,
   onOpenSignal,
   onStartCall,
   callActive,
@@ -43,6 +46,7 @@ export function Composer({
   onSend(content: string): Promise<void>
   onSendImage(file: File): Promise<void>
   onSendGif(gif: Gif): Promise<void>
+  onSendVoice(draft: VoiceDraft): Promise<void>
   onOpenSignal(): void
   onStartCall(): void
   callActive: boolean
@@ -51,6 +55,8 @@ export function Composer({
   const [draft, setDraft] = useState('')
   const [gifOpen, setGifOpen] = useState(false)
   const [composerOpen, setComposerOpen] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
+  const [voiceSending, setVoiceSending] = useState(false)
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
   const [mentionIndex, setMentionIndex] = useState(0)
   const [uploading, setUploading] = useState(false)
@@ -322,13 +328,47 @@ export function Composer({
                   <Phone className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Start a call
                 </button>
               )}
+              <button
+                type="button"
+                role="menuitem"
+                data-e2e="voice-record"
+                disabled={pending || uploading}
+                onClick={() => {
+                  setComposerOpen(false)
+                  onError(null)
+                  setVoiceOpen(true)
+                }}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2.5 sm:min-h-0 sm:py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              >
+                <Mic className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Record Audio
+              </button>
             </div>
           )}
         </div>
         <label htmlFor="room-input" className="sr-only">
           Message
         </label>
-        <div className="relative min-w-0 flex-1">
+        {voiceOpen && (
+          <div className="min-w-0 flex-1 rounded-xl border border-outline-variant/70 bg-surface-container px-3 py-1.5">
+            <VoiceRecorder
+              sending={voiceSending}
+              onCancel={() => setVoiceOpen(false)}
+              onError={onError}
+              onSend={async (voiceDraft) => {
+                setVoiceSending(true)
+                try {
+                  await onSendVoice(voiceDraft)
+                  setVoiceOpen(false)
+                } catch (e) {
+                  onError(rateLimitMessage(e, 'Could not send that voice note. Try again.'))
+                } finally {
+                  setVoiceSending(false)
+                }
+              }}
+            />
+          </div>
+        )}
+        <div className={cn('relative min-w-0 flex-1', voiceOpen && 'hidden')}>
           {mention && mentionTotal > 0 && (
             <MentionListbox
               candidates={mentionCandidates}
@@ -366,6 +406,7 @@ export function Composer({
             className="min-w-0 w-full flex-1 resize-none overflow-hidden rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm sm:leading-5"
           />
         </div>
+        {!voiceOpen && (
         <button
           type="submit"
           disabled={!draft.trim() || pending || uploading}
@@ -378,6 +419,7 @@ export function Composer({
             <Send className="h-5 w-5" strokeWidth={1.5} aria-hidden />
           )}
         </button>
+        )}
       </form>
     </>
   )
