@@ -76,6 +76,7 @@ import { ReportModal } from '../../../../src/components/ReportModal'
 import { Modal } from '../../../../src/components/Modal'
 import { PrimaryButton } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
+import { goBackWithFallback } from '../../../../src/lib/use-cluster-back'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface, useClusterOnAccent, useClusterAccentText } from '../../../../src/lib/cluster-theme'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -213,8 +214,9 @@ function RoomScreenContent() {
       }
     }, [clusterId]),
   )
-  // Hardware Back closes open composer panels first instead of leaving the
-  // room with a panel still applied.
+  // Hardware Back closes open composer panels first, then walks the visit
+  // trail so system back mirrors in-app back instead of forcing home. Only a
+  // cold start with no history falls back to home.
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -227,7 +229,7 @@ function RoomScreenContent() {
           setComposerInputFocused(false)
           return true
         }
-        router.replace('/(app)/home')
+        goBackWithFallback('/(app)/home')
         return true
       })
       return () => sub.remove()

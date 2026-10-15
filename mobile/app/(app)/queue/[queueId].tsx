@@ -10,6 +10,7 @@ import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
 import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
+import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { QueueProgress } from '../../../src/components/QueueCard'
 import { WhatsNextSteps } from '../../../src/components/WhatsNextSteps'
 
@@ -39,6 +40,9 @@ export default function QueueScreen() {
       setConfirming(false)
       setLeaveError(null)
     }, []),
+  )
+  const goBack = useClusterBack(
+    mode ? { pathname: '/mode/[modeId]', params: { modeId: mode } } : '/(app)/home',
   )
 
   if (!mode) {
@@ -86,12 +90,6 @@ export default function QueueScreen() {
   const displayKey =
     current.mode === 'open_mix' ? 'Open pool' : current.mode === 'local' && statusLabel ? statusLabel : current.queue_key
 
-  async function goBack() {
-    if (router.canGoBack()) router.back()
-    else if (mode) router.replace({ pathname: '/mode/[modeId]', params: { modeId: mode } })
-    else router.replace('/(app)/home')
-  }
-
   async function handleLeave() {
     setLeaveError(null)
     try {
@@ -106,7 +104,7 @@ export default function QueueScreen() {
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <ErrorText message={pull.error} />
       <Pressable
-        onPress={() => void goBack()}
+        onPress={goBack}
         accessibilityRole="button"
         accessibilityLabel="Back"
         hitSlop={12}
