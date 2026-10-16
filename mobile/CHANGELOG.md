@@ -18,6 +18,7 @@ release) for the release ritual.
 - You now get notified when someone replies to a Signal you raised, and when a Signal you helped with is marked in progress or resolved.
 - You can now @-mention members in signal replies, with suggestions as you type and tappable names, just like in chat.
 - You can now send voice notes in cluster chat: record up to 2 minutes, preview before sending, and play back with a simple player showing the time.
+- You can now copy a chat message: long-press the message and tap Copy.
 - Required onboarding fields are now marked with a red asterisk.
 - The email verification screen now mentions checking your spam or junk folder if the confirmation email is missing.
 

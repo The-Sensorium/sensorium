@@ -19,6 +19,7 @@ import {
 import { useSharedValue, withTiming } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import * as Clipboard from 'expo-clipboard'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
 import { useAuth } from '../../../../src/auth-context'
@@ -421,6 +422,20 @@ function RoomScreenContent() {
     setReplyTo(m)
   }
 
+  async function handleCopyMessage() {
+    if (!menuCopyText) return
+    const text = menuCopyText
+    setMenuFor(null)
+    setError(null)
+    try {
+      await Clipboard.setStringAsync(text)
+      successHaptic()
+    } catch (e) {
+      errorHaptic()
+      setError(toErrorMessage(e, 'Could not copy that message.'))
+    }
+  }
+
   const clearJumpError = useCallback(() => {
     const failure = jumpFailureRef.current
     jumpFailureRef.current = null
@@ -570,6 +585,11 @@ function RoomScreenContent() {
   const menuCanEdit = menuMessage
     ? !(menuMessage.content?.startsWith('gif:') ?? false) && !menuMessage.audio_url
     : false
+  // Copy mirrors the edit rule but only needs non-blank text: image captions
+  // stay copyable, `gif:…` URLs and voice notes never show Copy.
+  const menuCopyText = menuMessage?.audio_url || menuMessage?.content?.startsWith('gif:')
+    ? null
+    : (menuMessage?.content?.trim() ? menuMessage.content : null)
   const editingMessage = useMemo(
     () => (editingId ? (messages.data ?? []).find((m) => m.id === editingId) ?? null : null),
     [editingId, messages.data],
@@ -1535,10 +1555,12 @@ function RoomScreenContent() {
           open={menuMessage !== null}
           mine={menuMine}
           canEdit={menuCanEdit}
+          canCopy={menuCopyText !== null}
           myReactionKeys={myReactionKeys}
           messageId={menuMessage?.id ?? ''}
           onClose={() => setMenuFor(null)}
           onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
+          onCopy={() => void handleCopyMessage()}
           onReply={() => {
             if (menuMessage) startReply(menuMessage)
           }}
