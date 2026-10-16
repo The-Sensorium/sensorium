@@ -314,6 +314,70 @@ describe('push outbox fan-out', () => {
     }
   })
 
+  it('inserts per token when a sibling row is already claimed', async () => {
+    await setBundling(true)
+    const a = await member('push-ptok-a')
+    const b = await member('push-ptok-b')
+    await admin.from('profiles').update({ display_name: 'Ptok Sender' }).eq('id', a.id)
+    await withToken(b.id, '-1')
+    await withToken(b.id, '-2')
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'one' })
+
+    // One token's row is already in flight while the next message lands.
+    const { data: claimed } = await admin.rpc('claim_push_notifications', { p_limit: 1 })
+    expect(claimed).toHaveLength(1)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'two' })
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    // Claimed row frozen at line 1; the other token merged and re-inserted,
+    // both carrying the converged lines. The old per-user guard created
+    // nothing here and left claimed tokens frozen without line 2.
+    expect(rows).toHaveLength(3)
+    const queued = rows.filter((r) => r.status === 'queued')
+    expect(queued).toHaveLength(2)
+    for (const row of queued) {
+      expect(row.data).toMatchObject({
+        count: 2,
+        lines: ['Ptok Sender: one', 'Ptok Sender: two'],
+      })
+    }
+    expect(rows.filter((r) => r.status === 'sending')).toHaveLength(1)
+  })
+
+  it('inherits the longest burst row, not the latest-updated one', async () => {
+    await setBundling(true)
+    const a = await member('push-long-a')
+    const b = await member('push-long-b')
+    await admin.from('profiles').update({ display_name: 'Long Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'one' })
+    const first = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    await admin.rpc('mark_push_notification', { p_id: first[0]!.id, p_status: 'sent' })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'two' })
+    const second = (await outbox(admin)).filter((r) => r.user_id === b.id && r.status === 'queued')
+    expect(second).toHaveLength(1)
+    await admin.rpc('mark_push_notification', { p_id: second[0]!.id, p_status: 'sent' })
+
+    // Touch the shorter row so latest-updated points at it. Inheriting by
+    // recency alone would continue from line 1 and drop line 2.
+    await admin
+      .from('push_outbox')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', first[0]!.id)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'three' })
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id && r.status === 'queued')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.data).toMatchObject({
+      count: 3,
+      lines: ['Long Sender: one', 'Long Sender: two', 'Long Sender: three'],
+    })
+  })
+
   it('stays loud while bundling is disabled', async () => {
     await setBundling(false)
     try {
