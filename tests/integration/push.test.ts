@@ -111,8 +111,8 @@ describe('push outbox fan-out', () => {
     const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
-    expect(rows[0]!.title).toContain('Plain Sender')
-    expect(rows[0]!.body).toBe('hello plain')
+    expect(rows[0]!.title).toBe('Test Cluster')
+    expect(rows[0]!.body).toBe('Plain Sender: hello plain')
     expect(rows[0]!.data).toMatchObject({ v: 1, kind: 'message', clusterId })
     const { data: msgs } = await admin.from('messages').select('id').eq('cluster_id', clusterId)
     expect(rows[0]!.data).toMatchObject({ messageId: msgs![0]!.id })
@@ -173,7 +173,8 @@ describe('push outbox fan-out', () => {
 
     const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
     expect(rows).toHaveLength(1)
-    expect(rows[0]!.title).toBe('Name Sender in Aurora Check')
+    expect(rows[0]!.title).toBe('Aurora Check')
+    expect(rows[0]!.body).toBe('Name Sender: which cluster is this')
   })
 
   it('merges rapid follow-ups into one queued burst row', async () => {
@@ -190,8 +191,41 @@ describe('push outbox fan-out', () => {
     const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
-    expect(rows[0]!.body).toBe('second burst')
-    expect(rows[0]!.data).toMatchObject({ count: 2, clusterId })
+    expect(rows[0]!.title).toBe('Test Cluster · 2 new messages')
+    expect(rows[0]!.body).toBe('Burst Sender: first burst\nBurst Sender: second burst')
+    expect(rows[0]!.data).toMatchObject({
+      count: 2,
+      clusterId,
+      lines: ['Burst Sender: first burst', 'Burst Sender: second burst'],
+    })
+  })
+
+  it('caps accumulated lines at the last 5 with an exact count', async () => {
+    await setBundling(true)
+    const a = await member('push-cap-a')
+    const b = await member('push-cap-b')
+    await admin.from('profiles').update({ display_name: 'Cap Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    for (let i = 1; i <= 6; i++) {
+      await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: `line ${i}` })
+    }
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.title).toBe('Test Cluster · 6 new messages')
+    expect(rows[0]!.body).toBe(
+      [
+        'Cap Sender: line 2',
+        'Cap Sender: line 3',
+        'Cap Sender: line 4',
+        'Cap Sender: line 5',
+        'Cap Sender: line 6',
+      ].join('\n'),
+    )
+    expect(rows[0]!.data).toMatchObject({ count: 6 })
+    expect((rows[0]!.data['lines'] as unknown[])).toHaveLength(5)
   })
 
   it('routes follow-ups to messages-quiet after a sent push inside the window', async () => {
@@ -212,7 +246,12 @@ describe('push outbox fan-out', () => {
     expect(rows).toHaveLength(2)
     expect(rows[0]).toMatchObject({ channel: 'messages', status: 'sent' })
     expect(rows[1]).toMatchObject({ type: 'message', channel: 'messages-quiet', status: 'queued' })
-    expect(rows[1]!.body).toBe('burst follow-up')
+    expect(rows[1]!.title).toBe('Test Cluster · 2 new messages')
+    expect(rows[1]!.body).toBe('Integration User: burst start\nIntegration User: burst follow-up')
+    expect(rows[1]!.data).toMatchObject({
+      count: 2,
+      lines: ['Integration User: burst start', 'Integration User: burst follow-up'],
+    })
   })
 
   it('goes loud again after the recipient reads the cluster', async () => {
@@ -269,7 +308,8 @@ describe('push outbox fan-out', () => {
     expect(rows).toHaveLength(2)
     for (const row of rows) {
       expect(row).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
-      expect(row.body).toBe('burst two')
+      expect(row.title).toBe('Test Cluster · 2 new messages')
+      expect(row.body).toBe('Integration User: burst one\nIntegration User: burst two')
       expect(row.data).toMatchObject({ count: 2 })
     }
   })
@@ -339,6 +379,11 @@ describe('push outbox fan-out', () => {
     const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
     expect(rows).toHaveLength(2)
     expect(rows[1]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
+    // A new burst starts with exactly its own line: the old burst's text
+    // must not resurrect just because it is recent.
+    expect(rows[1]!.title).toBe('Test Cluster')
+    expect(rows[1]!.body).toBe('Integration User: after window')
+    expect(rows[1]!.body).not.toContain('window start')
   })
 
   it('does not double-push mentioned members with a message push', async () => {
