@@ -254,7 +254,7 @@ export function MessageItem({
                       minHeight: 32,
                     }}
                   >
-                    <Text style={{ fontSize: 12 }}>{emoji}</Text>
+                    <Text style={{ fontSize: 16 }}>{emoji}</Text>
                     <Text style={{ fontSize: 12, color: t.onSurface }}>{count}</Text>
                   </Pressable>
                 )
