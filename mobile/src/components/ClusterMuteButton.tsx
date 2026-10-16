@@ -4,6 +4,7 @@ import { Bell, BellOff } from 'lucide-react-native'
 import { useNotificationPrefs, useUpsertNotificationPrefs } from '../features/notifications'
 import { isClusterPushMuted, mutedUntilForDuration, type MuteDurationKey } from '../lib/cluster-mute'
 import { toErrorMessage } from '../lib/error'
+import { useClusterTheme } from '../lib/use-cluster-appearance'
 import { useTheme } from '../lib/use-theme'
 import { MuteDurationSheet } from './MuteDurationSheet'
 
@@ -20,6 +21,7 @@ export function ClusterMuteButton({
   clusterName: string
 }) {
   const t = useTheme()
+  const clusterTheme = useClusterTheme(clusterId)
   const prefs = useNotificationPrefs()
   const upsert = useUpsertNotificationPrefs()
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -77,7 +79,7 @@ export function ClusterMuteButton({
         }}
       >
         {muted ? (
-          <BellOff size={20} color={t.primary} strokeWidth={1.5} />
+          <BellOff size={20} color={clusterTheme.tokens.accent} strokeWidth={1.5} />
         ) : (
           <Bell size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
         )}
@@ -88,6 +90,8 @@ export function ClusterMuteButton({
         clusterName={clusterName}
         muted={muted}
         mutedUntil={mutedUntil}
+        headerFill={clusterTheme.tokens.accent}
+        headerOnFill={clusterTheme.tokens.onAccent}
         pendingKey={pendingKey}
         error={error}
         onSelect={(key) => void apply(mutedUntilForDuration(key), key)}

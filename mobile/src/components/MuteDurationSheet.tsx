@@ -15,6 +15,8 @@ export function MuteDurationSheet({
   clusterName,
   muted,
   mutedUntil,
+  headerFill,
+  headerOnFill,
   pendingKey,
   error,
   onSelect,
@@ -25,6 +27,8 @@ export function MuteDurationSheet({
   clusterName: string
   muted: boolean
   mutedUntil: string | null
+  headerFill: string
+  headerOnFill: string
   pendingKey: MuteDurationKey | 'unmute' | null
   error: string | null
   onSelect: (key: MuteDurationKey) => void
@@ -92,12 +96,12 @@ export function MuteDurationSheet({
                 width: 52,
                 height: 52,
                 borderRadius: 26,
-                backgroundColor: t.primaryContainer,
+                backgroundColor: headerFill,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <BellOff size={24} color={t.onPrimary} strokeWidth={1.5} />
+              <BellOff size={24} color={headerOnFill} strokeWidth={1.5} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
