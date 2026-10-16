@@ -3518,6 +3518,11 @@ export type Database = {
       pump_meetup_reminders: { Args: never; Returns: undefined }
       pump_outbound_emails: { Args: never; Returns: undefined }
       pump_push_notifications: { Args: never; Returns: undefined }
+      push_burst_body: { Args: { p_lines: Json }; Returns: string }
+      push_burst_lines: {
+        Args: { p_line: string; p_lines: Json }
+        Returns: Json
+      }
       raise_signal: {
         Args: { p_cluster_id: string; p_prompt: string }
         Returns: string
