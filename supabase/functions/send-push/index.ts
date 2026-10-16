@@ -9,7 +9,7 @@
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 
-import { buildExpoMessage } from './message.ts'
+import { buildExpoMessage, collapseSuperseded } from './message.ts'
 
 interface ClaimedPush {
   id: string
@@ -137,21 +137,27 @@ Deno.serve(async (request) => {
 
   // Device presentation (tag replacement, quiet follow-ups) lives in
   // message.ts so it is unit-testable; the worker only moves rows.
-  const messages = claimed.map((push) => buildExpoMessage(push))
+  // Collapse superseded burst rows first: same tag means only the newest
+  // content per device and cluster matters on the shade.
+  const { send, skip } = collapseSuperseded(claimed)
+  for (const push of skip) {
+    await markPush(supabaseUrl, supabaseKey, push.id, 'sent', 'superseded by newer burst row')
+  }
+  const messages = send.map((push) => buildExpoMessage(push))
 
   let receipts: (ExpoReceipt | null)[]
   try {
     receipts = await sendViaExpo(messages, expoAccessToken)
   } catch (error) {
     console.error('expo send failed:', error)
-    for (const push of claimed) {
+    for (const push of send) {
       await markPush(supabaseUrl, supabaseKey, push.id, 'failed', String(error))
     }
     return new Response('ok', { status: 200 })
   }
 
-  for (let i = 0; i < claimed.length; i++) {
-    const push = claimed[i]!
+  for (let i = 0; i < send.length; i++) {
+    const push = send[i]!
     const receipt = receipts[i]
     if (!receipt) {
       await markPush(supabaseUrl, supabaseKey, push.id, 'failed', 'missing receipt')

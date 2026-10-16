@@ -25,8 +25,7 @@ export function chatBurstTag(data: Record<string, unknown>): string | null {
   return `cluster-${clusterId}`
 }
 
-export function buildExpoMessage(push: PushRow): Record<string, unknown> {
-  const tag = chatBurstTag(push.data)
+export function buildExpoMessage(push: PushRow): Record<string, unknown> {  const tag = chatBurstTag(push.data)
   // Quiet chat follow-ups update the shade row silently on both platforms:
   // no sound on iOS (channelId is Android only, so the quiet channel alone
   // would still buzz iPhones), LOW channel on Android.
@@ -40,4 +39,31 @@ export function buildExpoMessage(push: PushRow): Record<string, unknown> {
     ...(quiet ? {} : { sound: 'default' }),
     ...(tag ? { collapseId: tag, tag, threadId: tag } : {}),
   }
+}
+
+// Collapse a claimed batch so only the newest message push per device and
+// cluster goes to Expo. Same tag means the newest content replaces anything
+// older on the shade, so sending superseded rows only wastes pushes and
+// risks a stale row arriving last and winning the display. Grouping is per
+// device (token): each phone still gets its own push. Non-chat pushes and
+// rows without a cluster always send.
+export function collapseSuperseded<T extends PushRow & { id: string }>(
+  rows: T[],
+): { send: T[]; skip: T[] } {
+  const latestByDevice = new Map<string, number>()
+  rows.forEach((row, index) => {
+    if (chatBurstTag(row.data) === null) return
+    latestByDevice.set(row.expo_push_token + '::' + String(row.data['clusterId']), index)
+  })
+  const send: T[] = []
+  const skip: T[] = []
+  rows.forEach((row, index) => {
+    const tag = chatBurstTag(row.data)
+    if (tag !== null && latestByDevice.get(row.expo_push_token + '::' + String(row.data['clusterId'])) !== index) {
+      skip.push(row)
+    } else {
+      send.push(row)
+    }
+  })
+  return { send, skip }
 }
