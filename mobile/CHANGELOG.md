@@ -29,6 +29,7 @@ release) for the release ritual.
 
 ### Fixed
 
+- Busy chat no longer buzzes for every message: you get one notification per cluster that quietly updates with the latest message until you read it, instead of a stack of buzzing alerts. Mentions still alert loudly.
 - Deleting your account now also removes the photos you shared in clusters you had already left.
 - Fullscreen profile photos are now sharp instead of blurry.
 - Fixed profile photos sometimes showing only on the edit screen and as initials everywhere else.

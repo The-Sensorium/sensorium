@@ -1730,6 +1730,7 @@ export type Database = {
       }
       push_settings: {
         Row: {
+          bundling_enabled: boolean
           edge_url: string | null
           enabled: boolean
           id: boolean
@@ -1737,6 +1738,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bundling_enabled?: boolean
           edge_url?: string | null
           enabled?: boolean
           id?: boolean
@@ -1744,6 +1746,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bundling_enabled?: boolean
           edge_url?: string | null
           enabled?: boolean
           id?: boolean
