@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { CornerUpLeft, Flag, Info, Pencil, Trash2 } from 'lucide-react-native'
+import { CornerUpLeft, Copy, Flag, Info, Pencil, Trash2 } from 'lucide-react-native'
 import { lightHaptic } from '../../lib/haptics'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
@@ -17,10 +17,12 @@ export function MessageActionsSheet({
   open,
   mine,
   canEdit = true,
+  canCopy = false,
   myReactionKeys,
   messageId,
   onClose,
   onToggleReaction,
+  onCopy,
   onReply,
   onInfo,
   onEdit,
@@ -30,10 +32,12 @@ export function MessageActionsSheet({
   open: boolean
   mine: boolean
   canEdit?: boolean
+  canCopy?: boolean
   myReactionKeys: ReadonlySet<string>
   messageId: string
   onClose: () => void
   onToggleReaction(messageId: string, emoji: string): void
+  onCopy?: () => void
   onReply: () => void
   onInfo: () => void
   onEdit: () => void
@@ -125,6 +129,11 @@ export function MessageActionsSheet({
               )
             })}
           </View>
+          {canCopy && onCopy ? (
+            <SheetRow label="Copy" onPress={onCopy}>
+              <Copy size={18} color={t.onSurface} strokeWidth={1.5} />
+            </SheetRow>
+          ) : null}
           <SheetRow label="Reply" onPress={onReply}>
             <CornerUpLeft size={18} color={t.onSurface} strokeWidth={1.5} />
           </SheetRow>
