@@ -157,6 +157,25 @@ describe('push outbox fan-out', () => {
     expect(rows[0]!.data).toMatchObject({ v: 1, postId, commentId, clusterId })
   })
 
+  it('names the cluster in plain chat push titles', async () => {
+    await setBundling(true)
+    const a = await member('push-cn-a')
+    const b = await member('push-cn-b')
+    await admin.from('profiles').update({ display_name: 'Name Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+      name: 'Aurora Check',
+    })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'which cluster is this' })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.title).toBe('Name Sender in Aurora Check')
+  })
+
   it('merges rapid follow-ups into one queued burst row', async () => {
     await setBundling(true)
     const a = await member('push-burst-a')
