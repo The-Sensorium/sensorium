@@ -246,6 +246,6 @@ describe('voice notes', () => {
       .order('created_at', { ascending: false })
       .limit(1)
     expect(error).toBeNull()
-    expect(outbox?.[0]?.body).toBe('Voice note (1:05)')
+    expect(outbox?.[0]?.body).toBe('Integration User: Voice note (1:05)')
   })
 })

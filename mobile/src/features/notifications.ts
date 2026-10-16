@@ -278,7 +278,11 @@ export const PREF_LABELS: Record<PrefToggle, string> = {
   post_like: 'Likes',
 }
 
-/** Upsert the caller's prefs for one cluster; re-reads notifications (prefs filter the list). */
+/**
+ * Upsert the caller's prefs for one cluster; re-reads notifications (prefs filter the list).
+ * push_muted_until sets the push-only mute expiry (null clears it); it never
+ * touches the per-type toggles, so timed card mutes leave Settings intact.
+ */
 export function useUpsertNotificationPrefs() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
@@ -288,27 +292,39 @@ export function useUpsertNotificationPrefs() {
     mutationFn: async ({
       clusterId,
       toggles,
+      push_muted_until,
     }: {
       clusterId: string
       toggles: Partial<Record<PrefToggle, boolean>>
+      push_muted_until?: string | null
     }) => {
       if (!userId) throw new Error('Not signed in')
       const supabase = requireSupabase()
       const { error } = await supabase
         .from('notification_prefs')
-        .upsert({ user_id: userId, cluster_id: clusterId, ...toggles }, { onConflict: 'user_id,cluster_id' })
+        .upsert(
+          {
+            user_id: userId,
+            cluster_id: clusterId,
+            ...toggles,
+            ...(push_muted_until !== undefined ? { push_muted_until } : {}),
+          },
+          { onConflict: 'user_id,cluster_id' },
+        )
       if (error) throw error
     },
-    onMutate: async ({ clusterId, toggles }) => {
+    onMutate: async ({ clusterId, toggles, push_muted_until }) => {
       if (!userId) return
       await queryClient.cancelQueries({ queryKey: ['notification-prefs', userId] })
       const prev = queryClient.getQueryData<NotificationPrefsRow[]>(['notification-prefs', userId])
+      const optimistic =
+        push_muted_until !== undefined ? { ...toggles, push_muted_until } : toggles
       queryClient.setQueryData<NotificationPrefsRow[]>(['notification-prefs', userId], (cur) => {
         const base = cur ?? prev ?? []
         if (base.some((p) => p.cluster_id === clusterId)) {
-          return base.map((p) => (p.cluster_id === clusterId ? { ...p, ...toggles } : p))
+          return base.map((p) => (p.cluster_id === clusterId ? { ...p, ...optimistic } : p))
         }
-        return [...base, { user_id: userId, cluster_id: clusterId, ...toggles } as NotificationPrefsRow]
+        return [...base, { user_id: userId, cluster_id: clusterId, ...optimistic } as NotificationPrefsRow]
       })
       return { prev }
     },

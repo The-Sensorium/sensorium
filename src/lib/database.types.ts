@@ -1259,6 +1259,7 @@ export type Database = {
           messages: boolean
           post_comment: boolean
           post_like: boolean
+          push_muted_until: string | null
           reactions: boolean
           signals: boolean
           user_id: string
@@ -1272,6 +1273,7 @@ export type Database = {
           messages?: boolean
           post_comment?: boolean
           post_like?: boolean
+          push_muted_until?: string | null
           reactions?: boolean
           signals?: boolean
           user_id: string
@@ -1285,6 +1287,7 @@ export type Database = {
           messages?: boolean
           post_comment?: boolean
           post_like?: boolean
+          push_muted_until?: string | null
           reactions?: boolean
           signals?: boolean
           user_id?: string
@@ -1730,6 +1733,7 @@ export type Database = {
       }
       push_settings: {
         Row: {
+          bundling_enabled: boolean
           edge_url: string | null
           enabled: boolean
           id: boolean
@@ -1737,6 +1741,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bundling_enabled?: boolean
           edge_url?: string | null
           enabled?: boolean
           id?: boolean
@@ -1744,6 +1749,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bundling_enabled?: boolean
           edge_url?: string | null
           enabled?: boolean
           id?: boolean
@@ -3515,6 +3521,17 @@ export type Database = {
       pump_meetup_reminders: { Args: never; Returns: undefined }
       pump_outbound_emails: { Args: never; Returns: undefined }
       pump_push_notifications: { Args: never; Returns: undefined }
+      push_burst_body: { Args: { p_lines: Json }; Returns: string }
+      push_burst_lines: {
+        Args: { p_line: string; p_lines: Json }
+        Returns: Json
+      }
+      push_muted: {
+        Args: {
+          p_pref: Database["public"]["Tables"]["notification_prefs"]["Row"]
+        }
+        Returns: boolean
+      }
       raise_signal: {
         Args: { p_cluster_id: string; p_prompt: string }
         Returns: string

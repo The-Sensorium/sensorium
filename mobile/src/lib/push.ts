@@ -40,6 +40,7 @@ async function notifications(): Promise<NotificationsModule | null> {
     if (Platform.OS === 'android') {
       const importance = mod.AndroidImportance?.HIGH ?? 4
       const def = mod.AndroidImportance?.DEFAULT ?? 3
+      const low = mod.AndroidImportance?.LOW ?? 2
       const privateVisibility = mod.AndroidNotificationVisibility?.PRIVATE ?? 0
       const publicVisibility = mod.AndroidNotificationVisibility?.PUBLIC ?? 1
       cached = mod
@@ -50,6 +51,15 @@ async function notifications(): Promise<NotificationsModule | null> {
           importance: def,
           sound: 'default',
           vibrationPattern: [0, 250, 250, 250],
+          lockscreenVisibility: privateVisibility,
+        }),
+        mod.setNotificationChannelAsync('messages-quiet', {
+          name: 'Messages (quiet updates)',
+          description: 'Quiet follow-ups while a chat is already buzzing',
+          importance: low,
+          sound: null,
+          vibrationPattern: null,
+          enableVibrate: false,
           lockscreenVisibility: privateVisibility,
         }),
         mod.setNotificationChannelAsync('mentions', {

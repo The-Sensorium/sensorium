@@ -47,6 +47,9 @@ describe('push outbox fan-out', () => {
 
   afterEach(async () => {
     await cleanup(admin, clusterIds, userIds)
+    // Burst tests toggle this global; restore the fresh-DB default so no
+    // later test inherits it through ordering.
+    await admin.from('push_settings').update({ bundling_enabled: false }).eq('id', true)
   })
 
   async function member(prefix: string): Promise<TestUser> {
@@ -61,6 +64,11 @@ describe('push outbox fan-out', () => {
       user_id: userId,
       expo_push_token: `ExponentPushToken[${userId.slice(0, 8)}${suffix}]`,
     })
+    expect(error).toBeNull()
+  }
+
+  async function setBundling(enabled: boolean) {
+    const { error } = await admin.from('push_settings').update({ bundling_enabled: enabled }).eq('id', true)
     expect(error).toBeNull()
   }
 
@@ -103,8 +111,8 @@ describe('push outbox fan-out', () => {
     const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
-    expect(rows[0]!.title).toContain('Plain Sender')
-    expect(rows[0]!.body).toBe('hello plain')
+    expect(rows[0]!.title).toBe('Test Cluster')
+    expect(rows[0]!.body).toBe('Plain Sender: hello plain')
     expect(rows[0]!.data).toMatchObject({ v: 1, kind: 'message', clusterId })
     const { data: msgs } = await admin.from('messages').select('id').eq('cluster_id', clusterId)
     expect(rows[0]!.data).toMatchObject({ messageId: msgs![0]!.id })
@@ -147,6 +155,299 @@ describe('push outbox fan-out', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]!.type).toBe('post_comment')
     expect(rows[0]!.data).toMatchObject({ v: 1, postId, commentId, clusterId })
+  })
+
+  it('names the cluster in plain chat push titles', async () => {
+    await setBundling(true)
+    const a = await member('push-cn-a')
+    const b = await member('push-cn-b')
+    await admin.from('profiles').update({ display_name: 'Name Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      status: 'active',
+      name: 'Aurora Check',
+    })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'which cluster is this' })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.title).toBe('Aurora Check')
+    expect(rows[0]!.body).toBe('Name Sender: which cluster is this')
+  })
+
+  it('merges rapid follow-ups into one queued burst row', async () => {
+    await setBundling(true)
+    const a = await member('push-burst-a')
+    const b = await member('push-burst-b')
+    await admin.from('profiles').update({ display_name: 'Burst Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'first burst' })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'second burst' })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
+    expect(rows[0]!.title).toBe('Test Cluster · 2 new messages')
+    expect(rows[0]!.body).toBe('Burst Sender: first burst\nBurst Sender: second burst')
+    expect(rows[0]!.data).toMatchObject({
+      count: 2,
+      clusterId,
+      lines: ['Burst Sender: first burst', 'Burst Sender: second burst'],
+    })
+  })
+
+  it('caps accumulated lines at the last 5 with an exact count', async () => {
+    await setBundling(true)
+    const a = await member('push-cap-a')
+    const b = await member('push-cap-b')
+    await admin.from('profiles').update({ display_name: 'Cap Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    for (let i = 1; i <= 6; i++) {
+      await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: `line ${i}` })
+    }
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.title).toBe('Test Cluster · 6 new messages')
+    expect(rows[0]!.body).toBe(
+      [
+        'Cap Sender: line 2',
+        'Cap Sender: line 3',
+        'Cap Sender: line 4',
+        'Cap Sender: line 5',
+        'Cap Sender: line 6',
+      ].join('\n'),
+    )
+    expect(rows[0]!.data).toMatchObject({ count: 6 })
+    expect((rows[0]!.data['lines'] as unknown[])).toHaveLength(5)
+  })
+
+  it('routes follow-ups to messages-quiet after a sent push inside the window', async () => {
+    await setBundling(true)
+    const a = await member('push-quiet-a')
+    const b = await member('push-quiet-b')
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'burst start' })
+
+    const first = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(first).toHaveLength(1)
+    await admin.rpc('mark_push_notification', { p_id: first[0]!.id, p_status: 'sent' })
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'burst follow-up' })
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toMatchObject({ channel: 'messages', status: 'sent' })
+    expect(rows[1]).toMatchObject({ type: 'message', channel: 'messages-quiet', status: 'queued' })
+    expect(rows[1]!.title).toBe('Test Cluster · 2 new messages')
+    expect(rows[1]!.body).toBe('Integration User: burst start\nIntegration User: burst follow-up')
+    expect(rows[1]!.data).toMatchObject({
+      count: 2,
+      lines: ['Integration User: burst start', 'Integration User: burst follow-up'],
+    })
+  })
+
+  it('goes loud again after the recipient reads the cluster', async () => {
+    await setBundling(true)
+    const a = await member('push-reread-a')
+    const b = await member('push-reread-b')
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'before read' })
+
+    const first = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    await admin.rpc('mark_push_notification', { p_id: first[0]!.id, p_status: 'sent' })
+    expect((await b.client.rpc('mark_cluster_read', { p_cluster_id: clusterId })).error).toBeNull()
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'after read' })
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(2)
+    expect(rows[1]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
+  })
+
+  it('a mention inside a burst still alerts loudly', async () => {
+    await setBundling(true)
+    const a = await member('push-burstmen-a')
+    const b = await member('push-burstmen-b')
+    await admin.from('profiles').update({ display_name: 'Burstmen Target' }).eq('id', b.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'plain burst start' })
+    await a.client.rpc('send_message', {
+      p_cluster_id: clusterId,
+      p_content: 'Hello @Burstmen Target',
+    })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    const mention = rows.filter((r) => r.type === 'mention')
+    expect(mention).toHaveLength(1)
+    expect(mention[0]).toMatchObject({ channel: 'mentions', status: 'queued' })
+  })
+
+  it('merges bursts across all tokens of a multi-token user', async () => {
+    await setBundling(true)
+    const a = await member('push-burstmt-a')
+    const b = await member('push-burstmt-b')
+    await withToken(b.id, '-1')
+    await withToken(b.id, '-2')
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'burst one' })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'burst two' })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(row).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
+      expect(row.title).toBe('Test Cluster · 2 new messages')
+      expect(row.body).toBe('Integration User: burst one\nIntegration User: burst two')
+      expect(row.data).toMatchObject({ count: 2 })
+    }
+  })
+
+  it('inserts per token when a sibling row is already claimed', async () => {
+    await setBundling(true)
+    const a = await member('push-ptok-a')
+    const b = await member('push-ptok-b')
+    await admin.from('profiles').update({ display_name: 'Ptok Sender' }).eq('id', a.id)
+    await withToken(b.id, '-1')
+    await withToken(b.id, '-2')
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'one' })
+
+    // One token's row is already in flight while the next message lands.
+    const { data: claimed } = await admin.rpc('claim_push_notifications', { p_limit: 1 })
+    expect(claimed).toHaveLength(1)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'two' })
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    // Claimed row frozen at line 1; the other token merged and re-inserted,
+    // both carrying the converged lines. The old per-user guard created
+    // nothing here and left claimed tokens frozen without line 2.
+    expect(rows).toHaveLength(3)
+    const queued = rows.filter((r) => r.status === 'queued')
+    expect(queued).toHaveLength(2)
+    for (const row of queued) {
+      expect(row.data).toMatchObject({
+        count: 2,
+        lines: ['Ptok Sender: one', 'Ptok Sender: two'],
+      })
+    }
+    expect(rows.filter((r) => r.status === 'sending')).toHaveLength(1)
+  })
+
+  it('inherits the longest burst row, not the latest-updated one', async () => {
+    await setBundling(true)
+    const a = await member('push-long-a')
+    const b = await member('push-long-b')
+    await admin.from('profiles').update({ display_name: 'Long Sender' }).eq('id', a.id)
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'one' })
+    const first = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    await admin.rpc('mark_push_notification', { p_id: first[0]!.id, p_status: 'sent' })
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'two' })
+    const second = (await outbox(admin)).filter((r) => r.user_id === b.id && r.status === 'queued')
+    expect(second).toHaveLength(1)
+    await admin.rpc('mark_push_notification', { p_id: second[0]!.id, p_status: 'sent' })
+
+    // Touch the shorter row so latest-updated points at it. Inheriting by
+    // recency alone would continue from line 1 and drop line 2.
+    await admin
+      .from('push_outbox')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', first[0]!.id)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'three' })
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id && r.status === 'queued')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.data).toMatchObject({
+      count: 3,
+      lines: ['Long Sender: one', 'Long Sender: two', 'Long Sender: three'],
+    })
+  })
+
+  it('stays loud while bundling is disabled', async () => {
+    await setBundling(false)
+    try {
+      const a = await member('push-nobundle-a')
+      const b = await member('push-nobundle-b')
+      await withToken(b.id)
+      const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+      clusterIds.push(clusterId)
+      await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'first' })
+
+      const first = (await outbox(admin)).filter((r) => r.user_id === b.id)
+      expect(first).toHaveLength(1)
+      await admin.rpc('mark_push_notification', { p_id: first[0]!.id, p_status: 'sent' })
+
+      await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'second' })
+      const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+      expect(rows).toHaveLength(2)
+      expect(rows[1]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
+    } finally {
+      await setBundling(true)
+    }
+  })
+
+  it('keeps one row per cluster when two clusters burst at once', async () => {
+    await setBundling(true)
+    const a = await member('push-twoc-a')
+    const b = await member('push-twoc-b')
+    await withToken(b.id)
+    const c1 = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    const c2 = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(c1, c2)
+    await a.client.rpc('send_message', { p_cluster_id: c1, p_content: 'cluster one' })
+    await a.client.rpc('send_message', { p_cluster_id: c2, p_content: 'cluster two' })
+
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(2)
+    expect(rows.map((r) => r.data['clusterId']).sort()).toEqual([c1, c2].sort())
+  })
+
+  it('goes loud again once the coalesce window expires', async () => {
+    await setBundling(true)
+    const a = await member('push-expire-a')
+    const b = await member('push-expire-b')
+    await withToken(b.id)
+    const clusterId = await createCluster(admin, { memberIds: [a.id, b.id], status: 'active' })
+    clusterIds.push(clusterId)
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'window start' })
+
+    const first = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    await admin.rpc('mark_push_notification', { p_id: first[0]!.id, p_status: 'sent' })
+    // Sent 5 minutes ago (outside the 120s window) but after a 10-minute-old
+    // read watermark, so only the window - not the watermark - re-arms loud.
+    const sentAt = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const readAt = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+    await admin.from('push_outbox').update({ sent_at: sentAt }).eq('id', first[0]!.id)
+    await admin
+      .from('cluster_members')
+      .update({ last_read_message_at: readAt })
+      .eq('cluster_id', clusterId)
+      .eq('user_id', b.id)
+
+    await a.client.rpc('send_message', { p_cluster_id: clusterId, p_content: 'after window' })
+    const rows = (await outbox(admin)).filter((r) => r.user_id === b.id)
+    expect(rows).toHaveLength(2)
+    expect(rows[1]).toMatchObject({ type: 'message', channel: 'messages', status: 'queued' })
+    // A new burst starts with exactly its own line: the old burst's text
+    // must not resurrect just because it is recent.
+    expect(rows[1]!.title).toBe('Test Cluster')
+    expect(rows[1]!.body).toBe('Integration User: after window')
+    expect(rows[1]!.body).not.toContain('window start')
   })
 
   it('does not double-push mentioned members with a message push', async () => {
