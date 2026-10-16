@@ -25,7 +25,8 @@ export function chatBurstTag(data: Record<string, unknown>): string | null {
   return `cluster-${clusterId}`
 }
 
-export function buildExpoMessage(push: PushRow): Record<string, unknown> {  const tag = chatBurstTag(push.data)
+export function buildExpoMessage(push: PushRow): Record<string, unknown> {
+  const tag = chatBurstTag(push.data)
   // Quiet chat follow-ups update the shade row silently on both platforms:
   // no sound on iOS (channelId is Android only, so the quiet channel alone
   // would still buzz iPhones), LOW channel on Android.
@@ -47,6 +48,9 @@ export function buildExpoMessage(push: PushRow): Record<string, unknown> {  cons
 // risks a stale row arriving last and winning the display. Grouping is per
 // device (token): each phone still gets its own push. Non-chat pushes and
 // rows without a cluster always send.
+//
+// Ordering contract: input must arrive oldest-first (claim order); the last
+// row per token and cluster wins. Do not pass unsorted rows.
 export function collapseSuperseded<T extends PushRow & { id: string }>(
   rows: T[],
 ): { send: T[]; skip: T[] } {
