@@ -105,6 +105,7 @@ export default function HomeScreen() {
     () => formed.refetch(),
     () => unread.refetch(),
     () => queryClient.refetchQueries({ queryKey: ['recent-posts'] }),
+    () => queryClient.refetchQueries({ queryKey: ['notification-prefs'] }),
     () => queryClient.refetchQueries({ queryKey: ['my-mutes'] }),
     () => queryClient.refetchQueries({ queryKey: ['post-likes'] }),
     () => queryClient.refetchQueries({ queryKey: ['post-comments'] }),

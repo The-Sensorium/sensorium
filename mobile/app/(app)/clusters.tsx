@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 import { Link, router } from 'expo-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Plus, Users } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
 import { CLUSTER_SIZE } from '../../src/lib/constants'
@@ -22,10 +23,12 @@ export default function ClustersScreen() {
   const unread = useUnreadChatCounts((clusters.data ?? []).length > 0)
   const unreadByCluster = unread.data ?? new Map<string, number>()
   const countByMode = new Map((counts.data ?? []).map((r) => [r.mode, r.cluster_count]))
+  const queryClient = useQueryClient()
   const pull = usePullToRefresh([
     () => clusters.refetch(),
     () => counts.refetch(),
     () => status.refetch(),
+    () => queryClient.refetchQueries({ queryKey: ['notification-prefs'] }),
   ])
 
   return (

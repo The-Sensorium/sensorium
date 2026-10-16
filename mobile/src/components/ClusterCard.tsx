@@ -8,6 +8,7 @@ import { modeInfo } from '../lib/modes'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
 import { useClusterTheme } from '../lib/use-cluster-appearance'
+import { ClusterMuteButton } from './ClusterMuteButton'
 
 function statusLabel(status: string): string {
   if (status === 'archived') return 'Archived'
@@ -36,24 +37,31 @@ export function ClusterCard({
   const count = unreadCount ?? 0
   const created = isCreatedCluster(cluster)
   const pending = isPendingCreated(cluster, item.memberCount)
+  const statusText = pending
+    ? `Pending, ${3 - item.memberCount} more to activate`
+    : needsIntros
+      ? 'Complete your introductions'
+      : statusLabel(cluster.status)
   const target: Href = { pathname: '/cluster/[clusterId]/room', params: { clusterId: cluster.id } }
 
   return (
-    <Link href={target} asChild>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Open ${cluster.name}`}
-        style={{
-          backgroundColor: cardBg,
-          borderRadius: radii.xl,
-          padding: 16,
-          marginBottom: 16,
-          ...shadowShape,
-          shadowColor: t.shadowColor,
-        }}
-      >
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-          <View style={{ flex: 1 }}>
+    <View
+      style={{
+        backgroundColor: cardBg,
+        borderRadius: radii.xl,
+        padding: 16,
+        marginBottom: 16,
+        ...shadowShape,
+        shadowColor: t.shadowColor,
+      }}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+        <Link href={target} asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${cluster.name}`}
+            style={{ flex: 1 }}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               {created ? (
                 <Users size={20} color={accent} strokeWidth={1.5} />
@@ -83,84 +91,104 @@ export function ClusterCard({
             >
               {cluster.name}
             </Text>
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-              backgroundColor: t.surfaceLowest,
-              borderWidth: 1,
-              borderColor: themed ? t.outlineVariant : 'transparent',
-              borderRadius: radii.pill,
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              alignSelf: 'flex-start',
-            }}
-          >
-            <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
-              {item.memberCount} members
-            </Text>
-          </View>
-        </View>
-        <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <Text style={{ flex: 1, fontSize: 14, color: t.onSurfaceVariant }}>
-            {pending ? (
-              <Text>
-                Pending · {3 - item.memberCount} more to activate
-              </Text>
-            ) : needsIntros ? (
-              <Text>Complete your introductions</Text>
-            ) : (
-              statusLabel(cluster.status)
-            )}
+          </Pressable>
+        </Link>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            backgroundColor: t.surfaceLowest,
+            borderWidth: 1,
+            borderColor: themed ? t.outlineVariant : 'transparent',
+            borderRadius: radii.pill,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            alignSelf: 'flex-start',
+          }}
+        >
+          <Users size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
+            {item.memberCount} members
           </Text>
-          {count > 0 && (
-            <View
-              testID={`cluster-unread-badge-${cluster.id}`}
-              accessibilityLabel={`${count} unread messages`}
-              accessibilityRole="text"
+        </View>
+      </View>
+      <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <Link href={target} asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${statusText}, open ${cluster.name}`}
+            style={{ flex: 1 }}
+          >
+            <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+              {pending ? (
+                <Text>
+                  Pending · {3 - item.memberCount} more to activate
+                </Text>
+              ) : needsIntros ? (
+                <Text>Complete your introductions</Text>
+              ) : (
+                statusLabel(cluster.status)
+              )}
+            </Text>
+          </Pressable>
+        </Link>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <Link href={target} asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                count > 0
+                  ? `Open ${cluster.name} chat, ${count} unread messages`
+                  : `Open ${cluster.name} chat`
+              }
+              testID={`cluster-chat-${cluster.id}`}
+              hitSlop={8}
               style={{
                 position: 'relative',
-                flexDirection: 'row',
-                alignItems: 'center',
+                width: 48,
+                height: 48,
+                borderRadius: 24,
                 backgroundColor: t.surfaceLowest,
                 borderWidth: 1,
-                borderColor: themed ? t.outlineVariant : 'transparent',
-                borderRadius: radii.pill,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                flexShrink: 0,
+                borderColor: t.outlineVariant,
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <MessagesSquare size={16} color={t.primary} strokeWidth={1.5} />
-              <View
-                style={{
-                  position: 'absolute',
-                  right: -4,
-                  top: -4,
-                  minWidth: 20,
-                  minHeight: 20,
-                  borderRadius: 10,
-                  backgroundColor: t.error,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingHorizontal: 4,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 11, lineHeight: 16, fontWeight: '600', color: t.onError }}
-                  maxFontSizeMultiplier={1.4}
+              <MessagesSquare size={20} color={t.primary} strokeWidth={1.5} />
+              {count > 0 && (
+                <View
+                  testID={`cluster-unread-badge-${cluster.id}`}
+                  accessibilityLabel={`${count} unread messages`}
+                  accessibilityRole="text"
+                  style={{
+                    position: 'absolute',
+                    right: -4,
+                    top: -4,
+                    minWidth: 20,
+                    minHeight: 20,
+                    borderRadius: 10,
+                    backgroundColor: t.error,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 4,
+                  }}
                 >
-                  {count > 9 ? '9+' : count}
-                </Text>
-              </View>
-            </View>
-          )}
+                  <Text
+                    style={{ fontSize: 11, lineHeight: 16, fontWeight: '600', color: t.onError }}
+                    maxFontSizeMultiplier={1.4}
+                  >
+                    {count > 9 ? '9+' : count}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </Link>
+          <ClusterMuteButton clusterId={cluster.id} clusterName={cluster.name} />
         </View>
-      </Pressable>
-    </Link>
+      </View>
+    </View>
   )
 }
 

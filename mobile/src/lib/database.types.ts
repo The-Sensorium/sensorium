@@ -1259,6 +1259,7 @@ export type Database = {
           messages: boolean
           post_comment: boolean
           post_like: boolean
+          push_muted_until: string | null
           reactions: boolean
           signals: boolean
           user_id: string
@@ -1272,6 +1273,7 @@ export type Database = {
           messages?: boolean
           post_comment?: boolean
           post_like?: boolean
+          push_muted_until?: string | null
           reactions?: boolean
           signals?: boolean
           user_id: string
@@ -1285,6 +1287,7 @@ export type Database = {
           messages?: boolean
           post_comment?: boolean
           post_like?: boolean
+          push_muted_until?: string | null
           reactions?: boolean
           signals?: boolean
           user_id?: string
@@ -3522,6 +3525,12 @@ export type Database = {
       push_burst_lines: {
         Args: { p_line: string; p_lines: Json }
         Returns: Json
+      }
+      push_muted: {
+        Args: {
+          p_pref: Database["public"]["Tables"]["notification_prefs"]["Row"]
+        }
+        Returns: boolean
       }
       raise_signal: {
         Args: { p_cluster_id: string; p_prompt: string }
