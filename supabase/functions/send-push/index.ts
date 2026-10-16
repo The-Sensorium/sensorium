@@ -9,6 +9,8 @@
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send'
 
+import { buildExpoMessage } from './message.ts'
+
 interface ClaimedPush {
   id: string
   expo_push_token: string
@@ -133,14 +135,9 @@ Deno.serve(async (request) => {
   }
   if (claimed.length === 0) return new Response('ok', { status: 200 })
 
-  const messages = claimed.map((push) => ({
-    to: push.expo_push_token,
-    title: push.title,
-    body: push.body ?? undefined,
-    data: push.data,
-    channelId: push.channel,
-    sound: 'default',
-  }))
+  // Device presentation (tag replacement, quiet follow-ups) lives in
+  // message.ts so it is unit-testable; the worker only moves rows.
+  const messages = claimed.map((push) => buildExpoMessage(push))
 
   let receipts: (ExpoReceipt | null)[]
   try {
