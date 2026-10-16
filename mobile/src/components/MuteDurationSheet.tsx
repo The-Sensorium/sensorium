@@ -93,15 +93,15 @@ export function MuteDurationSheet({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <View
               style={{
-                width: 52,
-                height: 52,
-                borderRadius: 26,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
                 backgroundColor: headerFill,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <BellOff size={24} color={headerOnFill} strokeWidth={1.5} />
+              <BellOff size={20} color={headerOnFill} strokeWidth={1.5} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
