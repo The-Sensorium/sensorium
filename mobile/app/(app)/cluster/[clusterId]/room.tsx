@@ -1459,6 +1459,7 @@ function RoomScreenContent() {
                       }
                     }}
                     onToggleReaction={(messageId, emoji) => void handleToggleReaction(messageId, emoji)}
+                    onReply={() => startReply(m)}
                     />
                   </View>
                 )

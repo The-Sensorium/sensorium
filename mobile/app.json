@@ -12,7 +12,7 @@
       "bundleIdentifier": "online.thesensorium.app",
       "buildNumber": "2",
       "infoPlist": {
-        "NSCameraUsageDescription": "Camera is used for video during cluster calls.",
+        "NSCameraUsageDescription": "Camera is used for video during cluster calls and to take photos for messages and profile pictures.",
         "NSMicrophoneUsageDescription": "Microphone is used for voice notes and audio during cluster calls.",
         "UIBackgroundModes": [
           "audio"

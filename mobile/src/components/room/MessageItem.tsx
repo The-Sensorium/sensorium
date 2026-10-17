@@ -1,4 +1,7 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { CornerUpLeft, ShieldOff } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
 import { AvatarLink } from '../AvatarLink'
@@ -10,8 +13,12 @@ import type { Message, Reaction } from '../../features/cluster'
 import type { MentionMember } from '../../features/mentions'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
+import { lightHaptic } from '../../lib/haptics'
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
+
+const SWIPE_REPLY_THRESHOLD = 50
+const SWIPE_REPLY_MAX = 80
 
 export function MessageItem({
   message,
@@ -28,6 +35,7 @@ export function MessageItem({
   onPressReplyParent,
   onToggleMenu,
   onToggleReaction,
+  onReply,
 }: {
   message: Message
   mine: boolean
@@ -43,8 +51,54 @@ export function MessageItem({
   onPressReplyParent?(parentId: string): void
   onToggleMenu(): void
   onToggleReaction(messageId: string, emoji: string): void
+  onReply?(): void
 }) {
   const t = useTheme()
+  const translateX = useSharedValue(0)
+  const bubbleShift = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }))
+  const replyIconStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(translateX.value / SWIPE_REPLY_THRESHOLD, 1),
+    transform: [{ scale: 0.6 + 0.4 * Math.min(translateX.value / SWIPE_REPLY_THRESHOLD, 1) }],
+  }))
+
+  const onReplyRef = useRef(onReply)
+  useEffect(() => {
+    onReplyRef.current = onReply
+  }, [onReply])
+  const hasReply = onReply !== undefined
+  const fireSwipeReply = useCallback(() => {
+    const cb = onReplyRef.current
+    if (!cb) return
+    lightHaptic()
+    cb()
+  }, [])
+
+  // Swipe right to reply, following the gesture-handler Pan guide: a wide
+  // negative active bound means a left swipe never activates, while the
+  // tight failOffsetY hands vertical movement back to the chat list before
+  // it can steal the scroll. Memoized with a ref-held callback so a parent
+  // re-render (new message, reaction) never tears down an in-progress swipe.
+  const swipePan = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(hasReply)
+        .activeOffsetX([-1000, 20])
+        .failOffsetY([-10, 10])
+        .onUpdate((e) => {
+          translateX.value = Math.max(0, Math.min(e.translationX, SWIPE_REPLY_MAX))
+        })
+        .onEnd((e) => {
+          if (e.translationX > SWIPE_REPLY_THRESHOLD) {
+            runOnJS(fireSwipeReply)()
+          }
+        })
+        .onFinalize(() => {
+          translateX.value = withSpring(0, { damping: 20, stiffness: 300 })
+        }),
+    [hasReply, fireSwipeReply, translateX],
+  )
   const grouped = new Map<string, number>()
   for (const r of reactions) grouped.set(r.emoji, (grouped.get(r.emoji) ?? 0) + 1)
   const gifUrl = message.content?.startsWith('gif:') ? message.content.slice(4) : null
@@ -112,14 +166,46 @@ export function MessageItem({
 
           <View
             style={{
+              position: 'relative',
               flexDirection: 'row',
-              alignItems: 'flex-end',
-              gap: 8,
+              alignItems: 'center',
             }}
           >
+            <Animated.View
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={[
+                {
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 32,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+                replyIconStyle,
+              ]}
+            >
+              <View
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  backgroundColor: t.surfaceContainer,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={2} />
+              </View>
+            </Animated.View>
+          <GestureDetector gesture={swipePan}>
+            <Animated.View style={bubbleShift}>
           <Pressable
             accessibilityLabel="Message options"
-            accessibilityHint="Shows actions like react, reply, edit, and delete"
+            accessibilityHint="Shows actions like react, reply, edit, and delete. Swipe right to reply"
             accessibilityActions={[{ name: 'longpress', label: 'Show message actions' }]}
             onAccessibilityAction={(e) => {
               if (e.nativeEvent.actionName === 'longpress') onToggleMenu()
@@ -229,6 +315,8 @@ export function MessageItem({
               <Text style={{ fontSize: 12, color: toneMine ? t.onPrimary : t.onSurfaceVariant }}> (edited)</Text>
             ) : null}
           </Pressable>
+            </Animated.View>
+          </GestureDetector>
           </View>
 
           {grouped.size > 0 ? (

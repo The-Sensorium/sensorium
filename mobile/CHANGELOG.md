@@ -19,6 +19,8 @@ release) for the release ritual.
 - You can now @-mention members in signal replies, with suggestions as you type and tappable names, just like in chat.
 - You can now send voice notes in cluster chat: record up to 2 minutes, preview before sending, and play back with a simple player showing the time.
 - You can now copy a chat message: long-press the message and tap Copy.
+- You can now attach a photo taken with the camera in cluster chat, not just from the gallery.
+- You can now swipe a chat message right to reply to it, without opening the long-press menu.
 - You can now react with any emoji in cluster chat: long-press a message, tap the + button for the full picker with search and skin tones, or use the quick reactions as before.
 - Cluster cards now have side-by-side chat and bell buttons: chat jumps straight to the room, and the bell mutes push notifications for 1 hour, 8 hours, 1 day, or until you turn them back on. Muted clusters stop buzzing but keep their unread badge.
 - Required onboarding fields are now marked with a red asterisk.
