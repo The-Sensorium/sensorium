@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native'
+import { ActivityIndicator, Alert, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { Check, CornerUpLeft, ImagePlus, Megaphone, Mic, Pencil, Phone, Plus, Send, X } from 'lucide-react-native'
 import { VoiceRecorder, type VoiceRecording } from './VoiceRecorder'
@@ -262,15 +262,7 @@ export function Composer({
     }
   }
 
-  async function handlePickImage() {
-    onMenuOpenChange?.(false)
-    onError(null)
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.9,
-    })
-    if (result.canceled || result.assets.length === 0) return
-    const asset = result.assets[0]
+  function stageAsset(asset: ImagePicker.ImagePickerAsset) {
     const mime = asset.mimeType ?? 'image/jpeg'
     if (!ALLOWED_IMAGE_TYPES.has(mime)) {
       onError('Only JPG, PNG, WebP and GIF images are supported.')
@@ -281,6 +273,54 @@ export function Composer({
       return
     }
     setStagedImage({ uri: asset.uri, mime, width: asset.width ?? 0, height: asset.height ?? 0 })
+  }
+
+  async function pickFromLibrary() {
+    onError(null)
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!perm.granted) {
+        onError('Photo access was denied. Enable it in Settings to add a photo.')
+        return
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+      })
+      if (result.canceled || result.assets.length === 0) return
+      stageAsset(result.assets[0])
+    } catch (e) {
+      onError(toErrorMessage(e, 'Could not pick that image. Try again.'))
+    }
+  }
+
+  async function takePhoto() {
+    onError(null)
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync()
+      if (!perm.granted) {
+        onError('Camera access was denied. Enable it in Settings to take a photo.')
+        return
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.9,
+      })
+      if (result.canceled || result.assets.length === 0) return
+      stageAsset(result.assets[0])
+    } catch (e) {
+      onError(toErrorMessage(e, 'Could not take that photo. Try again.'))
+    }
+  }
+
+  function handlePickImage() {
+    onMenuOpenChange?.(false)
+    onError(null)
+    Alert.alert('Add photo', 'Take a photo or choose from your library.', [
+      { text: 'Choose from library', onPress: () => void pickFromLibrary() },
+      { text: 'Take photo', onPress: () => void takePhoto() },
+      { text: 'Cancel', style: 'cancel' },
+    ])
   }
 
   const canSend = (draft.trim().length > 0 || stagedImage !== null) && !pending && !uploading
