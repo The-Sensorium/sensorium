@@ -1,8 +1,9 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { CornerUpLeft, ImagePlay, ImagePlus, Loader2, Send, X } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
 import { CommentItem } from './CommentItem'
+import { MentionListbox } from './MentionListbox'
 import { GifPicker } from '../pages/cluster/room/GifPicker'
 import {
   useClusterCommentLikes,
@@ -12,6 +13,13 @@ import {
   COMMENT_CONTENT_MAX,
   type PostComment,
 } from '../features/posts'
+import {
+  EVERYONE_NAME,
+  filterMentionCandidates,
+  matchesEveryone,
+  parseMentionQuery,
+  type MentionMember,
+} from '../features/mentions'
 import type { Gif } from '../features/gifs'
 import { toErrorMessage } from '../lib/error'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../features/moderation'
@@ -26,6 +34,7 @@ export function CommentThread({
   postId,
   comments,
   memberById,
+  members,
   selfAvatar,
   deepLinkCommentId,
   onDeepLinkHandled,
@@ -34,6 +43,7 @@ export function CommentThread({
   postId: string
   comments: PostComment[]
   memberById: Map<string, { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }>
+  members: MentionMember[]
   selfAvatar: { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }
   deepLinkCommentId?: string | null
   onDeepLinkHandled?: (commentId: string) => void
@@ -50,6 +60,73 @@ export function CommentThread({
   const composerRef = useRef<HTMLFormElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const create = useCreateComment(clusterId)
+  const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
+  const [mentionIndex, setMentionIndex] = useState(0)
+
+  const mentionMembers = useMemo(
+    () => (userId ? members.filter((m) => m.id !== userId) : members),
+    [members, userId],
+  )
+  const showEveryone = mention !== null && matchesEveryone(mention.query)
+  const mentionCandidates = useMemo(() => {
+    if (!mention || mentionMembers.length === 0) return []
+    return filterMentionCandidates(mention.query, mentionMembers, userId ?? '').slice(
+      0,
+      showEveryone ? 7 : 8,
+    )
+  }, [mention, mentionMembers, userId, showEveryone])
+  const mentionTotal = (showEveryone ? 1 : 0) + mentionCandidates.length
+
+  function handleDraftChange(value: string, caret: number) {
+    setDraft(value)
+    setMention(parseMentionQuery(value, caret))
+    setMentionIndex(0)
+  }
+
+  function insertToken(name: string) {
+    if (!mention) return
+    const next = `${draft.slice(0, mention.start)}@${name} ${draft.slice(mention.end)}`
+    const pos = mention.start + 1 + name.length + 1
+    setDraft(next)
+    setMention(null)
+    setMentionIndex(0)
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (!el) return
+      el.setSelectionRange(pos, pos)
+      el.focus()
+    })
+  }
+
+  function insertMention(member: MentionMember) {
+    insertToken(member.display_name)
+  }
+
+  function insertEveryone() {
+    insertToken(EVERYONE_NAME)
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (mention && mentionTotal > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionIndex((i) => (i + 1) % mentionTotal)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionIndex((i) => (i - 1 + mentionTotal) % mentionTotal)
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        if (showEveryone && mentionIndex === 0) insertEveryone()
+        else {
+          const candidate = mentionCandidates[mentionIndex - (showEveryone ? 1 : 0)]
+          if (candidate) insertMention(candidate)
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        setMention(null)
+      }
+    }
+  }
 
   useEffect(() => {
     function dismiss() {
@@ -101,6 +178,7 @@ export function CommentThread({
       setFile(null)
       setGif(null)
       setReplyTo(null)
+      setMention(null)
     } catch (e) {
       setError(toErrorMessage(e, 'Could not comment. Try again.'))
     }
@@ -288,12 +366,30 @@ export function CommentThread({
             </div>
           )}
           <div className="relative">
+            {mention && mentionTotal > 0 && (
+              <MentionListbox
+                candidates={mentionCandidates}
+                showEveryone={showEveryone}
+                mentionIndex={mentionIndex}
+                onSelectEveryone={insertEveryone}
+                onSelectMember={insertMention}
+              />
+            )}
             <textarea
               ref={textareaRef}
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => handleDraftChange(e.target.value, e.target.selectionStart)}
+              onKeyDown={handleKeyDown}
+              onBlur={() => setMention(null)}
               rows={2}
               maxLength={COMMENT_CONTENT_MAX}
+              role="combobox"
+              aria-expanded={mention !== null && mentionTotal > 0}
+              aria-controls="mention-listbox"
+              aria-autocomplete="list"
+              aria-activedescendant={
+                mention && mentionTotal > 0 ? `mention-option-${mentionIndex}` : undefined
+              }
               placeholder="Add a comment…"
               aria-label="Add a comment"
               className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-4 py-2.5 text-base leading-6 text-on-surface outline-none transition-colors placeholder:text-on-surface-variant/60 focus:border-primary sm:text-sm sm:leading-5"
@@ -441,6 +537,7 @@ export function CommentThread({
                     comment={tc}
                     clusterId={clusterId}
                     author={memberById.get(tc.author_id)}
+                    members={members}
                     onReply={() => setReplyTo({ id: tc.id, authorName: authorNameOf(tc.id) })}
                     onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                     likeCount={likesByComment.get(tc.id)?.count ?? 0}
@@ -487,6 +584,7 @@ export function CommentThread({
                             comment={r}
                             clusterId={clusterId}
                             author={memberById.get(r.author_id)}
+                            members={members}
                             repliedToName={
                               r.parent_comment_id === tc.id ? undefined : authorNameOf(r.parent_comment_id as string)
                             }
@@ -537,6 +635,7 @@ export function CommentThread({
                   comment={c}
                   clusterId={clusterId}
                   author={memberById.get(c.author_id)}
+                  members={members}
                   repliedToName={c.parent_comment_id ? authorNameOf(c.parent_comment_id) : undefined}
                   onReply={() => setReplyTo({ id: c.id, authorName: authorNameOf(c.id) })}
                   onLike={(id) => void toggleCommentLike.mutateAsync(id)}

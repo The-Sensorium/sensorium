@@ -211,6 +211,20 @@ describe('useClusterChannel', () => {
     expect(queryClient.getQueryData(['post-comments', 'c1', 'p1'])).toEqual([comment])
   })
 
+  it('replaces an edited post-comment in the all and per-post caches', () => {
+    renderHook(() => useClusterChannel('c1'), { wrapper })
+    const original = { id: 'm1', post_id: 'p1', cluster_id: 'c1', content: 'old', created_at: '2026-01-02T00:00:00Z' }
+    queryClient.setQueryData(['post-comments', 'c1', 'all'], [original])
+    queryClient.setQueryData(['post-comments', 'c1', 'p1'], [original])
+    const handler = findBy(channelHandlers(requireSupabaseMock.mock.results[0].value), 'post_comments', 'UPDATE')
+    const edited = { ...original, content: 'new', edited_at: '2026-01-03T00:00:00Z' }
+    act(() => {
+      handler?.({ new: edited } as never)
+    })
+    expect(queryClient.getQueryData(['post-comments', 'c1', 'all'])).toEqual([edited])
+    expect(queryClient.getQueryData(['post-comments', 'c1', 'p1'])).toEqual([edited])
+  })
+
   it('routes a post-comment INSERT to matching many caches', () => {
     renderHook(() => useClusterChannel('c1'), { wrapper })
     queryClient.setQueryData(['post-comments', 'many', 'p1,p2', 'all'], [])

@@ -1421,7 +1421,7 @@ Content
 ```text
 Post (optional title, text, optional image or GIF)
 Heart likes
-Comments and replies (one threaded level; a reply to a reply is prefixed @name)
+Comments and replies (one threaded level; a reply to a reply is prefixed @name; @-mentions of members and @everyone, with suggestions as you type)
 ```
 
 Composer
@@ -1439,6 +1439,7 @@ Actions
 Like
 Comment
 Reply
+Edit (author; an edited comment shows an "edited" marker)
 Delete (author)
 Report (member)
 Hide / Restore (moderator)

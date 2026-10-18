@@ -1418,6 +1418,7 @@ export type Database = {
           content: string | null
           created_at: string
           deleted_at: string | null
+          edited_at: string | null
           gif_url: string | null
           id: string
           image_url: string | null
@@ -1431,6 +1432,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           deleted_at?: string | null
+          edited_at?: string | null
           gif_url?: string | null
           id?: string
           image_url?: string | null
@@ -1444,6 +1446,7 @@ export type Database = {
           content?: string | null
           created_at?: string
           deleted_at?: string | null
+          edited_at?: string | null
           gif_url?: string | null
           id?: string
           image_url?: string | null
@@ -2541,6 +2544,10 @@ export type Database = {
       }
       edit_post: {
         Args: { p_content: string; p_post_id: string; p_title?: string }
+        Returns: undefined
+      }
+      edit_post_comment: {
+        Args: { p_comment_id: string; p_content: string }
         Returns: undefined
       }
       end_call: { Args: { p_call_id: string }; Returns: undefined }

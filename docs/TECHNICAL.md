@@ -129,6 +129,13 @@ a time.
 - **Replies (Instagram-style)**: replies render indented under their parent
   comment as a single thread; a reply that targets another reply is prefixed with
   `@name`. Any comment can be replied to, but replies stay one visual level.
+- **Editing (0208)**: an author edits their own comment body in place
+  (`edit_post_comment`, mirroring `edit_post`): the RPC re-checks authorship and
+  content length and stamps `edited_at`, and clients show an "edited" marker next
+  to the timestamp. Editing fires no notification (mention/reply rows are
+  insert-only), matching chat and post edits, and it broadcasts to other open
+  viewers via the `post_comments` realtime UPDATE subscription (a soft delete
+  stays undelivered because it fails the read policy).
 - **Likes**: a single heart per user per post and per comment/reply
   (`toggle_post_like`, `toggle_comment_like`), applied optimistically in the UI.
   Likes are counted client-side from the likes query; `comment_likes` is the only
@@ -144,7 +151,11 @@ a time.
   preference columns (0080), and at fan-out time by muted-author suppression
   (0163): recipients who muted the actor get no row, no push, and no email. Since 0162 the `post_comment` payload carries
   `post_id` plus `comment_id` (the new comment row id); legacy rows carry
-  `post_id` only and clients fall back to the post top. Chat `mention` and
+  `post_id` only and clients fall back to the post top. Comments also fan out
+  `mention` rows (0207) for `@`-named members and `@everyone`, titled
+  `<author> mentioned you` / `<author> mentioned everyone` with the same
+  `post_id` plus `comment_id` payload; a post or parent author who was mentioned
+  gets the `mention` row instead of the generic `post_comment` row. Chat `mention` and
   `reaction` payloads carry `message_id`. The center deep-links chat rows to
   `/cluster/:id?message=<id>` and post comment rows to
   `/posts/:postId?comment=<id>`; the room and post detail screens scroll the
