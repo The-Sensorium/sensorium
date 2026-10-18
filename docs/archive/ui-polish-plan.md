@@ -71,14 +71,16 @@ Third pass also completed: lineHeight/title scale in `votes.tsx`,
 `meetups` badges; the `Field` empty-label guard; and two copy dedupes
 (`settings/profile` local-time subtitle, `notifications` empty copy).
 
-Remaining:
+Won't do (decided):
 
-- P2 tokenize magic gutters (`room.tsx`, `call.tsx`, call components,
-  `onboarding/index.tsx`). Deferred: the values are already correct (16), so
-  this is import hygiene only with no visual change.
-- Minor copy duplicates left as-is: `meetups/new` repeated title, `home`
-  greeting plus daypart, `ModePanel` eyebrow, `CreatedPendingSection`
-  "Pending".
+- Tokenizing the magic 16px gutters (`room.tsx`, `call.tsx`, call components,
+  `onboarding/index.tsx`) to `spacing.gutter` / `containerMargin`. The values
+  are already correct, so this is import hygiene with no visual change and is
+  not worth touching the room/call layout code. Do it only as an isolated
+  `chore` PR if ever needed.
+- Minor copy duplicates: `meetups/new` repeated title, `home` greeting plus
+  daypart, `ModePanel` eyebrow, `CreatedPendingSection` "Pending". These are
+  content decisions, not defects; leave for a content/design pass.
 
 ## Audit coverage
 
