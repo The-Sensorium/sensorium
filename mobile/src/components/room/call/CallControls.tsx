@@ -99,15 +99,15 @@ export function CallControls({
       label: micOn ? 'Mute' : 'Unmute',
       on: micOn,
       onPress: toggleMic,
-      onIcon: <Mic size={20} color="#fff" strokeWidth={2} />,
-      offIcon: <MicOff size={20} color="#fff" strokeWidth={2} />,
+      onIcon: <Mic size={20} color={onAccent} strokeWidth={2} />,
+      offIcon: <MicOff size={20} color={t.onSurfaceVariant} strokeWidth={2} />,
     },
     {
       label: cameraOn ? 'Camera off' : 'Camera on',
       on: cameraOn,
       onPress: toggleCamera,
-      onIcon: <Video size={20} color="#fff" strokeWidth={2} />,
-      offIcon: <VideoOff size={20} color="#fff" strokeWidth={2} />,
+      onIcon: <Video size={20} color={onAccent} strokeWidth={2} />,
+      offIcon: <VideoOff size={20} color={t.onSurfaceVariant} strokeWidth={2} />,
     },
   ]
 
@@ -152,9 +152,9 @@ export function CallControls({
           }}
         >
           {speakerOn ? (
-            <Volume2 size={20} color="#fff" strokeWidth={2} />
+            <Volume2 size={20} color={onAccent} strokeWidth={2} />
           ) : (
-            <VolumeX size={20} color="#fff" strokeWidth={2} />
+            <VolumeX size={20} color={t.onSurfaceVariant} strokeWidth={2} />
           )}
         </Pressable>
         <View style={{ position: 'relative' }}>
@@ -210,7 +210,7 @@ export function CallControls({
             backgroundColor: scheme === 'dark' ? t.errorContainer : t.error,
           }}
         >
-          <PhoneOff size={20} color="#fff" strokeWidth={2} />
+          <PhoneOff size={20} color={t.onPrimary} strokeWidth={2} />
         </Pressable>
       </View>
     </View>
