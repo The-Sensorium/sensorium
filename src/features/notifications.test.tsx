@@ -104,6 +104,13 @@ describe('notificationTarget', () => {
     expect(notificationTarget(withPayload('post_like', 'c1', { post_id: 'p1' }))).toEqual({ to: '/posts/p1' })
   })
 
+  it('deep-links post comment mentions to the exact comment', () => {
+    expect(notificationTarget(withPayload('mention', 'c1', { post_id: 'p1', comment_id: 'cm1' }))).toEqual({
+      to: '/posts/p1?comment=cm1',
+    })
+    expect(notificationTarget(withPayload('mention', 'c1', { post_id: 'p1' }))).toEqual({ to: '/posts/p1' })
+  })
+
   it('links signal_new to the signal thread when present', () => {
     expect(notificationTarget(n('signal_new', 'c1', 'sig9'))).toEqual({ to: '/cluster/c1/signals/sig9' })
     expect(notificationTarget(n('signal_new', 'c1'))).toEqual({ to: '/cluster/c1/signals' })

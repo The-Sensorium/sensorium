@@ -471,6 +471,8 @@ export function notificationTarget(
       if (clusterId && messageId) return { to: `/cluster/${clusterId}?message=${messageId}` }
       return clusterId ? { to: `/cluster/${clusterId}` } : null
     case 'mention':
+      if (postId && commentId) return { to: `/posts/${postId}?comment=${commentId}` }
+      if (postId) return { to: `/posts/${postId}` }
       if (clusterId && signalId) return { to: `/cluster/${clusterId}/signals/${signalId}` }
       if (clusterId && messageId) return { to: `/cluster/${clusterId}?message=${messageId}` }
       return clusterId ? { to: `/cluster/${clusterId}` } : null

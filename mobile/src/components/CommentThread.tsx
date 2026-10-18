@@ -10,6 +10,7 @@ import {
 } from '../features/posts'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../features/moderation'
 import { MutedHideBar, MutedPlaceholder } from './MutedPlaceholder'
+import type { MentionMember } from '../features/mentions'
 import { useTheme } from '../lib/use-theme'
 import type { ReplyTarget } from './comment-helpers'
 
@@ -19,7 +20,9 @@ export function CommentThread({
   clusterId,
   comments,
   memberById,
+  members,
   onReply,
+  onEdit,
   deepLinkCommentId,
   scrollRef,
   contentRef,
@@ -28,7 +31,9 @@ export function CommentThread({
   clusterId: string
   comments: PostComment[]
   memberById: Map<string, { id: string; display_name: string; avatar_url: string | null }>
+  members: MentionMember[]
   onReply(target: ReplyTarget): void
+  onEdit?(comment: PostComment): void
   deepLinkCommentId?: string | null
   scrollRef?: RefObject<KeyboardAwareScrollViewRef | null>
   contentRef?: RefObject<View | null>
@@ -290,7 +295,9 @@ export function CommentThread({
                         comment={tc}
                         clusterId={clusterId}
                         author={memberById.get(tc.author_id)}
+                        members={members}
                         onReply={() => onReply({ id: tc.id, authorName: authorNameOf(tc.id) })}
+                        onEdit={onEdit ? () => onEdit(tc) : undefined}
                         onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                         likeCount={likesByComment.get(tc.id)?.count ?? 0}
                         likedByMe={likesByComment.get(tc.id)?.mine ?? false}
@@ -329,8 +336,10 @@ export function CommentThread({
                               comment={r}
                               clusterId={clusterId}
                               author={memberById.get(r.author_id)}
+                              members={members}
                               repliedToName={r.parent_comment_id === tc.id ? undefined : authorNameOf(r.parent_comment_id as string)}
                               onReply={() => onReply({ id: r.id, authorName: authorNameOf(r.id) })}
+                              onEdit={onEdit ? () => onEdit(r) : undefined}
                               onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                               likeCount={likesByComment.get(r.id)?.count ?? 0}
                               likedByMe={likesByComment.get(r.id)?.mine ?? false}
@@ -386,8 +395,10 @@ export function CommentThread({
                     comment={c}
                     clusterId={clusterId}
                     author={memberById.get(c.author_id)}
+                    members={members}
                     repliedToName={c.parent_comment_id ? authorNameOf(c.parent_comment_id) : undefined}
                     onReply={() => onReply({ id: c.id, authorName: authorNameOf(c.id) })}
+                    onEdit={onEdit ? () => onEdit(c) : undefined}
                     onLike={(id) => void toggleCommentLike.mutateAsync(id)}
                     likeCount={likesByComment.get(c.id)?.count ?? 0}
                     likedByMe={likesByComment.get(c.id)?.mine ?? false}

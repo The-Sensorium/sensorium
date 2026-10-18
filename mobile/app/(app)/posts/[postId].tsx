@@ -7,11 +7,13 @@ import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controlle
 import { useAuth } from '../../../src/auth-context'
 import { useClusterMembers } from '../../../src/features/matching'
 import { useCluster } from '../../../src/features/introductions'
+import type { MentionMember } from '../../../src/features/mentions'
 import {
   usePost,
   useClusterPostLikes,
   usePostComments,
   useTogglePostLike,
+  type PostComment,
 } from '../../../src/features/posts'
 import { useClusterChannel } from '../../../src/features/realtime'
 import { PostCard } from '../../../src/components/PostCard'
@@ -44,6 +46,9 @@ export default function PostDetailScreen() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState(false)
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
+  // Editing borrows the composer (mirrors the room). Only one of reply/edit
+  // is active at a time.
+  const [editingComment, setEditingComment] = useState<PostComment | null>(null)
   // Notification deep link (?comment=) passes straight through to the
   // thread, which reports back once handled so the param is cleared. Each
   // new value (including a re-tap of the same comment) fires again.
@@ -54,6 +59,15 @@ export default function PostDetailScreen() {
   // Stable identity: the composer's missing-target effect depends on these,
   // so inline arrows would re-run it on every render (each keystroke).
   const clearReply = useCallback(() => setReplyTo(null), [])
+  const startEdit = useCallback((comment: PostComment) => {
+    setReplyTo(null)
+    setEditingComment(comment)
+  }, [])
+  const startReply = useCallback((target: ReplyTarget) => {
+    setEditingComment(null)
+    setReplyTo(target)
+  }, [])
+  const finishEdit = useCallback(() => setEditingComment(null), [])
   const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
@@ -66,11 +80,24 @@ export default function PostDetailScreen() {
   useEffect(() => {
     composerHeight.value = 0
     setReplyTo(null)
+    setEditingComment(null)
     setRevealed(false)
   }, [postId, composerHeight])
 
   const memberById = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.id, m])),
+    [members.data],
+  )
+  // Member list for @-mention autocomplete and rendering. Names can be null in
+  // the raw rows; MentionMember needs a string.
+  const mentionMembers = useMemo<MentionMember[]>(
+    () =>
+      (members.data ?? []).map((m) => ({
+        id: m.id,
+        display_name: m.display_name ?? 'Member',
+        avatar_url: m.avatar_url,
+        avatar_thumb_url: m.avatar_thumb_url,
+      })),
     [members.data],
   )
 
@@ -119,12 +146,16 @@ export default function PostDetailScreen() {
           postId={p.id}
           comments={comments.data ?? []}
           replyTo={replyTo}
+          editing={editingComment ? { id: editingComment.id, content: editingComment.content ?? '' } : null}
+          members={mentionMembers}
+          selfId={userId}
           selfAvatar={{
             display_name: memberById.get(userId!)?.display_name ?? 'Member',
             avatar_url: memberById.get(userId!)?.avatar_url ?? null,
             avatar_thumb_url: memberById.get(userId!)?.avatar_thumb_url ?? null,
           }}
           onCancelReply={clearReply}
+          onEditDone={finishEdit}
           onPosted={clearReply}
         />
       }
@@ -177,7 +208,9 @@ export default function PostDetailScreen() {
           clusterId={clusterId!}
           comments={comments.data ?? []}
           memberById={memberById}
-          onReply={setReplyTo}
+          members={mentionMembers}
+          onReply={startReply}
+          onEdit={startEdit}
           deepLinkCommentId={scrollToCommentId}
           scrollRef={scrollRef}
           contentRef={contentRef}

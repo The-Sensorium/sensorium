@@ -152,25 +152,32 @@ function patchPostLike(
   invalidateManyByCluster(queryClient, 'post-counts', clusterId)
 }
 
-/** Route a post-comment INSERT to its cluster caches (comments carry cluster_id). */
+/** Route a post-comment INSERT/UPDATE to its cluster caches (comments carry cluster_id). */
 function patchPostComment(
   queryClient: ReturnType<typeof useQueryClient>,
   comment: PostCommentRealtime,
+  kind: 'insert' | 'update' = 'insert',
 ) {
   const clusterId = comment.cluster_id
   if (!clusterId) return
   // Feed reads ['post-comments', clusterId, 'all']; the detail page reads
   // ['post-comments', 'single', postId], so patch both to keep them in sync.
-  const insert = (cur?: PostCommentRealtime[]) => {
-    if (!cur || cur.some((c) => c.id === comment.id)) return cur
-    return [...cur, comment].sort((a, b) => a.created_at.localeCompare(b.created_at))
+  const apply = (cur?: PostCommentRealtime[]) => {
+    if (!cur) return cur
+    if (kind === 'insert') {
+      if (cur.some((c) => c.id === comment.id)) return cur
+      return [...cur, comment].sort((a, b) => a.created_at.localeCompare(b.created_at))
+    }
+    return cur.map((c) => (c.id === comment.id ? comment : c))
   }
-  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], insert)
-  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, comment.post_id], insert)
-  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', 'single', comment.post_id], insert)
-  patchManyByPost<PostCommentRealtime>(queryClient, 'post-comments', comment.post_id, insert)
-  void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
-  invalidateManyByCluster(queryClient, 'post-counts', clusterId)
+  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, 'all'], apply)
+  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', clusterId, comment.post_id], apply)
+  queryClient.setQueryData<PostCommentRealtime[]>(['post-comments', 'single', comment.post_id], apply)
+  patchManyByPost<PostCommentRealtime>(queryClient, 'post-comments', comment.post_id, apply)
+  if (kind === 'insert') {
+    void queryClient.invalidateQueries({ queryKey: ['post-counts', clusterId] })
+    invalidateManyByCluster(queryClient, 'post-counts', clusterId)
+  }
 }
 
 /** Route a comment-like INSERT/DELETE to its cluster cache (likes carry cluster_id). */
@@ -501,6 +508,21 @@ export function useClusterChannel(clusterId: string | null) {
         },
         (payload) => {
           patchPostComment(queryClient, payload.new as PostCommentRealtime)
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'post_comments',
+          filter: `cluster_id=eq.${clusterId}`,
+        },
+        (payload) => {
+          // Edits keep deleted_at null, so the updated row stays visible to RLS
+          // and reaches this handler; a soft delete fails the SELECT policy and
+          // is intentionally not delivered.
+          patchPostComment(queryClient, payload.new as PostCommentRealtime, 'update')
         },
       )
       .on(

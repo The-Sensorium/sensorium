@@ -18,6 +18,7 @@ import {
   useCreatePost,
   useDeleteComment,
   useDeletePost,
+  useEditComment,
   useEditPost,
   useLoadEarlierPosts,
   usePost,
@@ -570,6 +571,19 @@ describe('posts', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     const c = requireSupabaseMock.mock.results[0].value
     expect(c.rpc).toHaveBeenCalledWith('delete_post_comment', { p_comment_id: 'x1' })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments'] })
+  })
+
+  it('useEditComment calls edit_post_comment and invalidates comments', async () => {
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+    const { result } = renderHook(() => useEditComment('c1'), { wrapper })
+    result.current.mutate({ commentId: 'x1', content: 'edited' })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    const c = requireSupabaseMock.mock.results[0].value
+    expect(c.rpc).toHaveBeenCalledWith('edit_post_comment', {
+      p_comment_id: 'x1',
+      p_content: 'edited',
+    })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['post-comments'] })
   })
 
