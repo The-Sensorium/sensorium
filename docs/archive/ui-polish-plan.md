@@ -71,6 +71,15 @@ Third pass also completed: lineHeight/title scale in `votes.tsx`,
 `meetups` badges; the `Field` empty-label guard; and two copy dedupes
 (`settings/profile` local-time subtitle, `notifications` empty copy).
 
+Fourth pass (role-level audit, not attribute sweeps): destructive delete
+confirms now use the error tone (`CommentItem`, room message delete); radio
+groups use the `checked` accessibility state consistently; icon-only controls
+have `accessibilityRole`/state (call controls, voice recorder, room composer,
+GIF picker, timezone picker, call close); the appeal back control pops instead
+of pushing `/restricted`; the profile, post, queue, and signal not-found
+states render a back control for iOS; the intro banner CTA label matches the
+compact primary size; and the Posts tab title matches the other tab titles.
+
 Won't do (decided):
 
 - Tokenizing the magic 16px gutters (`room.tsx`, `call.tsx`, call components,

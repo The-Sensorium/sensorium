@@ -551,7 +551,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
               key={r}
               onPress={() => onPickRadius(r as LocalRadius)}
               accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
+              accessibilityState={{ checked: active }}
               accessibilityLabel={`${r} kilometer radius`}
               style={{
                 borderWidth: 1,

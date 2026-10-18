@@ -118,6 +118,7 @@ export function CallControls({
           <Pressable
             key={b.label}
             accessibilityLabel={b.label}
+            accessibilityRole="button"
             accessibilityHint={b.label === 'Mute' || b.label === 'Unmute' ? 'Double tap to toggle your microphone' : 'Double tap to toggle your camera'}
             accessibilityState={{ selected: b.on, disabled: !live }}
             onPress={() => void b.onPress()}
@@ -137,6 +138,7 @@ export function CallControls({
         ))}
         <Pressable
           accessibilityLabel={speakerOn ? 'Speaker off' : 'Speaker on'}
+          accessibilityRole="button"
           accessibilityHint="Double tap to toggle the speaker"
           accessibilityState={{ selected: speakerOn, disabled: !live }}
           onPress={() => void toggleSpeaker()}
@@ -160,6 +162,8 @@ export function CallControls({
         <View style={{ position: 'relative' }}>
           <Pressable
             accessibilityLabel={chatOpen ? 'Close chat' : 'Open chat'}
+            accessibilityRole="button"
+            accessibilityState={{ selected: chatOpen }}
             onPress={onChatPress}
             style={{
               width: 56,
@@ -200,6 +204,7 @@ export function CallControls({
         </View>
         <Pressable
           accessibilityLabel="Hang up"
+          accessibilityRole="button"
           onPress={handleHangUp}
           style={{
             width: 56,

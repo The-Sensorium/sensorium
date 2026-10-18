@@ -48,6 +48,16 @@ export default function QueueScreen() {
   if (!mode) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card>
           <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
             Queue not found
@@ -65,6 +75,16 @@ export default function QueueScreen() {
   if (!entry) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card>
           <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
             You’re not in this queue

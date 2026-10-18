@@ -247,6 +247,7 @@ function CallScreenContent() {
           </Text>
           <Pressable
             accessibilityLabel="Close"
+            accessibilityRole="button"
             onPress={finishCall}
             hitSlop={4}
             style={{
@@ -287,6 +288,7 @@ function CallScreenContent() {
             </Text>
             <Pressable
               accessibilityLabel="Close"
+              accessibilityRole="button"
               onPress={finishCall}
               hitSlop={4}
               style={{

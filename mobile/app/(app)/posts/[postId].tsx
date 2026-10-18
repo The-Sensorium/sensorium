@@ -112,6 +112,16 @@ export default function PostDetailScreen() {
   if (!post.data) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card plain>
           <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
             This post isn’t available to you.

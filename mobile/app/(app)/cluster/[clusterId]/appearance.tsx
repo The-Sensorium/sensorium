@@ -112,7 +112,7 @@ function ClusterAppearanceScreenContent() {
                 key={id}
                 onPress={() => setPending(id)}
                 accessibilityRole="radio"
-                accessibilityState={{ selected }}
+                accessibilityState={{ checked: selected }}
                 accessibilityLabel={`${meta.name} theme`}
                 style={{
                   flexDirection: 'row',

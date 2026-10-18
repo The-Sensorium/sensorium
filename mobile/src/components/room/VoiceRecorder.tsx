@@ -168,6 +168,7 @@ export function VoiceRecorder({
         <Text style={{ flex: 1, fontSize: 14, color: t.error }}>Recording failed. Try again.</Text>
         <Pressable
           accessibilityLabel="Dismiss voice recorder"
+          accessibilityRole="button"
           onPress={onCancel}
           hitSlop={8}
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
@@ -206,6 +207,7 @@ export function VoiceRecorder({
       <View style={{ flex: 1, minWidth: 0 }} />
       <Pressable
         accessibilityLabel={recorderState.isRecording ? 'Pause recording' : 'Resume recording'}
+        accessibilityRole="button"
         onPress={() => {
           if (recorderState.isRecording) recorder.pause()
           else recorder.record()
@@ -221,6 +223,7 @@ export function VoiceRecorder({
       </Pressable>
       <Pressable
         accessibilityLabel="Stop and preview"
+        accessibilityRole="button"
         onPress={() => {
           stoppedRef.current = true
           void stopToPreview()
@@ -232,6 +235,7 @@ export function VoiceRecorder({
       </Pressable>
       <Pressable
         accessibilityLabel="Discard voice note"
+        accessibilityRole="button"
         onPress={onCancel}
         hitSlop={8}
         style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
@@ -311,6 +315,7 @@ function VoicePreview({
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}>
       <Pressable
         accessibilityLabel={status.playing ? 'Pause preview' : 'Play preview'}
+        accessibilityRole="button"
         onPress={() => void togglePreviewPlay()}
         hitSlop={8}
         style={{
@@ -339,6 +344,8 @@ function VoicePreview({
       </View>
       <Pressable
         accessibilityLabel="Discard voice note"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: sending }}
         disabled={sending}
         onPress={onDiscard}
         hitSlop={8}
@@ -348,6 +355,8 @@ function VoicePreview({
       </Pressable>
       <Pressable
         accessibilityLabel="Send voice note"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: sending }}
         disabled={sending}
         onPress={() => void handleSend()}
         hitSlop={8}

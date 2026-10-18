@@ -101,7 +101,7 @@ export function IntroChecklistBanner({
               justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: onAccent }}>Answer</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: onAccent }}>Answer</Text>
           </Pressable>
         </Link>
         {dismissible ? (

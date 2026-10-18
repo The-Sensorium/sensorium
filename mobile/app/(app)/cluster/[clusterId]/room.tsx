@@ -1629,6 +1629,7 @@ function RoomScreenContent() {
               title="Delete"
               loadingTitle="Deleting…"
               loading={deleteMessage.isPending}
+              tone="error"
               onPress={() => deleteFor && void remove(deleteFor)}
             />
           </View>

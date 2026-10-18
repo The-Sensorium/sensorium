@@ -108,6 +108,16 @@ function ProfileScreenContent() {
   if (!member) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={16} color={accentText} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: accentText }}>Back</Text>
+        </Pressable>
         <Card plain>
           <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
             This member isn&apos;t in your cluster.

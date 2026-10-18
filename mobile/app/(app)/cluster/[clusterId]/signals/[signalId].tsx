@@ -221,6 +221,16 @@ function SignalDetailScreenContent() {
     return (
       <Screen>
         <ClusterSectionHeader title="Signal" clusterId={clusterId} section="signals" />
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card plain>
           <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
             This signal isn’t available.
