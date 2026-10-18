@@ -58,6 +58,25 @@ export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogC
     }
   }
 
+  const confirmSheet = (
+    <ConfirmSheet
+      open={confirmOpen}
+      onClose={() => { if (!pending) closeConfirm() }}
+      title={dialogTitle}
+      body={
+        dialogUnmute
+          ? `Unmuting ${targetName} shows their messages, posts, comments, and signals again right away.`
+          : `Muting ${targetName} hides their messages, posts, comments, and signals for you only, in every shared cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.`
+      }
+      error={confirmError}
+      confirmTitle={dialogLabel}
+      confirmLoadingTitle="Saving…"
+      confirmIcon={<DialogIcon size={16} color={onAccent} strokeWidth={1.5} />}
+      loading={pending}
+      onConfirm={() => void handleConfirm()}
+    />
+  )
+
   if (menuItem) {
     return (
       <View>
@@ -78,26 +97,11 @@ export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogC
           }}
         >
           <Icon size={18} color={t.onSurface} strokeWidth={1.5} />
-          <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.onSurface }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
             {label}
           </Text>
         </Pressable>
-        <ConfirmSheet
-          open={confirmOpen}
-          onClose={() => { if (!pending) closeConfirm() }}
-          title={dialogTitle}
-          body={
-            dialogUnmute
-              ? `Unmuting ${targetName} shows their messages, posts, comments, and signals again right away.`
-              : `Muting ${targetName} hides their messages, posts, comments, and signals for you only, in every shared cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.`
-          }
-          error={confirmError}
-          confirmTitle={dialogLabel}
-          confirmLoadingTitle="Saving…"
-          confirmIcon={<DialogIcon size={16} color={onAccent} strokeWidth={1.5} />}
-          loading={pending}
-          onConfirm={() => void handleConfirm()}
-        />
+        {confirmSheet}
       </View>
     )
   }
@@ -140,22 +144,7 @@ export function MuteButton({ targetUserId, targetName, fill, menuItem, onDialogC
       {error ? (
         <Text style={{ fontSize: 12, color: t.error }}>Couldn’t update. Try again.</Text>
       ) : null}
-      <ConfirmSheet
-        open={confirmOpen}
-        onClose={() => { if (!pending) closeConfirm() }}
-        title={dialogTitle}
-        body={
-          dialogUnmute
-            ? `Unmuting ${targetName} shows their messages, posts, comments, and signals again right away.`
-            : `Muting ${targetName} hides their messages, posts, comments, and signals for you only, in every shared cluster. Membership, votes, and presence stay the same. They are never told. You can unmute anytime.`
-        }
-        error={confirmError}
-        confirmTitle={dialogLabel}
-        confirmLoadingTitle="Saving…"
-        confirmIcon={<DialogIcon size={16} color={onAccent} strokeWidth={1.5} />}
-        loading={pending}
-        onConfirm={() => void handleConfirm()}
-      />
+      {confirmSheet}
     </View>
   )
 }

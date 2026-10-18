@@ -16,7 +16,7 @@ export function OfflineBanner() {
       accessibilityRole="alert"
       style={[styles.banner, { backgroundColor: t.error, paddingTop: insets.top }]}
     >
-      <WifiOff size={16} color={t.onError} />
+      <WifiOff size={16} color={t.onError} strokeWidth={1.5} />
       <Text style={[styles.text, { color: t.onError }]}>
         You&apos;re offline. Updates will load when you reconnect.
       </Text>
@@ -34,7 +34,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   text: {
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '600',
     textAlign: 'center',
     flexShrink: 1,

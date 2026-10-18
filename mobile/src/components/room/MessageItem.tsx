@@ -198,7 +198,7 @@ export function MessageItem({
                   justifyContent: 'center',
                 }}
               >
-                <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={2} />
+                <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
               </View>
             </Animated.View>
           <GestureDetector gesture={swipePan}>

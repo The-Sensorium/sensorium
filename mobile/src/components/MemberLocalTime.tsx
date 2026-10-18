@@ -3,6 +3,7 @@ import { Text, View } from 'react-native'
 import { Moon, Sun } from 'lucide-react-native'
 import { formatMemberTime, isMemberDaytime, isValidTimeZone } from '../lib/timezones'
 import { useResolvedScheme } from '../lib/theme-choice'
+import { STATUS_PALETTE } from '../lib/status-palette'
 import { useTheme } from '../lib/use-theme'
 
 function msToNextMinute(now: Date): number {
@@ -18,7 +19,7 @@ export function MemberLocalTime({
 }) {
   const t = useTheme()
   const scheme = useResolvedScheme()
-  const amber = scheme === 'dark' ? '#fbbf24' : '#f59e0b'
+  const amber = STATUS_PALETTE.amber[scheme]
   const [, setTick] = useState(0)
   const valid = !!timeZone && isValidTimeZone(timeZone)
 

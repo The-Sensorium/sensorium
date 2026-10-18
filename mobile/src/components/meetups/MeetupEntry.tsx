@@ -152,7 +152,7 @@ export function MeetupEntry({ clusterId, callLive = false }: { clusterId: string
           backgroundColor: t.primary,
         }}
       >
-        <CalendarDays size={16} color={onAccent} strokeWidth={2} />
+        <CalendarDays size={16} color={onAccent} strokeWidth={1.5} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>

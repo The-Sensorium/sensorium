@@ -330,10 +330,10 @@ function VoicePreview({
         )}
       </Pressable>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+        <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
           Preview Audio
         </Text>
-        <Text style={{ fontSize: 13, color: t.onSurfaceVariant }} numberOfLines={1}>
+        <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} numberOfLines={1}>
           {formatVoiceDuration(elapsed)} / {formatVoiceDuration(durationSec)}
         </Text>
       </View>

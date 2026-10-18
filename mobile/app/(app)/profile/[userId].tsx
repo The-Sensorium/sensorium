@@ -126,7 +126,7 @@ function ProfileScreenContent() {
         asChild
       >
         <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, minHeight: 44, marginBottom: 4 }}>
-          <ArrowLeft size={16} color={accentText} strokeWidth={1.5} />
+          <ArrowLeft size={16} color={accentText} strokeWidth={2} />
           <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: accentText }}>
             Back to members
           </Text>

@@ -107,7 +107,7 @@ export function PostCard({
             <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url} size={40} />
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurface }} numberOfLines={1} maxFontSizeMultiplier={1.4}>
-                <Text style={{ fontWeight: '500' }}>{author?.display_name ?? 'Member'}</Text>
+                <Text style={{ fontWeight: '600' }}>{author?.display_name ?? 'Member'}</Text>
                 {isMine ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}> (you)</Text> : null}
               </Text>
               {clusterName ? (
@@ -129,7 +129,7 @@ export function PostCard({
           </View>
           {post.title ? (
             <Text
-              style={{ marginTop: 8, fontSize: 16, fontWeight: '600', lineHeight: 22, color: t.onSurface }}
+              style={{ marginTop: 8, fontSize: 16, fontWeight: '600', lineHeight: 24, color: t.onSurface }}
               numberOfLines={compact ? 2 : undefined}
             >
               {post.title}
@@ -229,11 +229,11 @@ export function PostCard({
       />
 
       <Modal open={confirmOpen} onClose={() => { if (!del.isPending) setConfirmOpen(false) }} title="Delete post?">
-        <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
+        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
           This removes your post from the cluster. This action can&apos;t be undone.
         </Text>
         {deleteError ? (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
+          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>{deleteError}</Text>
         ) : null}
         <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
           <Pressable
@@ -296,7 +296,7 @@ export function PostCard({
               color: t.onSurface,
             }}
           />
-          {editError ? <Text style={{ fontSize: 12, color: t.error }}>{editError}</Text> : null}
+          {editError ? <Text style={{ fontSize: 12, lineHeight: 16, color: t.error }}>{editError}</Text> : null}
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
             <Pressable onPress={() => setEditing(false)} hitSlop={8} style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}>
               <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>

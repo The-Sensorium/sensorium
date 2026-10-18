@@ -59,7 +59,7 @@ export default function SettingsScreen() {
         >
           <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url} size={56} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+            <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
               {profile.data?.display_name ?? 'You'}
             </Text>
             <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant }} numberOfLines={1}>
@@ -80,7 +80,7 @@ export default function SettingsScreen() {
 
       <Card>
         <View style={{ marginBottom: 4 }}>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Account</Text>
+          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Account</Text>
           <View style={{ marginTop: 16, gap: 8 }}>
             <Pressable
               onPress={() => setDeleteOpen(true)}
@@ -266,7 +266,7 @@ function AppearanceSection() {
   return (
     <Card>
       <View style={{ marginBottom: 4 }}>
-        <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Appearance</Text>
+        <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Appearance</Text>
         <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
           Light, dark, or follow your system.
         </Text>
@@ -320,7 +320,7 @@ function SafetySection() {
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <ShieldCheck size={20} color={t.primary} strokeWidth={1.5} />
-          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Safety</Text>
+          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Safety</Text>
         </View>
         <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
           Muted members are hidden for you only. They are never told.
@@ -342,7 +342,7 @@ function SafetySection() {
               <LoadingView />
             ) : mutes.isError ? (
               <>
-                <Text style={{ fontSize: 14, color: t.error }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: t.error }}>
                   Couldn’t load your muted members. Please try again.
                 </Text>
                 <Pressable
@@ -440,7 +440,7 @@ function NotificationPreferences() {
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <BellRing size={20} color={t.primary} strokeWidth={1.5} />
-          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>
+          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
             Notification preferences
           </Text>
         </View>
@@ -458,7 +458,7 @@ function NotificationPreferences() {
           </View>
         ) : clusters.isError || prefs.isError ? (
           <>
-            <Text style={{ marginTop: 16, fontSize: 14, color: t.error }}>
+            <Text style={{ marginTop: 16, fontSize: 14, lineHeight: 20, color: t.error }}>
               Couldn’t load your preferences. Please try again.
             </Text>
             <Pressable
@@ -478,7 +478,7 @@ function NotificationPreferences() {
           </>
         ) : (clusters.data ?? []).length === 0 ? (
           <View style={{ marginTop: 16, backgroundColor: t.surfaceContainer, borderRadius: radii.md, padding: 16 }}>
-            <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
               No clusters yet. Preferences appear here once you join a cluster.
             </Text>
           </View>

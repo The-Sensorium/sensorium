@@ -69,7 +69,7 @@ export default function ClustersScreen() {
       )}
       <ErrorText message={pull.error} />
 
-      <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginBottom: 12 }}>
+      <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, marginBottom: 12 }}>
         Your clusters
       </Text>
       {clusters.isLoading ? (
@@ -78,7 +78,7 @@ export default function ClustersScreen() {
         <Card plain>
           <View style={{ alignItems: 'center', padding: 16 }}>
             <Users size={24} color={t.onSurfaceVariant} strokeWidth={1.5} />
-            <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+            <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
               No clusters yet. Join a matching mode below and you’ll be matched with{' '}
               {CLUSTER_SIZE - 1} people.
             </Text>
@@ -88,7 +88,7 @@ export default function ClustersScreen() {
         <ClusterList items={clusters.data ?? []} unreadByCluster={unreadByCluster} />
       )}
 
-      <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginTop: 24, marginBottom: 12 }}>
+      <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, marginTop: 24, marginBottom: 12 }}>
         Find a match
       </Text>
       {MATCHING_MODES.map((mode) => (
@@ -179,10 +179,10 @@ function ModeTile({
             </Text>
           </View>
         </View>
-        <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>{detail}</Text>
+        <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>{detail}</Text>
         <View style={{ marginTop: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>{stateLine}</Text>
-          <ArrowRight size={16} color={t.onSurfaceVariant} />
+          <ArrowRight size={16} color={t.onSurfaceVariant} strokeWidth={2} />
         </View>
       </Pressable>
     </Link>

@@ -47,7 +47,7 @@ export default function DiscoveryModeScreen() {
           hitSlop={8}
           style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48 }}
         >
-          <ArrowLeft size={16} color={t.primary} />
+          <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
           <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>
             Back
           </Text>
@@ -75,7 +75,7 @@ export default function DiscoveryModeScreen() {
           marginBottom: 8,
         }}
       >
-        <ArrowLeft size={18} color={t.primary} />
+        <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
           Back
         </Text>

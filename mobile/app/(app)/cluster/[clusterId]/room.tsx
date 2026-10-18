@@ -1504,7 +1504,7 @@ function RoomScreenContent() {
           offset={{ closed: 0, opened: bottom }}
           style={{
             backgroundColor: roomBg,
-            paddingHorizontal: 12,
+            paddingHorizontal: 16,
             paddingTop: 8,
             paddingBottom: 8 + bottom,
           }}
@@ -1607,11 +1607,11 @@ function RoomScreenContent() {
         ) : null}
 
         <Modal open={deleteFor !== null} onClose={() => { if (!deleteMessage.isPending) { setDeleteFor(null); setDeleteError(null) } }} title="Delete message?">
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             This removes your message from the cluster chat. This action can&apos;t be undone.
           </Text>
           {deleteError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
+            <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>{deleteError}</Text>
           ) : null}
           <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
             <Pressable

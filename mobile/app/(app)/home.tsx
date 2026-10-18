@@ -25,6 +25,7 @@ import { toErrorMessage } from '../../src/lib/error'
 import { homeListError, isProfileMissingError, resolveOnboardingState, shouldShowFresh } from '../../src/lib/home-gating'
 import { radii } from '../../src/lib/theme-tokens'
 import { useResolvedScheme } from '../../src/lib/theme-choice'
+import { STATUS_PALETTE } from '../../src/lib/status-palette'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, FeedSkeleton, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { Modal } from '../../src/components/Modal'
@@ -64,7 +65,7 @@ const GET_STARTED_STEPS: { to: Href; title: string; desc: string }[] = [
 export default function HomeScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
-  const amber = scheme === 'dark' ? '#fbbf24' : '#f59e0b'
+  const amber = STATUS_PALETTE.amber[scheme]
   const auth = useAuth()
   const profile = useProfile()
   const clusters = useMyClusters()
@@ -233,7 +234,7 @@ export default function HomeScreen() {
                 <MailOpen size={20} color={t.onPrimary} strokeWidth={1.5} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>
+                <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
                   You’re invited to join a cluster
                 </Text>
                 {inv.origin === 'created' ? (
@@ -357,14 +358,14 @@ export default function HomeScreen() {
               <PartyPopper size={20} color={t.onPrimary} strokeWidth={1.5} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>
+              <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
                 Your cluster is ready
               </Text>
-              <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                 {formedCopy}
               </Text>
             </View>
-            <ArrowRight size={20} color={t.primary} />
+            <ArrowRight size={20} color={t.primary} strokeWidth={2} />
           </Pressable>
         </Link>
       ) : null}
@@ -375,7 +376,7 @@ export default function HomeScreen() {
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Sparkles size={20} color={t.primary} strokeWidth={1.5} />
-            <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+            <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
               Welcome to Sensorium
             </Text>
           </View>
@@ -418,7 +419,7 @@ export default function HomeScreen() {
                       {step.desc}
                     </Text>
                   </View>
-                  <ArrowRight size={16} color={t.primary} />
+                  <ArrowRight size={16} color={t.primary} strokeWidth={2} />
                 </Pressable>
               </Link>
             ))}
@@ -430,7 +431,7 @@ export default function HomeScreen() {
             <View
               style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
             >
-              <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+              <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
                 Your clusters
               </Text>
               <Link href="/(app)/clusters" asChild>
@@ -438,7 +439,7 @@ export default function HomeScreen() {
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
                     View all clusters
                   </Text>
-                  <ArrowRight size={16} color={t.primary} />
+                  <ArrowRight size={16} color={t.primary} strokeWidth={2} />
                 </Pressable>
               </Link>
             </View>
@@ -560,7 +561,7 @@ function RecentFromClusters({
       <View
         style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
       >
-        <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+        <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
           Recent posts
         </Text>
         <Link href="/(app)/posts" asChild>
@@ -568,7 +569,7 @@ function RecentFromClusters({
             <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
               View all posts
             </Text>
-            <ArrowRight size={16} color={t.primary} />
+            <ArrowRight size={16} color={t.primary} strokeWidth={2} />
           </Pressable>
         </Link>
       </View>
@@ -576,7 +577,7 @@ function RecentFromClusters({
         <FeedSkeleton rows={3} />
       ) : recent.isError ? (
         <Card>
-          <Text style={{ fontSize: 14, color: t.error }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: t.error }}>
             Couldn’t load recent posts. Please try again.
           </Text>
           <Pressable
@@ -596,7 +597,7 @@ function RecentFromClusters({
         </Card>
       ) : (recent.data ?? []).length === 0 ? (
         <Card plain>
-          <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
             No posts in your clusters yet. Be the first to share something.
           </Text>
         </Card>

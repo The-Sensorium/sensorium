@@ -35,12 +35,7 @@ import { useDismissKeyboardOnBlur } from '../../../../../src/lib/use-dismiss-key
 import { Card, LoadingView, PrimaryButton, Screen } from '../../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../../src/components/created/CreatedPendingGate'
 import { useClusterBack } from '../../../../../src/lib/use-cluster-back'
-
-const statusMeta: Record<SignalStatus, { label: string }> = {
-  open: { label: 'Open' },
-  in_progress: { label: 'In progress' },
-  resolved: { label: 'Resolved' },
-}
+import { SIGNAL_STATUS_META } from '../../../../../src/lib/signal-status'
 
 export default function SignalDetailScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -236,7 +231,7 @@ function SignalDetailScreenContent() {
   }
 
   const nextStatus = SIGNAL_STATUS_ORDER[SIGNAL_STATUS_ORDER.indexOf(s.status) + 1] ?? null
-  const meta = statusMeta[s.status]
+  const meta = SIGNAL_STATUS_META[s.status]
 
   return (
     <Screen avoiding>
@@ -248,7 +243,7 @@ function SignalDetailScreenContent() {
           hitSlop={8}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, minHeight: 44 }}
         >
-          <ArrowLeft size={16} color={t.primary} strokeWidth={1.5} />
+          <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
           <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>Signals</Text>
         </Pressable>
         <ClusterMenu clusterId={clusterId} active="signals" />
@@ -282,7 +277,7 @@ function SignalDetailScreenContent() {
               · {dateTimeFormatter.format(new Date(s.created_at))}
             </Text>
             <View style={{ marginLeft: 'auto', backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 2, flexShrink: 0 }}>
-              <Text style={{ fontSize: 11, fontWeight: '600', color: t.primary }}>{meta.label}</Text>
+              <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: t[meta.colorKey] }}>{meta.label}</Text>
             </View>
           </View>
           <Text style={{ marginTop: 8, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>

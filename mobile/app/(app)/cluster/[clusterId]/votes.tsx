@@ -27,6 +27,7 @@ import { toErrorMessage } from '../../../../src/lib/error'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../../src/lib/theme-choice'
+import { STATUS_PALETTE } from '../../../../src/lib/status-palette'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
@@ -39,10 +40,6 @@ const VOTE_TYPE_LABEL: Record<GovernableVoteType, string> = {
   replace_member: 'Replace member',
   change_name: 'Rename cluster',
 }
-
-// Emerald yes-tally matching web (text-emerald-700/300); split by scheme so
-// 12px text holds contrast on both themes.
-const YES_TALLY = { light: '#047857', dark: '#6ee7b7' }
 
 export default function VotesScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -184,7 +181,7 @@ function VotesScreenContent() {
           <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>
             Govern the cluster
           </Text>
-          <Text style={{ marginTop: 2, fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 2, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             Any member can start a community vote. Results are hidden until it closes.
           </Text>
           <View style={{ marginTop: 16, gap: 8 }}>
@@ -212,7 +209,7 @@ function VotesScreenContent() {
                 <Users size={18} color={t.error} strokeWidth={1.5} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
                   Replace a member
                 </Text>
                 <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
@@ -245,7 +242,7 @@ function VotesScreenContent() {
                 <Tag size={18} color={t.primary} strokeWidth={1.5} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: t.onSurface }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
                   Suggest a cluster name
                 </Text>
                 <Text style={{ marginTop: 2, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
@@ -265,12 +262,12 @@ function VotesScreenContent() {
         />
       ) : null}
 
-      <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
+      <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
         Active votes
       </Text>
       {openVotes.length === 0 ? (
         <Card plain>
-          <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
             No open votes right now.
           </Text>
         </Card>
@@ -291,7 +288,7 @@ function VotesScreenContent() {
 
       {closedVotes.length > 0 ? (
         <>
-          <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
+          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface, marginTop: 20, marginBottom: 12 }}>
             Past votes
           </Text>
           {closedVotes.map((vote) => (
@@ -309,7 +306,7 @@ function VotesScreenContent() {
 
       <Modal open={modal === 'replace'} onClose={() => setModal(null)} title="Replace a member">
         <View style={{ marginTop: 12, gap: 12 }}>
-          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             Pick who you’d like to put up for a community vote. Passing starts a replacement search.
           </Text>
           {(members.data ?? [])
@@ -419,20 +416,20 @@ function ReplacementBanner({
           <View style={{ flex: 1 }}>
             {round.status === 'selecting_candidates' ? (
               <>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
                   Finding a new member
                 </Text>
-                <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   A member recently left. No one is waiting in line yet. We check hourly
                   and will invite the next eligible person as soon as someone queues.
                 </Text>
               </>
             ) : round.status === 'inviting' ? (
               <>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
                   Invitation sent
                 </Text>
-                <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   {invited
                     ? `Waiting for ${invited} to respond.`
                     : 'Waiting for the selected candidate to respond.'}
@@ -440,10 +437,10 @@ function ReplacementBanner({
               </>
             ) : (
               <>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>
+                <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
                   Replacement in progress
                 </Text>
-                <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>Finding the next member.</Text>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>Finding the next member.</Text>
               </>
             )}
           </View>
@@ -479,7 +476,7 @@ function ActiveVoteCard({
         <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
           {VOTE_TYPE_LABEL[vote.type as GovernableVoteType]}
         </Text>
-        <Text style={{ marginTop: 2, fontSize: 16, fontWeight: '600', color: t.onSurface }}>
+        <Text style={{ marginTop: 2, fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
           {vote.type === 'replace_member' ? (
             <>Replace {target ? target.display_name : 'a member'}</>
           ) : (
@@ -540,7 +537,7 @@ function PastVoteCard({
 }) {
   const t = useTheme()
   const scheme = useResolvedScheme()
-  const yesColor = scheme === 'dark' ? YES_TALLY.dark : YES_TALLY.light
+  const yesColor = STATUS_PALETTE.green[scheme]
   const result = parseVoteResult(vote.result)
   const passed = result?.outcome === 'passed'
   const target = vote.target_member_id ? memberById.get(vote.target_member_id) : null

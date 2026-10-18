@@ -79,7 +79,7 @@ export function IntroChecklistBanner({
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
             Complete your introductions
           </Text>
-          <Text style={{ fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={2}>
+          <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }} numberOfLines={2}>
             {rows.length > 0
               ? `${done} of ${rows.length} members finished.`
               : 'Tell your cluster who you are.'}
@@ -97,7 +97,7 @@ export function IntroChecklistBanner({
               borderRadius: radii.pill,
               paddingHorizontal: 16,
               paddingVertical: 12,
-              minHeight: 44,
+              minHeight: 48,
               justifyContent: 'center',
             }}
           >

@@ -111,7 +111,7 @@ function IntroductionsScreenContent() {
       </Text>
       <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <Sparkles size={16} color={t.primary} strokeWidth={1.5} />
-        <Text style={{ flex: 1, fontSize: 14, color: t.onSurfaceVariant }}>
+        <Text style={{ flex: 1, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
           {isEdit ? 'Update anything that changed.' : 'Answer below to share who you are.'}
         </Text>
       </View>
@@ -129,7 +129,7 @@ function IntroductionsScreenContent() {
           }}
         >
           <Text
-            style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}
+            style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}
             accessibilityLabel={`${i + 1}. ${q.prompt} (required)`}
           >
             {i + 1}. {q.prompt}{' '}

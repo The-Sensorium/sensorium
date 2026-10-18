@@ -191,11 +191,11 @@ export function CommentItem({
         />
       ) : null}
       <Modal open={confirmOpen} onClose={() => { if (!del.isPending) setConfirmOpen(false) }} title="Delete comment?">
-        <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
+        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
           This removes this comment and any replies to it. This action can&apos;t be undone.
         </Text>
         {deleteError ? (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
+          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>{deleteError}</Text>
         ) : null}
         <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
           <Pressable

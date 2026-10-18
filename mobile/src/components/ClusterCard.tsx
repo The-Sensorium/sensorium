@@ -43,7 +43,7 @@ export function ClusterCard({
   const created = isCreatedCluster(cluster)
   const pending = isPendingCreated(cluster, item.memberCount)
   const statusText = pending
-    ? `Pending, ${3 - item.memberCount} more to activate`
+    ? `Pending · ${3 - item.memberCount} more to activate`
     : needsIntros
       ? 'Complete your introductions'
       : statusLabel(cluster.status)
@@ -120,15 +120,7 @@ export function ClusterCard({
           </View>
           <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 }}>
             <Text style={{ flex: 1, fontSize: 14, color: t.onSurfaceVariant }}>
-              {pending ? (
-                <Text>
-                  Pending · {3 - item.memberCount} more to activate
-                </Text>
-              ) : needsIntros ? (
-                <Text>Complete your introductions</Text>
-              ) : (
-                statusLabel(cluster.status)
-              )}
+              {statusText}
             </Text>
             <View style={{ width: CHAT_MUTE_WIDTH }} />
           </View>

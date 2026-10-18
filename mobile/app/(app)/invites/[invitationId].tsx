@@ -7,6 +7,7 @@ import { toErrorMessage } from '../../../src/lib/error'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../src/lib/theme-choice'
+import { STATUS_PALETTE } from '../../../src/lib/status-palette'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
 import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { Modal } from '../../../src/components/Modal'
@@ -18,7 +19,7 @@ type DetailMember = { id: string; display_name: string }
 export default function InviteDetailScreen() {
   const t = useTheme()
   const scheme = useResolvedScheme()
-  const joinedColor = scheme === 'dark' ? '#34d399' : '#059669'
+  const joinedColor = STATUS_PALETTE.green[scheme]
   const { invitationId = '' } = useLocalSearchParams<{ invitationId: string }>()
   const detail = useCreatedInviteDetail(invitationId || null)
   const accept = useAcceptInvitation()
@@ -119,7 +120,7 @@ export default function InviteDetailScreen() {
 
       <Card>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <Text style={{ flex: 1, fontSize: 18, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+          <Text style={{ flex: 1, fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
             {info.cluster_name}
           </Text>
           <View style={{ backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 6 }}>
@@ -141,7 +142,7 @@ export default function InviteDetailScreen() {
                 </View>
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Check size={14} color={joinedColor} strokeWidth={2.5} />
+                  <Check size={14} color={joinedColor} strokeWidth={2} />
                   <Text style={{ fontSize: 12, fontWeight: '600', color: joinedColor }}>Joined</Text>
                 </View>
               )}

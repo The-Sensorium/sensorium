@@ -5,6 +5,8 @@ import type { ClusterTile } from '../features/discovery'
 import { modeInfo } from '../lib/modes'
 import { radii, shadowShape } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
+import { useResolvedScheme } from '../lib/theme-choice'
+import { STATUS_PALETTE } from '../lib/status-palette'
 
 const formedFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -13,9 +15,9 @@ const formedFormatter = new Intl.DateTimeFormat(undefined, {
 })
 
 const statusMeta = {
-  active: { icon: CircleCheck, label: 'Active', color: '#047857' },
-  introductions: { icon: Hourglass, label: 'Introductions in progress', color: '#b45309' },
-  archived: { icon: Archive, label: 'Archived', color: null as string | null },
+  active: { icon: CircleCheck, label: 'Active', palette: 'green' as const },
+  introductions: { icon: Hourglass, label: 'Introductions in progress', palette: 'amber' as const },
+  archived: { icon: Archive, label: 'Archived', palette: null },
 } as const
 
 export function PublicClusterCard({
@@ -26,11 +28,12 @@ export function PublicClusterCard({
   isMember: boolean
 }) {
   const t = useTheme()
+  const scheme = useResolvedScheme()
   const status = statusMeta[cluster.status]
   const info = modeInfo(cluster.matching_mode)
   const Icon = info.icon
   const StatusIcon = status.icon
-  const statusColor = status.color ?? t.onSurfaceVariant
+  const statusColor = status.palette ? STATUS_PALETTE[status.palette][scheme] : t.onSurfaceVariant
 
   const body = (
     <View
@@ -103,7 +106,7 @@ export function PublicClusterCard({
       </View>
       <View style={{ marginTop: 12, gap: 4 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <StatusIcon size={16} color={statusColor} strokeWidth={1.75} />
+          <StatusIcon size={16} color={statusColor} strokeWidth={1.5} />
           <Text style={{ fontSize: 14, color: statusColor }}>{status.label}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

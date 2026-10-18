@@ -146,7 +146,7 @@ function ClusterAppearanceScreenContent() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>{meta.name}</Text>
-                  <Text style={{ marginTop: 4, fontSize: 13, lineHeight: 18, color: t.onSurfaceVariant }}>
+                  <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                     {meta.description}
                   </Text>
                 </View>

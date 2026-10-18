@@ -171,7 +171,7 @@ export default function PostDetailScreen() {
           hitSlop={12}
           style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 12, minHeight: 48, paddingRight: 16, marginBottom: 12 }}
         >
-          <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
           <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>Back</Text>
         </Pressable>
 

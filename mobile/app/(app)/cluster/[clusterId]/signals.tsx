@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import { Link, useLocalSearchParams } from 'expo-router'
 import { ChevronDown, MessageSquare, Plus } from 'lucide-react-native'
 import { useClusterMembers } from '../../../../src/features/matching'
 import { useCluster } from '../../../../src/features/introductions'
-import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal, type SignalStatus } from '../../../../src/features/signals'
+import { useClusterSignals, useSignalReplies, useRaiseSignal, type Signal } from '../../../../src/features/signals'
 import { useAuth } from '../../../../src/auth-context'
 import { Avatar } from '../../../../src/components/Avatar'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
@@ -20,12 +20,7 @@ import { Card, ErrorText, LoadingView, Screen } from '../../../../src/components
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { usePullToRefresh } from '../../../../src/lib/use-pull-to-refresh'
 import { useClusterBack } from '../../../../src/lib/use-cluster-back'
-
-const statusMeta: Record<SignalStatus, { label: string; colorKey: 'primary' | 'tertiary' | 'onSurfaceVariant' }> = {
-  open: { label: 'Open', colorKey: 'primary' },
-  in_progress: { label: 'In progress', colorKey: 'tertiary' },
-  resolved: { label: 'Resolved', colorKey: 'onSurfaceVariant' },
-}
+import { SIGNAL_STATUS_META } from '../../../../src/lib/signal-status'
 
 export default function SignalsScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -107,7 +102,7 @@ function SignalsScreenContent() {
           onPress={() => setModalOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="Raise a signal"
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, minHeight: 44, justifyContent: 'center', flexShrink: 0 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 8, minHeight: 48, justifyContent: 'center', flexShrink: 0 }}
         >
           <Plus size={16} color={onAccent} strokeWidth={2} />
           <Text style={{ fontSize: 14, fontWeight: '600', color: onAccent }}>Raise</Text>
@@ -118,7 +113,7 @@ function SignalsScreenContent() {
         <LoadingView label="Loading signals…" />
       ) : active.length === 0 && resolved.length === 0 ? (
         <Card plain>
-          <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
             No signals yet. Need help with something? Raise the first signal.
           </Text>
         </Card>
@@ -168,7 +163,7 @@ function SignalsScreenContent() {
                   Resolved ({resolved.length})
                 </Text>
                 <View style={{ transform: [{ rotate: showResolved ? '180deg' : '0deg' }] }}>
-                  <ChevronDown size={16} color={t.onSurfaceVariant} strokeWidth={2} />
+                  <ChevronDown size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
                 </View>
               </Pressable>
               {showResolved ? (
@@ -223,7 +218,6 @@ function SignalsScreenContent() {
         onClose={() => setModalOpen(false)}
         onRaise={() => void handleRaise()}
       />
-      {raise.isPending ? <ActivityIndicator size="small" color={t.primary} /> : null}
     </Screen>
   )
 }
@@ -245,7 +239,7 @@ function SignalCard({
 }) {
   const t = useTheme()
   const themed = useProvidedAppearanceId() !== 'default'
-  const meta = statusMeta[signal.status]
+  const meta = SIGNAL_STATUS_META[signal.status]
   const author = memberById.get(signal.author_id)
   return (
     <Link
@@ -257,7 +251,7 @@ function SignalCard({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Avatar name={author?.display_name ?? 'Member'} src={author?.avatar_url} thumbSrc={author?.avatar_thumb_url ?? author?.avatar_url} size={24} />
-          <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurface, flexShrink: 1 }} numberOfLines={1}>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface, flexShrink: 1 }} numberOfLines={1}>
             {author?.display_name ?? 'Member'}
           </Text>
           {isMine ? (
@@ -267,14 +261,14 @@ function SignalCard({
             · {dateTimeFormatter.format(new Date(signal.created_at))}
           </Text>
           <View style={{ marginLeft: 'auto', backgroundColor: t.surfaceContainer, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 2, flexShrink: 0 }}>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: t[meta.colorKey] }}>{meta.label}</Text>
+            <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: t[meta.colorKey] }}>{meta.label}</Text>
           </View>
         </View>
-        <Text style={{ marginTop: 6, fontSize: 15, lineHeight: 22, color: t.onSurface }} numberOfLines={compact ? 2 : undefined}>
+        <Text style={{ marginTop: 6, fontSize: 16, lineHeight: 24, color: t.onSurface }} numberOfLines={compact ? 2 : undefined}>
           {signal.prompt}
         </Text>
         <View style={{ marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <MessageSquare size={20} color={t.onSurfaceVariant} strokeWidth={2} />
+          <MessageSquare size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
           <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
             {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
           </Text>

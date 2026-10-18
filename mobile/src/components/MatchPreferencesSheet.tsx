@@ -18,6 +18,7 @@ import { useProfile } from '../lib/use-profile'
 import { toErrorMessage } from '../lib/error'
 import { radii } from '../lib/theme-tokens'
 import { useResolvedScheme } from '../lib/theme-choice'
+import { STATUS_PALETTE } from '../lib/status-palette'
 import { useTheme } from '../lib/use-theme'
 import { ErrorText, PrimaryButton } from './ui'
 
@@ -104,11 +105,11 @@ function MatchPreferencesForm({
   const saveLocal = useSetLocalAgePrefs()
   const saveOpenMix = useSetOpenMixAgePrefs()
   const save = mode === 'local' ? saveLocal : saveOpenMix
-  // Warning amber, matching the Sun/Moon time cue and status dots: amber-500
+  // Warning amber, matching the Sun/Moon time cue and status dots: amber-700
   // light, amber-400 dark, with a 10% tinted wash behind it.
   const scheme = useResolvedScheme()
-  const amber = scheme === 'dark' ? '#fbbf24' : '#b45309'
-  const amberWash = scheme === 'dark' ? '#fbbf241a' : '#f59e0b1a'
+  const amber = STATUS_PALETTE.amber[scheme]
+  const amberWash = scheme === 'dark' ? '#fbbf241a' : '#b453091a'
 
   const savedMin =
     mode === 'local'

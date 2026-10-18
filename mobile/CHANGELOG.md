@@ -31,6 +31,7 @@ release) for the release ritual.
 ### Changed
 
 - The chat room member strip now shows as many whole faces as fit your screen, with a +N badge for the rest, instead of spilling onto a second row on narrower phones. The message box also uses a shorter hint that fits on one line.
+- Tidied icons, spacing, text sizes, and accent colors across screens so things line up and read consistently.
 
 ### Fixed
 
@@ -46,6 +47,8 @@ release) for the release ritual.
 - Fixed faces in the chat room member strip looking cut off at the top and bottom.
 - Fixed GIF search results hiding behind the keyboard in chat. The results now stay visible while you type.
 - Fixed sent chat text reappearing in the message box when you tap it again right after sending, which could resend the same message twice.
+- Fixed the in-call mute, camera, and speaker buttons being nearly invisible in light mode.
+- Fixed the "mode unavailable" notice being hard to read in dark mode.
 
 ## [1.1.0]
 
