@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { CornerUpLeft, ShieldOff } from 'lucide-react-native'
 import { Avatar } from '../Avatar'
 import { AvatarLink } from '../AvatarLink'
@@ -95,7 +95,7 @@ export function MessageItem({
           }
         })
         .onFinalize(() => {
-          translateX.value = withSpring(0, { damping: 20, stiffness: 300 })
+          translateX.value = withTiming(0, { duration: 160, easing: Easing.out(Easing.cubic) })
         }),
     [hasReply, fireSwipeReply, translateX],
   )
