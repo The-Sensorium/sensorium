@@ -358,6 +358,7 @@ export function Composer({
           </View>
           <Pressable
             accessibilityLabel="Cancel edit"
+            accessibilityRole="button"
             onPress={onCancelEdit}
             hitSlop={12}
             style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
@@ -389,6 +390,7 @@ export function Composer({
           </View>
           <Pressable
             accessibilityLabel="Cancel reply"
+            accessibilityRole="button"
             onPress={onCancelReply}
             hitSlop={12}
             style={{ width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
@@ -416,6 +418,8 @@ export function Composer({
           </Text>
           <Pressable
             accessibilityLabel="Remove image"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: uploading }}
             onPress={() => {
               if (!uploading) setStagedImage(null)
             }}
@@ -522,6 +526,8 @@ export function Composer({
           <CollapsibleChrome shown={!isTyping && !editing} width={44} height={44}>
             <Pressable
               accessibilityLabel="Room actions"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: raisePending, expanded: menuOpen }}
               disabled={raisePending}
               onPress={() => {
                 if (gifPickerOpen) closeGifPicker()
@@ -613,6 +619,7 @@ export function Composer({
         </View>
         <Pressable
           accessibilityLabel={editing ? 'Save edit' : 'Send message'}
+          accessibilityRole="button"
           disabled={editing ? !canSave : !canSend}
           accessibilityState={{ disabled: editing ? !canSave : !canSend }}
           onPress={() => (editing ? handleSaveEdit() : void handleSend())}

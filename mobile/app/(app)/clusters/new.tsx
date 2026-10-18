@@ -167,7 +167,7 @@ export default function NewClusterScreen() {
           </Text>
         </Pressable>
       </View>
-      <Text style={{ fontSize: 28, lineHeight: 34, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+      <Text style={{ fontSize: 28, lineHeight: 34, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
         {TITLES[step]}
       </Text>
       <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
@@ -194,7 +194,7 @@ export default function NewClusterScreen() {
             style={{
               backgroundColor: t.surfaceContainer,
               borderWidth: 1,
-              borderColor: t.outlineVariant,
+              borderColor: t.outline,
               borderRadius: radii.md,
               paddingHorizontal: 16,
               paddingVertical: 12,
@@ -221,7 +221,7 @@ export default function NewClusterScreen() {
               gap: 8,
               backgroundColor: t.surfaceContainer,
               borderWidth: 1,
-              borderColor: t.outlineVariant,
+              borderColor: t.outline,
               borderRadius: radii.md,
               paddingHorizontal: 12,
               minHeight: 48,
@@ -294,7 +294,7 @@ export default function NewClusterScreen() {
                         justifyContent: 'center',
                       }}
                     >
-                      {checked ? <Check size={16} color={t.onPrimary} strokeWidth={2.5} /> : null}
+                      {checked ? <Check size={16} color={t.onPrimary} strokeWidth={2} /> : null}
                     </View>
                   </Pressable>
                 )

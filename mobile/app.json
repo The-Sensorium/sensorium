@@ -27,7 +27,7 @@
       "icon": "./assets/legacy-icon-light.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-foreground.png",
-        "backgroundColor": "#fef8f7"
+        "backgroundColor": "#fff8f6"
       },
       "package": "online.thesensorium.app",
       "versionCode": 2,
@@ -70,7 +70,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#fef8f7",
+          "backgroundColor": "#fff8f6",
           "image": "./assets/splash-blank.png",
           "resizeMode": "contain",
           "dark": {

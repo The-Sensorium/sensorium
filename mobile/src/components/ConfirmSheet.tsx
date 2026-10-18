@@ -84,7 +84,7 @@ export function ConfirmSheet({
               }}
             />
           </Pressable>
-          <Text style={{ fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+          <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
             {title}
           </Text>
           {body ? (
@@ -94,7 +94,7 @@ export function ConfirmSheet({
           ) : null}
           {children}
           {error ? (
-            <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, color: t.error }}>
+            <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>
               {error}
             </Text>
           ) : null}

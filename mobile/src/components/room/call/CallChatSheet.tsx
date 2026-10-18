@@ -84,15 +84,15 @@ export function CallChatSheet({
             marginBottom: 8,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '700', color: t.onSurface }}>Messages</Text>
+          <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Messages</Text>
           <Pressable
             accessibilityLabel="Close chat"
             onPress={onClose}
             hitSlop={10}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
+              width: 48,
+              height: 48,
+              borderRadius: 24,
               alignItems: 'center',
               justifyContent: 'center',
             }}

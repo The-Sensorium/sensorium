@@ -112,7 +112,7 @@ export function MemberMenuPopover({
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, minHeight: 52 }}
           >
             <User size={18} color={t.onSurface} strokeWidth={1.5} />
-            <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.onSurface }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
               View profile
             </Text>
           </Pressable>
@@ -137,7 +137,7 @@ export function MemberMenuPopover({
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, minHeight: 52 }}
             >
               <Flag size={18} color={t.onSurface} strokeWidth={1.5} />
-              <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.onSurface }}>
+              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
                 Report
               </Text>
             </Pressable>

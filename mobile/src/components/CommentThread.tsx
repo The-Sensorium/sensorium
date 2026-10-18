@@ -254,11 +254,11 @@ export function CommentThread({
 
   return (
     <View style={{ marginTop: 16 }}>
-      <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
         Comments ({comments.length})
       </Text>
       {deepLinkMissing ? (
-        <Text style={{ marginTop: 8, fontSize: 12, color: t.onSurfaceVariant }}>
+        <Text style={{ marginTop: 8, fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
           That comment is no longer available. Showing the post instead.
         </Text>
       ) : null}

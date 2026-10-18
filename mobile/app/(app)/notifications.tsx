@@ -230,8 +230,8 @@ export default function NotificationsScreen() {
             <Card plain>
               <View style={{ alignItems: 'center', padding: 16 }}>
                 <Bell size={28} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
-                  You’re all caught up. Nothing unread right now.
+                <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
+                  Nothing unread right now.
                 </Text>
               </View>
             </Card>
@@ -239,7 +239,7 @@ export default function NotificationsScreen() {
             <Card plain>
               <View style={{ alignItems: 'center', padding: 16 }}>
                 <Bell size={28} color={t.onSurfaceVariant} strokeWidth={1.5} />
-                <Text style={{ marginTop: 12, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+                <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
                   No notifications yet. Activity from your clusters will show up here.
                 </Text>
               </View>
@@ -292,7 +292,7 @@ export default function NotificationsScreen() {
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, minHeight: 52 }}
             >
               <Trash2 size={18} color={t.error} strokeWidth={1.5} />
-              <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.error }}>
+              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.error }}>
                 Clear all notifications
               </Text>
             </Pressable>

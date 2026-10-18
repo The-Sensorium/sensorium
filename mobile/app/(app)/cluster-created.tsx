@@ -69,10 +69,10 @@ export default function ClusterCreatedScreen() {
       <Screen>
         <Card plain>
           <View style={{ alignItems: 'center', padding: 16 }}>
-            <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+            <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
               No new cluster
             </Text>
-            <Text style={{ marginTop: 8, fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
               There isn’t a cluster ready to introduce yet. Keep waiting in a queue and you’ll be
               matched soon.
             </Text>
@@ -101,7 +101,7 @@ export default function ClusterCreatedScreen() {
         </Text>
       </View>
 
-      <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface, marginTop: 24, marginBottom: 12 }}>
+      <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, marginTop: 24, marginBottom: 12 }}>
         Your new cluster
       </Text>
       {members.isLoading ? (

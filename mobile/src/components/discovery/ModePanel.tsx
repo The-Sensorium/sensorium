@@ -20,6 +20,7 @@ import { MatchPreferencesSheet } from '../MatchPreferencesSheet'
 import { WhatsNextSteps } from '../WhatsNextSteps'
 
 export function ModePanel({ mode }: { mode: MatchingMode }) {
+  const t = useTheme()
   const status = useMyQueueStatus()
   const row = status.data?.find((r) => r.mode === mode)
   const [editingLocal, setEditingLocal] = useState(false)
@@ -37,7 +38,9 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
   if (!row) {
     return (
       <Card plain>
-        <Text>This mode isn’t available yet.</Text>
+        <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+          This mode isn’t available yet.
+        </Text>
       </Card>
     )
   }
@@ -71,7 +74,9 @@ export function ModePanel({ mode }: { mode: MatchingMode }) {
   }
   return (
     <Card>
-      <Text>This mode isn’t available yet.</Text>
+      <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+        This mode isn’t available yet.
+      </Text>
     </Card>
   )
 }
@@ -180,7 +185,7 @@ function JoinCard({
                   {formatAgePrefs(prefMin, prefMax)}
                 </Text>
               </View>
-              <ChevronRight size={20} color={t.onSurfaceVariant} />
+              <ChevronRight size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
             </View>
           </Pressable>
           <MatchPreferencesSheet
@@ -284,12 +289,12 @@ function JoinedCard({ mode,
                 {formatAgePrefs(prefMin, prefMax)}
               </Text>
               {matchLine ? (
-                <Text style={{ marginTop: 2, fontSize: 13, fontWeight: '600', color: t.primary }}>
+                <Text style={{ marginTop: 2, fontSize: 12, lineHeight: 16, fontWeight: '600', color: t.primary }}>
                   {matchLine}
                 </Text>
               ) : null}
             </View>
-            <ChevronRight size={20} color={t.onSurfaceVariant} />
+            <ChevronRight size={20} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </Pressable>
           <MatchPreferencesSheet
             open={joinedPrefsOpen}
@@ -546,7 +551,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
               key={r}
               onPress={() => onPickRadius(r as LocalRadius)}
               accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
+              accessibilityState={{ checked: active }}
               accessibilityLabel={`${r} kilometer radius`}
               style={{
                 borderWidth: 1,

@@ -30,8 +30,8 @@ export function CallHeader({ elapsed, remaining, warning }: CallHeaderProps) {
       }}
     >
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 17, fontWeight: '600', color: t.onSurface }}>Cluster call</Text>
-        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+        <Text style={{ fontSize: 17, lineHeight: 22, fontWeight: '600', color: t.onSurface }}>Cluster call</Text>
+        <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
           {reconnecting
             ? connection === ConnectionState.Reconnecting
               ? 'Reconnecting…'
@@ -52,7 +52,7 @@ export function CallHeader({ elapsed, remaining, warning }: CallHeaderProps) {
       >
         <Clock size={12} color={warning ? t.error : t.onSurfaceVariant} strokeWidth={1.5} />
         <Text
-          style={{ fontSize: 12, fontWeight: '600', color: warning ? t.error : t.onSurfaceVariant }}
+          style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: warning ? t.error : t.onSurfaceVariant }}
         >
           {warning ? `${formatCallDuration(remaining)} left` : formatCallDuration(elapsed)}
         </Text>

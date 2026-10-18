@@ -154,7 +154,7 @@ export function StepLocal({
               key={radius}
               onPress={() => patch({ radiusKm: radius as LocalRadius })}
               accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
+              accessibilityState={{ checked: active }}
               accessibilityLabel={`${radius} kilometer radius`}
               style={{
                 borderWidth: 1,

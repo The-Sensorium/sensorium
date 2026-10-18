@@ -99,15 +99,15 @@ export function CallControls({
       label: micOn ? 'Mute' : 'Unmute',
       on: micOn,
       onPress: toggleMic,
-      onIcon: <Mic size={20} color="#fff" strokeWidth={2} />,
-      offIcon: <MicOff size={20} color="#fff" strokeWidth={2} />,
+      onIcon: <Mic size={20} color={onAccent} strokeWidth={2} />,
+      offIcon: <MicOff size={20} color={t.onSurfaceVariant} strokeWidth={2} />,
     },
     {
       label: cameraOn ? 'Camera off' : 'Camera on',
       on: cameraOn,
       onPress: toggleCamera,
-      onIcon: <Video size={20} color="#fff" strokeWidth={2} />,
-      offIcon: <VideoOff size={20} color="#fff" strokeWidth={2} />,
+      onIcon: <Video size={20} color={onAccent} strokeWidth={2} />,
+      offIcon: <VideoOff size={20} color={t.onSurfaceVariant} strokeWidth={2} />,
     },
   ]
 
@@ -118,6 +118,7 @@ export function CallControls({
           <Pressable
             key={b.label}
             accessibilityLabel={b.label}
+            accessibilityRole="button"
             accessibilityHint={b.label === 'Mute' || b.label === 'Unmute' ? 'Double tap to toggle your microphone' : 'Double tap to toggle your camera'}
             accessibilityState={{ selected: b.on, disabled: !live }}
             onPress={() => void b.onPress()}
@@ -137,6 +138,7 @@ export function CallControls({
         ))}
         <Pressable
           accessibilityLabel={speakerOn ? 'Speaker off' : 'Speaker on'}
+          accessibilityRole="button"
           accessibilityHint="Double tap to toggle the speaker"
           accessibilityState={{ selected: speakerOn, disabled: !live }}
           onPress={() => void toggleSpeaker()}
@@ -152,14 +154,16 @@ export function CallControls({
           }}
         >
           {speakerOn ? (
-            <Volume2 size={20} color="#fff" strokeWidth={2} />
+            <Volume2 size={20} color={onAccent} strokeWidth={2} />
           ) : (
-            <VolumeX size={20} color="#fff" strokeWidth={2} />
+            <VolumeX size={20} color={t.onSurfaceVariant} strokeWidth={2} />
           )}
         </Pressable>
         <View style={{ position: 'relative' }}>
           <Pressable
             accessibilityLabel={chatOpen ? 'Close chat' : 'Open chat'}
+            accessibilityRole="button"
+            accessibilityState={{ selected: chatOpen }}
             onPress={onChatPress}
             style={{
               width: 56,
@@ -200,6 +204,7 @@ export function CallControls({
         </View>
         <Pressable
           accessibilityLabel="Hang up"
+          accessibilityRole="button"
           onPress={handleHangUp}
           style={{
             width: 56,
@@ -210,7 +215,7 @@ export function CallControls({
             backgroundColor: scheme === 'dark' ? t.errorContainer : t.error,
           }}
         >
-          <PhoneOff size={20} color="#fff" strokeWidth={2} />
+          <PhoneOff size={20} color={t.onPrimary} strokeWidth={2} />
         </Pressable>
       </View>
     </View>

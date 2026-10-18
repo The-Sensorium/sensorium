@@ -90,12 +90,14 @@ export function Field({
   const a11yLabel = props.accessibilityLabel ?? (required ? `${label}, required` : label)
   return (
     <View style={{ marginBottom: spacing.gutter }}>
-      <Text
-        style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
-      >
-        {label}
-        {required ? <Text style={{ color: t.error }}> *</Text> : null}
-      </Text>
+      {label ? (
+        <Text
+          style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface, marginBottom: 6 }}
+        >
+          {label}
+          {required ? <Text style={{ color: t.error }}> *</Text> : null}
+        </Text>
+      ) : null}
       <TextInput
         autoCapitalize="none"
         autoCorrect={false}

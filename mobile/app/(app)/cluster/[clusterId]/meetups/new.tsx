@@ -16,6 +16,7 @@ import { errorHaptic, successHaptic } from '../../../../../src/lib/haptics'
 import { radii, shadowShape } from '../../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../../../src/lib/theme-choice'
+import { STATUS_PALETTE } from '../../../../../src/lib/status-palette'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen, SecondaryButton } from '../../../../../src/components/ui'
 import { MEETUP_ENABLED, MEETUP_MAX_SLOTS, MEETUP_SLOT_LENGTH_MS, defaultCustomStart, formatPillDate, isCustomSlotValid, previewSlotMembers } from '../../../../../src/lib/meetup'
 import { useClusterBack } from '../../../../../src/lib/use-cluster-back'
@@ -100,8 +101,8 @@ function NewMeetupScreenContent() {
   const t = useTheme()
   const onAccent = useClusterOnAccent() ?? t.onPrimary
   const scheme = useResolvedScheme()
-  const amber = scheme === 'dark' ? '#fbbf24' : '#b45309'
-  const sky = scheme === 'dark' ? '#7dd3fc' : '#0369a1'
+  const amber = STATUS_PALETTE.amber[scheme]
+  const sky = STATUS_PALETTE.sky[scheme]
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const goBack = useClusterBack({ pathname: '/cluster/[clusterId]/meetups', params: { clusterId } })
   const id = MEETUP_ENABLED ? clusterId || null : null
@@ -218,7 +219,7 @@ function NewMeetupScreenContent() {
               <CalendarPlus size={24} color={onAccent} strokeWidth={1.5} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface }}>Propose times</Text>
+              <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Propose times</Text>
               <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>Agreed on times in chat? Put them on the ballot.</Text>
             </View>
           </View>
@@ -283,7 +284,7 @@ function NewMeetupScreenContent() {
                   {valid && iso ? (
                     <View style={{ gap: 8 }}>
                       <View style={{ height: 1, backgroundColor: t.outlineVariant, opacity: 0.4 }} />
-                      <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '500', color: t.onSurfaceVariant }}>
+                      <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurfaceVariant }}>
                         Local times for everyone
                       </Text>
                       {previewSlotMembers(members.data ?? [], iso).map((m) => {
@@ -340,7 +341,7 @@ function NewMeetupScreenContent() {
                   borderRadius: radii.pill,
                   paddingHorizontal: 16,
                   paddingVertical: 8,
-                  minHeight: 44,
+                  minHeight: 48,
                 }}
               >
                 <Plus size={16} color={t.primary} strokeWidth={1.5} />

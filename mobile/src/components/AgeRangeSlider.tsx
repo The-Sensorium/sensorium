@@ -223,8 +223,8 @@ export function AgeRangeSlider({
         </View>
       </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>{AGE_MIN}</Text>
-        <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>{AGE_MAX}</Text>
+        <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>{AGE_MIN}</Text>
+        <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>{AGE_MAX}</Text>
       </View>
     </View>
   )

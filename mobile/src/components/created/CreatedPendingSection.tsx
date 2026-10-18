@@ -75,11 +75,11 @@ export function CreatedPendingSection({
           <View
             style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.surfaceHighest, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Clock size={14} color={t.onSurfaceVariant} strokeWidth={2} />
+            <Clock size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>Pending</Text>
-            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
               {3 - confirmedCount} more {3 - confirmedCount === 1 ? 'member' : 'members'} needed to
               activate.
             </Text>
@@ -131,7 +131,7 @@ export function CreatedPendingSection({
                 opacity: cancel.isPending ? 0.6 : 1,
               }}
             >
-              <X size={16} color={t.onSurfaceVariant} strokeWidth={2} />
+              <X size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
           ) : null}
         </View>
@@ -149,7 +149,7 @@ export function CreatedPendingSection({
                 marginTop: 8,
                 backgroundColor: t.surfaceLowest,
                 borderWidth: 1,
-                borderColor: t.outline,
+                borderColor: t.outlineVariant,
                 borderRadius: radii.xl,
                 padding: 12,
               }}

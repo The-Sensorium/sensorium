@@ -48,11 +48,21 @@ export default function QueueScreen() {
   if (!mode) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card>
-          <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+          <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
             Queue not found
           </Text>
-          <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             That queue doesn’t exist. Head back to clusters to browse matching modes.
           </Text>
         </Card>
@@ -65,11 +75,21 @@ export default function QueueScreen() {
   if (!entry) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card>
-          <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+          <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
             You’re not in this queue
           </Text>
-          <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             Join it from Clusters to see the live waiting count.
           </Text>
           <View style={{ marginTop: 20 }}>
@@ -110,7 +130,7 @@ export default function QueueScreen() {
         hitSlop={12}
         style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 8, paddingRight: 16, marginBottom: 16 }}
       >
-        <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
+        <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
           Back
         </Text>
@@ -123,7 +143,7 @@ export default function QueueScreen() {
             {info.label}
           </Text>
         </View>
-        <Text style={{ marginTop: 4, fontSize: 22, fontWeight: '600', color: t.onSurface }}>
+        <Text style={{ marginTop: 4, fontSize: 22, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
           {displayKey}
         </Text>
 

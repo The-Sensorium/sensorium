@@ -355,7 +355,7 @@ export function CommentComposer({
             // Same input surface as the cluster chat composer in both modes.
             backgroundColor: t.surfaceLowest,
             borderWidth: 1,
-            borderColor: t.outlineVariant,
+            borderColor: t.outline,
             borderRadius: radii.md,
             paddingStart: 6,
             paddingEnd: 4,
