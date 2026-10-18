@@ -79,6 +79,9 @@ GIF picker, timezone picker, call close); the appeal back control pops instead
 of pushing `/restricted`; the profile, post, queue, and signal not-found
 states render a back control for iOS; the intro banner CTA label matches the
 compact primary size; and the Posts tab title matches the other tab titles.
+Text-entry borders across the app now use `t.outline`, matching the shared
+`Field`; retry prominence stays contextual (prominent on full-screen gates,
+text link for inline list errors).
 
 Won't do (decided):
 

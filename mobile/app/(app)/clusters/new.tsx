@@ -194,7 +194,7 @@ export default function NewClusterScreen() {
             style={{
               backgroundColor: t.surfaceContainer,
               borderWidth: 1,
-              borderColor: t.outlineVariant,
+              borderColor: t.outline,
               borderRadius: radii.md,
               paddingHorizontal: 16,
               paddingVertical: 12,
@@ -221,7 +221,7 @@ export default function NewClusterScreen() {
               gap: 8,
               backgroundColor: t.surfaceContainer,
               borderWidth: 1,
-              borderColor: t.outlineVariant,
+              borderColor: t.outline,
               borderRadius: radii.md,
               paddingHorizontal: 12,
               minHeight: 48,

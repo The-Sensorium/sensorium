@@ -181,7 +181,7 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
           style={{
             backgroundColor: t.surfaceContainer,
             borderWidth: 1,
-            borderColor: t.outlineVariant,
+            borderColor: t.outline,
             borderRadius: radii.pill,
             paddingHorizontal: 16,
             paddingVertical: 10,

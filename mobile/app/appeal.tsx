@@ -149,7 +149,7 @@ export default function AppealScreen() {
                   marginTop: 8,
                   backgroundColor: t.surface,
                   borderWidth: 1,
-                  borderColor: t.outlineVariant,
+                  borderColor: t.outline,
                   borderRadius: radii.xl,
                   paddingHorizontal: 16,
                   paddingVertical: 12,
