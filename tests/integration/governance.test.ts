@@ -603,6 +603,136 @@ describe('governance and replacement', () => {
     expect(round?.declined_user_ids).toContain(c1.id)
   })
 
+  it('never re-invites a candidate who declined this cluster, even in a later round', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const leaver = members[0]
+    const c1 = await member('g-dec-once')
+    await admin.from('queue_entries').insert({
+      user_id: c1.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+    await leaver.client.rpc('leave_cluster', { p_cluster_id: clusterId })
+
+    const { data: inv1 } = await admin
+      .from('invitations')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', c1.id)
+      .single()
+    expect(inv1).not.toBeNull()
+
+    const { error: declineErr } = await c1.client.rpc('decline_invitation', {
+      p_invitation_id: inv1!.id,
+    })
+    expect(declineErr).toBeNull()
+
+    // A later vacancy opens a brand-new round (declined_user_ids resets), and
+    // the candidate is still queued. A decline is final for this cluster.
+    const { error: startErr } = await admin.rpc('start_replacement', {
+      p_cluster_id: clusterId,
+    })
+    expect(startErr).toBeNull()
+
+    const { data: pending } = await admin
+      .from('invitations')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('status', 'pending')
+    expect(pending ?? []).toHaveLength(0)
+  })
+
+  it('still re-invites a candidate whose invitation merely expired', async () => {
+    const { clusterId, members } = await clusterOf(4)
+    const leaver = members[0]
+    const c1 = await member('g-exp-once')
+    await admin.from('queue_entries').insert({
+      user_id: c1.id,
+      mode: 'exact_birthdate',
+      queue_key: CLUSTER_KEY,
+    })
+    await leaver.client.rpc('leave_cluster', { p_cluster_id: clusterId })
+
+    // Expiry is not an answer: the candidate can be invited again later.
+    await admin
+      .from('invitations')
+      .update({ status: 'expired', responded_at: new Date().toISOString() })
+      .eq('cluster_id', clusterId)
+      .eq('user_id', c1.id)
+
+    const { error: startErr } = await admin.rpc('start_replacement', {
+      p_cluster_id: clusterId,
+    })
+    expect(startErr).toBeNull()
+
+    const { data: pending } = await admin
+      .from('invitations')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('status', 'pending')
+    expect(pending?.map((p) => p.user_id)).toEqual([c1.id])
+  })
+
+  it('applies open_mix age preferences when sourcing a replacement', async () => {
+    const members: TestUser[] = []
+    for (let i = 0; i < 4; i++) members.push(await member(`g-om-${i}`))
+    for (const m of members) {
+      await admin
+        .from('profiles')
+        .update({ open_mix_pref_age_min: 25, open_mix_pref_age_max: 35 })
+        .eq('id', m.id)
+    }
+    const clusterId = await createCluster(admin, {
+      memberIds: members.map((m) => m.id),
+      name: 'Open Mix Replacement',
+      mode: 'open_mix',
+      modeLabel: 'Open Mix',
+      queueKey: 'open',
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+
+    // Incompatible waiter queued first, so a source without the age filter
+    // would pick it deterministically.
+    const incompatible = await createUser(admin, 'g-om-old')
+    userIds.push(incompatible.id)
+    await onboardUser(admin, incompatible.id, { dob: '1960-01-01' })
+    await admin
+      .from('profiles')
+      .update({ open_mix_pref_age_min: 55, open_mix_pref_age_max: 70 })
+      .eq('id', incompatible.id)
+    await admin.from('queue_entries').insert({
+      user_id: incompatible.id,
+      mode: 'open_mix',
+      queue_key: 'open',
+      joined_at: new Date(Date.now() - 5000).toISOString(),
+    })
+
+    const compatible = await createUser(admin, 'g-om-ok')
+    userIds.push(compatible.id)
+    await onboardUser(admin, compatible.id, { dob: DOB })
+    await admin.from('queue_entries').insert({
+      user_id: compatible.id,
+      mode: 'open_mix',
+      queue_key: 'open',
+    })
+
+    const { error } = await members[0].client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(error).toBeNull()
+
+    const { data: round } = await admin
+      .from('replacement_rounds')
+      .select('status, invited_user_id')
+      .eq('cluster_id', clusterId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    expect(round?.status).toBe('inviting')
+    expect(round?.invited_user_id).toBe(compatible.id)
+  })
+
   it('expire_invitations voids pending invitations and advances the round', async () => {
     const { clusterId, members } = await clusterOf(4)
     const leaver = members[0]

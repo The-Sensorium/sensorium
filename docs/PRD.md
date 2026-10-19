@@ -325,6 +325,8 @@ If a vacancy opens (a member leaves or a replacement vote succeeds):
 2. The selected candidate receives an invitation (no cluster voting on candidates).
 3. Candidate accepts or declines (72 hours to respond).
 4. On decline or expiry, the next eligible candidate is invited automatically.
+   A candidate who declines is not invited to that cluster again; expiry stays
+   re-invitable.
 5. Cycles repeat sequentially until the cluster is back to 8 members.
 
 If accepted:

@@ -270,13 +270,8 @@ export default function HomeScreen() {
               <Pressable
                 disabled={acceptInvite.isPending || declineInvite.isPending}
                 onPress={() => {
-                  // Created invites are final once declined, so confirm first.
-                  // Replacement invites keep the existing one-tap decline.
-                  if (inv.origin === 'created') {
-                    setConfirmDeclineId(inv.id)
-                  } else {
-                    void declineInvite.mutateAsync(inv.id).catch(() => {})
-                  }
+                  // A decline is final for that cluster, so confirm first.
+                  setConfirmDeclineId(inv.id)
                 }}
                 style={{
                   flex: 1,
