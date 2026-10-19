@@ -94,7 +94,12 @@ export function Composer({
   const [draft, setDraft] = useState('')
   const [editText, setEditText] = useState('')
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
-  const [caret, setCaret] = useState(0)
+  // onChangeText fires before onSelectionChange, so a caret state lags one
+  // keystroke. Track the live text in refs and parse from the selection
+  // handler, which carries the fresh position for the new text.
+  const draftRef = useRef('')
+  const editTextRef = useRef('')
+  const focusedRef = useRef(false)
   const [uploading, setUploading] = useState(false)
   const [stagedImage, setStagedImage] = useState<PickedImage | null>(null)
   const [voiceOpen, setVoiceOpen] = useState(false)
@@ -112,10 +117,12 @@ export function Composer({
   if (editingIdNow !== prevEditingId) {
     setPrevEditingId(editingIdNow)
     setEditText(editing?.content ?? '')
+    if (editingIdNow) setMention(null)
   }
   useEffect(() => {
     if (editing && focusedEditId.current !== editing.id) {
       focusedEditId.current = editing.id
+      editTextRef.current = editing.content ?? ''
       inputRef.current?.focus()
     }
     if (!editing) focusedEditId.current = null
@@ -145,6 +152,7 @@ export function Composer({
 
   function handleInputChange(value: string) {
     setDraft(value)
+    draftRef.current = value
     // The + and GIF toggles hide while typing, so an open menu or picker
     // must not linger above the composer without its trigger visible.
     if (value.trim().length > 0) {
@@ -153,7 +161,11 @@ export function Composer({
         onPickerOpenChange?.(false)
       }
     }
-    setMention(parseMentionQuery(value, caret))
+  }
+
+  function handleSelectionChange(pos: number) {
+    if (!focusedRef.current) return
+    setMention(parseMentionQuery(editing ? editTextRef.current : draftRef.current, pos))
   }
 
   function openGifPicker() {
@@ -172,9 +184,13 @@ export function Composer({
     if (!mention) return
     const tag = `@${name} `
     if (editing) {
-      setEditText(`${editText.slice(0, mention.start)}${tag}${editText.slice(mention.end)}`)
+      const next = `${editText.slice(0, mention.start)}${tag}${editText.slice(mention.end)}`
+      setEditText(next)
+      editTextRef.current = next
     } else {
-      setDraft(`${draft.slice(0, mention.start)}${tag}${draft.slice(mention.end)}`)
+      const next = `${draft.slice(0, mention.start)}${tag}${draft.slice(mention.end)}`
+      setDraft(next)
+      draftRef.current = next
     }
     setMention(null)
   }
@@ -189,7 +205,7 @@ export function Composer({
 
   function handleEditChange(value: string) {
     setEditText(value)
-    setMention(parseMentionQuery(value, caret))
+    editTextRef.current = value
   }
 
   function handleSaveEdit() {
@@ -214,6 +230,7 @@ export function Composer({
     // in that window restores the stale text, and a second tap can resend it.
     sendingRef.current = true
     setDraft('')
+    draftRef.current = ''
     setMention(null)
     setStagedImage(null)
     if (image) setUploading(true)
@@ -227,6 +244,7 @@ export function Composer({
     } catch (e) {
       errorHaptic()
       setDraft(raw)
+      draftRef.current = raw
       if (image) setStagedImage(image)
       onError(toErrorMessage(e, 'Could not send your message. Try again.'))
     } finally {
@@ -557,11 +575,13 @@ export function Composer({
             accessibilityLabel={editing ? 'Edit message' : 'Message'}
             value={editing ? editText : draft}
             onChangeText={editing ? handleEditChange : handleInputChange}
-            onSelectionChange={(e) => setCaret(e.nativeEvent.selection.start)}
+            onSelectionChange={(e) => handleSelectionChange(e.nativeEvent.selection.start)}
             onFocus={() => {
+              focusedRef.current = true
               onInputFocusChange?.(true)
             }}
             onBlur={() => {
+              focusedRef.current = false
               onInputFocusChange?.(false)
               setMention(null)
             }}
