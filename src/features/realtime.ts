@@ -16,9 +16,13 @@ type CommentLikeRealtime = CommentLike
 
 // Same ordering as the fetch (created_at, id): same-transaction inserts can
 // share a timestamp, and the patched row must sort exactly where a refetch
-// would put it.
-const byCreatedAsc = (a: Message, b: Message) =>
-  a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
+// would put it. Fixed-format ISO strings compare correctly without
+// localeCompare, which is slow over a long loaded history.
+const byCreatedAsc = (a: Message, b: Message) => {
+  if (a.created_at !== b.created_at) return a.created_at < b.created_at ? -1 : 1
+  if (a.id === b.id) return 0
+  return a.id < b.id ? -1 : 1
+}
 
 /**
  * Route a message INSERT into the room cache. When there is no cache yet the

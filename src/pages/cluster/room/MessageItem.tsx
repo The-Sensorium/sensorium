@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router'
 import type { ReactNode } from 'react'
 import { CornerUpLeft, Flag, Info, Loader2, MoreHorizontal, Pencil, Send, ShieldOff, Trash2, X } from 'lucide-react'
@@ -14,7 +15,11 @@ import type { MentionMember } from '../../../features/mentions'
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 
-export function MessageItem({
+// The room can hold thousands of loaded messages. Rows are memoized so
+// prepending an earlier page, a live arrival, or a reaction refetch only
+// re-renders the rows whose props actually changed; RoomView keeps every
+// prop identity stable for unchanged rows.
+export const MessageItem = memo(function MessageItem({
   message,
   mine,
   author,
@@ -64,8 +69,8 @@ export function MessageItem({
   onEditDraftChange(value: string): void
   onSaveEdit(): void
   onCancelEdit(): void
-  onToggleMenu(): void
-  onTogglePicker(): void
+  onToggleMenu(messageId: string): void
+  onTogglePicker(messageId: string): void
   onShowInfo(message: Message): void
   onEdit(message: Message): void
   onDelete(messageId: string): void
@@ -136,7 +141,7 @@ export function MessageItem({
               aria-label="Message actions"
               onClick={(e) => {
                 e.stopPropagation()
-                onToggleMenu()
+                onToggleMenu(message.id)
               }}
               className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-on-surface-variant/60 transition-colors hover:bg-surface-container hover:text-on-surface sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
             >
@@ -388,7 +393,7 @@ export function MessageItem({
                     aria-label={`Add ${emoji}`}
                     onClick={() => {
                       onToggleReaction(message.id, emoji)
-                      onTogglePicker()
+                      onTogglePicker(message.id)
                     }}
                     className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full text-base transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
                   >
@@ -402,7 +407,7 @@ export function MessageItem({
                 aria-label="Add reaction"
                 onClick={(e) => {
                   e.stopPropagation()
-                  onTogglePicker()
+                  onTogglePicker(message.id)
                 }}
                 className="grid h-11 w-11 min-h-[44px] min-w-[44px] place-items-center rounded-full border border-outline-variant/60 bg-surface text-sm text-on-surface-variant transition-colors hover:bg-surface-container sm:h-8 sm:w-8 sm:min-h-[32px] sm:min-w-[32px]"
               >
@@ -414,4 +419,4 @@ export function MessageItem({
       </div>
     </li>
   )
-}
+})
