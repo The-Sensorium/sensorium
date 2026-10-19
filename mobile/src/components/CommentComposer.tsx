@@ -69,7 +69,12 @@ export function CommentComposer({
   const [gifOpen, setGifOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
-  const [caret, setCaret] = useState(0)
+  // onChangeText fires before onSelectionChange, so a caret state lags one
+  // keystroke. Track the live text in refs and parse from the selection
+  // handler, which carries the fresh position for the new text.
+  const draftRef = useRef('')
+  const editTextRef = useRef('')
+  const focusedRef = useRef(false)
   const inputRef = useRef<TextInput>(null)
   const create = useCreateComment(clusterId)
   const edit = useEditComment(clusterId)
@@ -93,6 +98,7 @@ export function CommentComposer({
   useEffect(() => {
     if (editing && focusedEditId.current !== editing.id) {
       focusedEditId.current = editing.id
+      editTextRef.current = editing.content ?? ''
       inputRef.current?.focus()
     }
     if (!editing) focusedEditId.current = null
@@ -123,9 +129,13 @@ export function CommentComposer({
     if (!mention) return
     const tag = `@${name} `
     if (editing) {
-      setEditText(`${editText.slice(0, mention.start)}${tag}${editText.slice(mention.end)}`)
+      const next = `${editText.slice(0, mention.start)}${tag}${editText.slice(mention.end)}`
+      setEditText(next)
+      editTextRef.current = next
     } else {
-      setDraft(`${draft.slice(0, mention.start)}${tag}${draft.slice(mention.end)}`)
+      const next = `${draft.slice(0, mention.start)}${tag}${draft.slice(mention.end)}`
+      setDraft(next)
+      draftRef.current = next
     }
     setMention(null)
   }
@@ -213,6 +223,7 @@ export function CommentComposer({
         await create.mutateAsync({ postId, content: content || null, parentCommentId })
       }
       setDraft('')
+      draftRef.current = ''
       setImage(null)
       setGif(null)
       setMention(null)
@@ -251,15 +262,20 @@ export function CommentComposer({
 
   function handleDraftChange(value: string) {
     setDraft(value)
+    draftRef.current = value
     // The GIF toggle hides while typing, so a stranded open picker must not
     // linger above the composer without its trigger visible.
     if (value.trim().length > 0) setGifOpen(false)
-    setMention(parseMentionQuery(value, caret))
   }
 
   function handleEditChange(value: string) {
     setEditText(value)
-    setMention(parseMentionQuery(value, caret))
+    editTextRef.current = value
+  }
+
+  function handleSelectionChange(pos: number) {
+    if (!focusedRef.current) return
+    setMention(parseMentionQuery(editing ? editTextRef.current : draftRef.current, pos))
   }
 
   return (
@@ -369,8 +385,14 @@ export function CommentComposer({
             ref={inputRef}
             value={isEditing ? editText : draft}
             onChangeText={isEditing ? handleEditChange : handleDraftChange}
-            onSelectionChange={(e) => setCaret(e.nativeEvent.selection.start)}
-            onBlur={() => setMention(null)}
+            onSelectionChange={(e) => handleSelectionChange(e.nativeEvent.selection.start)}
+            onFocus={() => {
+              focusedRef.current = true
+            }}
+            onBlur={() => {
+              focusedRef.current = false
+              setMention(null)
+            }}
             maxLength={COMMENT_CONTENT_MAX}
             multiline
             // No numberOfLines: on Android it pins the field to an exact line
