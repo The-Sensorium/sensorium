@@ -56,7 +56,7 @@ test.describe('posts (seeded)', () => {
     // Open the detail page and comment.
     await card.getByRole('link', { name: new RegExp(text) }).click()
     await expect(page).toHaveURL(/\/posts\//)
-    await page.getByRole('textbox', { name: 'Add a comment' }).fill('Nice one!')
+    await page.getByRole('combobox', { name: 'Add a comment' }).fill('Nice one!')
     await page.getByRole('button', { name: 'Comment' }).click()
 
     await expect(page.getByRole('heading', { name: /Comments \(1\)/ })).toBeVisible()

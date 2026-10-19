@@ -16,6 +16,7 @@ import {
   type Meetup,
 } from '../../../../src/features/meetups'
 import { ConfirmSheet } from '../../../../src/components/ConfirmSheet'
+import { ConfirmDialog } from '../../../../src/components/ConfirmDialog'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useClusterOnAccent } from '../../../../src/lib/cluster-theme'
@@ -93,7 +94,7 @@ function MeetupsScreenContent() {
         <View style={{ gap: 16 }}>
           {latest?.status === 'cancelled' && latest.cancelled_reason !== 'withdrawn' ? (
             <Card>
-              <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>
+              <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>
                 This meetup expired
               </Text>
               <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
@@ -102,7 +103,7 @@ function MeetupsScreenContent() {
             </Card>
           ) : lastDone ? (
             <Card>
-              <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface }}>You met this week</Text>
+              <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>You met this week</Text>
               <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                 Thanks for joining your Cluster Meetup.
               </Text>
@@ -128,7 +129,7 @@ function ProposeCard({ clusterId }: { clusterId: string }) {
           <CalendarDays size={24} color={onAccent} strokeWidth={1.5} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface }}>Cluster Meetup</Text>
+          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Cluster Meetup</Text>
           <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>Meet the people behind the messages.</Text>
         </View>
       </View>
@@ -351,7 +352,7 @@ function MeetupDetail({
           <View style={{ alignItems: 'center' }}>
             <CalendarDays size={30} color={t.primary} strokeWidth={1.5} />
           </View>
-          <Text style={{ marginTop: 10, fontSize: 18, lineHeight: 26, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>Your cluster meetup is set</Text>
+          <Text style={{ marginTop: 10, fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>Your cluster meetup is set</Text>
           <Text style={{ marginTop: 6, fontSize: 22, lineHeight: 30, fontWeight: '700', color: t.onSurface, textAlign: 'center' }}>
             {row.starts_at ? formatSlotCompact24(row.starts_at) : ''}
           </Text>
@@ -389,7 +390,7 @@ function MeetupDetail({
                       justifyContent: 'center',
                     }}
                   >
-                    <Text style={{ fontSize: 11, lineHeight: 14, fontWeight: '600', color: t.onSurfaceVariant }}>
+                    <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: t.onSurfaceVariant }}>
                       +{joiningOverflow}
                     </Text>
                   </View>
@@ -450,7 +451,7 @@ function MeetupDetail({
                 disabled={rsvp.isPending}
                 hitSlop={8}
                 onPress={() => setDeclineOpen(true)}
-                style={{ minHeight: 44, justifyContent: 'center', opacity: rsvp.isPending ? 0.5 : 1 }}
+                style={{ minHeight: 48, justifyContent: 'center', opacity: rsvp.isPending ? 0.5 : 1 }}
               >
                 <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary, textAlign: 'center', textDecorationLine: 'underline' }}>
                   I can’t make it
@@ -458,7 +459,7 @@ function MeetupDetail({
               </Pressable>
             </View>
           )}
-          <ConfirmSheet
+          <ConfirmDialog
             open={declineOpen}
             onClose={() => { if (!rsvp.isPending) setDeclineOpen(false) }}
             title="Can’t make it?"
@@ -662,7 +663,7 @@ function MeetupDetail({
                             </Text>
                             {isMine ? (
                               <View style={{ flexShrink: 0, backgroundColor: t.primary, borderRadius: radii.pill, paddingHorizontal: 8, paddingVertical: 2 }}>
-                                <Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 14, fontWeight: '600', color: onAccent }}>
+                                <Text numberOfLines={1} style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: onAccent }}>
                                   Your pick
                                 </Text>
                               </View>
@@ -729,7 +730,7 @@ function CancelRow({ clusterId, meetupId, onError }: { clusterId: string; meetup
     )
   }
   return (
-    <ConfirmSheet
+    <ConfirmDialog
       open={confirming}
       onClose={() => { if (!cancel.isPending) setConfirming(false) }}
       title="Withdraw proposal?"

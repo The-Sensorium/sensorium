@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
-import { Link } from 'expo-router'
-import { Clock3, MailWarning } from 'lucide-react-native'
+import { ArrowLeft, Clock3, MailWarning } from 'lucide-react-native'
 import { useMyAccess } from '../src/features/access'
+import { goBackWithFallback } from '../src/lib/use-cluster-back'
 import { useActiveAccountGate } from '../src/lib/use-active-account'
 import { APPEAL_STATUS_LABELS, useMyAppeal, useSubmitAppeal } from '../src/features/appeals'
 import { timeAgo } from '../src/features/notifications'
@@ -149,7 +149,7 @@ export default function AppealScreen() {
                   marginTop: 8,
                   backgroundColor: t.surface,
                   borderWidth: 1,
-                  borderColor: t.outlineVariant,
+                  borderColor: t.outline,
                   borderRadius: radii.xl,
                   paddingHorizontal: 16,
                   paddingVertical: 12,
@@ -193,16 +193,18 @@ export default function AppealScreen() {
           )}
         </View>
 
-        <Link href="/restricted" asChild>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="Back to account status"
-            style={{ marginTop: 24, alignItems: 'center', padding: 12, minHeight: 44, justifyContent: 'center' }}
-          >            <Text style={{ fontSize: 14, fontWeight: '500', color: t.onSurfaceVariant }}>
-              Back to account status
-            </Text>
-          </Pressable>
-        </Link>
+        <Pressable
+          onPress={() => goBackWithFallback('/restricted')}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ marginTop: 24, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
+        >
+          <ArrowLeft size={16} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>
+            Back
+          </Text>
+        </Pressable>
 
         {!needsForm ? (
           <Text style={{ textAlign: 'center', fontSize: 12, lineHeight: 18, color: t.onSurfaceVariant }}>

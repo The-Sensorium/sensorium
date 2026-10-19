@@ -9,6 +9,7 @@ import { toErrorMessage } from '../../../src/lib/error'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog'
 import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
 import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { QueueProgress } from '../../../src/components/QueueCard'
@@ -48,11 +49,21 @@ export default function QueueScreen() {
   if (!mode) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card>
-          <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+          <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
             Queue not found
           </Text>
-          <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             That queue doesn’t exist. Head back to clusters to browse matching modes.
           </Text>
         </Card>
@@ -65,11 +76,21 @@ export default function QueueScreen() {
   if (!entry) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
+        </Pressable>
         <Card>
-          <Text style={{ fontSize: 20, fontWeight: '600', color: t.onSurface }}>
+          <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
             You’re not in this queue
           </Text>
-          <Text style={{ marginTop: 8, fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             Join it from Clusters to see the live waiting count.
           </Text>
           <View style={{ marginTop: 20 }}>
@@ -110,7 +131,7 @@ export default function QueueScreen() {
         hitSlop={12}
         style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 8, paddingRight: 16, marginBottom: 16 }}
       >
-        <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
+        <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
           Back
         </Text>
@@ -123,7 +144,7 @@ export default function QueueScreen() {
             {info.label}
           </Text>
         </View>
-        <Text style={{ marginTop: 4, fontSize: 22, fontWeight: '600', color: t.onSurface }}>
+        <Text style={{ marginTop: 4, fontSize: 22, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
           {displayKey}
         </Text>
 
@@ -137,44 +158,36 @@ export default function QueueScreen() {
           You can browse or join other matching modes while you wait.
         </Text>
 
-        {confirming ? (
-          <View style={{ marginTop: 24, flexDirection: 'row', gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <PrimaryButton title="Confirm leave" onPress={() => void handleLeave()} loading={leaving} />
-            </View>
-            <Pressable
-              onPress={() => setConfirming(false)}
-              disabled={leaving}
-              hitSlop={4}
-              style={{ paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leaving ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
-                Cancel
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => setConfirming(true)}
-            accessibilityRole="button"
-            style={{
-              marginTop: 24,
-              borderWidth: 1,
-              borderColor: t.primary,
-              borderRadius: radii.pill,
-              paddingVertical: 12,
-              minHeight: 48,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary }}>Leave queue</Text>
-          </Pressable>
-        )}
-        {leaveError ? (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{leaveError}</Text>
-        ) : null}
+        <Pressable
+          onPress={() => setConfirming(true)}
+          accessibilityRole="button"
+          style={{
+            marginTop: 24,
+            borderWidth: 1,
+            borderColor: t.primary,
+            borderRadius: radii.pill,
+            paddingVertical: 12,
+            minHeight: 48,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary }}>Leave queue</Text>
+        </Pressable>
       </Card>
+
+      <ConfirmDialog
+        open={confirming}
+        onClose={() => { if (!leaving) { setConfirming(false); setLeaveError(null) } }}
+        title="Leave queue?"
+        body="You'll stop waiting in this queue. You can join again anytime."
+        error={leaveError}
+        confirmTitle="Leave queue"
+        confirmLoadingTitle="Leaving…"
+        loading={leaving}
+        tone="error"
+        onConfirm={() => void handleLeave()}
+      />
 
       <Text style={{ marginTop: 16, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, paddingVertical: 12, minHeight: 44 }}>
         Want to match differently? <Link href="/(app)/clusters" style={{ fontWeight: '600', color: t.primary }}>Explore other modes</Link>.

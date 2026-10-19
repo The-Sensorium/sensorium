@@ -74,8 +74,7 @@ import { notSeenByMembers, seenByMembers } from '../../../../src/components/room
 import { RaiseSignalModal } from '../../../../src/components/room/RaiseSignalModal'
 import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows'
 import { ReportModal } from '../../../../src/components/ReportModal'
-import { Modal } from '../../../../src/components/Modal'
-import { PrimaryButton } from '../../../../src/components/ui'
+import { ConfirmDialog } from '../../../../src/components/ConfirmDialog'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
 import { goBackWithFallback } from '../../../../src/lib/use-cluster-back'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
@@ -1504,7 +1503,7 @@ function RoomScreenContent() {
           offset={{ closed: 0, opened: bottom }}
           style={{
             backgroundColor: roomBg,
-            paddingHorizontal: 12,
+            paddingHorizontal: 16,
             paddingTop: 8,
             paddingBottom: 8 + bottom,
           }}
@@ -1606,33 +1605,18 @@ function RoomScreenContent() {
           />
         ) : null}
 
-        <Modal open={deleteFor !== null} onClose={() => { if (!deleteMessage.isPending) { setDeleteFor(null); setDeleteError(null) } }} title="Delete message?">
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-            This removes your message from the cluster chat. This action can&apos;t be undone.
-          </Text>
-          {deleteError ? (
-            <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
-          ) : null}
-          <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
-            <Pressable
-              onPress={() => {
-                setDeleteFor(null)
-                setDeleteError(null)
-              }}
-              disabled={deleteMessage.isPending}
-              hitSlop={8}
-              style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: deleteMessage.isPending ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-            </Pressable>
-            <PrimaryButton
-              title="Delete"
-              loadingTitle="Deleting…"
-              loading={deleteMessage.isPending}
-              onPress={() => deleteFor && void remove(deleteFor)}
-            />
-          </View>
-        </Modal>
+        <ConfirmDialog
+          open={deleteFor !== null}
+          onClose={() => { if (!deleteMessage.isPending) { setDeleteFor(null); setDeleteError(null) } }}
+          title="Delete message?"
+          body="This removes your message from the cluster chat. This action can't be undone."
+          error={deleteError}
+          confirmTitle="Delete"
+          confirmLoadingTitle="Deleting…"
+          loading={deleteMessage.isPending}
+          tone="error"
+          onConfirm={() => deleteFor && void remove(deleteFor)}
+        />
       </View>
     </SafeAreaView>
   )

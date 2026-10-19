@@ -5,17 +5,12 @@ import { DayDivider } from './DayDivider'
 import { dateTimeFormatter } from './format'
 import { Avatar } from '../Avatar'
 import { CountdownTimer } from '../CountdownTimer'
-import type { Signal, SignalStatus } from '../../features/signals'
+import type { Signal } from '../../features/signals'
 import type { Vote } from '../../features/votes'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { useClusterAccentText } from '../../lib/cluster-theme'
-
-const SIGNAL_STATUS: Record<SignalStatus, { label: string; colorKey: 'primary' | 'tertiary' | 'onSurfaceVariant' }> = {
-  open: { label: 'Open', colorKey: 'primary' },
-  in_progress: { label: 'In progress', colorKey: 'tertiary' },
-  resolved: { label: 'Resolved', colorKey: 'onSurfaceVariant' },
-}
+import { SIGNAL_STATUS_META } from '../../lib/signal-status'
 
 export function SignalRow({
   signal,
@@ -34,7 +29,7 @@ export function SignalRow({
 }) {
   const t = useTheme()
   const accentText = useClusterAccentText() ?? t.primary
-  const statusColor = SIGNAL_STATUS[signal.status].colorKey === 'primary' ? accentText : t[SIGNAL_STATUS[signal.status].colorKey]
+  const statusColor = SIGNAL_STATUS_META[signal.status].colorKey === 'primary' ? accentText : t[SIGNAL_STATUS_META[signal.status].colorKey]
   return (
     <View>
       {showDay ? <DayDivider iso={signal.created_at} /> : null}
@@ -80,7 +75,7 @@ export function SignalRow({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <View style={{ backgroundColor: t.surface, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}>
               <Text style={{ fontSize: 12, fontWeight: '500', color: statusColor }}>
-              {SIGNAL_STATUS[signal.status].label}
+              {SIGNAL_STATUS_META[signal.status].label}
             </Text>
           </View>
           <ChevronRight size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />

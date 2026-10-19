@@ -1,16 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
-import { CornerUpLeft, ImagePlay, ImagePlus, Send, X } from 'lucide-react-native'
+import { Check, CornerUpLeft, ImagePlay, ImagePlus, Pencil, Send, X } from 'lucide-react-native'
 import { Avatar } from './Avatar'
 import { CollapsibleChrome } from './CollapsibleChrome'
 import { GifPicker } from './room/GifPicker'
+import { MentionSuggestions, type MentionOption } from './room/MentionSuggestions'
 import {
   useCreateComment,
+  useEditComment,
   uploadPostImage,
   COMMENT_CONTENT_MAX,
   type PostComment,
 } from '../features/posts'
+import {
+  EVERYONE_NAME,
+  filterMentionCandidates,
+  matchesEveryone,
+  parseMentionQuery,
+  type MentionMember,
+} from '../features/mentions'
 import type { Gif } from '../features/gifs'
 import { toErrorMessage } from '../lib/error'
 import { errorHaptic, successHaptic } from '../lib/haptics'
@@ -33,16 +42,24 @@ export function CommentComposer({
   postId,
   comments,
   replyTo,
+  editing,
+  members,
+  selfId,
   selfAvatar,
   onCancelReply,
+  onEditDone,
   onPosted,
 }: {
   clusterId: string
   postId: string
   comments: PostComment[]
   replyTo: ReplyTarget | null
+  editing?: { id: string; content: string } | null
+  members: MentionMember[]
+  selfId: string | null
   selfAvatar: { display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null }
   onCancelReply(): void
+  onEditDone?(): void
   onPosted(): void
 }) {
   const t = useTheme()
@@ -51,8 +68,85 @@ export function CommentComposer({
   const [gif, setGif] = useState<Gif | null>(null)
   const [gifOpen, setGifOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mention, setMention] = useState<{ start: number; end: number; query: string } | null>(null)
+  // onChangeText fires before onSelectionChange, so a caret state lags one
+  // keystroke. Track the live text in refs and parse from the selection
+  // handler, which carries the fresh position for the new text.
+  const draftRef = useRef('')
+  const editTextRef = useRef('')
+  const focusedRef = useRef(false)
   const inputRef = useRef<TextInput>(null)
   const create = useCreateComment(clusterId)
+  const edit = useEditComment(clusterId)
+
+  // Edit mode borrows this composer, mirroring the room: the comment draft
+  // stays untouched while the original text loads into editText, so realtime
+  // updates never clobber an in-progress edit. Loaded only on open/close or
+  // when the target comment switches.
+  const [editText, setEditText] = useState('')
+  const [prevEditingId, setPrevEditingId] = useState<string | null>(null)
+  const focusedEditId = useRef<string | null>(null)
+  const editingIdNow = editing?.id ?? null
+  if (editingIdNow !== prevEditingId) {
+    setPrevEditingId(editingIdNow)
+    setEditText(editing?.content ?? '')
+    if (editingIdNow) {
+      setGifOpen(false)
+      setMention(null)
+    }
+  }
+  useEffect(() => {
+    if (editing && focusedEditId.current !== editing.id) {
+      focusedEditId.current = editing.id
+      editTextRef.current = editing.content ?? ''
+      inputRef.current?.focus()
+    }
+    if (!editing) focusedEditId.current = null
+  })
+
+  const mentionMembers = useMemo(
+    () => (selfId ? members.filter((m) => m.id !== selfId) : members),
+    [members, selfId],
+  )
+  const showEveryone = mention !== null && matchesEveryone(mention.query)
+  const mentionCandidates = useMemo(() => {
+    if (!mention || mentionMembers.length === 0) return []
+    return filterMentionCandidates(mention.query, mentionMembers, selfId ?? '').slice(
+      0,
+      showEveryone ? 7 : 8,
+    )
+  }, [mention, mentionMembers, selfId, showEveryone])
+  const mentionOpen = mention !== null && (showEveryone || mentionCandidates.length > 0)
+  const mentionOptions = useMemo<MentionOption[]>(
+    () => [
+      ...(showEveryone ? [{ key: 'everyone', kind: 'everyone' as const }] : []),
+      ...mentionCandidates.map((member) => ({ key: member.id, kind: 'member' as const, member })),
+    ],
+    [showEveryone, mentionCandidates],
+  )
+
+  function insertToken(name: string) {
+    if (!mention) return
+    const tag = `@${name} `
+    if (editing) {
+      const next = `${editText.slice(0, mention.start)}${tag}${editText.slice(mention.end)}`
+      setEditText(next)
+      editTextRef.current = next
+    } else {
+      const next = `${draft.slice(0, mention.start)}${tag}${draft.slice(mention.end)}`
+      setDraft(next)
+      draftRef.current = next
+    }
+    setMention(null)
+  }
+
+  function insertMention(member: MentionMember) {
+    insertToken(member.display_name)
+  }
+
+  function insertEveryone() {
+    insertToken(EVERYONE_NAME)
+  }
 
   const replyId = replyTo?.id
   useEffect(() => {
@@ -129,8 +223,10 @@ export function CommentComposer({
         await create.mutateAsync({ postId, content: content || null, parentCommentId })
       }
       setDraft('')
+      draftRef.current = ''
       setImage(null)
       setGif(null)
+      setMention(null)
       onPosted()
       successHaptic()
     } catch (e) {
@@ -139,6 +235,22 @@ export function CommentComposer({
     }
   }
 
+  async function handleSaveEdit() {
+    const content = editText.trim()
+    if (!content || edit.isPending || !editing) return
+    setError(null)
+    try {
+      await edit.mutateAsync({ commentId: editing.id, content })
+      onEditDone?.()
+      successHaptic()
+    } catch (e) {
+      errorHaptic()
+      setError(toErrorMessage(e, 'Could not edit this comment. Try again.'))
+    }
+  }
+
+  const isEditing = editing != null
+  const canSave = editText.trim().length > 0 && !edit.isPending
   const hasContent = Boolean(draft.trim() || image || gif)
   const sendDisabled = !hasContent || create.isPending
   const gifActive = Boolean(gif) || gifOpen
@@ -150,14 +262,43 @@ export function CommentComposer({
 
   function handleDraftChange(value: string) {
     setDraft(value)
+    draftRef.current = value
     // The GIF toggle hides while typing, so a stranded open picker must not
     // linger above the composer without its trigger visible.
     if (value.trim().length > 0) setGifOpen(false)
   }
 
+  function handleEditChange(value: string) {
+    setEditText(value)
+    editTextRef.current = value
+  }
+
+  function handleSelectionChange(pos: number) {
+    if (!focusedRef.current) return
+    setMention(parseMentionQuery(editing ? editTextRef.current : draftRef.current, pos))
+  }
+
   return (
     <View>
-      {replyTo ? (
+      {isEditing ? (
+        <View style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.surfaceLowest, borderRadius: radii.md, paddingHorizontal: 12, paddingVertical: 4 }}>
+          <Pencil size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurface }}>Editing comment</Text>
+            <Text style={{ fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
+              {editing?.content.trim() ? editing.content : 'Comment'}
+            </Text>
+          </View>
+          <Pressable
+            accessibilityLabel="Cancel edit"
+            onPress={onEditDone}
+            hitSlop={14}
+            style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <X size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
+        </View>
+      ) : replyTo ? (
         <View style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: t.surfaceLowest, borderRadius: radii.md, paddingHorizontal: 12, paddingVertical: 4 }}>
           <CornerUpLeft size={14} color={t.onSurfaceVariant} strokeWidth={1.5} />
           <Text style={{ flex: 1, fontSize: 12, color: t.onSurfaceVariant }} numberOfLines={1}>
@@ -173,7 +314,7 @@ export function CommentComposer({
           </Pressable>
         </View>
       ) : null}
-      {image || gif ? (
+      {!isEditing && (image || gif) ? (
         <View style={{ marginBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {image?.uri ? (
             <Image source={{ uri: image.uri }} style={{ width: 48, height: 48, borderRadius: radii.md }} />
@@ -201,7 +342,7 @@ export function CommentComposer({
           </Pressable>
         </View>
       ) : null}
-      {gifOpen ? (
+      {!isEditing && gifOpen ? (
         <View style={{ marginBottom: 8 }}>
           <GifPicker
             pending={create.isPending}
@@ -214,6 +355,13 @@ export function CommentComposer({
         </View>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {mentionOpen ? (
+          <MentionSuggestions
+            options={mentionOptions}
+            onSelectEveryone={insertEveryone}
+            onSelectMember={insertMention}
+          />
+        ) : null}
         <View
           style={{
             flex: 1,
@@ -223,27 +371,35 @@ export function CommentComposer({
             // Same input surface as the cluster chat composer in both modes.
             backgroundColor: t.surfaceLowest,
             borderWidth: 1,
-            borderColor: t.outlineVariant,
+            borderColor: t.outline,
             borderRadius: radii.md,
             paddingStart: 6,
             paddingEnd: 4,
             paddingVertical: 4,
           }}
         >
-          <CollapsibleChrome shown={!isTyping} width={32}>
+          <CollapsibleChrome shown={!isTyping && !isEditing} width={32}>
             <Avatar name={selfAvatar.display_name} src={selfAvatar.avatar_url} thumbSrc={selfAvatar.avatar_thumb_url ?? selfAvatar.avatar_url} size={32} />
           </CollapsibleChrome>
           <TextInput
             ref={inputRef}
-            value={draft}
-            onChangeText={handleDraftChange}
+            value={isEditing ? editText : draft}
+            onChangeText={isEditing ? handleEditChange : handleDraftChange}
+            onSelectionChange={(e) => handleSelectionChange(e.nativeEvent.selection.start)}
+            onFocus={() => {
+              focusedRef.current = true
+            }}
+            onBlur={() => {
+              focusedRef.current = false
+              setMention(null)
+            }}
             maxLength={COMMENT_CONTENT_MAX}
             multiline
             // No numberOfLines: on Android it pins the field to an exact line
             // count, which would stop the composer growing with wrapped text.
-            placeholder="Add a comment..."
+            placeholder={isEditing ? 'Edit comment…' : 'Add a comment...'}
             placeholderTextColor={t.onSurfaceVariant}
-            accessibilityLabel="Add a comment"
+            accessibilityLabel={isEditing ? 'Edit comment' : 'Add a comment'}
             style={{
               flex: 1,
               paddingHorizontal: 8,
@@ -255,7 +411,7 @@ export function CommentComposer({
               color: t.onSurface,
             }}
           />
-          <CollapsibleChrome shown={!isTyping} width={44}>
+          <CollapsibleChrome shown={!isTyping && !isEditing} width={44}>
             <Pressable
               accessibilityLabel="Attach image"
               accessibilityRole="button"
@@ -266,7 +422,7 @@ export function CommentComposer({
               <ImagePlus size={22} color={image ? t.primary : t.onSurfaceVariant} strokeWidth={1.5} />
             </Pressable>
           </CollapsibleChrome>
-          <CollapsibleChrome shown={!isTyping} width={44}>
+          <CollapsibleChrome shown={!isTyping && !isEditing} width={44}>
             <Pressable
               accessibilityLabel="Add a GIF"
               accessibilityRole="button"
@@ -291,11 +447,11 @@ export function CommentComposer({
           </CollapsibleChrome>
         </View>
         <Pressable
-          disabled={sendDisabled}
+          disabled={isEditing ? !canSave : sendDisabled}
           accessibilityRole="button"
-          accessibilityLabel="Send comment"
-          accessibilityState={{ disabled: sendDisabled }}
-          onPress={() => void handleComment()}
+          accessibilityLabel={isEditing ? 'Save edit' : 'Send comment'}
+          accessibilityState={{ disabled: isEditing ? !canSave : sendDisabled }}
+          onPress={() => (isEditing ? void handleSaveEdit() : void handleComment())}
           style={{
             width: 44,
             height: 44,
@@ -303,11 +459,13 @@ export function CommentComposer({
             backgroundColor: t.primary,
             alignItems: 'center',
             justifyContent: 'center',
-            opacity: sendDisabled ? 0.4 : 1,
+            opacity: (isEditing ? !canSave : sendDisabled) ? 0.4 : 1,
           }}
         >
-          {create.isPending ? (
+          {create.isPending || edit.isPending ? (
             <ActivityIndicator size="small" color={t.onPrimary} />
+          ) : isEditing ? (
+            <Check size={20} color={t.onPrimary} strokeWidth={2} />
           ) : (
             <Send size={20} color={t.onPrimary} strokeWidth={1.5} />
           )}

@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { CommentItem } from './CommentItem'
 import type { PostComment } from '../features/posts'
 
 vi.mock('../features/posts', () => ({
   useDeleteComment: vi.fn(),
+  useEditComment: vi.fn(),
+  COMMENT_CONTENT_MAX: 1000,
 }))
 const avatarHook = vi.hoisted(() => vi.fn())
 vi.mock('../features/avatars', () => ({
@@ -23,7 +25,7 @@ vi.mock('./PostMedia', () => ({ PostMedia: () => null }))
 
 import { useAuth } from '../app/auth-context'
 import { useAvatarUrl } from '../features/avatars'
-import { useDeleteComment } from '../features/posts'
+import { useDeleteComment, useEditComment } from '../features/posts'
 
 function fixture(overrides: Partial<PostComment> = {}): PostComment {
   return {
@@ -35,23 +37,29 @@ function fixture(overrides: Partial<PostComment> = {}): PostComment {
     gif_url: null,
     parent_comment_id: 'c0',
     deleted_at: null,
+    edited_at: null,
     moderation_status: 'approved',
     created_at: '2026-01-01T00:00:00Z',
     ...overrides,
   }
 }
 
-function setup(overrides: Partial<PostComment> = {}, opts: { onReply?: (c: PostComment) => void } = {}) {
+function setup(
+  overrides: Partial<PostComment> = {},
+  opts: { onReply?: (c: PostComment) => void; editMutateAsync?: (vars: { commentId: string; content: string }) => Promise<void> } = {},
+) {
   const comment = fixture(overrides)
   vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
   vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
   vi.mocked(useDeleteComment).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never)
+  vi.mocked(useEditComment).mockReturnValue({ mutateAsync: opts.editMutateAsync ?? vi.fn(), isPending: false } as never)
   const onReply = opts.onReply ?? vi.fn()
   render(
     <CommentItem
       comment={comment}
       clusterId="c1"
       author={{ id: comment.author_id, display_name: 'Rio', avatar_url: null }}
+      members={[]}
       repliedToName={comment.parent_comment_id ? 'Diya' : undefined}
       onReply={onReply}
     />,
@@ -95,11 +103,13 @@ describe('CommentItem', () => {
     vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
     vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
     vi.mocked(useDeleteComment).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never)
+    vi.mocked(useEditComment).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never)
     render(
       <CommentItem
         comment={comment}
         clusterId="c1"
         author={{ id: comment.author_id, display_name: 'Rio', avatar_url: null }}
+        members={[]}
         onLike={vi.fn()}
         likeCount={4}
         likedByMe
@@ -114,11 +124,13 @@ describe('CommentItem', () => {
     vi.mocked(useAuth).mockReturnValue({ state: 'signedIn', userId: 'u1' } as never)
     vi.mocked(useAvatarUrl).mockReturnValue({ data: undefined } as never)
     vi.mocked(useDeleteComment).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never)
+    vi.mocked(useEditComment).mockReturnValue({ mutateAsync: vi.fn(), isPending: false } as never)
     render(
       <CommentItem
         comment={comment}
         clusterId="c1"
         author={{ id: comment.author_id, display_name: 'Rio', avatar_url: null }}
+        members={[]}
         onLike={onLike}
         likeCount={1}
         likedByMe
@@ -126,5 +138,42 @@ describe('CommentItem', () => {
     )
     fireEvent.click(screen.getByRole('button', { pressed: true }))
     expect(onLike).toHaveBeenCalledWith('x1')
+  })
+
+  it('offers Edit (not Report) on your own comment', () => {
+    setup({ author_id: 'u1' })
+    expect(screen.getByRole('button', { name: 'Edit comment' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Report comment' })).not.toBeInTheDocument()
+  })
+
+  it('hides Edit on another author’s comment', () => {
+    setup()
+    expect(screen.queryByRole('button', { name: 'Edit comment' })).not.toBeInTheDocument()
+  })
+
+  it('hides Edit on a media-only comment (nothing to edit)', () => {
+    setup({ author_id: 'u1', content: null, gif_url: 'https://gif.example/x.gif' })
+    expect(screen.queryByRole('button', { name: 'Edit comment' })).not.toBeInTheDocument()
+  })
+
+  it('saves an edited comment through edit_post_comment', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue(undefined)
+    setup({ author_id: 'u1', content: 'first draft' }, { editMutateAsync: mutateAsync })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit comment' }))
+    const editor = screen.getByRole('textbox', { name: 'Edit comment' })
+    expect(editor).toHaveValue('first draft')
+
+    fireEvent.change(editor, { target: { value: 'final draft' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith({ commentId: 'x1', content: 'final draft' }),
+    )
+  })
+
+  it('shows an edited marker once edited_at is set', () => {
+    setup({ edited_at: '2026-02-01T00:00:00Z' })
+    expect(screen.getByText('· edited')).toBeInTheDocument()
   })
 })

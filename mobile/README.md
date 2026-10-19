@@ -205,6 +205,7 @@ Everything else is hand-written for mobile. Notable exceptions to keep an eye on
 - Reads/writes should go through `src/features/` hooks wrapping TanStack Query, mirroring the web feature modules; components should not touch Supabase directly.
 - Never edit `src/lib/database.types.ts` by hand - rerun `sync:db-types` after migrations.
 - Member-only: do not port staff/admin surfaces into the app.
+- Destructive confirmations (delete post/comment/message, leave cluster/queue, clear notifications, remove photo, delete account, decline a meetup, withdraw a proposal) use `src/components/ConfirmDialog.tsx`: a centered card with a centered title and body, then stacked full-width confirm and cancel rows. `Modal` stays for forms and non-destructive dialogs. Non-destructive confirmations can stay on `ConfirmSheet`.
 
 ## Testing
 

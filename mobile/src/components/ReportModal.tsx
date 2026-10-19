@@ -103,7 +103,7 @@ export function ReportModal({
           <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
             Report submitted
           </Text>
-          <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
             Thanks. Our moderators will review your report
             {contentTarget ? ` about this ${contentTarget.kind}` : ` about ${target.name}`}.
           </Text>
@@ -120,7 +120,7 @@ export function ReportModal({
                 borderRadius: radii.pill,
                 paddingHorizontal: 16,
                 paddingVertical: 12,
-                minHeight: 44,
+                minHeight: 48,
                 justifyContent: 'center',
                 opacity: muteUser.isPending ? 0.6 : 1,
               }}
@@ -131,14 +131,14 @@ export function ReportModal({
             </Pressable>
           ) : null}
           {muteUser.isError ? (
-            <Text style={{ fontSize: 12, color: t.error }}>
+            <Text style={{ fontSize: 12, lineHeight: 16, color: t.error }}>
               Couldn’t mute {target.name}. Try again.
             </Text>
           ) : null}
         </View>
       ) : (
         <View style={{ marginTop: 12, gap: 8 }}>
-          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
             Why are you reporting{contentTarget ? ` this ${contentTarget.kind}` : ` ${target.name}`}?
           </Text>
           {REPORT_REASONS.map((r) => {
@@ -188,7 +188,7 @@ export function ReportModal({
               color: t.onSurface,
             }}
           />
-          {error ? <Text style={{ fontSize: 14, color: t.error }}>{error}</Text> : null}
+          {error ? <Text style={{ fontSize: 14, lineHeight: 20, color: t.error }}>{error}</Text> : null}
           <PrimaryButton
             title="Submit report"
             loading={submitting}

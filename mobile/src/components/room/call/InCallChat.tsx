@@ -33,7 +33,7 @@ function ChatRow({ item, showName }: { item: InCallMessage; showName: boolean })
           <Text style={{ fontSize: 12, fontWeight: '600', color: t.onSurfaceVariant }}>
             {sender}
           </Text>
-          <Text style={{ fontSize: 11, color: t.onSurfaceVariant, opacity: 0.7 }}>
+          <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant, opacity: 0.7 }}>
             {timeFormatter.format(new Date(item.timestamp))}
           </Text>
         </View>
@@ -130,7 +130,7 @@ export function InCallChat({
             flex: 1,
             backgroundColor: t.surfaceLowest,
             borderWidth: 1,
-            borderColor: t.outline,
+            borderColor: t.outlineVariant,
             borderRadius: radii.md,
             paddingHorizontal: 16,
             paddingVertical: 10,

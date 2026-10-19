@@ -704,6 +704,28 @@ export function useDeleteComment(clusterId: string | null) {
   })
 }
 
+/** Edit the caller's own comment via edit_post_comment (0208): the RPC re-checks
+ * authorship + content length and stamps edited_at server-side. No optimistic
+ * patch: the text is small and the refetch is the reconciliation. */
+export function useEditComment(clusterId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
+      const supabase = requireSupabase()
+      const { error } = await supabase.rpc('edit_post_comment', {
+        p_comment_id: commentId,
+        p_content: content,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void clusterId
+      // Prefix key covers the cluster list, per-post singles, and 'many' caches.
+      void queryClient.invalidateQueries({ queryKey: ['post-comments'] })
+    },
+  })
+}
+
 export function useReportPost(clusterId: string | null) {
   const queryClient = useQueryClient()
   return useMutation({

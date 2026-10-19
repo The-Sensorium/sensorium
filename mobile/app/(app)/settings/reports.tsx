@@ -36,7 +36,7 @@ export default function MyReportsScreen() {
         hitSlop={12}
         style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, paddingVertical: 12, minHeight: 48, paddingRight: 16, marginBottom: 12 }}
       >
-        <ArrowLeft size={18} color={t.primary} strokeWidth={1.5} />
+        <ArrowLeft size={18} color={t.primary} strokeWidth={2} />
         <Text style={{ fontSize: 15, fontWeight: '600', color: t.primary }}>
           Back
         </Text>
@@ -51,7 +51,7 @@ export default function MyReportsScreen() {
         <LoadingView />
       ) : reports.isError ? (
         <Card>
-          <Text style={{ fontSize: 14, color: t.error }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: t.error }}>
             Couldn’t load your reports. Please try again.
           </Text>
           <Pressable
@@ -89,11 +89,11 @@ export default function MyReportsScreen() {
                     style={{ backgroundColor: open ? t.surfaceContainer : t.surface, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 4 }}
                   >
                     <Text style={{ fontSize: 12, fontWeight: '500', color: open ? t.primary : t.onSurfaceVariant }}>
-                      {report.status}
+                      {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
                     </Text>
                   </View>
                 </View>
-                <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
+                <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   {report.cluster_name} · {REASON_LABELS.get(report.reason) ?? report.reason} · {timeAgo(report.created_at)}
                 </Text>
                 {report.details ? (
@@ -110,15 +110,6 @@ export default function MyReportsScreen() {
         })
       )}
       <View style={{ height: 8 }} />
-      <Pressable
-        onPress={goBack}
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        hitSlop={8}
-        style={{ alignItems: 'center', padding: 12, minHeight: 48, justifyContent: 'center' }}
-      >
-        <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Back</Text>
-      </Pressable>
     </Screen>
   )
 }

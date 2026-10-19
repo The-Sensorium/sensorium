@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { CornerUpLeft, Flag, Heart, Loader2, Trash2 } from 'lucide-react'
+import { CornerUpLeft, Flag, Heart, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../app/auth-context'
 import { Avatar } from './Avatar'
-import { LinkifiedText } from './LinkifiedText'
+import { MentionText } from '../pages/cluster/room/MentionText'
+import type { MentionMember } from '../features/mentions'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
 import { ReportModal } from './ReportModal'
 import { cn } from '../lib/utils'
-import { useDeleteComment, type PostComment } from '../features/posts'
+import { COMMENT_CONTENT_MAX, useDeleteComment, useEditComment, type PostComment } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 
 const timeAgo = new Intl.DateTimeFormat(undefined, {
@@ -22,6 +23,7 @@ export function CommentItem({
   comment,
   clusterId,
   author,
+  members,
   repliedToName,
   onReply,
   onLike,
@@ -33,6 +35,7 @@ export function CommentItem({
   comment: PostComment
   clusterId: string
   author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
+  members: MentionMember[]
   repliedToName?: string
   onReply?: (comment: PostComment) => void
   onLike?: (commentId: string) => void
@@ -47,7 +50,11 @@ export function CommentItem({
   const [reportOpen, setReportOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(comment.content ?? '')
+  const [editError, setEditError] = useState<string | null>(null)
   const del = useDeleteComment(clusterId)
+  const edit = useEditComment(clusterId)
 
   async function handleDelete() {
     setDeleteError(null)
@@ -56,6 +63,30 @@ export function CommentItem({
       setConfirmOpen(false)
     } catch (e) {
       setDeleteError(toErrorMessage(e, 'Could not delete this comment. Try again.'))
+    }
+  }
+
+  function startEdit() {
+    setDraft(comment.content ?? '')
+    setEditError(null)
+    setEditing(true)
+  }
+
+  function cancelEdit() {
+    if (edit.isPending) return
+    setEditing(false)
+    setEditError(null)
+  }
+
+  async function handleEdit() {
+    const content = draft.trim()
+    if (!content || edit.isPending) return
+    setEditError(null)
+    try {
+      await edit.mutateAsync({ commentId: comment.id, content })
+      setEditing(false)
+    } catch (e) {
+      setEditError(toErrorMessage(e, 'Could not edit this comment. Try again.'))
     }
   }
 
@@ -75,8 +106,56 @@ export function CommentItem({
           <span className="text-sm font-semibold text-on-surface">{author?.display_name ?? 'Member'}</span>
           {isMine && <span className="text-xs text-on-surface-variant">(you)</span>}
           <span className="text-xs text-on-surface-variant">· {timeAgo.format(new Date(comment.created_at))}</span>
+          {comment.edited_at && <span className="text-xs text-on-surface-variant">· edited</span>}
         </div>
-        {comment.content || comment.image_url || comment.gif_url ? (
+        {editing ? (
+          <div className="mt-1">
+            <label htmlFor={`edit-comment-${comment.id}`} className="sr-only">
+              Edit comment
+            </label>
+            <textarea
+              id={`edit-comment-${comment.id}`}
+              aria-label="Edit comment"
+              autoFocus
+              rows={2}
+              maxLength={COMMENT_CONTENT_MAX}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                  e.preventDefault()
+                  void handleEdit()
+                }
+                if (e.key === 'Escape') cancelEdit()
+              }}
+              className="w-full resize-none rounded-xl border border-outline-variant/70 bg-surface-lowest px-3 py-2 text-base leading-6 text-on-surface outline-none transition-colors focus:border-primary sm:text-sm"
+            />
+            {editError && (
+              <p role="alert" className="mt-1 text-xs text-error">
+                {editError}
+              </p>
+            )}
+            <div className="mt-1 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={cancelEdit}
+                disabled={edit.isPending}
+                className="min-h-[44px] rounded-pill px-4 py-2 text-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleEdit()}
+                disabled={!draft.trim() || edit.isPending}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container disabled:opacity-60"
+              >
+                {edit.isPending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                {edit.isPending ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        ) : comment.content || comment.image_url || comment.gif_url ? (
           // Highlight hugs only the comment body, not the author row or actions.
           <div className={cn('px-2 -mx-2', highlighted && 'outline outline-2 outline-primary outline-offset-2')}>
             {comment.content && (
@@ -84,7 +163,7 @@ export function CommentItem({
                 {repliedToName && (
                   <span className="mr-1 font-semibold text-primary">@{repliedToName}</span>
                 )}
-                <span className="text-on-surface"><LinkifiedText text={comment.content} /></span>
+                <span className="text-on-surface"><MentionText content={comment.content} members={members} clusterId={clusterId} /></span>
               </p>
             )}
             <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
@@ -115,6 +194,16 @@ export function CommentItem({
               className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:text-primary sm:min-h-[32px] sm:min-w-[32px] sm:px-1 sm:py-1"
             >
               <CornerUpLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Reply
+            </button>
+          )}
+          {isMine && comment.content && (
+            <button
+              type="button"
+              aria-label="Edit comment"
+              onClick={startEdit}
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-2 text-xs font-semibold text-on-surface-variant transition-colors hover:text-primary sm:min-h-[32px] sm:min-w-[32px] sm:px-1 sm:py-1"
+            >
+              <Pencil className="h-4 w-4" strokeWidth={1.5} aria-hidden /> Edit
             </button>
           )}
           {isMine && (

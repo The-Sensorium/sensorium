@@ -4,15 +4,15 @@ import { LinkifiedText } from '../LinkifiedText'
 import { useTheme } from '../../lib/use-theme'
 import { useClusterAccentText } from '../../lib/cluster-theme'
 
-export function MentionText({ content, members, mine = false }: { content: string; members: MentionMember[]; mine?: boolean }) {
+export function MentionText({ content, members, mine = false, fontSize = 16, lineHeight = 24 }: { content: string; members: MentionMember[]; mine?: boolean; fontSize?: number; lineHeight?: number }) {
   const t = useTheme()
   const accentText = useClusterAccentText() ?? t.primary
   const parts = parseMentions(content, members)
   return (
-    <Text style={{ fontSize: 16, lineHeight: 24, color: mine ? t.onPrimary : t.onSurface }}>
+    <Text style={{ fontSize, lineHeight, color: mine ? t.onPrimary : t.onSurface }}>
       {parts.map((part, i) =>
         part.type === 'text' ? (
-          <LinkifiedText key={i} text={part.value} fontSize={16} lineHeight={24} color={mine ? t.onPrimary : undefined} linkColor={mine ? t.onPrimary : undefined} />
+          <LinkifiedText key={i} text={part.value} fontSize={fontSize} lineHeight={lineHeight} color={mine ? t.onPrimary : undefined} linkColor={mine ? t.onPrimary : undefined} />
         ) : (
           // Broadcasts and member mentions share one style: semibold with an
           // underline inside outgoing bubbles, primary-colored otherwise.

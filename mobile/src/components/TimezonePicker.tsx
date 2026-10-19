@@ -73,6 +73,8 @@ export function TimezonePicker({
                   onChange(item)
                   setOpen(false)
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={item}
                 style={{ paddingHorizontal: spacing.containerMargin, paddingVertical: 12, minHeight: 48, justifyContent: 'center' }}
               >
                 <Text style={{ fontSize: 16, lineHeight: 24, color: t.onSurface }}>{item}</Text>
@@ -81,6 +83,8 @@ export function TimezonePicker({
           />
           <Pressable
             onPress={() => setOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
             style={{ padding: spacing.gutter, minHeight: 48, justifyContent: 'center', alignItems: 'center' }}
           >
             <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Close</Text>

@@ -64,7 +64,7 @@ export function ParticipantTile({ trackRef, speaking, style }: ParticipantTilePr
           {name}
         </Text>
         {!participant.isMicrophoneEnabled ? (
-          <MicOff size={14} color="#fff" strokeWidth={2} />
+          <MicOff size={14} color="#fff" strokeWidth={1.5} />
         ) : null}
       </View>
     </View>

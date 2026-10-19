@@ -44,7 +44,7 @@ function ProfileScreenContent() {
   const accentText = useClusterAccentText() ?? t.primary
   const { userId = '', cluster = '' } = useLocalSearchParams<{ userId: string; cluster: string }>()
   const clusterId = cluster
-  useClusterBack(
+  const goBack = useClusterBack(
     clusterId
       ? { pathname: '/cluster/[clusterId]/members', params: { clusterId } }
       : '/(app)/home',
@@ -108,6 +108,16 @@ function ProfileScreenContent() {
   if (!member) {
     return (
       <Screen>
+        <Pressable
+          onPress={goBack}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, alignSelf: 'flex-start', marginBottom: 8 }}
+        >
+          <ArrowLeft size={16} color={accentText} strokeWidth={2} />
+          <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: accentText }}>Back</Text>
+        </Pressable>
         <Card plain>
           <Text style={{ fontSize: 14, textAlign: 'center', color: t.onSurfaceVariant }}>
             This member isn&apos;t in your cluster.
@@ -121,17 +131,18 @@ function ProfileScreenContent() {
 
   return (
     <Screen>
-      <Link
-        href={{ pathname: '/cluster/[clusterId]/members', params: { clusterId } }}
-        asChild
+      <Pressable
+        onPress={goBack}
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        hitSlop={8}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, minHeight: 48, marginBottom: 4 }}
       >
-        <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, minHeight: 44, marginBottom: 4 }}>
-          <ArrowLeft size={16} color={accentText} strokeWidth={1.5} />
-          <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: accentText }}>
-            Back to members
-          </Text>
-        </Pressable>
-      </Link>
+        <ArrowLeft size={16} color={accentText} strokeWidth={2} />
+        <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: accentText }}>
+          Back
+        </Text>
+      </Pressable>
 
       <Card>
         <View style={{ alignItems: 'center' }}>

@@ -217,6 +217,70 @@ describe('posts RLS + RPC', () => {
     expect(outsider).not.toBeNull()
   })
 
+  it('an author edits their own comment (stamping edited_at); others and deleted rows cannot', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    const postId = await createPost(a, clusterId)
+
+    const { data: commentId } = await b.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'first',
+      p_image_url: null,
+      p_gif_url: null,
+    })
+    expect(commentId).toBeTruthy()
+
+    const { data: before } = await admin
+      .from('post_comments')
+      .select('edited_at')
+      .eq('id', commentId)
+      .single()
+    expect(before?.edited_at).toBeNull()
+
+    const { error: editErr } = await b.client.rpc('edit_post_comment', {
+      p_comment_id: commentId,
+      p_content: 'edited body',
+    })
+    expect(editErr).toBeNull()
+    const { data: after } = await admin
+      .from('post_comments')
+      .select('content, edited_at')
+      .eq('id', commentId)
+      .single()
+    expect(after?.content).toBe('edited body')
+    expect(after?.edited_at).not.toBeNull()
+
+    // Editing is not a new event: the post author gets no extra notification.
+    const { data: aNotifs } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', a.id)
+      .eq('type', 'post_comment')
+    expect(aNotifs ?? []).toHaveLength(1)
+
+    // A different member cannot edit someone else's comment.
+    const { error: other } = await a.client.rpc('edit_post_comment', {
+      p_comment_id: commentId,
+      p_content: 'hijack',
+    })
+    expect(other?.message).toMatch(/comment_not_editable/)
+
+    // Content length is validated.
+    const { error: long } = await b.client.rpc('edit_post_comment', {
+      p_comment_id: commentId,
+      p_content: 'x'.repeat(1001),
+    })
+    expect(long?.message).toMatch(/content_out_of_range/)
+
+    // A soft-deleted comment is no longer editable.
+    const { error: delErr } = await b.client.rpc('delete_post_comment', { p_comment_id: commentId })
+    expect(delErr).toBeNull()
+    const { error: afterDelete } = await b.client.rpc('edit_post_comment', {
+      p_comment_id: commentId,
+      p_content: 'zombie',
+    })
+    expect(afterDelete?.message).toMatch(/comment_not_editable/)
+  })
+
   it('a comment can be replied to, and a reply can be replied to (flat, Instagram-style)', async () => {
     const { a, b, clusterId } = await wireCluster()
     const postId = await createPost(a, clusterId)
@@ -518,5 +582,215 @@ describe('posts RLS + RPC', () => {
     })
     expect(lErr).toBeNull()
     expect(locked).toHaveLength(0)
+  })
+
+  it('a comment @-mention notifies the mentioned member with a comment deep-link', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    await admin.from('profiles').update({ display_name: 'Bea Commenter' }).eq('id', b.id)
+    const postId = await createPost(a, clusterId)
+
+    const { data: commentId, error } = await a.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'Hey @Bea Commenter, look here',
+    })
+    expect(error).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id, title, payload')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(1)
+    expect(mentions![0].user_id).toBe(b.id)
+    expect(mentions![0].title).toContain('mentioned you')
+    expect((mentions![0].payload as { post_id: string }).post_id).toBe(postId)
+    expect((mentions![0].payload as { comment_id: string }).comment_id).toBe(commentId)
+
+    const { data: visible } = await b.client.rpc('get_my_notifications')
+    expect(((visible ?? []) as { type: string }[]).filter((n) => n.type === 'mention')).toHaveLength(1)
+  })
+
+  it('a comment @everyone notifies every other active member', async () => {
+    const a = await member('posts-ev-a')
+    const b = await member('posts-ev-b')
+    const c = await member('posts-ev-c')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+    const postId = await createPost(a, clusterId)
+
+    const { error } = await a.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'Hi @everyone, who can help?',
+    })
+    expect(error).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id, title')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(2)
+    expect(mentions!.map((n) => n.user_id).sort()).toEqual([b.id, c.id].sort())
+    for (const n of mentions ?? []) expect(n.title).toContain('mentioned everyone')
+  })
+
+  it('skips the post_comment row when the post or parent author is mentioned', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    await admin.from('profiles').update({ display_name: 'Aid Author' }).eq('id', a.id)
+    await admin.from('profiles').update({ display_name: 'Bea Author' }).eq('id', b.id)
+    const postId = await createPost(a, clusterId)
+
+    // b mentions the post author a: a gets a mention, not a post_comment row.
+    await b.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'On it @Aid Author',
+    })
+    const { data: aMentions } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('user_id', a.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(aMentions).toHaveLength(1)
+    const { data: aReplies } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', a.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'post_comment')
+    expect(aReplies).toHaveLength(0)
+
+    // a mentions the parent-reply author b: b gets a mention, not a post_comment row.
+    const { data: bComment } = await b.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'top level',
+    })
+    await a.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'Thanks @Bea Author',
+      p_parent_comment_id: bComment,
+    })
+    const { data: bMentions } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('user_id', b.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(bMentions).toHaveLength(1)
+    const { data: bReplies } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', b.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'post_comment')
+    expect(bReplies).toHaveLength(0)
+  })
+
+  it('comment mentions respect mutes and the mentions pref', async () => {
+    const a = await member('posts-menm-a')
+    const b = await member('posts-menm-b')
+    const c = await member('posts-menm-c')
+    await admin.from('profiles').update({ display_name: 'Bo Mute' }).eq('id', b.id)
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, c.id],
+      status: 'active',
+    })
+    clusterIds.push(clusterId)
+    const postId = await createPost(a, clusterId)
+
+    const { error: muteErr } = await b.client.from('user_mutes').insert({
+      user_id: b.id,
+      muted_user_id: a.id,
+    })
+    expect(muteErr).toBeNull()
+
+    const { error: firstErr } = await a.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: '@Bo Mute can you bring the van?',
+    })
+    expect(firstErr).toBeNull()
+
+    const { data: muted } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', b.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(muted).toHaveLength(0)
+
+    // c turns off the mentions pref: the row is stored but hidden from reads.
+    const { error: prefErr } = await admin
+      .from('notification_prefs')
+      .upsert(
+        { user_id: c.id, cluster_id: clusterId, mentions: false },
+        { onConflict: 'user_id,cluster_id' },
+      )
+    expect(prefErr).toBeNull()
+
+    const { error: secondErr } = await a.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: 'Hi @everyone, I can drive',
+    })
+    expect(secondErr).toBeNull()
+
+    const { data: stored } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', c.id)
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(stored ?? []).toHaveLength(1)
+
+    const { data: visible } = await c.client.rpc('get_my_notifications')
+    expect(((visible ?? []) as { type: string }[]).filter((n) => n.type === 'mention')).toHaveLength(0)
+  })
+
+  it('does not mention on a mid-word @ or an extended name', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    await admin.from('profiles').update({ display_name: 'Bea Commenter' }).eq('id', b.id)
+    const postId = await createPost(a, clusterId)
+
+    for (const content of [
+      'email me@Bea Commenter now',
+      'hi @Bea Commenterextra',
+      'hi @everyoneelse',
+      'email me@everyone now',
+    ]) {
+      const { error } = await a.client.rpc('create_post_comment', {
+        p_post_id: postId,
+        p_content: content,
+      })
+      expect(error).toBeNull()
+    }
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(0)
+  })
+
+  it('a media-only comment with no body writes no mentions', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    await admin.from('profiles').update({ display_name: 'Bea Commenter' }).eq('id', b.id)
+    const postId = await createPost(a, clusterId)
+
+    const { error } = await b.client.rpc('create_post_comment', {
+      p_post_id: postId,
+      p_content: null,
+      p_image_url: `${clusterId}/mention-media.png`,
+    })
+    expect(error).toBeNull()
+
+    const { data: mentions } = await admin
+      .from('notifications')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'mention')
+    expect(mentions).toHaveLength(0)
   })
 })

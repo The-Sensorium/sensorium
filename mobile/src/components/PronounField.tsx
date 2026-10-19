@@ -49,7 +49,7 @@ export function PronounField({ value, onChange }: { value: string; onChange: (v:
               }}
             >
               <Text
-                style={{ fontSize: 13, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}
+                style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: active ? t.onPrimary : t.onSurface }}
               >
                 {option}
               </Text>

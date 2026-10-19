@@ -8,7 +8,7 @@ import { deleteAvatarObjects, uploadAvatar } from '../../../src/features/avatars
 import { validateAvatarAsset } from '../../../src/lib/upload-image'
 import { pickAvatarFromLibrary, takeAvatarPhoto, type PickedAvatar } from '../../../src/lib/pick-avatar'
 import { Avatar } from '../../../src/components/Avatar'
-import { Modal } from '../../../src/components/Modal'
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog'
 import { PronounField } from '../../../src/components/PronounField'
 import { TimezonePicker } from '../../../src/components/TimezonePicker'
 import { Field, PrimaryButton } from '../../../src/components/ui'
@@ -121,7 +121,7 @@ export default function EditProfileScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 16 }}>
             <Avatar name={profile.data?.display_name ?? 'You'} src={profile.data?.avatar_url} thumbSrc={profile.data?.avatar_thumb_url ?? profile.data?.avatar_url} size={56} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
+              <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }} numberOfLines={1}>
                 {profile.data?.display_name ?? 'You'}
               </Text>
               <Text style={{ fontSize: 14, color: t.onSurfaceVariant }} numberOfLines={1}>
@@ -162,7 +162,7 @@ export default function EditProfileScreen() {
             ) : null}
           </View>
           {avatarError ? (
-            <Text style={{ marginTop: 8, fontSize: 14, color: t.error }}>{avatarError}</Text>
+            <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.error }}>{avatarError}</Text>
           ) : null}
 
           <View style={{ marginTop: 16 }}>
@@ -190,7 +190,7 @@ export default function EditProfileScreen() {
               {bio.length}/500
             </Text>
             {updateProfile.isError ? (
-              <Text style={{ marginTop: 8, fontSize: 14, color: t.error }}>
+              <Text style={{ marginTop: 8, fontSize: 14, lineHeight: 20, color: t.error }}>
                 Couldn’t save your changes. Please try again.
               </Text>
             ) : null}
@@ -218,7 +218,7 @@ export default function EditProfileScreen() {
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <UserRound size={20} color={t.primary} strokeWidth={1.5} />
-            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Status message</Text>
+            <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Status message</Text>
           </View>
           <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
             Shown on your member card in every cluster.
@@ -233,7 +233,7 @@ export default function EditProfileScreen() {
               style={{
                 backgroundColor: t.surfaceContainer,
                 borderWidth: 1,
-                borderColor: t.outlineVariant,
+                borderColor: t.outline,
                 borderRadius: radii.pill,
                 paddingHorizontal: 16,
                 paddingVertical: 10,
@@ -259,10 +259,10 @@ export default function EditProfileScreen() {
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Clock size={20} color={t.primary} strokeWidth={1.5} />
-            <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>Local time</Text>
+            <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Local time</Text>
           </View>
-          <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
-            Shown on your member card in every cluster.
+          <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+            Members see your local time.
           </Text>
           <View style={{ marginTop: 12, gap: 8 }}>
             <TimezonePicker value={timezone} onChange={setTimezone} placeholder="Not set" />
@@ -289,7 +289,6 @@ export default function EditProfileScreen() {
 }
 
 function RemoveAvatarModal({ open, onClose, avatarUrl, avatarThumbUrl }: { open: boolean; onClose: () => void; avatarUrl: string | null; avatarThumbUrl: string | null }) {
-  const t = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const updateProfile = useUpdateProfile()
@@ -309,25 +308,16 @@ function RemoveAvatarModal({ open, onClose, avatarUrl, avatarThumbUrl }: { open:
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Remove photo?">
-      <View style={{ marginTop: 12, gap: 16 }}>
-        <Text style={{ fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-          Your photo will be removed from your profile, and members will see your initials instead.
-        </Text>
-        {error ? <Text style={{ fontSize: 14, color: t.error }}>{error}</Text> : null}
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Pressable
-            onPress={onClose}
-            disabled={pending}
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: pending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <PrimaryButton title="Remove photo" loading={pending} onPress={() => void handleRemove()} />
-          </View>
-        </View>
-      </View>
-    </Modal>
+    <ConfirmDialog
+      open={open}
+      onClose={onClose}
+      title="Remove photo?"
+      body="Your photo will be removed from your profile, and members will see your initials instead."
+      error={error}
+      confirmTitle="Remove photo"
+      loading={pending}
+      tone="error"
+      onConfirm={() => void handleRemove()}
+    />
   )
 }

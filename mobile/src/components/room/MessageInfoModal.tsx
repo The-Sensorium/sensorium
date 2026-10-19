@@ -125,7 +125,7 @@ export function MessageInfoModal({
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text
-                style={{ flexShrink: 0, fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }}
+                style={{ flexShrink: 0, fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}
                 numberOfLines={1}
                 accessibilityRole="header"
               >

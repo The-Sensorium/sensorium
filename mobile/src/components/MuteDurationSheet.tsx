@@ -104,7 +104,7 @@ export function MuteDurationSheet({
               <BellOff size={20} color={headerOnFill} strokeWidth={1.5} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 20, lineHeight: 26, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
+              <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">
                 {title}
               </Text>
               <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
@@ -137,7 +137,7 @@ export function MuteDurationSheet({
                   {pending ? (
                     <ActivityIndicator size="small" color={t.onSurface} />
                   ) : (
-                    <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.onSurface }}>
+                    <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
                       {duration.label}
                     </Text>
                   )}
@@ -177,7 +177,7 @@ export function MuteDurationSheet({
                   ) : (
                     <Bell size={20} color={t.onSurface} strokeWidth={1.5} />
                   )}
-                  <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: t.onSurface }}>
+                  <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
                     Unmute notifications
                   </Text>
                 </Pressable>
@@ -185,7 +185,7 @@ export function MuteDurationSheet({
             ) : null}
           </View>
           {error ? (
-            <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, color: t.error }}>
+            <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>
               {error}
             </Text>
           ) : null}
@@ -199,7 +199,7 @@ export function MuteDurationSheet({
               marginTop: 20,
               minHeight: 48,
               borderRadius: radii.md,
-              backgroundColor: t.surfaceHigh,
+              backgroundColor: t.surfaceContainer,
               alignItems: 'center',
               justifyContent: 'center',
               opacity: busy ? 0.6 : 1,

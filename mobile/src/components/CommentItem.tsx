@@ -3,25 +3,27 @@ import { Pressable, Text, View } from 'react-native'
 import { CornerUpLeft, Heart, MoreVertical } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { Avatar } from './Avatar'
-import { LinkifiedText } from './LinkifiedText'
+import { MentionText } from './room/MentionText'
+import type { MentionMember } from '../features/mentions'
 import { PostActionsSheet } from './PostActionsSheet'
 import { PostMedia } from './PostMedia'
-import { Modal } from './Modal'
+import { ConfirmDialog } from './ConfirmDialog'
 import { ReportModal } from './ReportModal'
 import { useDeleteComment, type PostComment } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
 import { lightHaptic } from '../lib/haptics'
 import { dateTimeFormatter } from './room/format'
 import { useTheme } from '../lib/use-theme'
-import { PrimaryButton } from './ui'
 
 export function CommentItem({
   comment,
   clusterId,
   author,
+  members,
   repliedToName,
   onReply,
   onLike,
+  onEdit,
   likeCount = 0,
   likedByMe = false,
   highlighted,
@@ -30,9 +32,11 @@ export function CommentItem({
   comment: PostComment
   clusterId: string
   author: { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url?: string | null } | undefined
+  members: MentionMember[]
   repliedToName?: string
   onReply?: (comment: PostComment) => void
   onLike?: (commentId: string) => void
+  onEdit?: (comment: PostComment) => void
   likeCount?: number
   likedByMe?: boolean
   highlighted?: boolean
@@ -75,6 +79,7 @@ export function CommentItem({
           {isMine ? <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>(you)</Text> : null}
           <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
             · {dateTimeFormatter.format(new Date(comment.created_at))}
+            {comment.edited_at ? ' · edited' : ''}
           </Text>
         </View>
         {comment.content || comment.image_url || comment.gif_url ? (
@@ -98,7 +103,7 @@ export function CommentItem({
                 {repliedToName ? (
                   <Text style={{ fontWeight: '600', color: t.primary }}>@{repliedToName} </Text>
                 ) : null}
-                <LinkifiedText text={comment.content} fontSize={14} lineHeight={20} />
+                <MentionText content={comment.content} members={members} fontSize={14} lineHeight={20} />
               </Text>
             ) : null}
             <PostMedia imageUrl={comment.image_url} gifUrl={comment.gif_url} alt={comment.content ?? 'Comment media'} />
@@ -157,6 +162,14 @@ export function CommentItem({
         mine={isMine}
         label="Comment actions"
         onClose={() => setMenuOpen(false)}
+        onEdit={
+          onEdit && comment.content
+            ? () => {
+                setMenuOpen(false)
+                onEdit(comment)
+              }
+            : undefined
+        }
         onDelete={() => {
           setMenuOpen(false)
           setDeleteError(null)
@@ -176,30 +189,18 @@ export function CommentItem({
           contentTarget={{ kind: 'comment', id: comment.id }}
         />
       ) : null}
-      <Modal open={confirmOpen} onClose={() => { if (!del.isPending) setConfirmOpen(false) }} title="Delete comment?">
-        <Text style={{ marginTop: 12, fontSize: 14, color: t.onSurfaceVariant }}>
-          This removes this comment and any replies to it. This action can&apos;t be undone.
-        </Text>
-        {deleteError ? (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{deleteError}</Text>
-        ) : null}
-        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
-          <Pressable
-            onPress={() => setConfirmOpen(false)}
-            disabled={del.isPending}
-            hitSlop={8}
-            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: del.isPending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-          </Pressable>
-          <PrimaryButton
-            title="Delete"
-            loadingTitle="Deleting…"
-            loading={del.isPending}
-            onPress={() => void handleDelete()}
-          />
-        </View>
-      </Modal>
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { if (!del.isPending) setConfirmOpen(false) }}
+        title="Delete comment?"
+        body="This removes this comment and any replies to it. This action can't be undone."
+        error={deleteError}
+        confirmTitle="Delete"
+        confirmLoadingTitle="Deleting…"
+        loading={del.isPending}
+        tone="error"
+        onConfirm={() => void handleDelete()}
+      />
     </View>
   )
 }

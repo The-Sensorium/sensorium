@@ -130,7 +130,7 @@ export function PostMedia({
             }}
           >
             <Expand size={12} color="#fff" strokeWidth={2} />
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#fff' }}>Full image</Text>
+            <Text style={{ fontSize: 12, lineHeight: 16, fontWeight: '600', color: '#fff' }}>Full image</Text>
           </View>
         ) : null}
       </Pressable>

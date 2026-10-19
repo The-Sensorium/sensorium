@@ -129,6 +129,13 @@ a time.
 - **Replies (Instagram-style)**: replies render indented under their parent
   comment as a single thread; a reply that targets another reply is prefixed with
   `@name`. Any comment can be replied to, but replies stay one visual level.
+- **Editing (0208)**: an author edits their own comment body in place
+  (`edit_post_comment`, mirroring `edit_post`): the RPC re-checks authorship and
+  content length and stamps `edited_at`, and clients show an "edited" marker next
+  to the timestamp. Editing fires no notification (mention/reply rows are
+  insert-only), matching chat and post edits, and it broadcasts to other open
+  viewers via the `post_comments` realtime UPDATE subscription (a soft delete
+  stays undelivered because it fails the read policy).
 - **Likes**: a single heart per user per post and per comment/reply
   (`toggle_post_like`, `toggle_comment_like`), applied optimistically in the UI.
   Likes are counted client-side from the likes query; `comment_likes` is the only
@@ -144,7 +151,11 @@ a time.
   preference columns (0080), and at fan-out time by muted-author suppression
   (0163): recipients who muted the actor get no row, no push, and no email. Since 0162 the `post_comment` payload carries
   `post_id` plus `comment_id` (the new comment row id); legacy rows carry
-  `post_id` only and clients fall back to the post top. Chat `mention` and
+  `post_id` only and clients fall back to the post top. Comments also fan out
+  `mention` rows (0207) for `@`-named members and `@everyone`, titled
+  `<author> mentioned you` / `<author> mentioned everyone` with the same
+  `post_id` plus `comment_id` payload; a post or parent author who was mentioned
+  gets the `mention` row instead of the generic `post_comment` row. Chat `mention` and
   `reaction` payloads carry `message_id`. The center deep-links chat rows to
   `/cluster/:id?message=<id>` and post comment rows to
   `/posts/:postId?comment=<id>`; the room and post detail screens scroll the
@@ -232,6 +243,7 @@ All schema lives in `supabase/migrations/` and is **order-dependent**. Migration
 Notifications tab.
 - **Open Mix (0131-0132)**: the `open_mix` matching-mode enum value, `fn_queue_key` global `'open'` queue, `fn_mode_label` "Open Mix", `fn_cooldown_interval` (7 days for `open_mix`, 30 days otherwise at the time) used by `leave_cluster` and vote-removal, and the `get_my_matching_status` branch.
 - **Cluster lifecycle simplification (0142-0143)**: clusters form `active` with `introductions_completed_at` stamped at formation (open at 8; intros are checklist-only, `check_intro_deadlines` is a no-op and the `intro-deadline` cron is unscheduled); replacement invites the longest-waiting eligible candidate deterministically (`candidate_pool=[selected]`, no candidate votes - `vote_on`/`close_expired_votes` are governance-only, stray candidate votes close as `superseded`); `leave_cluster` no longer supersedes an in-flight round and `accept_invitation` chains the next cycle while below 8 with a `cluster_full` guard, plus a `progress_replacements()` safety net so active clusters continuously return to 8.
+- **Final declines (0209)**: `source_candidates()` and `fn_candidate_eligible()` treat a declined invitation as a permanent per-cluster exclusion, so a later replacement round never re-invites the same person to that cluster. This matches the created-cluster `previously_declined` rule; expiry and creator-cancelled invites stay re-invitable.
 - **Join-notice follow-ups (0144-0145)**: `accept_invitation` no longer notifies the joiner about themselves (the fan-out excludes `v_inv.user_id`); the `A new member has joined` notice names the joiner (`<display name> joined the cluster.`) and carries `payload.new_member_id`, which the push fan-out passes through as `newMemberId`. Clients route join notices to the joiner's profile (`/profile/:id?cluster=:id`; legacy title-only rows without a payload fall back to the members tab) while other `replacement` notices stay on the votes tab.
 - **Success-metrics telemetry (0148-0152)**: aggregate-only Postgres telemetry for the PRD success metrics - `cluster_daily_stats` / `mode_daily_stats` snapshot tables (RLS-closed, no `user_id` columns), a queue-join counting trigger (`queue_entries` rows vanish at formation, so joins are counted at insert), an idempotent nightly `rollup_daily_metrics()` `pg_cron` job (03:00 UTC) with history backfill and 24-month purge, and four admin-guarded RPCs (`get_metrics_overview`, `get_retention`, `get_mode_breakdown`, `get_cluster_activity`) surfaced on the admin-only `/admin/metrics` page. Retention = still active with ≥ 6 members and a trailing-30d message, over 7/30/90-day formation cohorts. Service role holds execute on the rollup for manual refills (0149). The overview RPC additionally exposes `data_through_day` + `last_rollup_at` so the dashboard header states measured freshness (0150). Follow-ups: the depth average excludes the partial today row (0151) and the activity list is capped at 500 rows (0152).
 - **Generation mode (0146-0147)**: the `generation` matching-mode enum value (0-anchored 5-year birth cohorts, e.g. `1995-1999` via `floor(year/5)*5`), `fn_queue_key` `start-end` keys, `fn_mode_label` `Born <range>`, and a `join_queue` `mode_retired` guard for `birth_month`. Beta-only cleanup deletes all `birth_month` queues, clusters (cascade, plus explicit `reports` delete - the one non-cascade child), and cooldowns. The `birth_month` enum value stays in the type, unused and join-blocked. Cooldown stayed 30 days at the time via the `fn_cooldown_interval` else branch; `get_my_matching_status`/`maybe_form_cluster`/replacement pick the mode up generically.

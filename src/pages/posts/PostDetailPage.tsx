@@ -5,6 +5,7 @@ import { useDocumentTitle } from '../../lib/use-document-title'
 import { useBackOr } from '../../lib/use-back-or'
 import { useAuth } from '../../app/auth-context'
 import { useClusterMembers } from '../../features/matching'
+import type { MentionMember } from '../../features/mentions'
 import {
   usePost,
   usePostLikes,
@@ -56,6 +57,18 @@ export function PostDetailPage() {
 
   const memberById = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.id, m])),
+    [members.data],
+  )
+  // Member list for @-mention autocomplete and rendering. Names can be null in
+  // the raw rows; MentionMember needs a string.
+  const mentionMembers = useMemo<MentionMember[]>(
+    () =>
+      (members.data ?? []).map((m) => ({
+        id: m.id,
+        display_name: m.display_name ?? 'Member',
+        avatar_url: m.avatar_url,
+        avatar_thumb_url: m.avatar_thumb_url,
+      })),
     [members.data],
   )
 
@@ -146,6 +159,7 @@ export function PostDetailPage() {
         postId={p.id}
         comments={comments.data ?? []}
         memberById={memberById}
+        members={mentionMembers}
         deepLinkCommentId={deepLinkCommentId}
         onDeepLinkHandled={clearCommentParam}
         selfAvatar={{

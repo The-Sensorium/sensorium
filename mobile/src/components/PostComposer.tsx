@@ -112,7 +112,7 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
         style={{
           backgroundColor: t.surface,
           borderWidth: 1,
-          borderColor: t.outlineVariant,
+          borderColor: t.outline,
           borderRadius: radii.md,
           paddingHorizontal: 16,
           paddingVertical: 10,
@@ -135,7 +135,7 @@ export function PostComposer({ clusterId, onPosted }: { clusterId: string; onPos
           marginTop: 8,
           backgroundColor: t.surface,
           borderWidth: 1,
-          borderColor: t.outlineVariant,
+          borderColor: t.outline,
           borderRadius: radii.md,
           paddingHorizontal: 16,
           paddingVertical: 12,

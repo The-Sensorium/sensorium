@@ -71,7 +71,7 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
       return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <ActivityIndicator color={t.primary} />
-          <Text style={{ fontSize: 14, color: t.onSurfaceVariant }}>Preparing the call…</Text>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>Preparing the call…</Text>
           <Pressable
             accessibilityLabel="Cancel"
             onPress={onCancel}
@@ -84,12 +84,12 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
       )
     }
     return (
-      <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16 }}>
+      <View style={{ flex: 1, justifyContent: 'center', padding: 16, gap: 16 }}>
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: t.onSurface, textAlign: 'center' }}>
+          <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>
             Join the call
           </Text>
-          <Text style={{ fontSize: 14, color: t.onSurfaceVariant, textAlign: 'center' }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, textAlign: 'center' }}>
             Calls use your microphone and, if you turn it on, your camera. Your
             camera starts off.
           </Text>
@@ -102,14 +102,16 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
             backgroundColor: t.primary,
             borderRadius: radii.pill,
             paddingVertical: 14,
+            minHeight: 48,
             alignItems: 'center',
+            justifyContent: 'center',
             opacity: requesting ? 0.6 : 1,
           }}
         >
           {requesting ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={t.onPrimary} />
           ) : (
-            <Text style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>Continue</Text>
+            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>Continue</Text>
           )}
         </Pressable>
         <Pressable
@@ -131,7 +133,7 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
       on: mic,
       granted: micGranted,
       onPress: () => setMic((v) => !v),
-      onIcon: <Mic size={20} color="#fff" strokeWidth={2} />,
+      onIcon: <Mic size={20} color={t.onPrimary} strokeWidth={2} />,
       offIcon: <MicOff size={20} color={t.onSurface} strokeWidth={2} />,
     },
     {
@@ -140,14 +142,14 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
       on: camera,
       granted: camGranted,
       onPress: () => setCamera((v) => !v),
-      onIcon: <Video size={20} color="#fff" strokeWidth={2} />,
+      onIcon: <Video size={20} color={t.onPrimary} strokeWidth={2} />,
       offIcon: <VideoOff size={20} color={t.onSurface} strokeWidth={2} />,
     },
   ]
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 12 }}>
-      <Text style={{ fontSize: 20, fontWeight: '700', color: t.onSurface, textAlign: 'center' }}>
+    <View style={{ flex: 1, justifyContent: 'center', padding: 16, gap: 12 }}>
+      <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface, textAlign: 'center' }}>
         Join the call
       </Text>
       {toggles.map((toggle) => (
@@ -174,7 +176,7 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
                 {toggle.label}
               </Text>
               {!toggle.granted ? (
-                <Text style={{ fontSize: 12, color: t.onSurfaceVariant }}>
+                <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
                   {toggle.key === 'camera'
                     ? 'Camera unavailable. You will join audio-only.'
                     : 'Microphone unavailable. You will join muted.'}
@@ -203,11 +205,13 @@ export function PreJoin({ initialMicOn, initialCameraOn, onJoin, onCancel }: Pre
           backgroundColor: t.primary,
           borderRadius: radii.pill,
           paddingVertical: 14,
+          minHeight: 48,
           alignItems: 'center',
+          justifyContent: 'center',
           marginTop: 8,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: '600', color: '#fff' }}>Join call</Text>
+        <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onPrimary }}>Join call</Text>
       </Pressable>
       <Pressable
         accessibilityLabel="Cancel"

@@ -168,7 +168,7 @@ export default function PostsFeedScreen() {
           <>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <View>
-                <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Posts</Text>
+                <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Posts</Text>
                 <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
                   Share something with your cluster.
                 </Text>
@@ -202,6 +202,9 @@ export default function PostsFeedScreen() {
                     <Pressable
                       key={c.cluster.id}
                       onPress={() => setSelectedId(c.cluster.id)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      accessibilityLabel={c.cluster.name}
                       hitSlop={8}
                       style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >

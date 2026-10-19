@@ -99,6 +99,8 @@ export function GifPicker({
               <Pressable
                 key={String(item.id)}
                 accessibilityLabel={`Send ${item.title || 'GIF'}`}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: pending }}
                 disabled={pending}
                 onPress={() => onSelect(item)}
                 style={{ width: '33.3333%', aspectRatio: 16 / 9, padding: 3, opacity: pending ? 0.7 : 1 }}

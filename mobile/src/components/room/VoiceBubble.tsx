@@ -22,7 +22,7 @@ export function VoiceBubble({
 
   if (!src) {
     return (
-      <Text style={{ fontSize: 13, color: mine ? t.onPrimary : t.onSurfaceVariant }}>
+      <Text style={{ fontSize: 14, lineHeight: 20, color: mine ? t.onPrimary : t.onSurfaceVariant }}>
         Voice note ({formatVoiceDuration(total)})
       </Text>
     )
