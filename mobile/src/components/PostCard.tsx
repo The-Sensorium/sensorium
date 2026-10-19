@@ -8,6 +8,7 @@ import { LinkifiedText } from './LinkifiedText'
 import { PostActionsSheet } from './PostActionsSheet'
 import { PostMedia } from './PostMedia'
 import { Modal } from './Modal'
+import { ConfirmDialog } from './ConfirmDialog'
 import { ReportModal } from './ReportModal'
 import { useDeletePost, useEditPost, type Post } from '../features/posts'
 import { toErrorMessage } from '../lib/error'
@@ -228,31 +229,18 @@ export function PostCard({
         }}
       />
 
-      <Modal open={confirmOpen} onClose={() => { if (!del.isPending) setConfirmOpen(false) }} title="Delete post?">
-        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-          This removes your post from the cluster. This action can&apos;t be undone.
-        </Text>
-        {deleteError ? (
-          <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>{deleteError}</Text>
-        ) : null}
-        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
-          <Pressable
-            onPress={() => setConfirmOpen(false)}
-            disabled={del.isPending}
-            hitSlop={8}
-            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: del.isPending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-          </Pressable>
-          <PrimaryButton
-            title="Delete"
-            loadingTitle="Deleting…"
-            loading={del.isPending}
-            tone="error"
-            onPress={() => void handleDelete()}
-          />
-        </View>
-      </Modal>
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { if (!del.isPending) setConfirmOpen(false) }}
+        title="Delete post?"
+        body="This removes your post from the cluster. This action can't be undone."
+        error={deleteError}
+        confirmTitle="Delete"
+        confirmLoadingTitle="Deleting…"
+        loading={del.isPending}
+        tone="error"
+        onConfirm={() => void handleDelete()}
+      />
 
       <Modal open={editing} onClose={() => setEditing(false)} title="Edit post">
         <View style={{ marginTop: 12, gap: 12 }}>

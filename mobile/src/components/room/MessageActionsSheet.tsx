@@ -236,13 +236,13 @@ export function MessageActionsSheet({
                   <SheetRow label="Edit" onPress={onEdit}>
                     <Pencil size={18} color={t.onSurface} strokeWidth={1.5} />
                   </SheetRow>
-                  <SheetRow label="Delete" danger onPress={onDelete}>
-                    <Trash2 size={18} color={t.error} strokeWidth={1.5} />
+                  <SheetRow label="Delete" onPress={onDelete}>
+                    <Trash2 size={18} color={t.onSurface} strokeWidth={1.5} />
                   </SheetRow>
                 </>
               ) : mine ? (
-                <SheetRow label="Delete" danger onPress={onDelete}>
-                  <Trash2 size={18} color={t.error} strokeWidth={1.5} />
+                <SheetRow label="Delete" onPress={onDelete}>
+                  <Trash2 size={18} color={t.onSurface} strokeWidth={1.5} />
                 </SheetRow>
               ) : (
                 <SheetRow label="Report" danger onPress={onReport}>

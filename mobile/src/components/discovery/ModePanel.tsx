@@ -16,6 +16,7 @@ import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
 import { Card, LoadingView, PrimaryButton } from '../ui'
 import { ConfirmSheet } from '../ConfirmSheet'
+import { ConfirmDialog } from '../ConfirmDialog'
 import { MatchPreferencesSheet } from '../MatchPreferencesSheet'
 import { WhatsNextSteps } from '../WhatsNextSteps'
 
@@ -623,7 +624,7 @@ function LocalSetupCard({ onDone }: { onDone?: () => void }) {
         />
       ) : null}
       {pendingLeave != null ? (
-        <ConfirmSheet
+        <ConfirmDialog
           open={pendingLeave != null}
           onClose={closeLeaveDialog}
           title={`Leave the ${pendingLeave} km queue?`}

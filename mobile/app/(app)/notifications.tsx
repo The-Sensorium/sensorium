@@ -35,8 +35,8 @@ import { useMyClusters } from '../../src/features/matching'
 import { toErrorMessage } from '../../src/lib/error'
 import { radii, shadowShape, spacing } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, LoadingView, PrimaryButton } from '../../src/components/ui'
-import { Modal } from '../../src/components/Modal'
+import { Card, ErrorText, LoadingView } from '../../src/components/ui'
+import { ConfirmDialog } from '../../src/components/ConfirmDialog'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { ActivityIndicator, FlatList, Modal as RNModal, Pressable, RefreshControl, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -299,35 +299,18 @@ export default function NotificationsScreen() {
           </View>
         </View>
       </RNModal>
-      <Modal open={confirmOpen} onClose={() => { if (!clearAll.isPending) setConfirmOpen(false) }} title="Clear all notifications?">
-        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-          This will permanently remove all notifications from your list. This action can't be undone.
-        </Text>
-        {clearAll.error ? (
-          <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, lineHeight: 20, color: t.error }}>
-            {toErrorMessage(clearAll.error, 'Could not clear notifications. Please try again.')}
-          </Text>
-        ) : null}
-        <View style={{ marginTop: 24, flexDirection: 'row', gap: 12 }}>
-          <Pressable
-            onPress={() => setConfirmOpen(false)}
-            disabled={clearAll.isPending}
-            accessibilityRole="button"
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, alignItems: 'center', justifyContent: 'center', opacity: clearAll.isPending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <PrimaryButton
-              title="Clear all"
-              loadingTitle="Clearing…"
-              loading={clearAll.isPending}
-              tone="error"
-              onPress={() => void handleClear()}
-            />
-          </View>
-        </View>
-      </Modal>
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => { if (!clearAll.isPending) setConfirmOpen(false) }}
+        title="Clear all notifications?"
+        body="This will permanently remove all notifications from your list. This action can't be undone."
+        error={clearAll.error ? toErrorMessage(clearAll.error, 'Could not clear notifications. Please try again.') : null}
+        confirmTitle="Clear all"
+        confirmLoadingTitle="Clearing…"
+        loading={clearAll.isPending}
+        tone="error"
+        onConfirm={() => void handleClear()}
+      />
     </SafeAreaView>
   )
 }
