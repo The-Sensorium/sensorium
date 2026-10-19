@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, router, type Href } from 'expo-router'
@@ -23,6 +23,7 @@ import {
 } from '../../src/features/votes'
 import { toErrorMessage } from '../../src/lib/error'
 import { homeListError, isProfileMissingError, resolveOnboardingState, shouldShowFresh } from '../../src/lib/home-gating'
+import { visiblePostCount } from '../../src/lib/progressive-feed'
 import { radii } from '../../src/lib/theme-tokens'
 import { useResolvedScheme } from '../../src/lib/theme-choice'
 import { STATUS_PALETTE } from '../../src/lib/status-palette'
@@ -523,10 +524,22 @@ function RecentFromClusters({
   const recent = useRecentClusterPosts(clusterIds, 3)
   const myMutes = useMyMutes(clusterIds.length > 0)
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
-  const recentPostIds = useMemo(
-    () => [...new Set((recent.data ?? []).map((p) => p.id))],
-    [recent.data],
-  )
+  const posts = useMemo(() => recent.data ?? [], [recent.data])
+  const postIds = useMemo(() => posts.map((p) => p.id), [posts])
+  const recentPostIds = useMemo(() => [...new Set(postIds)], [postIds])
+  // Mount the newest card first and add the next one only after the previous
+  // card's media has finished loading, instead of starting three image and
+  // member loads at once.
+  const [readyIds, setReadyIds] = useState<Set<string>>(() => new Set())
+  const markPostReady = useCallback((postId: string) => {
+    setReadyIds((prev) => {
+      if (prev.has(postId)) return prev
+      const next = new Set(prev)
+      next.add(postId)
+      return next
+    })
+  }, [])
+  const visibleCount = visiblePostCount(postIds, readyIds)
   const postLikes = usePostLikesForPosts(recentPostIds)
   const postComments = usePostCommentsForPosts(recentPostIds)
   const likesByPost = useMemo(() => {
@@ -590,26 +603,32 @@ function RecentFromClusters({
             </Text>
           </Pressable>
         </Card>
-      ) : (recent.data ?? []).length === 0 ? (
+      ) : posts.length === 0 ? (
         <Card plain>
           <Text style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
             No posts in your clusters yet. Be the first to share something.
           </Text>
         </Card>
       ) : (
-        (recent.data ?? []).map((post) => (
-          <RecentPostItem
-            key={post.id}
-            post={post}
-            clusterName={clusterNameById.get(post.cluster_id)}
-            muted={isMutedAuthor(mutedSet, post.author_id)}
-            revealed={revealed.has(post.id)}
-            onToggleMute={() => toggleReveal(post.id)}
-            likeCount={likesByPost.get(post.id)?.count ?? 0}
-            likedByMe={likesByPost.get(post.id)?.mine ?? false}
-            commentCount={commentsByPost.get(post.id) ?? 0}
-          />
-        ))
+        <>
+          {posts.slice(0, visibleCount).map((post) => (
+            <RecentPostItem
+              key={post.id}
+              post={post}
+              clusterName={clusterNameById.get(post.cluster_id)}
+              muted={isMutedAuthor(mutedSet, post.author_id)}
+              revealed={revealed.has(post.id)}
+              onToggleMute={() => toggleReveal(post.id)}
+              onReady={markPostReady}
+              likeCount={likesByPost.get(post.id)?.count ?? 0}
+              likedByMe={likesByPost.get(post.id)?.mine ?? false}
+              commentCount={commentsByPost.get(post.id) ?? 0}
+            />
+          ))}
+          {visibleCount < posts.length ? (
+            <FeedSkeleton rows={posts.length - visibleCount} />
+          ) : null}
+        </>
       )}
     </View>
   )
@@ -621,6 +640,7 @@ function RecentPostItem({
   muted,
   revealed,
   onToggleMute,
+  onReady,
   likeCount,
   likedByMe,
   commentCount,
@@ -630,11 +650,18 @@ function RecentPostItem({
   muted: boolean
   revealed: boolean
   onToggleMute: () => void
+  onReady: (postId: string) => void
   likeCount: number
   likedByMe: boolean
   commentCount: number
 }) {
   const members = useClusterMembers(post.cluster_id)
+  const handleReady = useCallback(() => onReady(post.id), [onReady, post.id])
+
+  // A muted post is replaced by a placeholder with no media to wait for.
+  useEffect(() => {
+    if (muted && !revealed) handleReady()
+  }, [muted, revealed, handleReady])
 
   const memberById = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.id, m])),
@@ -661,6 +688,7 @@ function RecentPostItem({
         likeCount={likeCount}
         likedByMe={likedByMe}
         commentCount={commentCount}
+        onReady={handleReady}
       />
     </View>
   )
@@ -673,6 +701,7 @@ function RecentPostEngagement({
   likeCount,
   likedByMe,
   commentCount,
+  onReady,
 }: {
   post: Post
   clusterName: string | undefined
@@ -680,6 +709,7 @@ function RecentPostEngagement({
   likeCount: number
   likedByMe: boolean
   commentCount: number
+  onReady: () => void
 }) {
   const toggle = useTogglePostLike(post.cluster_id)
 
@@ -694,6 +724,7 @@ function RecentPostEngagement({
       likedByMe={likedByMe}
       commentCount={commentCount}
       onLike={(id) => void toggle.mutateAsync(id)}
+      onReady={onReady}
     />
   )
 }

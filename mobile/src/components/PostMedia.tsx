@@ -21,14 +21,17 @@ export function PostMedia({
   gifUrl,
   alt,
   compact,
+  onReady,
 }: {
   imageUrl?: string | null
   gifUrl?: string | null
   alt?: string
   compact?: boolean
+  onReady?: () => void
 }) {
   const t = useTheme()
-  const { data: signedUrl } = usePostImageUrl(imageUrl ?? null)
+  const imageQuery = usePostImageUrl(imageUrl ?? null)
+  const { data: signedUrl, isFetched: imageUrlFetched, isPaused: imageUrlPaused } = imageQuery
   const src = gifUrl ?? signedUrl ?? null
   const [open, setOpen] = useState(false)
   const [aspect, setAspect] = useState<number | null>(null)
@@ -57,6 +60,13 @@ export function PostMedia({
       live = false
     }
   }, [src])
+
+  // A stored image whose signed URL never arrives has no src to load, so it
+  // would otherwise hold back the progressive feed forever. Release the next
+  // card when the URL lookup has settled (or paused offline) without a result.
+  useEffect(() => {
+    if (imageUrl && !src && (imageUrlFetched || imageUrlPaused)) onReady?.()
+  }, [imageUrl, src, imageUrlFetched, imageUrlPaused, onReady])
 
   if (!src) return null
 
@@ -110,6 +120,8 @@ export function PostMedia({
           contentFit={tall ? 'cover' : 'contain'}
           cachePolicy="memory-disk"
           transition={200}
+          onLoad={() => onReady?.()}
+          onError={() => onReady?.()}
         />
         {tall ? (
           <View

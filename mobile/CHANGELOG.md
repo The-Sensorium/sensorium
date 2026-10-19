@@ -33,6 +33,7 @@ release) for the release ritual.
 - Delete and other destructive confirmations now use a centered dialog with stacked, full-width actions, so the decision reads clearly before you commit to it. The Delete option in post and message menus now uses the same neutral color as Edit.
 - The chat room member strip now shows as many whole faces as fit your screen, with a +N badge for the rest, instead of spilling onto a second row on narrower phones. The message box also uses a shorter hint that fits on one line.
 - Tidied icons, spacing, text sizes, and accent colors across screens so things line up and read consistently.
+- Recent posts on Home now appear one at a time: the newest post loads first, and the next appears once that one has finished, instead of all three images starting at once.
 
 ### Fixed
 

@@ -29,6 +29,7 @@ export function PostCard({
   onDeleted,
   clusterName,
   compact,
+  onReady,
 }: {
   post: Post
   clusterId: string
@@ -40,6 +41,7 @@ export function PostCard({
   onDeleted?: () => void
   clusterName?: string
   compact?: boolean
+  onReady?: () => void
 }) {
   const t = useTheme()
   const auth = useAuth()
@@ -64,6 +66,12 @@ export function PostCard({
   useEffect(() => {
     setBodyOverflows(false)
   }, [post.id, compact, hasMedia])
+
+  // Text-only cards have nothing to fetch, so they are ready as soon as they
+  // render. Media cards signal from PostMedia once the image has loaded.
+  useEffect(() => {
+    if (!hasMedia) onReady?.()
+  }, [hasMedia, onReady])
 
   async function handleDelete() {
     setDeleteError(null)
@@ -164,7 +172,7 @@ export function PostCard({
               <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.primary }}>Read more</Text>
             </Pressable>
           ) : null}
-          <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} />
+          <PostMedia imageUrl={post.image_url} gifUrl={post.gif_url} alt={post.content ?? 'Post media'} compact={compact} onReady={onReady} />
           <View style={{ marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
             <Pressable
               accessibilityLabel="Like post"
