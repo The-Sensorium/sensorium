@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   adminClient,
   anonClient,
+  assignPlatformRole,
   createCluster,
   createUser,
   onboardUser,
@@ -202,6 +203,235 @@ describe('account and moderation', () => {
     // The auth user is gone.
     const { data: user } = await admin.auth.admin.getUserById(a.id)
     expect(user.user).toBeNull()
+  })
+
+  it('delete_my_account does not duplicate the departure when calls race', async () => {
+    const a = await member('del-race-a')
+    const b = await member('del-race-b')
+    const candidate = await member('del-race-c')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      queueKey: '1996-04-02',
+    })
+    clusterIds.push(clusterId)
+    await admin.from('queue_entries').insert({
+      user_id: candidate.id,
+      mode: 'exact_birthdate',
+      queue_key: '1996-04-02',
+    })
+
+    // A double submit or retry lands while the first call is still running.
+    const [first, second] = await Promise.all([
+      a.client.rpc('delete_my_account'),
+      a.client.rpc('delete_my_account'),
+    ])
+    expect(first.error).toBeNull()
+    expect(second.error).toBeNull()
+
+    // One departure notice, one replacement cycle, one invitation.
+    const { data: notices } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', b.id)
+      .like('body', 'A spot just opened%')
+    expect(notices).toHaveLength(1)
+
+    const { data: pending } = await admin
+      .from('invitations')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('status', 'pending')
+    expect(pending).toHaveLength(1)
+
+    const { data: activeRounds } = await admin
+      .from('replacement_rounds')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .in('status', ['selecting_candidates', 'voting', 'inviting'])
+    expect(activeRounds).toHaveLength(1)
+  })
+
+  it('delete_my_account leaves an in-flight replacement invite untouched', async () => {
+    const a = await member('del-flight-a')
+    const b = await member('del-flight-b')
+    const leaver = await member('del-flight-l')
+    const candidate = await member('del-flight-c')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, leaver.id],
+      queueKey: '1996-04-02',
+    })
+    clusterIds.push(clusterId)
+    await admin.from('queue_entries').insert({
+      user_id: candidate.id,
+      mode: 'exact_birthdate',
+      queue_key: '1996-04-02',
+    })
+
+    // The first departure opens a round and invites the waiting candidate.
+    const { error: leaveErr } = await leaver.client.rpc('leave_cluster', {
+      p_cluster_id: clusterId,
+    })
+    expect(leaveErr).toBeNull()
+
+    const { data: before } = await admin
+      .from('replacement_rounds')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('status', 'inviting')
+      .single()
+    expect(before?.id).toBeTruthy()
+
+    // The deletion must not supersede that cycle or send a second invite.
+    const { error } = await a.client.rpc('delete_my_account')
+    expect(error).toBeNull()
+
+    const { data: rounds } = await admin
+      .from('replacement_rounds')
+      .select('id, status')
+      .eq('cluster_id', clusterId)
+    expect(rounds).toHaveLength(1)
+    expect(rounds![0].id).toBe(before!.id)
+    expect(rounds![0].status).toBe('inviting')
+
+    const { data: pending } = await admin
+      .from('invitations')
+      .select('user_id')
+      .eq('cluster_id', clusterId)
+      .eq('status', 'pending')
+    expect(pending).toHaveLength(1)
+    expect(pending![0].user_id).toBe(candidate.id)
+  })
+
+  it('delete_my_account does not refill a created cluster', async () => {
+    const a = await member('del-created-a')
+    const b = await member('del-created-b')
+    const candidate = await member('del-created-c')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id],
+      queueKey: '1996-04-02',
+    })
+    clusterIds.push(clusterId)
+    await admin.from('clusters').update({ origin: 'created' }).eq('id', clusterId)
+    await admin.from('queue_entries').insert({
+      user_id: candidate.id,
+      mode: 'exact_birthdate',
+      queue_key: '1996-04-02',
+    })
+
+    const { error } = await a.client.rpc('delete_my_account')
+    expect(error).toBeNull()
+
+    const { data: rounds } = await admin
+      .from('replacement_rounds')
+      .select('id')
+      .eq('cluster_id', clusterId)
+    expect(rounds).toHaveLength(0)
+
+    const { data: invitations } = await admin
+      .from('invitations')
+      .select('id')
+      .eq('cluster_id', clusterId)
+    expect(invitations).toHaveLength(0)
+
+    const { data: notices } = await admin
+      .from('notifications')
+      .select('body')
+      .eq('cluster_id', clusterId)
+      .eq('user_id', b.id)
+    expect(notices).toHaveLength(1)
+    expect(notices![0].body).toBe('The cluster continues with its remaining members.')
+  })
+
+  it('banning a member of a created cluster keeps its pending invitations', async () => {
+    const owner = await member('del-cr-owner')
+    const target = await member('del-cr-target')
+    const invitee = await member('del-cr-invitee')
+    const staff = await member('del-cr-admin')
+    await assignPlatformRole(admin, staff.id, 'admin')
+    const clusterId = await createCluster(admin, {
+      memberIds: [owner.id, target.id],
+      queueKey: '1996-04-02',
+    })
+    clusterIds.push(clusterId)
+    await admin.from('clusters').update({ origin: 'created' }).eq('id', clusterId)
+    await admin.from('invitations').insert({ cluster_id: clusterId, user_id: invitee.id })
+
+    const { error } = await staff.client.rpc('apply_account_restriction', {
+      p_user_id: target.id,
+      p_status: 'banned',
+      p_reason: 'ban test',
+    })
+    expect(error).toBeNull()
+
+    // Created clusters never refill or expire creator-owned invitations.
+    const { data: invitations } = await admin
+      .from('invitations')
+      .select('user_id, status')
+      .eq('cluster_id', clusterId)
+    expect(invitations).toEqual([{ user_id: invitee.id, status: 'pending' }])
+
+    const { data: rounds } = await admin
+      .from('replacement_rounds')
+      .select('id')
+      .eq('cluster_id', clusterId)
+    expect(rounds).toHaveLength(0)
+  })
+
+  it('banning a member supersedes an in-flight round without orphaning its invite', async () => {
+    const a = await member('del-ban-a')
+    const b = await member('del-ban-b')
+    const leaver = await member('del-ban-l')
+    const first = await member('del-ban-c1')
+    const second = await member('del-ban-c2')
+    const staff = await member('del-ban-admin')
+    await assignPlatformRole(admin, staff.id, 'admin')
+    const clusterId = await createCluster(admin, {
+      memberIds: [a.id, b.id, leaver.id],
+      queueKey: '1996-04-02',
+    })
+    clusterIds.push(clusterId)
+    await admin.from('queue_entries').insert([
+      { user_id: first.id, mode: 'exact_birthdate', queue_key: '1996-04-02' },
+      { user_id: second.id, mode: 'exact_birthdate', queue_key: '1996-04-02' },
+    ])
+
+    // The departure opens a round and invites the longest-waiting candidate.
+    await leaver.client.rpc('leave_cluster', { p_cluster_id: clusterId })
+    const { data: oldInvite } = await admin
+      .from('invitations')
+      .select('id, user_id, status')
+      .eq('cluster_id', clusterId)
+      .single()
+    expect(oldInvite?.status).toBe('pending')
+
+    // Take the first candidate out of the pool so the superseding cycle has
+    // someone else to invite.
+    await admin
+      .from('queue_entries')
+      .delete()
+      .eq('user_id', oldInvite!.user_id)
+      .eq('mode', 'exact_birthdate')
+
+    const { error } = await staff.client.rpc('apply_account_restriction', {
+      p_user_id: a.id,
+      p_status: 'banned',
+      p_reason: 'ban test',
+    })
+    expect(error).toBeNull()
+
+    const { data: invitations } = await admin
+      .from('invitations')
+      .select('id, user_id, status')
+      .eq('cluster_id', clusterId)
+      .order('created_at')
+
+    // The superseded invitation is no longer acceptable, and only one invite
+    // is pending for the cluster.
+    expect(invitations!.find((i) => i.id === oldInvite!.id)?.status).toBe('expired')
+    const pending = invitations!.filter((i) => i.status === 'pending')
+    expect(pending).toHaveLength(1)
+    expect(pending[0].user_id).toBe(second.id)
   })
 
   it('delete_my_account cannot be used to delete an account without a session', async () => {
