@@ -8,7 +8,7 @@ import { deleteAvatarObjects, uploadAvatar } from '../../../src/features/avatars
 import { validateAvatarAsset } from '../../../src/lib/upload-image'
 import { pickAvatarFromLibrary, takeAvatarPhoto, type PickedAvatar } from '../../../src/lib/pick-avatar'
 import { Avatar } from '../../../src/components/Avatar'
-import { Modal } from '../../../src/components/Modal'
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog'
 import { PronounField } from '../../../src/components/PronounField'
 import { TimezonePicker } from '../../../src/components/TimezonePicker'
 import { Field, PrimaryButton } from '../../../src/components/ui'
@@ -289,7 +289,6 @@ export default function EditProfileScreen() {
 }
 
 function RemoveAvatarModal({ open, onClose, avatarUrl, avatarThumbUrl }: { open: boolean; onClose: () => void; avatarUrl: string | null; avatarThumbUrl: string | null }) {
-  const t = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const updateProfile = useUpdateProfile()
@@ -309,25 +308,16 @@ function RemoveAvatarModal({ open, onClose, avatarUrl, avatarThumbUrl }: { open:
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Remove photo?">
-      <View style={{ marginTop: 12, gap: 16 }}>
-        <Text style={{ fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-          Your photo will be removed from your profile, and members will see your initials instead.
-        </Text>
-        {error ? <Text style={{ fontSize: 14, lineHeight: 20, color: t.error }}>{error}</Text> : null}
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Pressable
-            onPress={onClose}
-            disabled={pending}
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: pending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <PrimaryButton title="Remove photo" loading={pending} onPress={() => void handleRemove()} />
-          </View>
-        </View>
-      </View>
-    </Modal>
+    <ConfirmDialog
+      open={open}
+      onClose={onClose}
+      title="Remove photo?"
+      body="Your photo will be removed from your profile, and members will see your initials instead."
+      error={error}
+      confirmTitle="Remove photo"
+      loading={pending}
+      tone="error"
+      onConfirm={() => void handleRemove()}
+    />
   )
 }

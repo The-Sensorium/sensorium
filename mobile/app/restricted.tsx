@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link } from 'expo-router'
 import { goLogin } from '../src/lib/auth-navigation'
-import { AlertOctagon, LogOut, MailWarning, ShieldAlert } from 'lucide-react-native'
+import { LogOut, MailWarning, ShieldAlert } from 'lucide-react-native'
 import { requireSupabase } from '../src/lib/supabase'
 import { useMyAppeal } from '../src/features/appeals'
 import { useActiveAccountGate } from '../src/lib/use-active-account'
@@ -12,6 +12,7 @@ import { useDeleteAccount } from '../src/features/moderation'
 import { radii, spacing } from '../src/lib/theme-tokens'
 import { useTheme } from '../src/lib/use-theme'
 import { PrimaryButton } from '../src/components/ui'
+import { ConfirmDialog } from '../src/components/ConfirmDialog'
 import { BrandMark } from '../src/components/BrandMark'
 import { BrandWordmark } from '../src/components/BrandWordmark'
 
@@ -109,32 +110,7 @@ export default function RestrictedScreen() {
             </View>
           ) : null}
 
-          {confirming ? (
-            <View style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 16, gap: 12 }}>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <AlertOctagon size={16} color={t.error} strokeWidth={1.5} />
-                <Text style={{ flex: 1, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-                  Deleting your account permanently removes it. This cannot be undone.
-                </Text>
-              </View>
-              <PrimaryButton
-                title="Delete my account"
-                loading={deleteAccount.isPending}
-                tone="error"
-                onPress={() => void handleDelete()}
-              />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Keep my account"
-                onPress={() => setConfirming(false)}
-                style={{ borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
-                  Keep my account
-                </Text>
-              </Pressable>
-            </View>
-          ) : (
+          {confirming ? null : (
             <>
               <Link href="/appeal" asChild>
                 <Pressable
@@ -163,7 +139,10 @@ export default function RestrictedScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Delete my account"
-                  onPress={() => setConfirming(true)}
+                  onPress={() => {
+                    setError(null)
+                    setConfirming(true)
+                  }}
                   style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44 }}
                 >
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>
@@ -175,6 +154,18 @@ export default function RestrictedScreen() {
           )}
         </View>
       </ScrollView>
+      <ConfirmDialog
+        open={confirming}
+        onClose={() => { if (!deleteAccount.isPending) setConfirming(false) }}
+        title="Delete account?"
+        body="Deleting your account permanently removes it. This cannot be undone."
+        error={error}
+        confirmTitle="Delete my account"
+        confirmLoadingTitle="Deleting…"
+        loading={deleteAccount.isPending}
+        tone="error"
+        onConfirm={() => void handleDelete()}
+      />
     </SafeAreaView>
   )
 }

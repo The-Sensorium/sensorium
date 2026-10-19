@@ -9,6 +9,7 @@ import { toErrorMessage } from '../../../src/lib/error'
 import { radii } from '../../../src/lib/theme-tokens'
 import { useTheme } from '../../../src/lib/use-theme'
 import { Card, ErrorText, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog'
 import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
 import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { QueueProgress } from '../../../src/components/QueueCard'
@@ -157,44 +158,36 @@ export default function QueueScreen() {
           You can browse or join other matching modes while you wait.
         </Text>
 
-        {confirming ? (
-          <View style={{ marginTop: 24, flexDirection: 'row', gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <PrimaryButton title="Confirm leave" onPress={() => void handleLeave()} loading={leaving} />
-            </View>
-            <Pressable
-              onPress={() => setConfirming(false)}
-              disabled={leaving}
-              hitSlop={4}
-              style={{ paddingHorizontal: 20, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leaving ? 0.6 : 1 }}
-            >
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurfaceVariant }}>
-                Cancel
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => setConfirming(true)}
-            accessibilityRole="button"
-            style={{
-              marginTop: 24,
-              borderWidth: 1,
-              borderColor: t.primary,
-              borderRadius: radii.pill,
-              paddingVertical: 12,
-              minHeight: 48,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary }}>Leave queue</Text>
-          </Pressable>
-        )}
-        {leaveError ? (
-          <Text style={{ marginTop: 12, fontSize: 14, color: t.error }}>{leaveError}</Text>
-        ) : null}
+        <Pressable
+          onPress={() => setConfirming(true)}
+          accessibilityRole="button"
+          style={{
+            marginTop: 24,
+            borderWidth: 1,
+            borderColor: t.primary,
+            borderRadius: radii.pill,
+            paddingVertical: 12,
+            minHeight: 48,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.primary }}>Leave queue</Text>
+        </Pressable>
       </Card>
+
+      <ConfirmDialog
+        open={confirming}
+        onClose={() => { if (!leaving) { setConfirming(false); setLeaveError(null) } }}
+        title="Leave queue?"
+        body="You'll stop waiting in this queue. You can join again anytime."
+        error={leaveError}
+        confirmTitle="Leave queue"
+        confirmLoadingTitle="Leaving…"
+        loading={leaving}
+        tone="error"
+        onConfirm={() => void handleLeave()}
+      />
 
       <Text style={{ marginTop: 16, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, paddingVertical: 12, minHeight: 44 }}>
         Want to match differently? <Link href="/(app)/clusters" style={{ fontWeight: '600', color: t.primary }}>Explore other modes</Link>.

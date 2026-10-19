@@ -14,8 +14,8 @@ import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
 import { radii } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
-import { Card, PrimaryButton, Screen } from '../../../../src/components/ui'
-import { Modal } from '../../../../src/components/Modal'
+import { Card, Screen } from '../../../../src/components/ui'
+import { ConfirmDialog } from '../../../../src/components/ConfirmDialog'
 import { useClusterBack } from '../../../../src/lib/use-cluster-back'
 
 export default function ClusterSettingsScreen() {
@@ -134,33 +134,22 @@ function ClusterSettingsScreenContent() {
           )}
         </View>
       </Card>
-      <Modal open={confirming} onClose={() => { if (!leave.isPending) setConfirming(false) }} title="Leave cluster?">
-        <Text style={{ marginTop: 12, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-          {created
+      <ConfirmDialog
+        open={confirming}
+        onClose={() => { if (!leave.isPending) setConfirming(false) }}
+        title="Leave cluster?"
+        body={
+          created
             ? 'Leaving frees your spot right away. There is no cooldown.'
-            : `Leaving starts a ${cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day cooldown for this matching mode and triggers a replacement search so the cluster can stay at 8.`}
-        </Text>
-        {leaveError ? (
-          <Text accessibilityRole="alert" style={{ marginTop: 12, fontSize: 14, color: t.error }}>{leaveError}</Text>
-        ) : null}
-        <View style={{ marginTop: 24, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
-          <Pressable
-            onPress={() => setConfirming(false)}
-            disabled={leave.isPending}
-            hitSlop={8}
-            style={{ paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', opacity: leave.isPending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Cancel</Text>
-          </Pressable>
-          <PrimaryButton
-            title="Leave cluster"
-            loadingTitle="Leaving…"
-            loading={leave.isPending}
-            tone="error"
-            onPress={() => void handleLeave()}
-          />
-        </View>
-      </Modal>
+            : `Leaving starts a ${cluster.data ? cooldownDaysForMode(cluster.data.matching_mode) : 7}-day cooldown for this matching mode and triggers a replacement search so the cluster can stay at 8.`
+        }
+        error={leaveError}
+        confirmTitle="Leave cluster"
+        confirmLoadingTitle="Leaving…"
+        loading={leave.isPending}
+        tone="error"
+        onConfirm={() => void handleLeave()}
+      />
     </Screen>
   )
 }

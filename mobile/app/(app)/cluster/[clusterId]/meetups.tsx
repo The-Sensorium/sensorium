@@ -16,6 +16,7 @@ import {
   type Meetup,
 } from '../../../../src/features/meetups'
 import { ConfirmSheet } from '../../../../src/components/ConfirmSheet'
+import { ConfirmDialog } from '../../../../src/components/ConfirmDialog'
 import { CountdownTimer } from '../../../../src/components/CountdownTimer'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useClusterOnAccent } from '../../../../src/lib/cluster-theme'
@@ -458,7 +459,7 @@ function MeetupDetail({
               </Pressable>
             </View>
           )}
-          <ConfirmSheet
+          <ConfirmDialog
             open={declineOpen}
             onClose={() => { if (!rsvp.isPending) setDeclineOpen(false) }}
             title="Can’t make it?"
@@ -729,7 +730,7 @@ function CancelRow({ clusterId, meetupId, onError }: { clusterId: string; meetup
     )
   }
   return (
-    <ConfirmSheet
+    <ConfirmDialog
       open={confirming}
       onClose={() => { if (!cancel.isPending) setConfirming(false) }}
       title="Withdraw proposal?"

@@ -67,8 +67,8 @@ export function PostActionsSheet({
                   <Pencil size={18} color={t.onSurface} strokeWidth={1.5} />
                 </SheetRow>
               ) : null}
-              <SheetRow label="Delete" danger onPress={onDelete}>
-                <Trash2 size={18} color={t.error} strokeWidth={1.5} />
+              <SheetRow label="Delete" onPress={onDelete}>
+                <Trash2 size={18} color={t.onSurface} strokeWidth={1.5} />
               </SheetRow>
             </>
           ) : (

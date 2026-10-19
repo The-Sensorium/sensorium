@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, BellRing, ChevronDown, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
+import { BellRing, ChevronDown, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
 import { goLogin } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
@@ -20,6 +20,7 @@ import {
 import { Avatar } from '../../src/components/Avatar'
 import { MuteButton } from '../../src/components/MuteButton'
 import { Modal } from '../../src/components/Modal'
+import { ConfirmDialog } from '../../src/components/ConfirmDialog'
 import { PrimaryButton } from '../../src/components/ui'
 import { useThemeChoice, type ThemeChoice } from '../../src/lib/theme-choice'
 import { radii, shadowShape } from '../../src/lib/theme-tokens'
@@ -163,15 +164,23 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Delete account">
-      <View style={{ marginTop: 12, gap: 16 }}>
-        <View style={{ flexDirection: 'row', gap: 12, backgroundColor: t.surfaceContainer, borderRadius: radii.md, padding: 16 }}>
-          <AlertTriangle size={20} color={t.error} strokeWidth={1.5} />
-          <Text style={{ flex: 1, fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-            This permanently deletes your profile, messages, signals and memberships. This cannot
-            be undone. To confirm, type <Text style={{ fontWeight: '600', color: t.error }}>DELETE</Text>.
-          </Text>
-        </View>
+    <ConfirmDialog
+      open={open}
+      onClose={onClose}
+      title="Delete account?"
+      body="This permanently deletes your profile, messages, signals and memberships. This cannot be undone."
+      error={error}
+      confirmTitle="Delete my account"
+      confirmLoadingTitle="Deleting…"
+      loading={deleteAccount.isPending}
+      disabled={confirm.trim() !== 'DELETE'}
+      tone="error"
+      onConfirm={() => void handleDelete()}
+    >
+      <View style={{ gap: 8 }}>
+        <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+          Type <Text style={{ fontWeight: '600', color: t.onSurface }}>DELETE</Text> to confirm.
+        </Text>
         <TextInput
           value={confirm}
           onChangeText={setConfirm}
@@ -189,17 +198,8 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
             color: t.onSurface,
           }}
         />
-        {error ? <Text style={{ fontSize: 14, color: t.error }}>{error}</Text> : null}
-        <PrimaryButton
-          title="Delete my account"
-          loadingTitle="Deleting…"
-          loading={deleteAccount.isPending}
-          disabled={confirm.trim() !== 'DELETE'}
-          tone="error"
-          onPress={() => void handleDelete()}
-        />
       </View>
-    </Modal>
+    </ConfirmDialog>
   )
 }
 
