@@ -188,13 +188,8 @@ export function HomePage() {
               type="button"
               disabled={acceptInvite.isPending || declineInvite.isPending}
               onClick={() => {
-                // Created invites are final once declined, so confirm first.
-                // Replacement invites keep the existing one-tap decline.
-                if (inv.origin === 'created') {
-                  setConfirmDeclineId(inv.id)
-                } else {
-                  declineInvite.mutateAsync(inv.id).catch(() => {})
-                }
+                // A decline is final for that cluster, so confirm first.
+                setConfirmDeclineId(inv.id)
               }}
               className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-pill border border-outline-variant/60 px-5 py-3 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
             >
