@@ -15,6 +15,7 @@ window.scrollTo = vi.fn()
 
 const hooks = vi.hoisted(() => ({
   CHAT_PAGE_SIZE: 3,
+  mentionRenders: 0,
   messages: { data: [] as Message[], isLoading: false },
   reactions: { data: [] as Array<{ id: string; message_id: string; user_id: string; emoji: string }> },
   messageReads: {
@@ -131,6 +132,12 @@ vi.mock('./room/CallOverlay', () => ({
   ),
 }))
 vi.mock('../../features/avatars', () => ({ useAvatarUrl: () => ({ data: undefined }), useAvatarThumbUrl: () => ({ data: undefined }), useAvatarFullUrl: () => ({ data: undefined }), avatarThumbFor: (s: string | null | undefined) => s ?? null, avatarFullFor: (s: string | null | undefined) => s ?? null }))
+vi.mock('./room/MentionText', () => ({
+  MentionText: ({ content }: { content: string }) => {
+    hooks.mentionRenders += 1
+    return <span>{content}</span>
+  },
+}))
 vi.mock('../../features/gifs', () => ({
   gifSearchEnabled: false,
   useSearchGifs: () => ({ data: [], isPending: false }),
@@ -328,6 +335,38 @@ describe('RoomView timeline', () => {
     const text = timeline().textContent ?? ''
     expect(text.indexOf('Replace Bo')).toBeLessThan(text.indexOf('a message in the middle'))
     expect(text.indexOf('a message in the middle')).toBeLessThan(text.indexOf('I need a hand'))
+  })
+
+  it('does not re-render already loaded messages when an earlier page is prepended', () => {
+    hooks.messages.data = [
+      msg({ id: 'm2', content: 'newer', created_at: '2026-01-02T00:00:00Z' }),
+    ]
+    const { rerender } = renderRoom()
+    expect(screen.getByText('newer')).toBeInTheDocument()
+    const before = hooks.mentionRenders
+
+    hooks.messages.data = [
+      msg({ id: 'm1', content: 'older', created_at: '2026-01-01T00:00:00Z' }),
+      hooks.messages.data[0]!,
+    ]
+    rerender(makeUi())
+
+    expect(screen.getByText('older')).toBeInTheDocument()
+    expect(hooks.mentionRenders).toBe(before + 1)
+  })
+
+  it('only re-renders the message whose own reaction changed', () => {
+    hooks.messages.data = [
+      msg({ id: 'm1', content: 'first', created_at: '2026-01-01T10:00:00Z' }),
+      msg({ id: 'm2', content: 'second', created_at: '2026-01-01T11:00:00Z' }),
+    ]
+    const { rerender } = renderRoom()
+    const before = hooks.mentionRenders
+
+    hooks.reactions.data = [{ id: 'r1', message_id: 'm2', user_id: 'u1', emoji: 'thumbs' }]
+    rerender(makeUi())
+
+    expect(hooks.mentionRenders).toBe(before + 1)
   })
 
   it('hides deleted messages, resolved signals and closed votes', () => {

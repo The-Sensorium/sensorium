@@ -12,9 +12,14 @@ export type MessageRead = Database['public']['Functions']['get_message_reads']['
 export const CHAT_PAGE_SIZE = 100
 
 // Deterministic tie-break for messages sharing a created_at (same-transaction
-// inserts): the fetch orders by id, so the cache sort must match.
-const byCreatedIdAsc = (a: Message, b: Message) =>
-  a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
+// inserts): the fetch orders by id, so the cache sort must match. Plain string
+// comparison beats localeCompare here: both values are fixed-format ISO
+// timestamps/uuids, and this sort runs over every loaded row on each page.
+const byCreatedIdAsc = (a: Message, b: Message) => {
+  if (a.created_at !== b.created_at) return a.created_at < b.created_at ? -1 : 1
+  if (a.id === b.id) return 0
+  return a.id < b.id ? -1 : 1
+}
 
 /**
  * The room's newest messages, oldest first. A cluster outlives its members and

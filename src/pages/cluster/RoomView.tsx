@@ -75,6 +75,44 @@ const JUMP_LOADING = 'That message is still loading. Try again in a moment.'
 const JUMP_PAGE_FAILED = 'Could not load earlier messages.'
 const JUMP_ERRORS = new Set([JUMP_TOO_OLD, JUMP_UNAVAILABLE, JUMP_LOADING])
 
+// Shared empty values so messages without reactions keep a stable prop
+// identity and stay memoized when the room re-renders.
+const NO_REACTIONS: Reaction[] = []
+const NO_REACTION_KEYS: ReadonlySet<string> = new Set()
+
+type MemberSummary = {
+  id: string
+  display_name: string
+  avatar_url: string | null
+  avatar_thumb_url: string | null
+}
+
+type ReplyPreview = { authorName: string; preview: string }
+type ReplyTarget = {
+  author_id: string
+  content: string | null
+  image_url: string | null
+  audio_url?: string | null
+  audio_duration_sec?: number | null
+  deleted_at: string | null
+}
+
+// A deleted parent is hidden from the timeline, so its quote shouldn't surface
+// either - treat it like a missing target (fallback rendering). Blank values
+// bypass the fallbacks below and would render a textless quote box, which
+// reads as a stuck empty area: the schema allows blank display names and
+// whitespace-only content, so normalize them here.
+function buildReplyPreview(target: ReplyTarget, authorName: string): ReplyPreview | undefined {
+  if (target.deleted_at) return undefined
+  const rawPreview = replyPreviewForMessage({
+    content: target.content,
+    image_url: target.image_url,
+    audio_url: target.audio_url ?? null,
+    audio_duration_sec: target.audio_duration_sec ?? null,
+  })
+  return { authorName, preview: rawPreview.trim() ? rawPreview : 'message' }
+}
+
 export function RoomView() {
   useDocumentTitle('Cluster Chat')
   const { clusterId = '' } = useParams()
@@ -155,12 +193,32 @@ export function RoomView() {
   // collides with a manual "Load earlier" failure.
   const jumpFailureRef = useRef<string | null>(null)
 
+  // Member summaries are handed to every memoized row. Reuse the same objects
+  // across refetches so an unchanged member never invalidates the timeline.
+  const memberCacheRef = useRef(new Map<string, MemberSummary>())
   const memberMap = useMemo(() => {
-    const map = new Map<string, { id: string; display_name: string; avatar_url: string | null; avatar_thumb_url: string | null }>()
+    const prev = memberCacheRef.current
+    const next = new Map<string, MemberSummary>()
     for (const m of members.data ?? []) {
-      map.set(m.id, { id: m.id, display_name: m.display_name, avatar_url: m.avatar_url, avatar_thumb_url: m.avatar_thumb_url ?? null })
+      const avatarThumb = m.avatar_thumb_url ?? null
+      const existing = prev.get(m.id)
+      next.set(
+        m.id,
+        existing &&
+          existing.display_name === m.display_name &&
+          existing.avatar_url === m.avatar_url &&
+          existing.avatar_thumb_url === avatarThumb
+          ? existing
+          : {
+              id: m.id,
+              display_name: m.display_name,
+              avatar_url: m.avatar_url,
+              avatar_thumb_url: avatarThumb,
+            },
+      )
     }
-    return map
+    memberCacheRef.current = next
+    return next
   }, [members.data])
 
   const loadedById = useMemo(() => {
@@ -186,76 +244,133 @@ export function RoomView() {
     return map
   }, [loadedById, replyTargets.data])
 
-  function replyPreview(
-    target:
-      | {
-          author_id: string
-          content: string | null
-          image_url: string | null
-          audio_url?: string | null
-          audio_duration_sec?: number | null
-          deleted_at: string | null
-        }
-      | null
-      | undefined,
-  ): { authorName: string; preview: string } | undefined {
-    // A deleted parent is hidden from the timeline, so its quote shouldn't
-    // surface either - treat it like a missing target (fallback rendering).
-    if (!target || target.deleted_at) return undefined
-    // Blank values bypass the ?? fallbacks below and would render a textless
-    // quote box, which reads as a stuck empty area. The schema allows blank
-    // display names and whitespace-only content, so normalize them here.
+  // Reply quotes are rebuilt whenever the loaded window changes. Cache the
+  // derived previews by message so a prepend keeps the same object for every
+  // row whose parent didn't change, preserving memoization.
+  const replyPreviewCacheRef = useRef(
+    new Map<
+      string,
+      { parent: Message | undefined; authorName: string; muted: boolean; value: ReplyPreview | undefined }
+    >(),
+  )
+  const replyPreviews = useMemo(() => {
+    const prev = replyPreviewCacheRef.current
+    const next = new Map<string, ReplyPreview | undefined>()
+    const cache = new Map<
+      string,
+      { parent: Message | undefined; authorName: string; muted: boolean; value: ReplyPreview | undefined }
+    >()
+    for (const m of messages.data ?? []) {
+      if (!m.reply_to_id) continue
+      const parent = replyById.get(m.reply_to_id)
+      const rawName = parent ? memberMap.get(parent.author_id)?.display_name : undefined
+      const authorName = rawName && rawName.trim() ? rawName : 'Member'
+      const muted = parent ? isMutedAuthor(mutedSet, parent.author_id) : false
+      const cached = prev.get(m.id)
+      if (
+        cached &&
+        cached.parent === parent &&
+        cached.authorName === authorName &&
+        cached.muted === muted
+      ) {
+        next.set(m.id, cached.value)
+        cache.set(m.id, cached)
+        continue
+      }
+      const value = !parent || muted ? undefined : buildReplyPreview(parent, authorName)
+      const entry = { parent, authorName, muted, value }
+      next.set(m.id, value)
+      cache.set(m.id, entry)
+    }
+    replyPreviewCacheRef.current = cache
+    return next
+  }, [messages.data, replyById, memberMap, mutedSet])
+
+  function replyPreview(target: ReplyTarget | null | undefined): ReplyPreview | undefined {
+    if (!target) return undefined
     const rawName = memberMap.get(target.author_id)?.display_name
     const authorName = rawName && rawName.trim() ? rawName : 'Member'
-    const rawPreview = replyPreviewForMessage({
-      content: target.content,
-      image_url: target.image_url,
-      audio_url: target.audio_url ?? null,
-      audio_duration_sec: target.audio_duration_sec ?? null,
-    })
-    const preview = rawPreview.trim() ? rawPreview : 'message'
-    return { authorName, preview }
+    return buildReplyPreview(target, authorName)
   }
 
-  function startReply(m: Message) {
+  const startReply = useCallback((m: Message) => {
     setMenuFor(null)
     setPickerFor(null)
     setReplyTo(m)
-  }
+  }, [])
 
   const replyParentInfo = (() => {
     if (!replyTo) return null
     const info = replyPreview(replyTo)
     return info ? { id: replyTo.id, ...info } : null
   })()
-  const cancelReply = () => setReplyTo(null)
+  const cancelReply = useCallback(() => setReplyTo(null), [])
 
   // All members, used to render mention chips in the timeline (others can mention you).
+  // Keep the array (and its entries) identical across refetches so the memoized
+  // rows don't all re-render when members are refreshed for read receipts.
+  const parseMembersRef = useRef<MentionMember[]>([])
   const parseMembers = useMemo<MentionMember[]>(() => {
-    return (members.data ?? []).map((m) => ({
-      id: m.id,
-      display_name: m.display_name,
-      avatar_url: m.avatar_url,
-      avatar_thumb_url: m.avatar_thumb_url ?? null,
-    }))
-  }, [members.data])
+    const prev = parseMembersRef.current
+    const next = [...memberMap.values()]
+    if (prev.length === next.length && prev.every((m, i) => m === next[i])) return prev
+    parseMembersRef.current = next
+    return next
+  }, [memberMap])
 
+  // Loading an earlier page refetches every reaction in the cluster. Reuse
+  // each message's previous list when its own reaction set didn't change, so
+  // older pages only invalidate the rows that actually gained reactions.
+  const reactionListsRef = useRef(new Map<string, Reaction[]>())
   const reactionsByMessage = useMemo(() => {
-    const map = new Map<string, Reaction[]>()
+    const grouped = new Map<string, Reaction[]>()
     for (const r of reactions.data ?? []) {
-      const list = map.get(r.message_id) ?? []
+      const list = grouped.get(r.message_id) ?? []
       list.push(r)
-      map.set(r.message_id, list)
+      grouped.set(r.message_id, list)
     }
-    return map
+    const prev = reactionListsRef.current
+    const next = new Map<string, Reaction[]>()
+    for (const [messageId, list] of grouped) {
+      const old = prev.get(messageId)
+      const same =
+        old !== undefined &&
+        old.length === list.length &&
+        old.every((r, i) => {
+          const n = list[i]!
+          return (
+            r.message_id === n.message_id &&
+            r.user_id === n.user_id &&
+            r.emoji === n.emoji
+          )
+        })
+      next.set(messageId, same ? old : list)
+    }
+    reactionListsRef.current = next
+    return next
   }, [reactions.data])
 
-  const myReactionKeys = useMemo(() => {
-    const set = new Set<string>()
+  // The same idea for "did I react": reactions from other members change on
+  // every older page, and toggling one of my own reactions must only
+  // invalidate that row, so keep one stable set per message.
+  const myReactionKeyListsRef = useRef(new Map<string, Set<string>>())
+  const myReactionKeysByMessage = useMemo(() => {
+    const grouped = new Map<string, string[]>()
     for (const r of reactions.data ?? []) {
-      if (r.user_id === userId) set.add(`${r.message_id}:${r.emoji}`)
+      if (r.user_id !== userId) continue
+      const list = grouped.get(r.message_id) ?? []
+      list.push(`${r.message_id}:${r.emoji}`)
+      grouped.set(r.message_id, list)
     }
-    return set
+    const prev = myReactionKeyListsRef.current
+    const next = new Map<string, Set<string>>()
+    for (const [messageId, keys] of grouped) {
+      const old = prev.get(messageId)
+      const same = old !== undefined && old.size === keys.length && keys.every((k) => old.has(k))
+      next.set(messageId, same ? old : new Set(keys))
+    }
+    myReactionKeyListsRef.current = next
+    return next
   }, [reactions.data, userId])
 
   const replyCount = useMemo(() => {
@@ -534,7 +649,12 @@ export function RoomView() {
         .filter((v) => v.status === 'open' && v.type !== 'select_candidate')
         .map((v) => ({ kind: 'vote' as const, data: v })),
     ]
-    return items.sort((a, b) => a.data.created_at.localeCompare(b.data.created_at))
+    return items.sort((a, b) => {
+      const at = a.data.created_at
+      const bt = b.data.created_at
+      if (at === bt) return 0
+      return at < bt ? -1 : 1
+    })
   }, [messages.data, signals.data, votes.data])
 
   async function persistSend(content: string) {
@@ -569,33 +689,38 @@ export function RoomView() {
     setReplyTo(null)
   }
 
-  async function handleToggleReaction(messageId: string, emoji: string) {
+  // Handlers passed to memoized rows must keep a stable identity. Actions that
+  // depend on the latest render go through a ref so a mutation result or state
+  // change never recreates the callbacks for every message.
+  const toggleReactionRef = useRef(toggleReaction)
+  toggleReactionRef.current = toggleReaction
+  const handleToggleReaction = useCallback(async (messageId: string, emoji: string) => {
     setError(null)
     try {
-      await toggleReaction.mutateAsync({ messageId, emoji })
+      await toggleReactionRef.current.mutateAsync({ messageId, emoji })
     } catch (e) {
       setError(rateLimitMessage(e, 'Could not react to that message.'))
     }
-  }
+  }, [])
 
-  function startEdit(m: { id: string; content: string | null; audio_url?: string | null }) {
+  const startEdit = useCallback((m: { id: string; content: string | null; audio_url?: string | null }) => {
     if (m.audio_url) return
     setMenuFor(null)
     setEditingId(m.id)
     setEditDraft(m.content ?? '')
-  }
+  }, [])
 
-  function showInfo(m: Message) {
+  const showInfo = useCallback((m: Message) => {
     setMenuFor(null)
     setPickerFor(null)
     setInfoFor(m.id)
-  }
+  }, [])
 
-  function startReport(m: Message) {
+  const startReport = useCallback((m: Message) => {
     setMenuFor(null)
     setPickerFor(null)
     setReportFor(m)
-  }
+  }, [])
 
   async function saveEdit() {
     const content = editDraft.trim()
@@ -609,6 +734,11 @@ export function RoomView() {
     }
   }
 
+  const saveEditRef = useRef(saveEdit)
+  saveEditRef.current = saveEdit
+  const onSaveEdit = useCallback(() => void saveEditRef.current(), [])
+  const onCancelEdit = useCallback(() => setEditingId(null), [])
+
   async function remove(messageId: string) {
     setMenuFor(null)
     setDeleteError(null)
@@ -619,6 +749,20 @@ export function RoomView() {
       setDeleteError(toErrorMessage(e, 'Could not delete your message.'))
     }
   }
+
+  const requestDelete = useCallback((messageId: string) => {
+    setMenuFor(null)
+    setDeleteError(null)
+    setDeleteFor(messageId)
+  }, [])
+
+  const toggleMenu = useCallback((messageId: string) => {
+    setMenuFor((cur) => (cur === messageId ? null : messageId))
+  }, [])
+
+  const togglePicker = useCallback((messageId: string) => {
+    setPickerFor((cur) => (cur === messageId ? null : messageId))
+  }, [])
 
   // Prepend an earlier page. The length watch treats this as a non-event so the
   // older messages don't count toward the "new messages" badge.
@@ -786,6 +930,12 @@ export function RoomView() {
   // re-runs).
   const pageBackRef = useRef(pageBackToParent)
   pageBackRef.current = pageBackToParent
+
+  // Same stable-identity trick for the per-row reply jump: the handler closes
+  // over the loaded window, but rows should not re-render every time it grows.
+  const jumpToReplyRef = useRef(handleJumpToReply)
+  jumpToReplyRef.current = handleJumpToReply
+  const onJumpToReply = useCallback((parentId: string) => jumpToReplyRef.current(parentId), [])
 
   // A jump whose parent paged in afterwards: scroll once it renders.
   useEffect(() => {
@@ -1054,23 +1204,19 @@ export function RoomView() {
                       message={m}
                       mine={m.author_id === userId}
                       author={memberMap.get(m.author_id)}
-                      reactions={reactionsByMessage.get(m.id) ?? []}
-                      myReactionKeys={myReactionKeys}
+                      reactions={reactionsByMessage.get(m.id) ?? NO_REACTIONS}
+                      myReactionKeys={myReactionKeysByMessage.get(m.id) ?? NO_REACTION_KEYS}
                       members={parseMembers}
                       clusterId={clusterId}
                       showDay={showDay}
                       isEditing={editingId === m.id}
-                      editDraft={editDraft}
-                      editPending={editMessage.isPending}
+                      editDraft={editingId === m.id ? editDraft : ''}
+                      editPending={editingId === m.id ? editMessage.isPending : false}
                       menuOpen={menuFor === m.id}
                       pickerOpen={pickerFor === m.id}
                       highlighted={jumpHighlightId === m.id}
-                      replyParent={(() => {
-                        const parent = replyById.get(m.reply_to_id ?? '')
-                        if (parent && isMutedAuthor(mutedSet, parent.author_id)) return undefined
-                        return replyPreview(parent)
-                      })()}
-                      onJumpToReply={handleJumpToReply}
+                      replyParent={replyPreviews.get(m.id)}
+                      onJumpToReply={onJumpToReply}
                       mutedBanner={
                         muted ? (
                           <MutedHideBar
@@ -1080,22 +1226,16 @@ export function RoomView() {
                         ) : undefined
                       }
                       onEditDraftChange={setEditDraft}
-                      onSaveEdit={() => void saveEdit()}
-                      onCancelEdit={() => setEditingId(null)}
-                      onToggleMenu={() => setMenuFor(menuFor === m.id ? null : m.id)}
-                      onTogglePicker={() => setPickerFor(pickerFor === m.id ? null : m.id)}
+                      onSaveEdit={onSaveEdit}
+                      onCancelEdit={onCancelEdit}
+                      onToggleMenu={toggleMenu}
+                      onTogglePicker={togglePicker}
                       onShowInfo={showInfo}
                       onEdit={startEdit}
-                      onDelete={(messageId) => {
-                        setMenuFor(null)
-                        setDeleteError(null)
-                        setDeleteFor(messageId)
-                      }}
+                      onDelete={requestDelete}
                       onReply={startReply}
                       onReport={startReport}
-                      onToggleReaction={(messageId, emoji) =>
-                        void handleToggleReaction(messageId, emoji)
-                      }
+                      onToggleReaction={handleToggleReaction}
                     />
                   )
                 }
