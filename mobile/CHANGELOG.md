@@ -47,6 +47,7 @@ release) for the release ritual.
 - Fixed the chat composer sometimes floating mid-screen after returning from the app switcher on Android.
 - Fixed the back button closing the app from cluster screens (chat sections, signal detail, meetup planner, member profiles) opened from a notification. It now returns to the chat room instead.
 - Fixed the phone back button leaving the app to the phone home screen from posts, queues, invites, discovery, settings pages, legal pages, and later onboarding and cluster creation steps. System back now follows the same trail as in-app back, with a sensible parent when there is no history. The chat room no longer forces home when history exists.
+- Fixed the phone back button exiting to the phone home screen on Android 13 to 15.
 - Fixed your own profile photo flashing back to your initial on every screen. Avatars now load from the cache again.
 - Fixed faces in the chat room member strip looking cut off at the top and bottom.
 - Fixed GIF search results hiding behind the keyboard in chat. The results now stay visible while you type.
