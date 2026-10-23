@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { ArrowLeft, Clock3, MailWarning } from 'lucide-react-native'
 import { useMyAccess } from '../src/features/access'
-import { goBackWithFallback } from '../src/lib/use-cluster-back'
+import { useClusterBack } from '../src/lib/use-cluster-back'
 import { useActiveAccountGate } from '../src/lib/use-active-account'
 import { APPEAL_STATUS_LABELS, useMyAppeal, useSubmitAppeal } from '../src/features/appeals'
 import { timeAgo } from '../src/features/notifications'
@@ -24,6 +24,7 @@ function formatError(message: string): string {
 
 export default function AppealScreen() {
   const t = useTheme()
+  const goBack = useClusterBack('/restricted')
   useActiveAccountGate('restricted')
   const access = useMyAccess()
   const appeals = useMyAppeal()
@@ -194,7 +195,7 @@ export default function AppealScreen() {
         </View>
 
         <Pressable
-          onPress={() => goBackWithFallback('/restricted')}
+          onPress={goBack}
           accessibilityRole="button"
           accessibilityLabel="Back"
           hitSlop={8}

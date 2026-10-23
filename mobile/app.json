@@ -33,7 +33,7 @@
       "versionCode": 2,
       "softwareKeyboardLayoutMode": "resize",
       "allowBackup": false,
-      "predictiveBackGestureEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
