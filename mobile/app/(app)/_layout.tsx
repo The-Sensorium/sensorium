@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { router, Tabs } from 'expo-router'
 import { Bell, Home, Newspaper, Settings, Users } from 'lucide-react-native'
 import { useAuth } from '../../src/auth-context'
 import { goHome, goLogin } from '../../src/lib/auth-navigation'
 import { useNotificationsChannel, useUnreadCount } from '../../src/features/notifications'
+import { useMyClusters } from '../../src/features/matching'
+import { useNewPostsCount } from '../../src/features/posts-badge'
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { useTheme } from '../../src/lib/use-theme'
 import { onPushResponse, getLaunchPushData, syncBadgeCount, clearClusterPushNotifications } from '../../src/lib/push'
@@ -59,6 +61,13 @@ export default function AppTabs() {
   const unread = useUnreadCount()
   const unreadCount = unread.data ?? 0
   const badge = badgeLabel(unreadCount)
+  const clusters = useMyClusters()
+  const clusterIds = useMemo(
+    () => (clusters.data ?? []).map((c) => c.cluster.id),
+    [clusters.data],
+  )
+  const newPosts = useNewPostsCount(clusterIds)
+  const postsBadge = badgeLabel(newPosts.data ?? 0)
   useEffect(() => {
     void syncBadgeCount(unread.data ?? 0)
   }, [unread.data])
@@ -118,6 +127,7 @@ export default function AppTabs() {
         name="posts"
         options={{
           title: 'Posts',
+          tabBarBadge: postsBadge,
           tabBarIcon: ({ color, size }) => <Newspaper size={size} color={color} strokeWidth={1.5} />,
         }}
       />

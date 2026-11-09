@@ -421,6 +421,15 @@ export function useNotificationsChannel(userId: string | null) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, bumpChat)
       .on(
         'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        () => {
+          // New posts bump the mobile Posts tab badge. RLS scopes the event to
+          // the caller's active clusters; own posts are excluded by the count.
+          void queryClient.invalidateQueries({ queryKey: ['posts', 'new-count'] })
+        },
+      )
+      .on(
+        'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'invitations', filter: `user_id=eq.${userId}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ['my-invitations'] })

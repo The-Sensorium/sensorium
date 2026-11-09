@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import { Newspaper } from 'lucide-react-native'
+import { useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '../../src/auth-context'
 import { useClusterMembers, useMyClusters } from '../../src/features/matching'
@@ -17,6 +18,7 @@ import {
   useTogglePostLike,
 } from '../../src/features/posts'
 import { useClusterChannel } from '../../src/features/realtime'
+import { useMarkPostsSeen } from '../../src/features/posts-badge'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
 import { PostComposer } from '../../src/components/PostComposer'
@@ -45,6 +47,21 @@ export default function PostsFeedScreen() {
 
   const clusterId = selectedId
   const posts = useClusterPosts(clusterId)
+  const markSeen = useMarkPostsSeen()
+  const [focused, setFocused] = useState(false)
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true)
+      void markSeen()
+      return () => setFocused(false)
+    }, [markSeen]),
+  )
+  // Keep the badge clear while this tab is open: a post that lands in the
+  // visible feed is already read, including one that arrives over realtime.
+  const newestPostId = posts.data?.[0]?.id
+  useEffect(() => {
+    if (focused && newestPostId) void markSeen()
+  }, [focused, newestPostId, markSeen])
   const members = useClusterMembers(clusterId)
   const likes = useClusterPostLikes(clusterId)
   const comments = useClusterPostComments(clusterId)

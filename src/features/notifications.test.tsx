@@ -479,6 +479,31 @@ describe('useNotificationsChannel', () => {
     })
   })
 
+  it('bumps the Posts badge on post INSERT', async () => {
+    const channelMock = {
+      on: vi.fn(() => channelMock),
+      subscribe: vi.fn(() => ({})),
+    }
+    const client = {
+      channel: vi.fn(() => channelMock),
+      removeChannel: vi.fn(),
+    } as unknown as SupabaseClient
+    requireSupabaseMock.mockReturnValue(client)
+    const spy = vi.spyOn(queryClient, 'invalidateQueries')
+    spy.mockClear()
+
+    renderHook(() => useNotificationsChannel('u1'), { wrapper })
+    const postCall = channelMock.on.mock.calls.find(
+      (c) => (c[1] as { table?: string }).table === 'posts',
+    )
+    expect(postCall).toBeDefined()
+    expect((postCall![1] as { event?: string }).event).toBe('INSERT')
+    ;(postCall![2] as () => void)()
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['posts', 'new-count'] })
+    })
+  })
+
   it('does not subscribe when there is no user', () => {
     const client = makeSupabaseClient(initialMockResult())
     const channelSpy = client.channel
