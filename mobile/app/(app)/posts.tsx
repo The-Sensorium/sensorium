@@ -18,7 +18,7 @@ import {
   useTogglePostLike,
 } from '../../src/features/posts'
 import { useClusterChannel } from '../../src/features/realtime'
-import { useMarkPostsSeen } from '../../src/features/posts-badge'
+import { useMarkPostsSeen, useNewPostsCounts } from '../../src/features/posts-badge'
 import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
 import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
 import { PostComposer } from '../../src/components/PostComposer'
@@ -27,6 +27,7 @@ import { radii, spacing } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
 import { Card, ErrorText, FeedSkeleton } from '../../src/components/ui'
 import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
+import { badgeLabel } from '../../src/lib/tab-badge'
 
 export default function PostsFeedScreen() {
   const t = useTheme()
@@ -47,21 +48,23 @@ export default function PostsFeedScreen() {
 
   const clusterId = selectedId
   const posts = useClusterPosts(clusterId)
+  const newPosts = useNewPostsCounts(clusterIds)
   const markSeen = useMarkPostsSeen()
   const [focused, setFocused] = useState(false)
   useFocusEffect(
     useCallback(() => {
       setFocused(true)
-      void markSeen()
       return () => setFocused(false)
-    }, [markSeen]),
+    }, []),
   )
-  // Keep the badge clear while this tab is open: a post that lands in the
-  // visible feed is already read, including one that arrives over realtime.
+  // Clear only the cluster whose feed is actually open. The other chips keep
+  // their counts until the user switches to them, and the tab badge keeps
+  // counting posts elsewhere.
   const newestPostId = posts.data?.[0]?.id
   useEffect(() => {
-    if (focused && newestPostId) void markSeen()
-  }, [focused, newestPostId, markSeen])
+    if (!focused || !clusterId) return
+    void markSeen(clusterId)
+  }, [focused, clusterId, newestPostId, markSeen])
   const members = useClusterMembers(clusterId)
   const likes = useClusterPostLikes(clusterId)
   const comments = useClusterPostComments(clusterId)
@@ -215,19 +218,36 @@ export default function PostsFeedScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {(clusters.data ?? []).map((c) => {
                   const active = c.cluster.id === selectedId
+                  // The open cluster is being read right now, so hide its count
+                  // even before the mark-seen refetch lands.
+                  const newCount = active ? 0 : (newPosts.data?.get(c.cluster.id) ?? 0)
                   return (
                     <Pressable
                       key={c.cluster.id}
                       onPress={() => setSelectedId(c.cluster.id)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      accessibilityLabel={c.cluster.name}
+                      accessibilityLabel={
+                        newCount > 0
+                          ? `${c.cluster.name}, ${newCount} new ${newCount === 1 ? 'post' : 'posts'}`
+                          : c.cluster.name
+                      }
                       hitSlop={8}
-                      style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
                       <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>
                         {c.cluster.name}
                       </Text>
+                      {newCount > 0 && (
+                        <View
+                          testID={`cluster-new-posts-${c.cluster.id}`}
+                          style={{ minWidth: 20, minHeight: 20, borderRadius: 10, backgroundColor: t.error, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}
+                        >
+                          <Text style={{ fontSize: 11, lineHeight: 16, fontWeight: '600', color: t.onError }} maxFontSizeMultiplier={1.4}>
+                            {badgeLabel(newCount)}
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
                   )
                 })}
