@@ -5,7 +5,7 @@ import { useAuth } from '../../src/auth-context'
 import { goHome, goLogin } from '../../src/lib/auth-navigation'
 import { useNotificationsChannel, useUnreadCount } from '../../src/features/notifications'
 import { useMyClusters } from '../../src/features/matching'
-import { useNewPostsCount } from '../../src/features/posts-badge'
+import { useNewPostsCounts } from '../../src/features/posts-badge'
 import { useActiveAccountGate } from '../../src/lib/use-active-account'
 import { useTheme } from '../../src/lib/use-theme'
 import { onPushResponse, getLaunchPushData, syncBadgeCount, clearClusterPushNotifications } from '../../src/lib/push'
@@ -66,8 +66,12 @@ export default function AppTabs() {
     () => (clusters.data ?? []).map((c) => c.cluster.id),
     [clusters.data],
   )
-  const newPosts = useNewPostsCount(clusterIds)
-  const postsBadge = badgeLabel(newPosts.data ?? 0)
+  const newPosts = useNewPostsCounts(clusterIds)
+  const newPostsTotal = useMemo(
+    () => [...(newPosts.data?.values() ?? [])].reduce((sum, count) => sum + count, 0),
+    [newPosts.data],
+  )
+  const postsBadge = badgeLabel(newPostsTotal)
   useEffect(() => {
     void syncBadgeCount(unread.data ?? 0)
   }, [unread.data])

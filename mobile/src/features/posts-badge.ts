@@ -6,11 +6,12 @@ import { getPostsSeenAt, markPostsSeen } from '../lib/posts-seen'
 
 const NEW_POSTS_KEY = ['posts', 'new-count'] as const
 
-/** Posts created since the caller last opened the Posts tab, excluding their
- * own posts. The watermark is device-local: opening Posts clears the badge on
- * this device only. RLS scopes the count to active members of unlocked
- * clusters, and hides deleted or moderation-hidden posts. */
-export function useNewPostsCount(clusterIds: string[]) {
+/** New posts per cluster since that cluster was last opened on this device,
+ * excluding the caller's own posts. Missing entries mean zero. The watermarks
+ * are device-local, so opening one cluster leaves the others badgeable.
+ * RLS scopes the counts to active members of unlocked clusters, and hides
+ * deleted or moderation-hidden posts. */
+export function useNewPostsCounts(clusterIds: string[]) {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const ids = [...clusterIds].sort()
@@ -26,30 +27,39 @@ export function useNewPostsCount(clusterIds: string[]) {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     queryFn: async () => {
-      if (!userId) return 0
-      const seenAt = await getPostsSeenAt(userId)
+      const counts = new Map<string, number>()
+      if (!userId) return counts
       const supabase = requireSupabase()
-      const { count, error } = await supabase
-        .from('posts')
-        .select('id', { count: 'exact', head: true })
-        .in('cluster_id', ids)
-        .gt('created_at', seenAt)
-        .neq('author_id', userId)
-      if (error) throw error
-      return count ?? 0
+      // One HEAD count per cluster keeps each request bounded and avoids
+      // downloading every post since the oldest watermark.
+      const rows = await Promise.all(
+        ids.map(async (clusterId) => {
+          const seenAt = await getPostsSeenAt(userId, clusterId)
+          const { count, error } = await supabase
+            .from('posts')
+            .select('id', { count: 'exact', head: true })
+            .eq('cluster_id', clusterId)
+            .gt('created_at', seenAt)
+            .neq('author_id', userId)
+          if (error) throw error
+          return [clusterId, count ?? 0] as const
+        }),
+      )
+      for (const [clusterId, count] of rows) counts.set(clusterId, count)
+      return counts
     },
   })
 }
 
-/** Advance the device-local Posts watermark and refresh the tab badge. */
+/** Advance one cluster's device-local Posts watermark and refresh the badges. */
 export function useMarkPostsSeen() {
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
   const queryClient = useQueryClient()
 
-  return useCallback(async () => {
+  return useCallback(async (clusterId: string) => {
     if (!userId) return
-    await markPostsSeen(userId).catch(() => undefined)
+    await markPostsSeen(userId, clusterId).catch(() => undefined)
     void queryClient.invalidateQueries({ queryKey: NEW_POSTS_KEY })
   }, [userId, queryClient])
 }

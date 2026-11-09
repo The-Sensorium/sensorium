@@ -31,6 +31,7 @@ release) for the release ritual.
 ### Changed
 
 - Recent posts are no longer listed on Home. New posts now show as a count badge on the Posts tab, and opening Posts clears it.
+- The Posts tab now shows a new post count on each cluster chip, so you can see which cluster has something new. Opening a cluster clears only that cluster's count, and the Posts tab badge keeps counting the clusters you have not opened yet.
 - Delete and other destructive confirmations now use a centered dialog with stacked, full-width actions, so the decision reads clearly before you commit to it. The Delete option in post and message menus now uses the same neutral color as Edit.
 - The chat room member strip now shows as many whole faces as fit your screen, with a +N badge for the rest, instead of spilling onto a second row on narrower phones. The message box also uses a shorter hint that fits on one line.
 - Tidied icons, spacing, text sizes, and accent colors across screens so things line up and read consistently.
