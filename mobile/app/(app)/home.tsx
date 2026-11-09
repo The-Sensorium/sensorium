@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, router, type Href } from 'expo-router'
@@ -10,32 +10,21 @@ import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
 import { useClusterMembers, useMyClusters, useLatestClusterFormed } from '../../src/features/matching'
 import { useCluster } from '../../src/features/introductions'
 import {
-  useRecentClusterPosts,
-  usePostLikesForPosts,
-  usePostCommentsForPosts,
-  useTogglePostLike,
-  type Post,
-} from '../../src/features/posts'
-import {
   useMyPendingInvitations,
   useAcceptInvitation,
   useDeclineInvitation,
 } from '../../src/features/votes'
 import { toErrorMessage } from '../../src/lib/error'
 import { homeListError, isProfileMissingError, resolveOnboardingState, shouldShowFresh } from '../../src/lib/home-gating'
-import { visiblePostCount } from '../../src/lib/progressive-feed'
 import { radii } from '../../src/lib/theme-tokens'
 import { useResolvedScheme } from '../../src/lib/theme-choice'
 import { STATUS_PALETTE } from '../../src/lib/status-palette'
 import { useTheme } from '../../src/lib/use-theme'
-import { Card, FeedSkeleton, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
+import { Card, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
 import { Modal } from '../../src/components/Modal'
 import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
 import { MemberClusterCard } from '../../src/components/ClusterCard'
 import { useUnreadChatCounts } from '../../src/features/notifications'
-import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
-import { PostCard } from '../../src/components/PostCard'
-import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
 
 function daypart(): { label: string; Icon: typeof Sun } {
   const hour = new Date().getHours()
@@ -106,11 +95,7 @@ export default function HomeScreen() {
     () => invitations.refetch(),
     () => formed.refetch(),
     () => unread.refetch(),
-    () => queryClient.refetchQueries({ queryKey: ['recent-posts'] }),
     () => queryClient.refetchQueries({ queryKey: ['notification-prefs'] }),
-    () => queryClient.refetchQueries({ queryKey: ['my-mutes'] }),
-    () => queryClient.refetchQueries({ queryKey: ['post-likes'] }),
-    () => queryClient.refetchQueries({ queryKey: ['post-comments'] }),
     () => queryClient.refetchQueries({ queryKey: ['cluster-members'] }),
   ])
 
@@ -141,10 +126,6 @@ export default function HomeScreen() {
     if (formed.error) console.warn('Home lists: formed failed', formed.error)
   }, [clusters.error, invitations.error, formed.error])
 
-  const clusterNameById = useMemo(
-    () => new Map((clusters.data ?? []).map((c) => [c.cluster.id, c.cluster.name])),
-    [clusters.data],
-  )
   if (profile.isPending || onboardingState === 'incomplete') {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: t.background, alignItems: 'center', justifyContent: 'center' }}>
@@ -446,7 +427,6 @@ export default function HomeScreen() {
                 unreadCount={unreadByCluster.get(item.cluster.id) ?? 0}
               />
             ))}
-            <RecentFromClusters clusterIds={clusterIds} clusterNameById={clusterNameById} />
           </View>
         )
       )}
@@ -508,223 +488,5 @@ export default function HomeScreen() {
         </View>
       </Modal>
     </Screen>
-  )
-}
-
-function RecentFromClusters({
-  clusterIds,
-  clusterNameById,
-}: {
-  clusterIds: string[]
-  clusterNameById: Map<string, string>
-}) {
-  const t = useTheme()
-  const auth = useAuth()
-  const selfId = auth.state === 'signedIn' ? auth.userId : null
-  const recent = useRecentClusterPosts(clusterIds, 3)
-  const myMutes = useMyMutes(clusterIds.length > 0)
-  const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
-  const posts = useMemo(() => recent.data ?? [], [recent.data])
-  const postIds = useMemo(() => posts.map((p) => p.id), [posts])
-  const recentPostIds = useMemo(() => [...new Set(postIds)], [postIds])
-  // Mount the newest card first and add the next one only after the previous
-  // card's media has finished loading, instead of starting three image and
-  // member loads at once.
-  const [readyIds, setReadyIds] = useState<Set<string>>(() => new Set())
-  const markPostReady = useCallback((postId: string) => {
-    setReadyIds((prev) => {
-      if (prev.has(postId)) return prev
-      const next = new Set(prev)
-      next.add(postId)
-      return next
-    })
-  }, [])
-  const visibleCount = visiblePostCount(postIds, readyIds)
-  const postLikes = usePostLikesForPosts(recentPostIds)
-  const postComments = usePostCommentsForPosts(recentPostIds)
-  const likesByPost = useMemo(() => {
-    const byPost = new Map<string, { count: number; mine: boolean }>()
-    for (const l of postLikes.data ?? []) {
-      const entry = byPost.get(l.post_id) ?? { count: 0, mine: false }
-      entry.count += 1
-      if (l.user_id === selfId) entry.mine = true
-      byPost.set(l.post_id, entry)
-    }
-    return byPost
-  }, [postLikes.data, selfId])
-  const commentsByPost = useMemo(() => {
-    const byPost = new Map<string, number>()
-    for (const c of postComments.data ?? []) {
-      byPost.set(c.post_id, (byPost.get(c.post_id) ?? 0) + 1)
-    }
-    return byPost
-  }, [postComments.data])
-  const [revealed, setRevealed] = useState<Set<string>>(new Set())
-  function toggleReveal(id: string) {
-    setRevealed((prev) => toggleRevealedId(prev, id))
-  }
-
-  return (
-    <View style={{ marginTop: 24 }}>
-      <View
-        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
-      >
-        <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
-          Recent posts
-        </Text>
-        <Link href="/(app)/posts" asChild>
-          <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 12, minHeight: 44 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
-              View all posts
-            </Text>
-            <ArrowRight size={16} color={t.primary} strokeWidth={2} />
-          </Pressable>
-        </Link>
-      </View>
-      {recent.isPending || myMutes.isPending ? (
-        <FeedSkeleton rows={3} />
-      ) : recent.isError ? (
-        <Card>
-          <Text style={{ fontSize: 14, lineHeight: 20, color: t.error }}>
-            Couldn’t load recent posts. Please try again.
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Try loading recent posts again"
-            hitSlop={8}
-            onPress={() => {
-              void recent.refetch()
-              void myMutes.refetch()
-            }}
-            style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
-              Try again
-            </Text>
-          </Pressable>
-        </Card>
-      ) : posts.length === 0 ? (
-        <Card plain>
-          <Text style={{ fontSize: 14, lineHeight: 20, textAlign: 'center', color: t.onSurfaceVariant }}>
-            No posts in your clusters yet. Be the first to share something.
-          </Text>
-        </Card>
-      ) : (
-        <>
-          {posts.slice(0, visibleCount).map((post) => (
-            <RecentPostItem
-              key={post.id}
-              post={post}
-              clusterName={clusterNameById.get(post.cluster_id)}
-              muted={isMutedAuthor(mutedSet, post.author_id)}
-              revealed={revealed.has(post.id)}
-              onToggleMute={() => toggleReveal(post.id)}
-              onReady={markPostReady}
-              likeCount={likesByPost.get(post.id)?.count ?? 0}
-              likedByMe={likesByPost.get(post.id)?.mine ?? false}
-              commentCount={commentsByPost.get(post.id) ?? 0}
-            />
-          ))}
-          {visibleCount < posts.length ? (
-            <FeedSkeleton rows={posts.length - visibleCount} />
-          ) : null}
-        </>
-      )}
-    </View>
-  )
-}
-
-function RecentPostItem({
-  post,
-  clusterName,
-  muted,
-  revealed,
-  onToggleMute,
-  onReady,
-  likeCount,
-  likedByMe,
-  commentCount,
-}: {
-  post: Post
-  clusterName: string | undefined
-  muted: boolean
-  revealed: boolean
-  onToggleMute: () => void
-  onReady: (postId: string) => void
-  likeCount: number
-  likedByMe: boolean
-  commentCount: number
-}) {
-  const members = useClusterMembers(post.cluster_id)
-  const handleReady = useCallback(() => onReady(post.id), [onReady, post.id])
-
-  // A muted post is replaced by a placeholder with no media to wait for.
-  useEffect(() => {
-    if (muted && !revealed) handleReady()
-  }, [muted, revealed, handleReady])
-
-  const memberById = useMemo(
-    () => new Map((members.data ?? []).map((m) => [m.id, m])),
-    [members.data],
-  )
-  const author = memberById.get(post.author_id)
-  const authorName = author?.display_name ?? 'Member'
-
-  if (muted && !revealed) {
-    return (
-      <MutedPlaceholder name={authorName} onToggle={onToggleMute} kind="post" />
-    )
-  }
-
-  return (
-    <View style={{ gap: 8 }}>
-      {muted ? (
-        <MutedHideBar name={authorName} onToggle={onToggleMute} kind="post" />
-      ) : null}
-      <RecentPostEngagement
-        post={post}
-        clusterName={clusterName}
-        author={author}
-        likeCount={likeCount}
-        likedByMe={likedByMe}
-        commentCount={commentCount}
-        onReady={handleReady}
-      />
-    </View>
-  )
-}
-
-function RecentPostEngagement({
-  post,
-  clusterName,
-  author,
-  likeCount,
-  likedByMe,
-  commentCount,
-  onReady,
-}: {
-  post: Post
-  clusterName: string | undefined
-  author: { id: string; display_name: string; avatar_url: string | null } | undefined
-  likeCount: number
-  likedByMe: boolean
-  commentCount: number
-  onReady: () => void
-}) {
-  const toggle = useTogglePostLike(post.cluster_id)
-
-  return (
-    <PostCard
-      post={post}
-      clusterId={post.cluster_id}
-      clusterName={clusterName}
-      compact
-      author={author}
-      likeCount={likeCount}
-      likedByMe={likedByMe}
-      commentCount={commentCount}
-      onLike={(id) => void toggle.mutateAsync(id)}
-      onReady={onReady}
-    />
   )
 }
