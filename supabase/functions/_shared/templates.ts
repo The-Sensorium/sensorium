@@ -16,6 +16,7 @@ export type TemplateId =
   | 'report-resolved'
   | 'appeal-received'
   | 'appeal-resolved'
+  | 'cluster-formed'
 
 export interface TemplateParams {
   display_name?: string
@@ -25,6 +26,8 @@ export interface TemplateParams {
   appeal_url?: string
   accepted?: boolean
   response?: string
+  cluster_name?: string
+  cluster_url?: string
 }
 
 export interface RenderedEmail {
@@ -192,6 +195,20 @@ export function renderEmail(template: TemplateId, params: TemplateParams): Rende
         ),
       }
     }
+
+    case 'cluster-formed':
+      return {
+        subject: 'Your cluster is ready',
+        html: shell(
+          heading('Your cluster is ready') +
+            body(
+              `${greeting(params.display_name)} ${esc(
+                params.cluster_name ?? 'Your cluster',
+              )} is open. Say hello, and answer the intro questions when you are ready.`,
+            ) +
+            (params.cluster_url ? cta(params.cluster_url, 'Open your cluster') : ''),
+        ),
+      }
 
     default:
       throw new Error(`Unknown email template: ${template satisfies never}`)

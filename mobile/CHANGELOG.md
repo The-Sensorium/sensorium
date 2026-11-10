@@ -13,6 +13,7 @@ release) for the release ritual.
 
 ### Added
 
+- When your cluster forms, you now also get an email letting you know it is ready, alongside the push notification.
 - Open Mix now has optional match preferences: choose an age range you are comfortable being grouped with (Any age by default).
 - Profile photos can now be cropped to a square and taken with the camera, not just picked from the gallery.
 - You now get notified when someone replies to a Signal you raised, and when a Signal you helped with is marked in progress or resolved.
