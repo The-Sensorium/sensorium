@@ -428,7 +428,8 @@ Moderators cannot take enforcement action against other moderators or admins, an
 ### Email Notifications
 
 - All product email is outbound-only and sent from a single sender: `no-reply@thesensoriumapp.com`. Human support lives at `support@thesensoriumapp.com` (privacy contact, deletion requests, Play listing contact).
-- The catalog covers moderation and appeal lifecycles: report confirmation, report resolution, warning issued, message hidden, account suspended, account banned, restriction lifted, appeal received, appeal resolved.
+- The catalog covers moderation and appeal lifecycles (report confirmation, report resolution, warning issued, message hidden, account suspended, account banned, restriction lifted, appeal received, appeal resolved) plus a cluster formation notice sent to every member when a cluster becomes usable.
+- Cluster formation emails are always sent alongside the in-app notice and push. There is no opt-out: the event is rare and follows an action the member already took (joining a queue or accepting an invitation).
 - Emails are queued in the database and delivered by a scheduled Edge Function; the app never sends email from the browser.
 - Restricted accounts can reach the appeal page from the emails they receive and from the restricted-account screen.
 
@@ -498,6 +499,7 @@ Types include:
 - Votes
 - Cluster Invitations
 - New Signals
+- Cluster formation (a cluster becoming usable; also emailed, with no preference toggle)
 - Moderation notices (member-facing) and reports/appeals (staff)
 
 Preferences are stored per cluster, so a member can quiet one cluster without
