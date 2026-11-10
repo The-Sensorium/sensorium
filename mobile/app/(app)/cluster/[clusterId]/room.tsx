@@ -118,6 +118,10 @@ const CHAT_INPUT_NATIVE_ID = 'cluster-chat-input'
 // row at runtime and fits whole avatars dynamically instead of a fixed cap.
 const STRIP_AVATAR = 24
 const STRIP_GAP = 8
+// Breathing room for the self avatar's 2px ring. The ring is drawn with a
+// negative margin so it stays layout neutral; the inset keeps the row's clip
+// boundary from shaving the ring's outer edge.
+const STRIP_INSET = 2
 
 export default function RoomScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -280,7 +284,7 @@ function RoomScreenContent() {
   // measured row width, with a +N chip for the rest. A fixed cap wastes
   // space on wide screens yet still wraps on narrow ones under display zoom.
   const memberList = members.data ?? []
-  const stripFit = stripWidth > 0 ? Math.floor((stripWidth + STRIP_GAP) / (STRIP_AVATAR + STRIP_GAP)) : 8
+  const stripFit = stripWidth > 0 ? Math.floor((stripWidth - STRIP_INSET * 2 + STRIP_GAP) / (STRIP_AVATAR + STRIP_GAP)) : 8
   const stripHasOverflow = stripFit < memberList.length
   const stripVisibleCount = stripHasOverflow ? Math.max(0, stripFit - 1) : memberList.length
   const stripVisible = memberList.slice(0, stripVisibleCount)
@@ -1213,7 +1217,16 @@ function RoomScreenContent() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: STRIP_GAP, overflow: 'hidden', paddingVertical: 2, marginVertical: -2 }}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: STRIP_GAP,
+                  overflow: 'hidden',
+                  paddingVertical: STRIP_INSET,
+                  marginVertical: -STRIP_INSET,
+                  paddingHorizontal: STRIP_INSET,
+                }}
                 onLayout={(e) => {
                   const w = e.nativeEvent.layout.width
                   setStripWidth((prev) => (prev === w ? prev : w))

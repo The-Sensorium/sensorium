@@ -38,6 +38,8 @@ release) for the release ritual.
 
 ### Fixed
 
+- The discard button and the preview screen's delete button for voice notes are now red in dark mode instead of pink, matching other delete actions.
+- The member strip at the top of cluster chat no longer clips the left edge of your own ringed avatar.
 - Picking a mention suggestion now replaces the letters you typed instead of leaving the last one behind, in chat and post comments.
 - Busy chat no longer buzzes for every message: you get one notification per cluster that quietly updates with the recent messages until you read it, instead of a stack of buzzing alerts. Each one now names its cluster and shows who said what. Mentions still alert loudly.
 - Deleting your account now also removes the photos you shared in clusters you had already left.
