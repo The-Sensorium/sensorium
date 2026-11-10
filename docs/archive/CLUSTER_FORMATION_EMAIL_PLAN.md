@@ -1,8 +1,7 @@
 # Cluster Formation Email Plan
 
-Status: **Implemented** in this branch, pending merge and deploy. When it
-ships, move the file to `docs/archive/` and add a row to
-`docs/archive/README.md`.
+Status: **Implemented**, pending merge and deploy. Update this line and the
+archive index to Shipped after the release.
 
 Goal: send one transactional email to each member when a cluster becomes usable,
 reusing the existing outbox, cron, and Resend delivery pipeline. Push already
@@ -241,8 +240,6 @@ formation. There is no Vitest or Deno test harness for
   an email in addition to the inbox row and push, with no opt-out.
 - `mobile/CHANGELOG.md`: `Unreleased` entry, for example "Cluster formation now
   sends an email alongside the push notification."
-- On ship: move this file to `docs/archive/` and add it to
-  `docs/archive/README.md` with status Shipped.
 
 ## 8. Verification
 
