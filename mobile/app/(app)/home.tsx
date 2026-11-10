@@ -118,8 +118,7 @@ export default function HomeScreen() {
   }, [auth.state, onboardingState])
 
   // Log the underlying failure (code + message) so a sticky list error can
-  // be diagnosed instead of guessed at. Console output lands in logcat and
-  // in Sentry breadcrumbs on device builds.
+  // be diagnosed instead of guessed at. Console output lands in logcat.
   useEffect(() => {
     if (clusters.error) console.warn('Home lists: clusters failed', clusters.error)
     if (invitations.error) console.warn('Home lists: invitations failed', invitations.error)

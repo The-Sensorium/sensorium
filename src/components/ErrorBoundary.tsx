@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // Telemetry hook: swap for your error-reporting service (e.g. Sentry) in production.
+    // Telemetry hook: swap for your error-reporting service in production.
     console.error('Sensorium error boundary caught an error.', error, info.componentStack)
   }
 
