@@ -240,7 +240,7 @@ export function VoiceRecorder({
         hitSlop={8}
         style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
       >
-        <Trash2 size={20} color={t.error} />
+        <Trash2 size={20} color={t.destructive} />
       </Pressable>
     </View>
   )
@@ -351,7 +351,7 @@ function VoicePreview({
         hitSlop={8}
         style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: sending ? 0.4 : 1 }}
       >
-        <Trash2 size={20} color={t.error} />
+        <Trash2 size={20} color={t.destructive} />
       </Pressable>
       <Pressable
         accessibilityLabel="Send voice note"
