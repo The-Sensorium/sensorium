@@ -10,11 +10,7 @@ the bottom.
 
 Implementation notes: `allowBackup`, `predictiveBackGestureEnabled`, and
 `blockedPermissions` turned out to be first-class `expo.android` keys in
-SDK 57, so no custom config plugin was needed. Sentry follows the Expo-pinned
-`~7.11.0` line (`expo install --check` flags anything newer). Sentry init tags
-`environment` from `EXPO_PUBLIC_APP_ENV` (set by CI to the build flavor) with
-performance tracing explicitly off; the APK workflow fails fast when the
-Sentry DSN/org/project are unset. Splash keeps `imageWidth: 200` alongside
+SDK 57, so no custom config plugin was needed. Splash keeps `imageWidth: 200` alongside
 `resizeMode: "contain"` on purpose: they are independent settings (width vs
 scaling), and dropping `imageWidth` would shrink the splash image to the
 100dp default.
@@ -34,17 +30,7 @@ Why: session persists in `expo-sqlite/localStorage` (`src/lib/supabase.ts:2,18`)
 - Acceptance: regenerated manifest shows `allowBackup="false"` (or rules excluding `databases/`, `shared_prefs/`, WebView dirs).
 - Regression: fresh install signs in normally; reinstall does not restore a session.
 
-## 2. Crash reporting: add Sentry
-
-Why: zero crash-reporting coverage; beta feedback without stack traces is unactionable.
-
-- Create the Sentry project, store the DSN outside the repo (EAS secret / CI env; DSN is public-ish but keep it out of git anyway).
-- Add `@sentry/react-native` plus the Expo plugin in `app.json` (plugin list at `app.json:45-75`), init early in `app/_layout.tsx` before providers mount.
-- Wire source-map upload for the APK CI workflow so stack traces resolve.
-- Keep the existing `console.warn` call sites (auth callback, realtime subscribe) as breadcrumbs, do not add noisy logging.
-- Acceptance: a test event from a staging APK appears in Sentry with a readable stack trace.
-
-## 3. Predictive back: opt in
+## 2. Predictive back: opt in
 
 Why: `enableOnBackInvokedCallback="false"` (`AndroidManifest.xml:24`) disables the Android 14+ back animation.
 
@@ -52,7 +38,7 @@ Why: `enableOnBackInvokedCallback="false"` (`AndroidManifest.xml:24`) disables t
 - Regression-test on Android 14+: tab `backBehavior="history"` (`app/(app)/_layout.tsx:94`) and the call screen `animation: "fade"` (`app/(app)/_layout.tsx:162`), plus room/post screens where the tab bar hides.
 - Acceptance: system back animates and never traps the user or exits mid-call unexpectedly.
 
-## 4. Permissions: coarse location and foreground-service cleanup
+## 3. Permissions: coarse location and foreground-service cleanup
 
 Why: the beta APK declares more than it uses (`AndroidManifest.xml:2-8`).
 
@@ -61,7 +47,7 @@ Why: the beta APK declares more than it uses (`AndroidManifest.xml:2-8`).
 - Calls on Android are foreground-only by decision: iOS keeps the `audio` background mode, but the Android build declares no foreground service, so backgrounding the app mid-call may drop audio. Required device test before beta ships: join a call, background the app and turn the screen off; if audio must survive that, restore the mic FGS permission with `foregroundServiceType="microphone"` instead.
 - Acceptance: regenerated manifest requests `ACCESS_COARSE_LOCATION` only; FGS permissions either gone or typed; location matching still resolves a city label on device.
 
-## 5. Housekeeping (bundle with the above, ~15 min)
+## 4. Housekeeping (bundle with the above, ~15 min)
 
 - Version drift: `package.json:4` says `0.0.4`, `app.json:5` says `0.0.21` with `versionCode 21`. Sync `package.json` to `0.0.21` (or document `app.json` as source of truth).
 - Splash: `app.json:66` uses legacy `imageWidth: 200`; migrate to `resizeMode: "contain"` per the current `expo-splash-screen` plugin API.
@@ -69,10 +55,6 @@ Why: the beta APK declares more than it uses (`AndroidManifest.xml:2-8`).
 
 ## Remaining manual setup (not in code)
 
-- Sentry: create the project, then set repo variables `EXPO_PUBLIC_SENTRY_DSN_staging`
-  (and `_production` later) plus `SENTRY_ORG` / `SENTRY_PROJECT` and the
-  `SENTRY_AUTH_TOKEN` secret so CI uploads sourcemaps. Ship one staging APK
-  and confirm a test event resolves to a readable stack trace.
 - Device check on Android 14+: system back animates (tabs, room, call screen),
   location matching still resolves a city label (approximate location), and a
   reinstall does not restore a previous session.
