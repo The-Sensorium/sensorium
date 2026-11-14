@@ -200,6 +200,7 @@ export default function AppTabs() {
           strip of thread content visible underneath it. */}
       <Tabs.Screen name="posts/[postId]" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="settings/reports" options={{ tabBarItemStyle: HIDDEN_TAB }} />
+      <Tabs.Screen name="settings/muted" options={{ tabBarItemStyle: HIDDEN_TAB }} />
       <Tabs.Screen name="settings/profile" options={{ tabBarItemStyle: HIDDEN_TAB }} />
     </Tabs>
   )

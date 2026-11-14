@@ -136,7 +136,7 @@ export function StepLocal({
           accessibilityLabel="Remove location"
           style={{ marginTop: 8, minHeight: 44, justifyContent: 'center', opacity: locating ? 0.6 : 1 }}
         >
-          <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>Remove location</Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: t.destructive }}>Remove location</Text>
         </Pressable>
       ) : null}
 

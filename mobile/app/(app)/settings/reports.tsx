@@ -42,10 +42,7 @@ export default function MyReportsScreen() {
         </Text>
       </Pressable>
 
-      <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">My reports</Text>
-      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 16 }}>
-        Reports you submitted.
-      </Text>
+      <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface, marginBottom: 16 }} accessibilityRole="header">My reports</Text>
 
       {reports.isLoading ? (
         <LoadingView />

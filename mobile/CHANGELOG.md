@@ -34,9 +34,12 @@ release) for the release ritual.
 - Crash reporting has been removed, and the privacy policy no longer lists a crash-reporting provider.
 - Recent posts are no longer listed on Home. New posts now show as a count badge on the Posts tab, and opening Posts clears it.
 - The Posts tab now shows a new post count on each cluster chip, so you can see which cluster has something new. Opening a cluster clears only that cluster's count, and the Posts tab badge keeps counting the clusters you have not opened yet.
+- Mark all read now lives in the Notifications overflow menu alongside Clear all notifications, so the header stays uncluttered.
 - Delete and other destructive confirmations now use a centered dialog with stacked, full-width actions, so the decision reads clearly before you commit to it. The Delete option in post and message menus now uses the same neutral color as Edit.
 - The chat room member strip now shows as many whole faces as fit your screen, with a +N badge for the rest, instead of spilling onto a second row on narrower phones. The message box also uses a shorter hint that fits on one line.
 - Tidied icons, spacing, text sizes, and accent colors across screens so things line up and read consistently.
+- Removed subtitles that repeated the page title on Clusters, My reports, Introductions, and Settings, plus the first create-cluster step.
+- Muted members now live on their own page under Safety, with the note that muting is private shown there.
 
 ### Fixed
 
@@ -58,6 +61,13 @@ release) for the release ritual.
 - Fixed sent chat text reappearing in the message box when you tap it again right after sending, which could resend the same message twice.
 - Fixed the in-call mute, camera, and speaker buttons being nearly invisible in light mode.
 - Fixed the "mode unavailable" notice being hard to read in dark mode.
+- The New/Top sort control on Posts no longer runs off the right edge on narrower phones.
+- The Sign out confirmation now uses the same centered dialog as other confirmations, so its buttons keep a normal size instead of stretching into oversized pills.
+- The keyboard now closes when you move to another screen instead of staying open over the next page.
+- Fixed the bottom of typed text clipping in the login, signup, and other single-line fields on iPhone.
+- Fixed the iPhone meetup planner showing a stray date selector under the time options. Date and time pickers now open in a sheet, matching Android.
+- Destructive actions are now red in dark mode everywhere instead of pink, including delete account, clear notifications, remove meetup option, leave cluster, and remove location.
+- The keyboard now closes when you leave cluster chat instead of staying open on the next screen.
 
 ## [1.1.0]
 

@@ -15,6 +15,7 @@ import {
 import { hideNativeSplash } from '../src/components/AnimatedSplash'
 import { OfflineBanner } from '../src/components/OfflineBanner'
 import { AppProviders } from '../src/app-providers'
+import { useDismissKeyboardOnNavigate } from '../src/lib/use-dismiss-keyboard-on-navigate'
 import { colors, darkColors } from '../src/lib/theme-tokens'
 import { useResolvedScheme } from '../src/lib/theme-choice'
 import { handleAuthCallback } from '../src/lib/deep-links'
@@ -48,6 +49,7 @@ function useAuthDeepLinks() {
 
 function RootLayout() {
   useAuthDeepLinks()
+  useDismissKeyboardOnNavigate()
   const segments = useSegments()
   const [fontsLoaded, fontError] = useFonts({
     SpecialElite_400Regular,

@@ -143,9 +143,9 @@ export default function RestrictedScreen() {
                     setError(null)
                     setConfirming(true)
                   }}
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44 }}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.destructive, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44 }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.destructive }}>
                     Delete my account
                   </Text>
                 </Pressable>

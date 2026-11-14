@@ -266,8 +266,8 @@ export function PostCard({
               paddingHorizontal: 16,
               paddingVertical: 10,
               fontSize: 16,
-              lineHeight: 24,
               fontWeight: '600',
+              minHeight: 48,
               color: t.onSurface,
             }}
           />

@@ -31,7 +31,6 @@ import { useClusterChannel } from '../../../../../src/features/realtime'
 import { dateTimeFormatter } from '../../../../../src/components/room/format'
 import { radii } from '../../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../../src/lib/use-theme'
-import { useDismissKeyboardOnBlur } from '../../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Card, LoadingView, PrimaryButton, Screen } from '../../../../../src/components/ui'
 import { CreatedPendingGate } from '../../../../../src/components/created/CreatedPendingGate'
 import { useClusterBack } from '../../../../../src/lib/use-cluster-back'
@@ -82,7 +81,6 @@ function SignalDetailScreenContent() {
   const mutedSet = useMemo(() => mutedIds(myMutes.data), [myMutes.data])
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
   const [articleRevealed, setArticleRevealed] = useState(false)
-  useDismissKeyboardOnBlur()
 
   // Same-route param change reuses the component instance, so reset
   // transient reply state for the new signal instead of showing the old draft.

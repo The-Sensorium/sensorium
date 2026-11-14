@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { BellRing, ChevronDown, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
+import { BellOff, BellRing, ChevronDown, ChevronRight, Flag, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
 import { useProfile } from '../../src/lib/use-profile'
 import { goLogin } from '../../src/lib/auth-navigation'
 import { requireSupabase } from '../../src/lib/supabase'
 import { toErrorMessage } from '../../src/lib/error'
 import { errorHaptic, lightHaptic, successHaptic } from '../../src/lib/haptics'
 import { useMyClusters } from '../../src/features/matching'
-import { useDeleteAccount, useMyMutes } from '../../src/features/moderation'
+import { useDeleteAccount } from '../../src/features/moderation'
 import {
   PREF_LABELS,
   PREF_TOGGLES,
@@ -18,10 +18,7 @@ import {
   type PrefToggle,
 } from '../../src/features/notifications'
 import { Avatar } from '../../src/components/Avatar'
-import { MuteButton } from '../../src/components/MuteButton'
-import { Modal } from '../../src/components/Modal'
 import { ConfirmDialog } from '../../src/components/ConfirmDialog'
-import { PrimaryButton } from '../../src/components/ui'
 import { useThemeChoice, type ThemeChoice } from '../../src/lib/theme-choice'
 import { radii, shadowShape } from '../../src/lib/theme-tokens'
 import { useTheme } from '../../src/lib/use-theme'
@@ -86,10 +83,10 @@ export default function SettingsScreen() {
             <Pressable
               onPress={() => setDeleteOpen(true)}
               accessibilityRole="button"
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.destructive, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
-              <Trash2 size={16} color={t.error} strokeWidth={1.5} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.error }}>
+              <Trash2 size={16} color={t.destructive} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.destructive }}>
                 Delete account
               </Text>
             </Pressable>
@@ -204,7 +201,6 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 function SignOutConfirmModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const t = useTheme()
   const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -230,26 +226,17 @@ function SignOutConfirmModal({ open, onClose }: { open: boolean; onClose: () => 
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Sign out?">
-      <View style={{ marginTop: 12, gap: 16 }}>
-        <Text style={{ fontSize: 14, lineHeight: 22, color: t.onSurfaceVariant }}>
-          You&apos;ll need to sign back in to see your clusters and conversations.
-        </Text>
-        {error ? <Text style={{ fontSize: 14, color: t.error }}>{error}</Text> : null}
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <Pressable
-            onPress={onClose}
-            disabled={pending}
-            style={{ flex: 1, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, alignItems: 'center', opacity: pending ? 0.6 : 1 }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurfaceVariant }}>Cancel</Text>
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <PrimaryButton title="Sign out" loading={pending} onPress={() => void handleSignOut()} />
-          </View>
-        </View>
-      </View>
-    </Modal>
+    <ConfirmDialog
+      open={open}
+      onClose={onClose}
+      title="Sign out?"
+      body="You’ll need to sign back in to see your clusters and conversations."
+      error={error}
+      confirmTitle="Sign out"
+      confirmLoadingTitle="Signing out…"
+      loading={pending}
+      onConfirm={() => void handleSignOut()}
+    />
   )
 }
 
@@ -267,9 +254,6 @@ function AppearanceSection() {
     <Card>
       <View style={{ marginBottom: 4 }}>
         <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Appearance</Text>
-        <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
-          Light, dark, or follow your system.
-        </Text>
         <View style={{ marginTop: 16, flexDirection: 'row', gap: 8 }}>
           {THEME_OPTIONS.map((option) => {
             const active = choice === option.value
@@ -312,8 +296,6 @@ function AppearanceSection() {
 
 function SafetySection() {
   const t = useTheme()
-  const mutes = useMyMutes()
-  const muted = mutes.data ?? []
 
   return (
     <Card>
@@ -322,59 +304,30 @@ function SafetySection() {
           <ShieldCheck size={20} color={t.primary} strokeWidth={1.5} />
           <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Safety</Text>
         </View>
-        <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
-          Muted members are hidden for you only. They are never told.
-        </Text>
-        <Link
-          href="/(app)/settings/reports"
-          asChild
-        >
+      </View>
+      <View style={{ gap: 8 }}>
+        <Link href="/(app)/settings/muted" asChild>
           <Pressable
-            hitSlop={4}
-            style={{ marginTop: 12, borderWidth: 1, borderColor: t.primary, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48, justifyContent: 'center', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 20 }}
+            accessibilityRole="button"
+            accessibilityLabel="Muted members"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48 }}
           >
-            <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>My reports</Text>
+            <BellOff size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }}>Muted members</Text>
+            <ChevronRight size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </Pressable>
         </Link>
-        {(mutes.isLoading || mutes.isError || muted.length > 0) && (
-          <View style={{ marginTop: 16 }}>
-            {mutes.isLoading ? (
-              <LoadingView />
-            ) : mutes.isError ? (
-              <>
-                <Text style={{ fontSize: 14, lineHeight: 20, color: t.error }}>
-                  Couldn’t load your muted members. Please try again.
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Try loading muted members again"
-                  hitSlop={8}
-                  onPress={() => void mutes.refetch()}
-                  style={{ marginTop: 4, paddingVertical: 8, minHeight: 44, alignItems: 'flex-start', justifyContent: 'center' }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
-                    Try again
-                  </Text>
-                </Pressable>
-              </>
-            ) : (
-              muted.map((m) => (
-                <View
-                  key={m.muted_user_id}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.md, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 8 }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                    <Avatar name={m.display_name ?? 'Member'} src={m.avatar_url} thumbSrc={m.avatar_thumb_url ?? m.avatar_url} size={32} />
-                    <Text style={{ fontSize: 14, color: t.onSurface }} numberOfLines={1}>
-                      {m.display_name ?? 'Member'}
-                    </Text>
-                  </View>
-                  <MuteButton targetUserId={m.muted_user_id} targetName={m.display_name ?? 'Member'} />
-                </View>
-              ))
-            )}
-          </View>
-        )}
+        <Link href="/(app)/settings/reports" asChild>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="My reports"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 20, paddingVertical: 12, minHeight: 48 }}
+          >
+            <Flag size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+            <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: t.onSurface }}>My reports</Text>
+            <ChevronRight size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
+          </Pressable>
+        </Link>
       </View>
     </Card>
   )
@@ -444,9 +397,6 @@ function NotificationPreferences() {
             Notification preferences
           </Text>
         </View>
-        <Text style={{ marginTop: 4, fontSize: 14, color: t.onSurfaceVariant }}>
-          Tune what lands in your notification center, per cluster.
-        </Text>
 
         <View style={{ marginTop: 16 }}>
           <PushPermissionPrompt compact />

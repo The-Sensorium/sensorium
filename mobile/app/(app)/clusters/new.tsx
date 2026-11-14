@@ -27,7 +27,7 @@ const MAX_INVITEES = 7
 
 const TITLES = ['Name your cluster', 'Invite people', 'Review your cluster'] as const
 const SUBTITLES = [
-  'Give your cluster a name.',
+  '',
   'You can invite people you’ve previously shared a cluster with.',
   'You’ll send invitations to these people. The cluster becomes active once at least 3 members have joined.',
 ] as const
@@ -174,9 +174,11 @@ export default function NewClusterScreen() {
         Step {step + 1} of 3
       </Text>
       <StepProgress step={step} />
-      <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 16 }}>
-        {SUBTITLES[step]}
-      </Text>
+      {SUBTITLES[step] ? (
+        <Text style={{ fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, marginBottom: 16 }}>
+          {SUBTITLES[step]}
+        </Text>
+      ) : null}
       <ErrorText message={error || null} />
 
       {step === 0 ? (
