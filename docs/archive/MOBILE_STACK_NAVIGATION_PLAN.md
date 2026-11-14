@@ -198,10 +198,15 @@ still useful for same-route parameter changes and duplicate pushes.
 - Detail screens rely on the stack pop for Android hardware back. This also
   restores predictive-back animation on those screens.
 - Room keeps its `BackHandler` because it must close the composer panels and
-  keyboard first. Its handler still calls `goBackWithFallback`, which now pops
-  the stack. On iOS the edge swipe cannot be intercepted by `BackHandler`; the
-  blur cleanup already resets panels and keyboard, so a swipe that leaves with a
-  panel open is safe. If that feels wrong on device, the follow-up is
+  keyboard first. It returns false once both are closed, so the native stack
+  performs the pop and keeps its predictive-back animation; only the no-history
+  cold start falls back to Home. The keyboard branch checks
+  `Keyboard.isVisible()` rather than the input focus flag, because Android's IME
+  can consume the back to hide the keyboard without firing blur, which made one
+  extra press dismiss an already-hidden keyboard. On iOS the edge swipe cannot
+  be intercepted by `BackHandler`; the blur cleanup already resets panels and
+  keyboard, so a swipe that leaves with a panel open is safe. If that feels
+  wrong on device, the follow-up is
   `navigation.setOptions({ gestureEnabled: false })` while panels are open, not
   a timing workaround.
 - `clusters/new` keeps its step-back `BackHandler`, and adds
