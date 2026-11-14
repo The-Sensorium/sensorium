@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import Constants from 'expo-constants'
-import { Platform } from 'react-native'
+import Constants, { ExecutionEnvironment } from 'expo-constants'
+import { NativeModules, Platform } from 'react-native'
 import { shouldSuppressPushBanner, getSuppressedPushCluster } from './push-suppress'
 import { supabase } from './supabase'
 
@@ -13,9 +13,20 @@ type NotificationsModule = typeof import('expo-notifications')
 
 let cached: NotificationsModule | null | undefined
 
+// Remote push is unsupported in Expo Go, so the module is never imported there.
+// `Constants.appOwnership` is deprecated and null on SDK 58 even in Expo Go,
+// and `executionEnvironment` is StoreClient for both Expo Go and expo-dev-client
+// builds (where push does work), so the dev launcher module settles it.
+function isExpoGo(): boolean {
+  return (
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient &&
+    NativeModules.EXDevLauncher == null
+  )
+}
+
 async function notifications(): Promise<NotificationsModule | null> {
   if (cached !== undefined) return cached
-  if (Constants.appOwnership === 'expo') {
+  if (isExpoGo()) {
     cached = null
     return cached
   }

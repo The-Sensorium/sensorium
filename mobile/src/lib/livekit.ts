@@ -1,5 +1,4 @@
-import Constants from 'expo-constants'
-import { Platform } from 'react-native'
+import { NativeModules, Platform } from 'react-native'
 
 type LiveKitModule = {
   registerGlobals?: () => void
@@ -12,12 +11,15 @@ let available: boolean | null = null
 /**
  * LiveKit's WebRTC bindings are a native module: they are compiled into a
  * development build or production app but absent in Expo Go (and unsupported on
- * web). Detecting that up front lets the rest of the app run everywhere and the
- * call screen degrade to a message instead of crashing on import.
+ * web). The native module itself is the signal: `Constants.appOwnership` is
+ * null on SDK 58 even inside Expo Go, so the old check failed open and
+ * `@livekit/react-native-webrtc` threw at import. Probing the module also
+ * covers a build whose WebRTC plugin is missing, and lets the call screen
+ * degrade to a message instead of crashing on import.
  */
 export function isLiveKitAvailable(): boolean {
   if (available === null) {
-    available = Constants.appOwnership !== 'expo' && Platform.OS !== 'web'
+    available = Platform.OS !== 'web' && NativeModules.WebRTCModule != null
   }
   return available
 }

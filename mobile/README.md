@@ -160,7 +160,8 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
   joiner's profile; other governance pushes land on the votes tab. Meetup
   pushes (invite, confirmation, reminders) ride the `governance` channel and
   land on the meetups tab.
-- Push is a no-op in Expo Go and on web (guarded by `Constants.appOwnership`).
+- Push is a no-op in Expo Go and on web (Expo Go is detected by
+  `Constants.executionEnvironment` plus the absence of the dev launcher module).
 - Server delivery, preferences, and the outbox worker are documented in
   [`../docs/TECHNICAL.md`](../docs/TECHNICAL.md).
 
