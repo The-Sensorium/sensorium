@@ -43,7 +43,7 @@ export default function QueueScreen() {
     }, []),
   )
   const goBack = useClusterBack(
-    mode ? { pathname: '/mode/[modeId]', params: { modeId: mode } } : '/(app)/home',
+    mode ? { pathname: '/mode/[modeId]', params: { modeId: mode } } : '/home',
   )
 
   if (!mode) {
@@ -94,7 +94,7 @@ export default function QueueScreen() {
             Join it from Clusters to see the live waiting count.
           </Text>
           <View style={{ marginTop: 20 }}>
-            <Link href="/(app)/clusters" asChild>
+            <Link href="/clusters" asChild>
               <PrimaryButton title="Go to Clusters" onPress={() => {}} />
             </Link>
           </View>
@@ -115,7 +115,7 @@ export default function QueueScreen() {
     setLeaveError(null)
     try {
       await leave.mutateAsync(current.mode)
-      router.replace('/(app)/home')
+      router.dismissTo('/home')
     } catch (err) {
       setLeaveError(toErrorMessage(err, 'Could not leave the queue. Try again.'))
     }
@@ -190,7 +190,7 @@ export default function QueueScreen() {
       />
 
       <Text style={{ marginTop: 16, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant, paddingVertical: 12, minHeight: 44 }}>
-        Want to match differently? <Link href="/(app)/clusters" style={{ fontWeight: '600', color: t.primary }}>Explore other modes</Link>.
+        Want to match differently? <Link href="/clusters" style={{ fontWeight: '600', color: t.primary }}>Explore other modes</Link>.
       </Text>
     </Screen>
   )

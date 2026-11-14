@@ -4,27 +4,27 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Link, router, type Href } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, MailOpen, Moon, PartyPopper, Sparkles, Sun } from 'lucide-react-native'
-import { useAuth } from '../../src/auth-context'
-import { useProfile } from '../../src/lib/use-profile'
-import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
-import { useClusterMembers, useMyClusters, useLatestClusterFormed } from '../../src/features/matching'
-import { useCluster } from '../../src/features/introductions'
+import { useAuth } from '../../../src/auth-context'
+import { useProfile } from '../../../src/lib/use-profile'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
+import { useClusterMembers, useMyClusters, useLatestClusterFormed } from '../../../src/features/matching'
+import { useCluster } from '../../../src/features/introductions'
 import {
   useMyPendingInvitations,
   useAcceptInvitation,
   useDeclineInvitation,
-} from '../../src/features/votes'
-import { toErrorMessage } from '../../src/lib/error'
-import { homeListError, isProfileMissingError, resolveOnboardingState, shouldShowFresh } from '../../src/lib/home-gating'
-import { radii } from '../../src/lib/theme-tokens'
-import { useResolvedScheme } from '../../src/lib/theme-choice'
-import { STATUS_PALETTE } from '../../src/lib/status-palette'
-import { useTheme } from '../../src/lib/use-theme'
-import { Card, LoadingView, PrimaryButton, Screen } from '../../src/components/ui'
-import { Modal } from '../../src/components/Modal'
-import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
-import { MemberClusterCard } from '../../src/components/ClusterCard'
-import { useUnreadChatCounts } from '../../src/features/notifications'
+} from '../../../src/features/votes'
+import { toErrorMessage } from '../../../src/lib/error'
+import { homeListError, isProfileMissingError, resolveOnboardingState, shouldShowFresh } from '../../../src/lib/home-gating'
+import { radii } from '../../../src/lib/theme-tokens'
+import { useResolvedScheme } from '../../../src/lib/theme-choice'
+import { STATUS_PALETTE } from '../../../src/lib/status-palette'
+import { useTheme } from '../../../src/lib/use-theme'
+import { Card, LoadingView, PrimaryButton, Screen } from '../../../src/components/ui'
+import { Modal } from '../../../src/components/Modal'
+import { PushPermissionPrompt } from '../../../src/components/PushPermissionPrompt'
+import { MemberClusterCard } from '../../../src/components/ClusterCard'
+import { useUnreadChatCounts } from '../../../src/features/notifications'
 
 function daypart(): { label: string; Icon: typeof Sun } {
   const hour = new Date().getHours()
@@ -36,7 +36,7 @@ function daypart(): { label: string; Icon: typeof Sun } {
 
 const GET_STARTED_STEPS: { to: Href; title: string; desc: string }[] = [
   {
-    to: '/(app)/settings/profile',
+    to: '/settings/profile',
     title: 'Set up your profile',
     desc: 'Add a photo, bio and status so your cluster knows who you are.',
   },
@@ -46,7 +46,7 @@ const GET_STARTED_STEPS: { to: Href; title: string; desc: string }[] = [
     desc: 'Pick a radius and you’ll be matched with people nearby.',
   },
   {
-    to: '/(app)/clusters',
+    to: '/clusters',
     title: 'Join a queue',
     desc: 'Choose a matching mode. Clusters form when 8 people match.',
   },
@@ -410,7 +410,7 @@ export default function HomeScreen() {
               <Text style={{ fontSize: 20, lineHeight: 28, fontWeight: '600', color: t.onSurface }}>
                 Your clusters
               </Text>
-              <Link href="/(app)/clusters" asChild>
+              <Link href="/clusters" asChild>
                 <Pressable hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 12, minHeight: 44 }}>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: t.primary }}>
                     View all clusters

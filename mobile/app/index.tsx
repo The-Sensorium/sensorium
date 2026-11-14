@@ -13,5 +13,5 @@ export default function Index() {
     return <AnimatedSplash onFinish={() => setSplashDone(true)} />
   }
 
-  return <Redirect href={auth.state === 'signedIn' ? '/(app)/home' : '/(auth)/login'} />
+  return <Redirect href={auth.state === 'signedIn' ? '/home' : '/(auth)/login'} />
 }

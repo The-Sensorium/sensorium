@@ -3,27 +3,27 @@ import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'r
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { BellOff, BellRing, ChevronDown, ChevronRight, Flag, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
-import { useProfile } from '../../src/lib/use-profile'
-import { goLogin } from '../../src/lib/auth-navigation'
-import { requireSupabase } from '../../src/lib/supabase'
-import { toErrorMessage } from '../../src/lib/error'
-import { errorHaptic, lightHaptic, successHaptic } from '../../src/lib/haptics'
-import { useMyClusters } from '../../src/features/matching'
-import { useDeleteAccount } from '../../src/features/moderation'
+import { useProfile } from '../../../src/lib/use-profile'
+import { goLogin } from '../../../src/lib/auth-navigation'
+import { requireSupabase } from '../../../src/lib/supabase'
+import { toErrorMessage } from '../../../src/lib/error'
+import { errorHaptic, lightHaptic, successHaptic } from '../../../src/lib/haptics'
+import { useMyClusters } from '../../../src/features/matching'
+import { useDeleteAccount } from '../../../src/features/moderation'
 import {
   PREF_LABELS,
   PREF_TOGGLES,
   useNotificationPrefs,
   useUpsertNotificationPrefs,
   type PrefToggle,
-} from '../../src/features/notifications'
-import { Avatar } from '../../src/components/Avatar'
-import { ConfirmDialog } from '../../src/components/ConfirmDialog'
-import { useThemeChoice, type ThemeChoice } from '../../src/lib/theme-choice'
-import { radii, shadowShape } from '../../src/lib/theme-tokens'
-import { useTheme } from '../../src/lib/use-theme'
-import { Card, LoadingView, Screen } from '../../src/components/ui'
-import { PushPermissionPrompt } from '../../src/components/PushPermissionPrompt'
+} from '../../../src/features/notifications'
+import { Avatar } from '../../../src/components/Avatar'
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog'
+import { useThemeChoice, type ThemeChoice } from '../../../src/lib/theme-choice'
+import { radii, shadowShape } from '../../../src/lib/theme-tokens'
+import { useTheme } from '../../../src/lib/use-theme'
+import { Card, LoadingView, Screen } from '../../../src/components/ui'
+import { PushPermissionPrompt } from '../../../src/components/PushPermissionPrompt'
 
 export default function SettingsScreen() {
   const t = useTheme()
@@ -37,7 +37,7 @@ export default function SettingsScreen() {
         Settings
       </Text>
 
-      <Link href="/(app)/settings/profile" asChild>
+      <Link href="/settings/profile" asChild>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Edit profile"
@@ -147,10 +147,10 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
     if (confirm.trim() !== 'DELETE') return
     setError(null)
     try {
-      const { unregisterPushToken } = await import('../../src/lib/push')
+      const { unregisterPushToken } = await import('../../../src/lib/push')
       await unregisterPushToken().catch(() => {})
       await deleteAccount.mutateAsync()
-      const { teardownRealtime } = await import('../../src/lib/supabase')
+      const { teardownRealtime } = await import('../../../src/lib/supabase')
       await teardownRealtime()
       successHaptic()
       router.replace('/')
@@ -210,8 +210,8 @@ function SignOutConfirmModal({ open, onClose }: { open: boolean; onClose: () => 
     setPending(true)
     try {
       const supabase = requireSupabase()
-      const { unregisterPushToken } = await import('../../src/lib/push')
-      const { teardownRealtime } = await import('../../src/lib/supabase')
+      const { unregisterPushToken } = await import('../../../src/lib/push')
+      const { teardownRealtime } = await import('../../../src/lib/supabase')
       await unregisterPushToken()
       await supabase.auth.signOut()
       await teardownRealtime()
@@ -306,7 +306,7 @@ function SafetySection() {
         </View>
       </View>
       <View style={{ gap: 8 }}>
-        <Link href="/(app)/settings/muted" asChild>
+        <Link href="/settings/muted" asChild>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Muted members"
@@ -317,7 +317,7 @@ function SafetySection() {
             <ChevronRight size={16} color={t.onSurfaceVariant} strokeWidth={1.5} />
           </Pressable>
         </Link>
-        <Link href="/(app)/settings/reports" asChild>
+        <Link href="/settings/reports" asChild>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="My reports"

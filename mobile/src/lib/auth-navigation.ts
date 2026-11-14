@@ -17,7 +17,7 @@ export function resetTo(href: Href) {
 }
 
 export function goHome() {
-  resetTo('/(app)/home')
+  resetTo('/home')
 }
 
 export function goLogin() {

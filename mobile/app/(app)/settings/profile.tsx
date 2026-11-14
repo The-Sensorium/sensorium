@@ -29,7 +29,7 @@ export default function EditProfileScreen() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const updateProfile = useUpdateProfile()
-  const goBack = useClusterBack('/(app)/settings')
+  const goBack = useClusterBack('/settings')
 
   // Profile loads async; pick up the saved zone once it arrives so saving
   // another field never wipes a value the user never touched.

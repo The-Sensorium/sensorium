@@ -235,7 +235,7 @@ function RoomScreenContent() {
           setComposerInputFocused(false)
           return true
         }
-        goBackWithFallback('/(app)/home')
+        goBackWithFallback('/home')
         return true
       })
       return () => sub.remove()
@@ -1009,7 +1009,7 @@ function RoomScreenContent() {
   useFocusEffect(
     useCallback(() => {
       if (clusterMissing) {
-        router.replace('/(app)/home')
+        router.dismissTo('/home')
       }
     }, [clusterMissing]),
   )
@@ -1045,7 +1045,7 @@ function RoomScreenContent() {
             accessibilityRole="button"
             accessibilityLabel="Back to home"
             onPress={() => {
-              router.replace('/(app)/home')
+              router.dismissTo('/home')
             }}
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
@@ -1082,10 +1082,10 @@ function RoomScreenContent() {
             accessibilityRole="button"
             accessibilityLabel="Back to home"
             onPress={() => {
-              // Deterministic parent, not history: with backBehavior="history"
-              // a router.back() here could return to settings or signals if
-              // that was the previous stop. The room always exits home.
-              router.replace('/(app)/home')
+              // Deterministic parent, not history: the room always exits to
+              // Home even when it was opened from settings, signals, or a
+              // push tap.
+              router.dismissTo('/home')
             }}
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}

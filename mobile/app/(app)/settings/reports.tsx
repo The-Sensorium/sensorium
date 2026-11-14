@@ -25,7 +25,7 @@ function outcomeFor(status: string): string | null {
 export default function MyReportsScreen() {
   const t = useTheme()
   const reports = useMyReports()
-  const goBack = useClusterBack('/(app)/settings')
+  const goBack = useClusterBack('/settings')
 
   return (
     <Screen>

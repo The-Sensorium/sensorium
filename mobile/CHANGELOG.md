@@ -31,6 +31,8 @@ release) for the release ritual.
 
 ### Changed
 
+- Screens like a cluster room, post, profile, and settings now open on top of the tab bar, so the iPhone edge-swipe back gesture works and Android back uses the normal system animation.
+- Leaving the call screen with back or the edge swipe now leaves the call. It no longer keeps running in the background while you use the rest of the app.
 - Crash reporting has been removed, and the privacy policy no longer lists a crash-reporting provider.
 - Recent posts are no longer listed on Home. New posts now show as a count badge on the Posts tab, and opening Posts clears it.
 - The Posts tab now shows a new post count on each cluster chip, so you can see which cluster has something new. Opening a cluster clears only that cluster's count, and the Posts tab badge keeps counting the clusters you have not opened yet.

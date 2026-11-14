@@ -47,7 +47,7 @@ function ProfileScreenContent() {
   const goBack = useClusterBack(
     clusterId
       ? { pathname: '/cluster/[clusterId]/members', params: { clusterId } }
-      : '/(app)/home',
+      : '/home',
   )
   const members = useClusterMembers(clusterId || null)
   const introAnswers = useMemberIntroAnswers(clusterId || null, userId || null)
@@ -85,7 +85,7 @@ function ProfileScreenContent() {
 
   useEffect(() => {
     if (!clusterId) {
-      router.replace('/(app)/home')
+      router.dismissTo('/home')
     }
   }, [clusterId])
 
@@ -216,7 +216,7 @@ function ProfileScreenContent() {
             </View>
           </View>
         ) : (
-          <Link href="/(app)/settings/profile" asChild>
+          <Link href="/settings/profile" asChild>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Edit profile"
