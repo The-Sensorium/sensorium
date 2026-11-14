@@ -92,7 +92,8 @@
         {
           "android": {
             "enableMinifyInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-dontwarn livekit.org.jni_zero.**"
           }
         }
       ]
