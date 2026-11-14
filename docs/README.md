@@ -11,6 +11,7 @@ This index maps the Sensorium documentation and gives a recommended reading orde
 | [`PRD.md`](PRD.md) | Product requirements, screens, and user flows | When you want to understand or change product behavior. |
 | [`DESIGN.md`](DESIGN.md) | Visual design system and design tokens | When you build UI. No new colors, typefaces, or radii outside these tokens. |
 | [`TECHNICAL.md`](TECHNICAL.md) | Deep technical reference: stack, schema, migrations, storage, realtime, deployment | When you start working in the code or need implementation detail. |
+| [`LEGAL.md`](LEGAL.md) | Privacy and legal status: vendors in use, retention as implemented, store submission blockers, tracker gates | Before adding a vendor or SDK, changing retention, or preparing a store submission. |
 | [`CONTRIBUTING.md`](../CONTRIBUTING.md) | How to contribute: Git workflow, conventions, testing, pull requests | Before opening an issue or a pull request. |
 | [`mobile/README.md`](../mobile/README.md) | The Expo/React Native companion app | When working on the Android app. |
 | [`archive/`](archive/README.md) | Design records for shipped features (implementation plans) | Only when you want the *why* behind a specific feature. Not required reading. |
@@ -32,6 +33,7 @@ README.md          front door, links to everything
   └── PRD.md             what and why
   └── DESIGN.md          visual system and tokens
   └── TECHNICAL.md       deep technical reference
+  └── LEGAL.md           privacy and legal status, submission blockers
   └── CONTRIBUTING.md    contributor workflow and rules
   └── archive/           design records for shipped features (optional)
 ```
