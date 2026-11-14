@@ -127,6 +127,16 @@ export async function setClusterAppearance(
   appearanceCache.set(cacheKey(userId, clusterId), appearance)
 }
 
+/**
+ * The appearance card's preview and radio keep their pixel size, so a larger
+ * OS text size leaves the description with almost no width and every card
+ * turns into a wall of narrow lines. Past the platform default the card stacks
+ * the preview above the label instead of squeezing it.
+ */
+export function appearanceCardOrientation(fontScale: number): 'row' | 'stacked' {
+  return fontScale > 1.05 ? 'stacked' : 'row'
+}
+
 export interface ClusterBaseTokens {
   background: string
   surfaceContainer: string

@@ -14,6 +14,7 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 
 import {
   CLUSTER_APPEARANCE_IDS,
+  appearanceCardOrientation,
   clearClusterAppearanceCache,
   clusterAppearanceKey,
   getClusterAppearance,
@@ -154,5 +155,17 @@ describe('cluster-appearance', () => {
   it('carries stored Rose selections forward as Amber', async () => {
     store.set(clusterAppearanceKey('user-1', 'cluster-a'), 'rose')
     expect(await getClusterAppearance('user-1', 'cluster-a')).toBe('amber')
+  })
+
+  it('keeps the row layout at the platform default text size', () => {
+    expect(appearanceCardOrientation(1)).toBe('row')
+    expect(appearanceCardOrientation(0.94)).toBe('row')
+  })
+
+  it('stacks the card once the OS text size grows', () => {
+    expect(appearanceCardOrientation(1.12)).toBe('stacked')
+    expect(appearanceCardOrientation(1.24)).toBe('stacked')
+    expect(appearanceCardOrientation(1.36)).toBe('stacked')
+    expect(appearanceCardOrientation(2)).toBe('stacked')
   })
 })
