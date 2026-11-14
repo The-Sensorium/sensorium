@@ -1375,7 +1375,7 @@ function RoomScreenContent() {
                       {loadEarlier.isPending ? 'Loading earlier messages…' : 'Load earlier messages'}
                     </Text>
                   </Pressable>
-                ) : null
+                ) : undefined
               }
               renderItem={({ item: row }) => {
                 const { item, showDay, showAuthor } = row

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View, type ViewInstance } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
@@ -31,7 +31,7 @@ export default function PostDetailScreen() {
   const t = useTheme()
   const { postId = '', comment: deepLinkCommentId } = useLocalSearchParams<{ postId: string; comment?: string }>()
   const scrollRef = useRef<KeyboardAwareScrollViewRef>(null)
-  const contentRef = useRef<View>(null)
+  const contentRef = useRef<ViewInstance>(null)
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 

@@ -1,5 +1,5 @@
 import { useState, type RefObject } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View, type ViewInstance } from 'react-native'
 import { CornerUpLeft, Heart, MoreVertical } from 'lucide-react-native'
 import { useAuth } from '../auth-context'
 import { Avatar } from './Avatar'
@@ -40,7 +40,7 @@ export function CommentItem({
   likeCount?: number
   likedByMe?: boolean
   highlighted?: boolean
-  innerRef?: RefObject<View | null>
+  innerRef?: RefObject<ViewInstance | null>
 }) {
   const t = useTheme()
   const auth = useAuth()

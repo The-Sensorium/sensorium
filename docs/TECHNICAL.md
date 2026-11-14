@@ -40,7 +40,7 @@ The member-only Android app lives in `mobile/` and shares the web backend. See [
 
 | Layer | Choice |
 |---|---|
-| Runtime | Expo SDK 57, React Native 0.86, React 19 |
+| Runtime | Expo SDK 58, React Native 0.88, React 19 |
 | Router | `expo-router` (file-based, typed routes) |
 | Data fetching | TanStack Query 5 + Supabase Realtime |
 | Auth | Supabase Auth (email/password + Google OAuth via `expo-web-browser`) |
