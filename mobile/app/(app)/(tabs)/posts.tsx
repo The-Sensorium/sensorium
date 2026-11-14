@@ -3,31 +3,31 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } fr
 import { Newspaper } from 'lucide-react-native'
 import { useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useAuth } from '../../src/auth-context'
-import { useClusterMembers, useMyClusters } from '../../src/features/matching'
+import { useAuth } from '../../../src/auth-context'
+import { useClusterMembers, useMyClusters } from '../../../src/features/matching'
 import {
   useLoadEarlierPosts,
   POSTS_PAGE_SIZE,
   sortPostsForFeed,
   type PostSort,
-} from '../../src/features/posts'
+} from '../../../src/features/posts'
 import {
   useClusterPosts,
   useClusterPostComments,
   useClusterPostLikes,
   useTogglePostLike,
-} from '../../src/features/posts'
-import { useClusterChannel } from '../../src/features/realtime'
-import { useMarkPostsSeen, useNewPostsCounts } from '../../src/features/posts-badge'
-import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
-import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
-import { PostComposer } from '../../src/components/PostComposer'
-import { PostCard } from '../../src/components/PostCard'
-import { radii, spacing } from '../../src/lib/theme-tokens'
-import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, FeedSkeleton } from '../../src/components/ui'
-import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
-import { badgeLabel } from '../../src/lib/tab-badge'
+} from '../../../src/features/posts'
+import { useClusterChannel } from '../../../src/features/realtime'
+import { useMarkPostsSeen, useNewPostsCounts } from '../../../src/features/posts-badge'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../src/features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
+import { PostComposer } from '../../../src/components/PostComposer'
+import { PostCard } from '../../../src/components/PostCard'
+import { radii, spacing } from '../../../src/lib/theme-tokens'
+import { useTheme } from '../../../src/lib/use-theme'
+import { Card, ErrorText, FeedSkeleton } from '../../../src/components/ui'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
+import { badgeLabel } from '../../../src/lib/tab-badge'
 
 export default function PostsFeedScreen() {
   const t = useTheme()

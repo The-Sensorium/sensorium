@@ -23,7 +23,7 @@ export default function DiscoveryModeScreen() {
   const mine = useMyClusters()
   const myClusterIds = new Set((mine.data ?? []).map((m) => m.cluster.id))
   const queryClient = useQueryClient()
-  const goBack = useClusterBack('/(app)/clusters')
+  const goBack = useClusterBack('/clusters')
   const pull = usePullToRefresh([
     () => clusters.refetch(),
     () => mine.refetch(),

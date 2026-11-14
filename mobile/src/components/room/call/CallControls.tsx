@@ -72,10 +72,10 @@ export function CallControls({
     }
   }
 
-  // Hang-up must disconnect LiveKit explicitly: the call screen lives in a
-  // tab navigator that keeps routes mounted, so relying on unmount alone
-  // leaves the media connection alive in the background and remote clients
-  // keep a muted, no-network ghost tile until the server times it out.
+  // Hang-up must disconnect LiveKit explicitly: the call screen can unmount
+  // on top of a live session (back, swipe, state reset), and relying on the
+  // unmount cleanup alone can leave the media connection alive long enough
+  // for remote clients to keep a muted, no-network ghost tile.
   // Fire-and-forget so a stalled disconnect never blocks leaving; the parent
   // releases the server seat and unmounts the session regardless.
   function handleHangUp() {

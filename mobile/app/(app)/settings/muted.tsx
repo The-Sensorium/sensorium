@@ -11,7 +11,7 @@ import { Card, LoadingView, Screen } from '../../../src/components/ui'
 export default function MutedMembersScreen() {
   const t = useTheme()
   const mutes = useMyMutes()
-  const goBack = useClusterBack('/(app)/settings')
+  const goBack = useClusterBack('/settings')
   const muted = mutes.data ?? []
 
   return (

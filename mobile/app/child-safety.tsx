@@ -8,7 +8,7 @@ import { SAFETY_DOCUMENT } from '../src/legal/content'
 
 export default function ChildSafetyScreen() {
   const t = useTheme()
-  const goBack = useClusterBack('/(app)/settings')
+  const goBack = useClusterBack('/settings')
   return (
     <Screen>
       <Pressable

@@ -30,15 +30,15 @@ import {
   useMyNotifications,
   type MyNotification,
   type NotificationType,
-} from '../../src/features/notifications'
-import { mobileTarget } from '../../src/lib/notification-routing'
-import { useMyClusters } from '../../src/features/matching'
-import { toErrorMessage } from '../../src/lib/error'
-import { radii, shadowShape, spacing } from '../../src/lib/theme-tokens'
-import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, LoadingView } from '../../src/components/ui'
-import { ConfirmDialog } from '../../src/components/ConfirmDialog'
-import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
+} from '../../../src/features/notifications'
+import { isTabTarget, mobileTarget } from '../../../src/lib/notification-routing'
+import { useMyClusters } from '../../../src/features/matching'
+import { toErrorMessage } from '../../../src/lib/error'
+import { radii, shadowShape, spacing } from '../../../src/lib/theme-tokens'
+import { useTheme } from '../../../src/lib/use-theme'
+import { Card, ErrorText, LoadingView } from '../../../src/components/ui'
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
 import {
   Dimensions,
   FlatList,
@@ -136,7 +136,10 @@ export default function NotificationsScreen() {
       markRead.mutate(n.id)
     }
     const target = mobileTarget(n)
-    if (target) router.push(target)
+    if (target) {
+      if (isTabTarget(target)) router.navigate(target)
+      else router.push(target)
+    }
   }
 
   function openMenu(e: GestureResponderEvent) {

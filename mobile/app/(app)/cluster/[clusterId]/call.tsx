@@ -69,14 +69,11 @@ function CallScreenContent() {
   const rateLimited =
     tokenQuery.error instanceof Error && tokenQuery.error.message === CALL_TOKEN_RATE_LIMITED
 
-  // The call screen is a tab route, and React Navigation tabs have no REPLACE
-  // event: expo-router maps router.replace to JUMP_TO, which leaves this
-  // route in the history trail (expo/expo#36385), so a later Android back
-  // press resurfaces its PreJoin for a call that already ended. router.back
-  // instead pops the visit trail (backBehavior="history" on the tab
-  // navigator), removing this route, so Back can never return to it.
-  // Exits are one-shot: without the guard a repeated trigger (StrictMode
-  // double effects, a settling query) would pop an extra screen.
+  // The call screen is a stack route. back() pops it, so a later Back press
+  // or edge swipe can never resurface this route or its PreJoin for a call
+  // that already ended. Exits are one-shot: without the guard a repeated
+  // trigger (StrictMode double effects, a settling query) would pop an extra
+  // screen.
   const exitedRef = useRef(false)
   const exitToRoom = useCallback(() => {
     if (exitedRef.current) return
@@ -93,12 +90,12 @@ function CallScreenContent() {
   // Single exit path for leaving deliberately: hang-up control, LiveKit
   // disconnect, and expiry route through here. Leaving does not end the call
   // for others; the server ends it when the last participant leaves. The
-  // screen only navigates when focused: a disconnect that fires while
-  // minimized must release the seat without yanking navigation.
+  // screen only navigates when focused: a disconnect that fires while the
+  // app is backgrounded must release the seat without yanking navigation.
   // Resetting joined unmounts the LiveKit session immediately (mirroring
-  // web's setInCall(false)): tab routes stay mounted in the background, so
-  // waiting for the roster refetch to unmount would keep the media connection
-  // alive and remote clients would keep a muted, no-network ghost tile.
+  // web's setInCall(false)): waiting for the roster refetch to unmount would
+  // keep the media connection alive and remote clients would keep a muted,
+  // no-network ghost tile.
   const finishCall = useCallback(() => {
     if (leftRef.current) return
     leftRef.current = true
@@ -116,7 +113,7 @@ function CallScreenContent() {
   // If the seat disappears under a live session (left from the room banner,
   // or the call otherwise ended for us), drop local media instead of
   // publishing into a call we are no longer in. The render gate unmounts the
-  // session silently (correct while minimized); the effect below additionally
+  // session silently (correct while not focused); the effect below additionally
   // exits a focused screen to the room, where the banner Join path heals
   // membership. Only acts on settled roster data: while a roster refetch is
   // in flight the previous roster may briefly omit us (e.g. right after
@@ -157,9 +154,9 @@ function CallScreenContent() {
   }, [missingParams, exitToRoom])
 
   // Safety net: room.tsx inserts the participant row before navigating here, so
-  // if the screen unmounts without finishCall, release the seat. Blur alone
-  // minimizes and must not release: navigating away keeps the LiveKit
-  // connection and the seat, and the room banner returns to the live call.
+  // if the screen unmounts without finishCall (back or swipe), release the
+  // seat. Blur alone must not release: an overlay or a backgrounded app keeps
+  // the LiveKit connection and the seat.
   // Deferred a tick so a Fast Refresh remount doesn't spuriously leave.
   const mountedRef = useRef(false)
   const latestRef = useRef({ leaveCall, callId })
@@ -167,10 +164,8 @@ function CallScreenContent() {
     latestRef.current = { leaveCall, callId }
   }, [leaveCall, callId])
 
-  // The cluster tabs keep every screen mounted, so this screen is reused across
-  // calls. Back and tab switches minimize: the LiveKit connection and the
-  // server seat stay alive, and the room banner returns to the live call, so
-  // only a fresh call (or a return after an explicit hang-up) resets to
+  // A pushed call screen is normally fresh, but a new call id can reuse the
+  // route, so a fresh call (or a return after an explicit hang-up) resets to
   // PreJoin. A route that survives for an already-ended call (deep link)
   // still exits straight to the room instead of offering a stale join.
   // The single-call cache (useCall) is never invalidated, so a cached
@@ -218,8 +213,8 @@ function CallScreenContent() {
       return () => {
         cancelled = true
         focusedRef.current = false
-        // Blur minimizes: media and seat stay alive. Release happens on
-        // hang-up, expiry, unmount, or a dead call, never on blur.
+        // Blur keeps the media and seat alive. Release happens on hang-up,
+        // expiry, unmount, or a dead call, never on blur.
       }
     }, [callId, exitToRoom]),
   )

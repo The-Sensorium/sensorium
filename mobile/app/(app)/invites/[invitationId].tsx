@@ -25,7 +25,7 @@ export default function InviteDetailScreen() {
   const accept = useAcceptInvitation()
   const decline = useDeclineInvitation()
   const [confirmingDecline, setConfirmingDecline] = useState(false)
-  const goBack = useClusterBack('/(app)/home')
+  const goBack = useClusterBack('/home')
 
   const info = detail.data
   const members = ((info?.members ?? []) as DetailMember[]).filter((m) => m && m.id)
@@ -52,7 +52,7 @@ export default function InviteDetailScreen() {
     try {
       await decline.mutateAsync(invitationId)
       setConfirmingDecline(false)
-      router.replace('/(app)/home')
+      router.dismissTo('/home')
     } catch {
       // Surfaced via decline.error inside the dialog; stay open to retry.
     }

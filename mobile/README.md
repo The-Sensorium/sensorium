@@ -48,8 +48,8 @@ mobile/
 ├─ app/                    # expo-router routes (file-based)
 │  ├─ (auth)/              # login, signup, verify-email, forgot/reset password
 │  ├─ (onboarding)/        # single index.tsx, 5 steps: profile, customization, modes, local, review
-│  ├─ (app)/               # member shell
-│  │  ├─ home.tsx, posts.tsx, clusters.tsx, notifications.tsx, settings.tsx
+│  ├─ (app)/               # member shell: native Stack above the tabs
+│  │  ├─ (tabs)/           # home, posts, notifications, clusters, settings
 │  │  ├─ cluster-created.tsx, mode/, posts/, profile/, queue/, settings/
 │  │  └─ cluster/[clusterId]/   # room, members, meetups (+ meetups/new), signals (+ signals/[signalId]), votes, settings, call, introductions, waiting
 │  ├─ appeal.tsx           # restricted-account appeal
@@ -66,6 +66,12 @@ mobile/
 ├─ app.json                # Expo config: permissions, plugins, deep-link scheme
 └─ eas.json                # EAS build profiles
 ```
+
+Every non-tab route under `(app)/` is a stack push above the tab group. The
+native stack supplies the iOS edge-swipe back and the Android back pop, and
+pushed detail screens unmount on back. Both layouts anchor their deep-link
+state (`(app)` to `(tabs)`, `(tabs)` to `home`), so a push tap or deep link to a
+detail still has Home underneath it.
 
 ## Setup
 
@@ -157,9 +163,9 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
   listener. Push-to-route mapping lives in
   [`src/lib/notification-routing.ts`](src/lib/notification-routing.ts).
   A `replacement` push carrying `newMemberId` (new-member-joined) opens the
-  joiner's profile; other governance pushes land on the votes tab. Meetup
+  joiner's profile; other governance pushes open the votes screen. Meetup
   pushes (invite, confirmation, reminders) ride the `governance` channel and
-  land on the meetups tab.
+  open the meetups screen.
 - Push is a no-op in Expo Go and on web (Expo Go is detected by
   `Constants.executionEnvironment` plus the absence of the dev launcher module).
 - Server delivery, preferences, and the outbox worker are documented in
@@ -180,8 +186,9 @@ Generated from web:
 Everything else is hand-written for mobile. Notable exceptions to keep an eye on:
 
 - `src/features/realtime.ts` is **pinned** (the mobile copy uses a ref-counted
-  `useClusterChannel` for tab-kept-mounted screens). If the web copy changes,
-  reconcile it by hand.
+  `useClusterChannel` for screens that stay mounted while unfocused: tabs and
+  stack screens with another screen pushed above them). If the web copy
+  changes, reconcile it by hand.
 - `src/features/voice-notes.ts` is a mobile-maintained fork (the send hook takes
   a file uri; Blob is unusable with Supabase Storage on React Native) and
   `scripts/sync-db-types.mjs` swaps the web Blob-based `uploadVoiceNote` for

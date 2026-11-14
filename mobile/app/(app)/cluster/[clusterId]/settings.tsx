@@ -56,7 +56,7 @@ function ClusterSettingsScreenContent() {
       await leave.mutateAsync(clusterId)
       successHaptic()
       setConfirming(false)
-      router.replace('/(app)/home')
+      router.dismissTo('/home')
     } catch (err) {
       errorHaptic()
       setLeaveError(toErrorMessage(err, 'Could not leave the cluster. Please try again.'))

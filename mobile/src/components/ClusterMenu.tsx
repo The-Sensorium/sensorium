@@ -83,13 +83,14 @@ export function ClusterMenu({ clusterId, active }: { clusterId: string; active: 
               return (
                 <Pressable
                   key={s.key}
-                  // Close the menu before navigating: with retained tab
-                  // routes a navigation could complete while open=true
-                  // survived on the next screen. Tapping the active section
-                  // just closes the menu.
+                  // Close the menu before navigating. navigate rather than
+                  // push: sections are stack screens now, and hopping between
+                  // them should reuse an already-open section instead of
+                  // stacking room -> members -> signals -> votes. Tapping the
+                  // active section just closes the menu.
                   onPress={() => {
                     setOpen(false)
-                    if (!isActive) router.push(s.href(clusterId))
+                    if (!isActive) router.navigate(s.href(clusterId))
                   }}
                     style={{
                       flexDirection: 'row',

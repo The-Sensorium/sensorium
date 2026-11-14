@@ -75,7 +75,6 @@ import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ConfirmDialog } from '../../../../src/components/ConfirmDialog'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
-import { goBackWithFallback } from '../../../../src/lib/use-cluster-back'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface, useClusterOnAccent, useClusterAccentText } from '../../../../src/lib/cluster-theme'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -220,9 +219,13 @@ function RoomScreenContent() {
       }
     }, [clusterId]),
   )
-  // Hardware Back closes open composer panels first, then walks the visit
-  // trail so system back mirrors in-app back instead of forcing home. Only a
-  // cold start with no history falls back to home.
+  // Hardware Back closes open composer panels first, then dismisses the
+  // keyboard, then lets the native stack perform the pop. Check actual
+  // keyboard visibility rather than input focus: Android's IME can consume
+  // the back itself to hide the keyboard without blurring the input, so
+  // composerInputFocused stays true and one extra press would dismiss an
+  // already-hidden keyboard. Returning false on the final path keeps the
+  // stack's own back handling and predictive-back animation.
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -230,17 +233,27 @@ function RoomScreenContent() {
           closeComposerPanels()
           return true
         }
-        if (composerInputFocused) {
+        if (Keyboard.isVisible()) {
           Keyboard.dismiss()
           setComposerInputFocused(false)
           return true
         }
-        goBackWithFallback('/(app)/home')
-        return true
+        if (!router.canGoBack()) {
+          router.dismissTo('/home')
+          return true
+        }
+        return false
       })
       return () => sub.remove()
-    }, [panelsOpen, composerInputFocused, closeComposerPanels]),
+    }, [panelsOpen, closeComposerPanels]),
   )
+  // Keep the focus flag honest when the keyboard hides by any route (IME back
+  // gesture, app backgrounding, panel dismissal), so the sticky composer
+  // disables instead of trusting a blur that may never arrive.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidHide', () => setComposerInputFocused(false))
+    return () => sub.remove()
+  }, [])
   const cluster = useCluster(authedClusterId)
   const messages = useClusterMessages(authedClusterId)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
@@ -1009,7 +1022,7 @@ function RoomScreenContent() {
   useFocusEffect(
     useCallback(() => {
       if (clusterMissing) {
-        router.replace('/(app)/home')
+        router.dismissTo('/home')
       }
     }, [clusterMissing]),
   )
@@ -1045,7 +1058,7 @@ function RoomScreenContent() {
             accessibilityRole="button"
             accessibilityLabel="Back to home"
             onPress={() => {
-              router.replace('/(app)/home')
+              router.dismissTo('/home')
             }}
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
@@ -1082,10 +1095,10 @@ function RoomScreenContent() {
             accessibilityRole="button"
             accessibilityLabel="Back to home"
             onPress={() => {
-              // Deterministic parent, not history: with backBehavior="history"
-              // a router.back() here could return to settings or signals if
-              // that was the previous stop. The room always exits home.
-              router.replace('/(app)/home')
+              // Deterministic parent, not history: the room always exits to
+              // Home even when it was opened from settings, signals, or a
+              // push tap.
+              router.dismissTo('/home')
             }}
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}

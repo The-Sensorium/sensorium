@@ -23,7 +23,7 @@ describe('goHome', () => {
     mockRouter.canDismiss.mockReturnValue(true)
     goHome()
     expect(mockRouter.dismissAll).toHaveBeenCalledOnce()
-    expect(mockRouter.replace).toHaveBeenCalledWith('/(app)/home')
+    expect(mockRouter.replace).toHaveBeenCalledWith('/home')
   })
 
   it('replaces with home when there is nothing to dismiss', () => {
@@ -31,7 +31,7 @@ describe('goHome', () => {
     mockRouter.canDismiss.mockReturnValue(false)
     goHome()
     expect(mockRouter.dismissAll).not.toHaveBeenCalled()
-    expect(mockRouter.replace).toHaveBeenCalledWith('/(app)/home')
+    expect(mockRouter.replace).toHaveBeenCalledWith('/home')
   })
 
   it('skips dismiss on a single-screen stack even when dismiss reports available', () => {
@@ -39,7 +39,7 @@ describe('goHome', () => {
     mockRouter.canDismiss.mockReturnValue(true)
     goHome()
     expect(mockRouter.dismissAll).not.toHaveBeenCalled()
-    expect(mockRouter.replace).toHaveBeenCalledWith('/(app)/home')
+    expect(mockRouter.replace).toHaveBeenCalledWith('/home')
   })
 
   it('still replaces with home when dismiss throws', () => {
@@ -49,7 +49,7 @@ describe('goHome', () => {
       throw new Error('nothing to dismiss')
     })
     goHome()
-    expect(mockRouter.replace).toHaveBeenCalledWith('/(app)/home')
+    expect(mockRouter.replace).toHaveBeenCalledWith('/home')
   })
 })
 

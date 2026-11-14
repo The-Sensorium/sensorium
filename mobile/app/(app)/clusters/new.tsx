@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BackHandler, Pressable, Text, TextInput, View } from 'react-native'
-import { router, useFocusEffect } from 'expo-router'
+import { router, useFocusEffect, useNavigation } from 'expo-router'
 import { ArrowLeft, Check, Search, Users } from 'lucide-react-native'
 import { useProfile } from '../../../src/lib/use-profile'
 import { Avatar } from '../../../src/components/Avatar'
@@ -92,7 +92,13 @@ export default function NewClusterScreen() {
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   // Step wizards own their trail: system back steps back first, and only
-  // leaves the form when on the first step.
+  // leaves the form when on the first step. The iOS edge swipe cannot be
+  // intercepted, so disable it above the first step instead of silently
+  // discarding a half-filled form.
+  const navigation = useNavigation()
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: step === 0 })
+  }, [navigation, step])
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -100,7 +106,7 @@ export default function NewClusterScreen() {
           setStep((s) => Math.max(s - 1, 0))
           return true
         }
-        goBackWithFallback('/(app)/clusters')
+        goBackWithFallback('/clusters')
         return true
       })
       return () => sub.remove()
@@ -157,7 +163,7 @@ export default function NewClusterScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => (step === 0 ? goBackWithFallback('/(app)/clusters') : setStep((s) => Math.max(s - 1, 0)))}
+          onPress={() => (step === 0 ? goBackWithFallback('/clusters') : setStep((s) => Math.max(s - 1, 0)))}
           hitSlop={8}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
         >

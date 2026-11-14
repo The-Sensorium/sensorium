@@ -70,7 +70,7 @@ export default function PostDetailScreen() {
   const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
-  const goBack = useClusterBack('/(app)/posts')
+  const goBack = useClusterBack('/posts')
 
   // The footer height is measured into a shared value for the chat scroll
   // view. Reset it on post change so the next post does not inherit the
