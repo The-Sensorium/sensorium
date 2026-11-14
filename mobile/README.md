@@ -235,6 +235,13 @@ npm test
   measurement only). It only produces the AAB artifact; Play Console upload
   is always manual. This is the default path for Play releases so the
   limited EAS quota is spared.
+- **R8 and WebRTC**: `app.json` adds `-dontwarn livekit.org.jni_zero.**`
+  through `expo-build-properties`. WebRTC 150 ships the prefixed `jni_zero`
+  bridge but not the generated `*Jni` registration classes, so R8 stops the
+  release minify on a dangling reference that nothing calls. This is the same
+  rule LiveKit is adding to the library's own consumer rules
+  (`livekit/react-native-webrtc#116`); drop it from `app.json` once a release
+  with that change is installed.
 - The app points at the **staging** Supabase project for preview builds and the
   **production** project for release builds, matching the web environments.
 
