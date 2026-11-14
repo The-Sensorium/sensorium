@@ -199,13 +199,11 @@ still useful for same-route parameter changes and duplicate pushes.
   restores predictive-back animation on those screens.
 - Room keeps its `BackHandler` because it must close the composer panels and
   keyboard first. Its handler still calls `goBackWithFallback`, which now pops
-  the stack. On iOS the edge swipe cannot be intercepted by `BackHandler`, so
-  the room uses `usePreventRemove(panelsOpen || composerInputFocused, ...)`:
-  the native gesture is cancelled, the panel or keyboard closes, and the next
-  swipe leaves. Explicit navigation (the Home button, which uses `dismissTo`
-  and therefore a POP_TO action) still leaves immediately. This is the
-  documented React Navigation removal-prevention pattern, not a gesture
-  workaround.
+  the stack. On iOS the edge swipe cannot be intercepted by `BackHandler`; the
+  blur cleanup already resets panels and keyboard, so a swipe that leaves with a
+  panel open is safe. If that feels wrong on device, the follow-up is
+  `navigation.setOptions({ gestureEnabled: false })` while panels are open, not
+  a timing workaround.
 - `clusters/new` keeps its step-back `BackHandler`, and adds
   `navigation.setOptions({ gestureEnabled: step === 0 })` so the iOS swipe does
   not discard a partially filled multi-step form from steps 2 and 3.
@@ -319,9 +317,7 @@ this out and Windows cannot exercise the iOS gesture:
 6. Wizard: `clusters/new` step 2 and 3, iOS swipe does nothing, Android back
    goes one step, Back button goes one step, step 1 exits to Clusters.
 7. Room: open GIF/emoji/menu and keyboard, Android back closes them first, then
-   pops to the previous screen. iOS swipe with the keyboard or a panel open
-   closes it and stays; the next swipe pops. The Home button still leaves in
-   one tap.
+   pops to the previous screen. iOS swipe with a panel open leaves cleanly.
 8. Auth: sign in, back from Home never returns to login; sign out from Settings
    and from inside a detail screen returns to login, and back never returns to
    Home or to the old detail.

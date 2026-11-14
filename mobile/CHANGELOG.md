@@ -45,7 +45,6 @@ release) for the release ritual.
 
 ### Fixed
 
-- In cluster chat on iPhone, swiping back with the keyboard open now closes the keyboard first, like Android, instead of leaving the room.
 - The discard button and the preview screen's delete button for voice notes are now red in dark mode instead of pink, matching other delete actions.
 - The member strip at the top of cluster chat no longer clips the left edge of your own ringed avatar.
 - Picking a mention suggestion now replaces the letters you typed instead of leaving the last one behind, in chat and post comments.

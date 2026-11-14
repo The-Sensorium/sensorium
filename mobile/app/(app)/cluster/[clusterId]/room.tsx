@@ -18,7 +18,7 @@ import {
 } from 'react-native-keyboard-controller'
 import { useSharedValue, withTiming } from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { router, useFocusEffect, useLocalSearchParams, usePreventRemove } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowLeft, ChevronRight, Phone, Users } from 'lucide-react-native'
@@ -241,16 +241,6 @@ function RoomScreenContent() {
       return () => sub.remove()
     }, [panelsOpen, composerInputFocused, closeComposerPanels]),
   )
-  // iOS cannot route the native edge swipe through BackHandler, so prevent the
-  // removal while the keyboard or a composer panel is open and close that
-  // first. The next swipe leaves. Explicit navigation (the Home button uses
-  // dismissTo, a POP_TO) still leaves immediately.
-  usePreventRemove(panelsOpen || composerInputFocused, ({ data, repeat }) => {
-    closeComposerPanels()
-    Keyboard.dismiss()
-    setComposerInputFocused(false)
-    if (data.action.type === 'POP_TO') repeat()
-  })
   const cluster = useCluster(authedClusterId)
   const messages = useClusterMessages(authedClusterId)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
