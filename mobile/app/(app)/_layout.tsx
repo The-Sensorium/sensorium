@@ -15,6 +15,12 @@ import { pushDataToHref, type PushData } from '../../src/lib/notification-routin
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// Detail screens (room, post, profile...) are tab routes here, not stack pushes.
+// expo-router 58 made `href: null` mark a route unreachable: focusing one
+// redirects to the initial tab, which bounced every detail screen to Home.
+// Hiding the tab item instead keeps the route navigable with the same UI.
+const HIDDEN_TAB = { display: 'none' } as const
+
 function sanitizePushData(data: PushData): PushData {
   const out: PushData = {}
   if (typeof data.kind === 'string' && data.kind.length <= 64) out.kind = data.kind
@@ -157,13 +163,13 @@ export default function AppTabs() {
           tabBarIcon: ({ color, size }) => <Settings size={size} color={color} strokeWidth={1.5} />,
         }}
       />
-      <Tabs.Screen name="mode/[modeId]" options={{ href: null }} />
-      <Tabs.Screen name="queue/[queueId]" options={{ href: null }} />
-      <Tabs.Screen name="clusters/new" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="invites/[invitationId]" options={{ href: null }} />
-      <Tabs.Screen name="cluster-created" options={{ href: null }} />
-      <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="mode/[modeId]" options={{ tabBarItemStyle: HIDDEN_TAB }} />
+      <Tabs.Screen name="queue/[queueId]" options={{ tabBarItemStyle: HIDDEN_TAB }} />
+      <Tabs.Screen name="clusters/new" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="invites/[invitationId]" options={{ tabBarItemStyle: HIDDEN_TAB }} />
+      <Tabs.Screen name="cluster-created" options={{ tabBarItemStyle: HIDDEN_TAB }} />
+      <Tabs.Screen name="cluster/[clusterId]/introductions" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/waiting" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
       {/* No tab bar anywhere inside a cluster (room, members, signals,
           votes, settings, call), same as post detail: a focused space with
           its own back navigation and keyboard-glued composers. A tab bar
@@ -171,30 +177,30 @@ export default function AppTabs() {
           translate and leave a floating strip on edge-to-edge Android.
           No custom animation: the default tab switch avoids a
           semi-transparent crossfade that flashes bordered cards. */}
-      <Tabs.Screen name="cluster/[clusterId]/room" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/room" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen
         name="cluster/[clusterId]/call"
-        options={{ href: null, animation: 'fade', tabBarStyle: { display: 'none' } }}
+        options={{ tabBarItemStyle: HIDDEN_TAB, animation: 'fade', tabBarStyle: { display: 'none' } }}
       />
-      <Tabs.Screen name="cluster/[clusterId]/members" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/appearance" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/signals" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/votes" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/meetups" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/meetups/new" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="cluster/[clusterId]/settings" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/members" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/appearance" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/signals" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/signals/[signalId]" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/votes" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/meetups" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/meetups/new" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="cluster/[clusterId]/settings" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
       {/* Profile always opens with a cluster param (and redirects home
           without one), so it hides the tab bar like every cluster screen. */}
-      <Tabs.Screen name="profile/[userId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="profile/[userId]" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
       {/* No tab bar on post detail (Instagram pattern): the sticky comment
           composer must sit directly above the keyboard. With a tab bar between
           the list and the screen bottom, the keyboard-glued footer would float
           exactly tab-bar-height too high on edge-to-edge Android, leaving a
           strip of thread content visible underneath it. */}
-      <Tabs.Screen name="posts/[postId]" options={{ href: null, tabBarStyle: { display: 'none' } }} />
-      <Tabs.Screen name="settings/reports" options={{ href: null }} />
-      <Tabs.Screen name="settings/profile" options={{ href: null }} />
+      <Tabs.Screen name="posts/[postId]" options={{ tabBarItemStyle: HIDDEN_TAB, tabBarStyle: { display: 'none' } }} />
+      <Tabs.Screen name="settings/reports" options={{ tabBarItemStyle: HIDDEN_TAB }} />
+      <Tabs.Screen name="settings/profile" options={{ tabBarItemStyle: HIDDEN_TAB }} />
     </Tabs>
   )
 }
