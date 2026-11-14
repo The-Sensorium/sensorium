@@ -23,7 +23,6 @@ import type { ReplyTarget } from '../../../src/components/comment-helpers'
 import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../../src/features/moderation'
 import { useTheme } from '../../../src/lib/use-theme'
-import { useDismissKeyboardOnBlur } from '../../../src/lib/use-dismiss-keyboard-on-blur'
 import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
 
@@ -71,7 +70,6 @@ export default function PostDetailScreen() {
   const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
-  useDismissKeyboardOnBlur()
   const goBack = useClusterBack('/(app)/posts')
 
   // The footer height is measured into a shared value for the chat scroll

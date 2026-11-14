@@ -108,7 +108,7 @@ function ClusterSettingsScreenContent() {
             <View
               style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.errorContainer, alignItems: 'center', justifyContent: 'center' }}
             >
-              <LogOut size={16} color={t.error} strokeWidth={1.5} />
+              <LogOut size={16} color={t.destructive} strokeWidth={1.5} />
             </View>
             <Text style={{ fontSize: 18, fontWeight: '600', color: t.onSurface }}>
               Leave cluster
@@ -124,10 +124,10 @@ function ClusterSettingsScreenContent() {
               onPress={() => setConfirming(true)}
               accessibilityRole="button"
               accessibilityLabel="Leave cluster"
-              style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.error, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
+              style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.destructive, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
-              <LogOut size={16} color={t.error} strokeWidth={1.5} />
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.error }}>
+              <LogOut size={16} color={t.destructive} strokeWidth={1.5} />
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.destructive }}>
                 Leave cluster
               </Text>
             </Pressable>

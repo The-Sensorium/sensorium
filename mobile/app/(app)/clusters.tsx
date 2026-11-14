@@ -34,9 +34,6 @@ export default function ClustersScreen() {
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Clusters</Text>
-      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-        Browse a matching mode below to meet more people.
-      </Text>
       {(clusters.isLoading || clusters.isError || (clusters.data ?? []).length > 0) && (
         <>
           <Pressable

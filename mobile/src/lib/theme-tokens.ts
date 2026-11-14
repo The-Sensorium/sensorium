@@ -26,8 +26,9 @@ export const colors = {
   onError: '#ffffff',
   errorContainer: '#ffdad6',
   like: '#ba1a1a',
-  // Destructive action tone. Same red as `like` so delete text and icons stay
-  // red on dark surfaces, where the `error` tone reads as pink.
+  // Destructive action tone for delete/remove/leave controls and their icons.
+  // Same red as `like` so destructive text stays red on dark surfaces, where
+  // the `error` role reads as pink.
   destructive: '#ba1a1a',
   chatOutgoing: '#B5573A',
   background: '#fff8f6',
@@ -63,8 +64,8 @@ export const darkColors: Record<keyof typeof colors, string> = {
   onError: '#690005',
   errorContainer: '#93000a',
   like: '#e5484d',
-  // Lighter than `like` so delete text and icons clear AA (4.5:1) on
-  // `surfaceHigh` while still reading red rather than the pink `error` tone.
+  // Lighter than `like` so destructive controls clear AA (4.5:1) on
+  // `surfaceHigh` while still reading red rather than the pink `error` role.
   destructive: '#ff5c5c',
   // Mobile-only dark outgoing tone; web uses #3F64C4 (see docs/DESIGN.md).
   chatOutgoing: '#3568C9',

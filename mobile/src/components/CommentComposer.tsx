@@ -397,7 +397,7 @@ export function CommentComposer({
             multiline
             // No numberOfLines: on Android it pins the field to an exact line
             // count, which would stop the composer growing with wrapped text.
-            placeholder={isEditing ? 'Edit comment…' : 'Add a comment...'}
+            placeholder={isEditing ? 'Edit comment…' : 'Comment...'}
             placeholderTextColor={t.onSurfaceVariant}
             accessibilityLabel={isEditing ? 'Edit comment' : 'Add a comment'}
             style={{

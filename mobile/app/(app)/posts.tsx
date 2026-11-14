@@ -186,14 +186,9 @@ export default function PostsFeedScreen() {
         }}
         ListHeaderComponent={
           <>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <View>
-                <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Posts</Text>
-                <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
-                  Share something with your cluster.
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, padding: 4, gap: 4 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, rowGap: 12, marginBottom: 16 }}>
+              <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Posts</Text>
+              <View style={{ flexDirection: 'row', marginLeft: 'auto', borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, padding: 4, gap: 4 }}>
                 {(['new', 'top'] as const).map((option) => {
                   const active = sort === option
                   return (

@@ -60,7 +60,6 @@ import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/Muted
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, lightHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { useClusterChannel } from '../../../../src/features/realtime'
-import { useDismissKeyboardOnBlur } from '../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
 import { replyPreviewForMessage, useSendVoiceNote } from '../../../../src/features/voice-notes'
 import type { VoiceRecording } from '../../../../src/components/room/VoiceRecorder'
@@ -204,12 +203,15 @@ function RoomScreenContent() {
   const roomBg = themed ? t.background : t.surfaceLowest
 
   useClusterChannel(authedClusterId)
-  useDismissKeyboardOnBlur()
   useFocusEffect(
     useCallback(() => {
       setSuppressedPushCluster(clusterId || null)
       if (clusterId) void clearClusterPushNotifications(clusterId)
       return () => {
+        // The sticky composer and keyboard gesture area can keep focus while
+        // the tab stays mounted, so resign the keyboard as soon as the room
+        // blurs instead of relying on the route-change dismissal alone.
+        Keyboard.dismiss()
         // Never hand the next focus a lingering panel.
         setGifPickerOpen(false)
         setMenuOpen(false)
