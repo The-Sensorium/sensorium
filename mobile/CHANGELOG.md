@@ -71,6 +71,7 @@ release) for the release ritual.
 - Fixed the iPhone meetup planner showing a stray date selector under the time options. Date and time pickers now open in a sheet, matching Android.
 - Destructive actions are now red in dark mode everywhere instead of pink, including delete account, clear notifications, remove meetup option, leave cluster, and remove location.
 - The keyboard now closes when you leave cluster chat instead of staying open on the next screen.
+- The Appearance theme cards now stack the preview above the name and description when your phone's text size is larger than default, instead of squeezing the description into a thin column.
 
 ## [1.1.0]
 

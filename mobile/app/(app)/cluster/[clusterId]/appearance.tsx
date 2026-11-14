@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, useWindowDimensions, View } from 'react-native'
 import { useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { useAuth } from '../../../../src/auth-context'
 import {
   CLUSTER_APPEARANCE_IDS,
   CLUSTER_APPEARANCES,
+  appearanceCardOrientation,
   getClusterAppearance,
   resolveClusterPalette,
   setClusterAppearance,
@@ -41,6 +42,8 @@ function ClusterAppearanceScreenContent() {
   const t = useTheme()
   const g = useGlobalTheme()
   const scheme = useResolvedScheme()
+  const { fontScale } = useWindowDimensions()
+  const stacked = appearanceCardOrientation(fontScale) === 'stacked'
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
   const goBackToRoom = useClusterBack({ pathname: '/cluster/[clusterId]/room', params: { clusterId } })
   const auth = useAuth()
@@ -115,20 +118,20 @@ function ClusterAppearanceScreenContent() {
                 accessibilityState={{ checked: selected }}
                 accessibilityLabel={`${meta.name} theme`}
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
+                  flexDirection: stacked ? 'column' : 'row',
+                  alignItems: stacked ? 'stretch' : 'center',
                   gap: 12,
                   backgroundColor: t.surfaceContainer,
                   borderWidth: selected ? 2 : 1,
                   borderColor: selected ? palette.accent : t.outlineVariant,
                   borderRadius: radii.xl,
                   padding: 16,
-                  minHeight: 96,
+                  minHeight: stacked ? undefined : 96,
                 }}
               >
                 <View
                   style={{
-                    width: 120,
+                    width: stacked ? '100%' : 120,
                     backgroundColor: palette.background,
                     borderWidth: 1,
                     borderColor: t.outlineVariant,
@@ -144,26 +147,28 @@ function ClusterAppearanceScreenContent() {
                     <View style={{ backgroundColor: palette.sent, borderRadius: 10, width: 64, height: 18 }} />
                   </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>{meta.name}</Text>
-                  <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-                    {meta.description}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: selected ? palette.accent : t.outlineVariant,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {selected ? (
-                    <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: palette.accent }} />
-                  ) : null}
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: stacked ? 'flex-start' : 'center', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: t.onSurface }}>{meta.name}</Text>
+                    <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
+                      {meta.description}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: selected ? palette.accent : t.outlineVariant,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {selected ? (
+                      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: palette.accent }} />
+                    ) : null}
+                  </View>
                 </View>
               </Pressable>
             )
