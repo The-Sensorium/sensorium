@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, Text, TextInput, View, type TextInputInstance } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { Check, CornerUpLeft, ImagePlay, ImagePlus, Pencil, Send, X } from 'lucide-react-native'
 import { Avatar } from './Avatar'
@@ -75,7 +75,7 @@ export function CommentComposer({
   const draftRef = useRef('')
   const editTextRef = useRef('')
   const focusedRef = useRef(false)
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<TextInputInstance>(null)
   const create = useCreateComment(clusterId)
   const edit = useEditComment(clusterId)
 

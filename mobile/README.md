@@ -18,7 +18,7 @@ and the Android APK CI workflows.
 
 | Layer | Choice |
 |---|---|
-| Runtime | Expo SDK 57, React Native 0.86, React 19 |
+| Runtime | Expo SDK 58, React Native 0.88, React 19 |
 | Routing | `expo-router` (file-based, typed routes) |
 | Server state | TanStack Query 5 + Supabase Realtime |
 | Backend | Supabase (Postgres, Auth, Storage, Realtime) - shared with web |
@@ -73,6 +73,10 @@ Prerequisites: Node.js 20+ and npm. Expo Go is enough for most UI work, but
 **calls and push notifications require a development build or a real device**.
 Native Android builds also need the Android SDK/emulator (or `eas build`).
 
+Expo Go only supports the current SDK, and iOS clients cannot be downgraded, so
+keep `expo` in step with the store build (`npx expo-doctor` warns on drift). The
+project is on SDK 58, which matches the SDK 58 Expo Go.
+
 1. `cd mobile && cp .env.example .env` - use the staging `EXPO_PUBLIC_SUPABASE_URL` + publishable key first.
 2. `npm install`
 3. `npm run sync:db-types` - refresh `database.types.ts` and the generated helpers (see [Generated vs hand-written code](#generated-vs-hand-written-code)).
@@ -109,11 +113,6 @@ belong here - the anon/publishable key is the only credential the app holds.
 
 There is also a local APK helper at [`scripts/android-build.ps1`](scripts/android-build.ps1)
 for building an installable APK without EAS.
-
-`react-native-keyboard-controller` is pinned outside the Expo SDK version
-(`expo.install.exclude` in [`package.json`](package.json)): the project tracks
-the 1.22.x line (SDK 57 pins 1.21.9), so `expo install --fix` flagging the
-drift is expected - do not "fix" it back.
 
 ## Auth and deep links
 

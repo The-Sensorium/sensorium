@@ -325,7 +325,7 @@ export default function PostsFeedScreen() {
                 </Text>
               )}
             </Pressable>
-          ) : null
+          ) : undefined
         }
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, padding: spacing.containerMargin, paddingBottom: 24 }}
