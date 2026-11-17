@@ -3,17 +3,17 @@ import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Plus, Users } from 'lucide-react-native'
 import type { LucideIcon } from 'lucide-react-native'
-import { CLUSTER_SIZE } from '../../src/lib/constants'
-import { MATCHING_MODES } from '../../src/lib/modes'
-import { usePublicClusterCounts } from '../../src/features/discovery'
-import { useMyQueueStatus, useMyClusters, type MyCluster } from '../../src/features/matching'
-import { isPendingCreated } from '../../src/features/created-clusters'
-import { radii } from '../../src/lib/theme-tokens'
-import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, LoadingView, Screen } from '../../src/components/ui'
-import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
-import { MemberClusterCard } from '../../src/components/ClusterCard'
-import { useUnreadChatCounts } from '../../src/features/notifications'
+import { CLUSTER_SIZE } from '../../../src/lib/constants'
+import { MATCHING_MODES } from '../../../src/lib/modes'
+import { usePublicClusterCounts } from '../../../src/features/discovery'
+import { useMyQueueStatus, useMyClusters, type MyCluster } from '../../../src/features/matching'
+import { isPendingCreated } from '../../../src/features/created-clusters'
+import { radii } from '../../../src/lib/theme-tokens'
+import { useTheme } from '../../../src/lib/use-theme'
+import { Card, ErrorText, LoadingView, Screen } from '../../../src/components/ui'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
+import { MemberClusterCard } from '../../../src/components/ClusterCard'
+import { useUnreadChatCounts } from '../../../src/features/notifications'
 
 export default function ClustersScreen() {
   const t = useTheme()
@@ -34,9 +34,6 @@ export default function ClustersScreen() {
   return (
     <Screen onRefresh={pull.onRefresh} refreshing={pull.refreshing}>
       <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Clusters</Text>
-      <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-        Browse a matching mode below to meet more people.
-      </Text>
       {(clusters.isLoading || clusters.isError || (clusters.data ?? []).length > 0) && (
         <>
           <Pressable

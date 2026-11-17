@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View, type ViewInstance } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ArrowLeft } from 'lucide-react-native'
@@ -23,7 +23,6 @@ import type { ReplyTarget } from '../../../src/components/comment-helpers'
 import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
 import { isMutedAuthor, mutedIds, useMyMutes } from '../../../src/features/moderation'
 import { useTheme } from '../../../src/lib/use-theme'
-import { useDismissKeyboardOnBlur } from '../../../src/lib/use-dismiss-keyboard-on-blur'
 import { useClusterBack } from '../../../src/lib/use-cluster-back'
 import { Card, LoadingView, Screen } from '../../../src/components/ui'
 
@@ -31,7 +30,7 @@ export default function PostDetailScreen() {
   const t = useTheme()
   const { postId = '', comment: deepLinkCommentId } = useLocalSearchParams<{ postId: string; comment?: string }>()
   const scrollRef = useRef<KeyboardAwareScrollViewRef>(null)
-  const contentRef = useRef<View>(null)
+  const contentRef = useRef<ViewInstance>(null)
   const auth = useAuth()
   const userId = auth.state === 'signedIn' ? auth.userId : null
 
@@ -71,8 +70,7 @@ export default function PostDetailScreen() {
   const composerHeight = useSharedValue(0)
 
   useClusterChannel(clusterId)
-  useDismissKeyboardOnBlur()
-  const goBack = useClusterBack('/(app)/posts')
+  const goBack = useClusterBack('/posts')
 
   // The footer height is measured into a shared value for the chat scroll
   // view. Reset it on post change so the next post does not inherit the

@@ -29,7 +29,7 @@ export default function EditProfileScreen() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const updateProfile = useUpdateProfile()
-  const goBack = useClusterBack('/(app)/settings')
+  const goBack = useClusterBack('/settings')
 
   // Profile loads async; pick up the saved zone once it arrives so saving
   // another field never wipes a value the user never touched.
@@ -238,7 +238,6 @@ export default function EditProfileScreen() {
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 fontSize: 16,
-                lineHeight: 24,
                 minHeight: 48,
                 color: t.onSurface,
               }}
@@ -261,9 +260,6 @@ export default function EditProfileScreen() {
             <Clock size={20} color={t.primary} strokeWidth={1.5} />
             <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Local time</Text>
           </View>
-          <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-            Members see your local time.
-          </Text>
           <View style={{ marginTop: 12, gap: 8 }}>
             <TimezonePicker value={timezone} onChange={setTimezone} placeholder="Not set" />
             <PrimaryButton

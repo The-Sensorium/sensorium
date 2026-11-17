@@ -16,7 +16,7 @@ export default function AuthCallback() {
           const result = await handleAuthCallback(initial)
           if (!live) return
           if (result === 'recovery') resetTo('/(auth)/reset-password')
-          else if (result === 'session') resetTo('/(app)/home')
+          else if (result === 'session') resetTo('/home')
         }
       } catch (err) {
         console.warn('Auth callback failed', err)

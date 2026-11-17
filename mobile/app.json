@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sensorium",
     "slug": "sensorium",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "scheme": "sensorium",
     "userInterfaceStyle": "automatic",
@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "online.thesensorium.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera is used for video during cluster calls and to take photos for messages and profile pictures.",
         "NSMicrophoneUsageDescription": "Microphone is used for voice notes and audio during cluster calls.",
@@ -30,7 +30,7 @@
         "backgroundColor": "#fff8f6"
       },
       "package": "online.thesensorium.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "softwareKeyboardLayoutMode": "resize",
       "allowBackup": false,
       "predictiveBackGestureEnabled": true,
@@ -51,6 +51,7 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      "expo-asset",
       [
         "expo-audio",
         {
@@ -86,13 +87,13 @@
       "@config-plugins/react-native-webrtc",
       "expo-image",
       "expo-sqlite",
-      "@sentry/react-native",
       [
         "expo-build-properties",
         {
           "android": {
             "enableMinifyInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-dontwarn livekit.org.jni_zero.**"
           }
         }
       ]

@@ -10,6 +10,8 @@ import { useTheme } from '../lib/use-theme'
 import { isAllowedChallengeNavigation, parseChallengeToken } from '../lib/captcha'
 import { radii, spacing } from '../lib/theme-tokens'
 
+type WebViewHandle = { clearCache: (includeDiskFiles: boolean) => void }
+
 export function CaptchaSheet({
   challengeUrl,
   onToken,
@@ -24,7 +26,7 @@ export function CaptchaSheet({
   const [failed, setFailed] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const delivered = useRef(false)
-  const webviewRef = useRef<WebView>(null)
+  const webviewRef = useRef<WebViewHandle | null>(null)
 
   useEffect(() => {
     const view = webviewRef.current
@@ -99,7 +101,9 @@ export function CaptchaSheet({
         <View style={{ flex: 1 }}>
           <WebView
             key={reloadKey}
-            ref={webviewRef}
+            ref={(instance) => {
+              webviewRef.current = instance
+            }}
             source={{ uri: challengeUrl }}
             onMessage={handleMessage}
             onShouldStartLoadWithRequest={shouldStartLoad}

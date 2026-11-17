@@ -114,8 +114,7 @@ export function HomePage() {
 
   // Log the underlying failure (code + message) so a sticky list error can
   // be diagnosed instead of guessed at. Dev-only: the web app has no log
-  // sink in production (mobile keeps its unconditional log for logcat and
-  // Sentry breadcrumbs).
+  // sink in production (mobile keeps its unconditional log for logcat).
   useEffect(() => {
     if (!import.meta.env.DEV) return
     if (clusters.error) console.warn('Home lists: clusters failed', clusters.error)

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, Text, View, type ViewInstance } from 'react-native'
 import type { KeyboardAwareScrollViewRef } from 'react-native-keyboard-controller'
 import { useAuth } from '../auth-context'
 import { CommentItem } from './CommentItem'
@@ -36,7 +36,7 @@ export function CommentThread({
   onEdit?(comment: PostComment): void
   deepLinkCommentId?: string | null
   scrollRef?: RefObject<KeyboardAwareScrollViewRef | null>
-  contentRef?: RefObject<View | null>
+  contentRef?: RefObject<ViewInstance | null>
   onDeepLinkHandled?: (commentId: string) => void
 }) {
   const t = useTheme()
@@ -63,7 +63,7 @@ export function CommentThread({
   const measureRaf = useRef<number | null>(null)
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const targetRef = useRef<View>(null)
+  const targetRef = useRef<ViewInstance>(null)
   // The scroll target is owned locally until the scroll is dispatched.
   // Clearing the route param (via onDeepLinkHandled) re-renders with
   // deepLinkCommentId = null, which detaches targetRef; holding the id here

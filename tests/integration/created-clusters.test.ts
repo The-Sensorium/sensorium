@@ -195,6 +195,12 @@ describe('created clusters', () => {
       .is('left_at', null)
     expect(members).toHaveLength(2)
 
+    const { data: earlyEmails } = await admin
+      .from('outbound_emails')
+      .select('id')
+      .eq('template', 'cluster-formed')
+    expect(earlyEmails).toHaveLength(0)
+
     const pendingB = await mateB.client.rpc('get_pending_invitations')
     const invB = pendingB.data?.find((i: { cluster_id: string }) => i.cluster_id === clusterId)
     const { error: acceptErrB } = await mateB.client.rpc('accept_invitation', {
@@ -217,6 +223,25 @@ describe('created clusters', () => {
       .eq('cluster_id', clusterId!)
       .eq('type', 'cluster_formed')
     expect(formed).toHaveLength(3)
+
+    const { data: emails, error: emailErr } = await admin
+      .from('outbound_emails')
+      .select('user_id, recipient_email, template, params, status')
+      .eq('template', 'cluster-formed')
+      .order('created_at', { ascending: true })
+    expect(emailErr).toBeNull()
+    expect(emails).toHaveLength(3)
+    expect(new Set(emails!.map((e) => e.user_id))).toEqual(
+      new Set([creator.id, mateA.id, mateB.id]),
+    )
+    expect(emails!.every((e) => e.status === 'queued')).toBe(true)
+    expect(
+      emails!.every(
+        (e) =>
+          (e.params as { cluster_url?: string }).cluster_url ===
+          `http://127.0.0.1:5173/cluster/${clusterId}`,
+      ),
+    ).toBe(true)
 
     // No queue side effects: no round, queue entries untouched.
     const { data: rounds } = await admin

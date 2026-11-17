@@ -115,7 +115,12 @@ export function Field({
             paddingHorizontal: 16,
             paddingVertical: 12,
             fontSize: 16,
-            lineHeight: 24,
+            // No lineHeight on single-line inputs: iOS anchors typed text to
+            // the bottom of an explicit line box, clipping descenders while
+            // editing (react-native #28012). Multiline inputs keep the token
+            // line height for readable paragraphs.
+            lineHeight: props.multiline ? 24 : undefined,
+            minHeight: 48,
             color: t.onSurface,
           },
           style,
@@ -169,7 +174,9 @@ export function PasswordField({
             paddingHorizontal: 16,
             paddingVertical: 12,
             fontSize: 16,
-            lineHeight: 24,
+            // Same iOS clipping caveat as Field: no lineHeight on a
+            // single-line input.
+            minHeight: 48,
             color: t.onSurface,
           }}
           {...props}

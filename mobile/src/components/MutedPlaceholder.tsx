@@ -1,5 +1,5 @@
 import type { RefObject } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View, type ViewInstance } from 'react-native'
 import { EyeOff } from 'lucide-react-native'
 import { radii } from '../lib/theme-tokens'
 import { useTheme } from '../lib/use-theme'
@@ -17,7 +17,7 @@ export function MutedPlaceholder({
   onToggle: () => void
   kind?: MutedKind
   highlighted?: boolean
-  innerRef?: RefObject<View | null>
+  innerRef?: RefObject<ViewInstance | null>
 }) {
   const t = useTheme()
   return (

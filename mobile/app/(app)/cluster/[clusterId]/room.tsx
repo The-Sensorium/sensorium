@@ -60,7 +60,6 @@ import { MutedHideBar, MutedPlaceholder } from '../../../../src/components/Muted
 import { toErrorMessage } from '../../../../src/lib/error'
 import { errorHaptic, lightHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { useClusterChannel } from '../../../../src/features/realtime'
-import { useDismissKeyboardOnBlur } from '../../../../src/lib/use-dismiss-keyboard-on-blur'
 import { Composer, type PickedImage } from '../../../../src/components/room/Composer'
 import { replyPreviewForMessage, useSendVoiceNote } from '../../../../src/features/voice-notes'
 import type { VoiceRecording } from '../../../../src/components/room/VoiceRecorder'
@@ -76,7 +75,6 @@ import { SignalRow, VoteRow } from '../../../../src/components/room/TimelineRows
 import { ReportModal } from '../../../../src/components/ReportModal'
 import { ConfirmDialog } from '../../../../src/components/ConfirmDialog'
 import { CreatedPendingGate } from '../../../../src/components/created/CreatedPendingGate'
-import { goBackWithFallback } from '../../../../src/lib/use-cluster-back'
 import { ClusterMenu } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useProvidedAppearanceId, useClusterComposerSurface, useClusterOnAccent, useClusterAccentText } from '../../../../src/lib/cluster-theme'
 import { radii } from '../../../../src/lib/theme-tokens'
@@ -118,6 +116,10 @@ const CHAT_INPUT_NATIVE_ID = 'cluster-chat-input'
 // row at runtime and fits whole avatars dynamically instead of a fixed cap.
 const STRIP_AVATAR = 24
 const STRIP_GAP = 8
+// Breathing room for the self avatar's 2px ring. The ring is drawn with a
+// negative margin so it stays layout neutral; the inset keeps the row's clip
+// boundary from shaving the ring's outer edge.
+const STRIP_INSET = 2
 
 export default function RoomScreen() {
   const { clusterId = '' } = useLocalSearchParams<{ clusterId: string }>()
@@ -200,12 +202,15 @@ function RoomScreenContent() {
   const roomBg = themed ? t.background : t.surfaceLowest
 
   useClusterChannel(authedClusterId)
-  useDismissKeyboardOnBlur()
   useFocusEffect(
     useCallback(() => {
       setSuppressedPushCluster(clusterId || null)
       if (clusterId) void clearClusterPushNotifications(clusterId)
       return () => {
+        // The sticky composer and keyboard gesture area can keep focus while
+        // the tab stays mounted, so resign the keyboard as soon as the room
+        // blurs instead of relying on the route-change dismissal alone.
+        Keyboard.dismiss()
         // Never hand the next focus a lingering panel.
         setGifPickerOpen(false)
         setMenuOpen(false)
@@ -214,9 +219,13 @@ function RoomScreenContent() {
       }
     }, [clusterId]),
   )
-  // Hardware Back closes open composer panels first, then walks the visit
-  // trail so system back mirrors in-app back instead of forcing home. Only a
-  // cold start with no history falls back to home.
+  // Hardware Back closes open composer panels first, then dismisses the
+  // keyboard, then lets the native stack perform the pop. Check actual
+  // keyboard visibility rather than input focus: Android's IME can consume
+  // the back itself to hide the keyboard without blurring the input, so
+  // composerInputFocused stays true and one extra press would dismiss an
+  // already-hidden keyboard. Returning false on the final path keeps the
+  // stack's own back handling and predictive-back animation.
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -224,17 +233,27 @@ function RoomScreenContent() {
           closeComposerPanels()
           return true
         }
-        if (composerInputFocused) {
+        if (Keyboard.isVisible()) {
           Keyboard.dismiss()
           setComposerInputFocused(false)
           return true
         }
-        goBackWithFallback('/(app)/home')
-        return true
+        if (!router.canGoBack()) {
+          router.dismissTo('/home')
+          return true
+        }
+        return false
       })
       return () => sub.remove()
-    }, [panelsOpen, composerInputFocused, closeComposerPanels]),
+    }, [panelsOpen, closeComposerPanels]),
   )
+  // Keep the focus flag honest when the keyboard hides by any route (IME back
+  // gesture, app backgrounding, panel dismissal), so the sticky composer
+  // disables instead of trusting a blur that may never arrive.
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidHide', () => setComposerInputFocused(false))
+    return () => sub.remove()
+  }, [])
   const cluster = useCluster(authedClusterId)
   const messages = useClusterMessages(authedClusterId)
   const loadedMessageIds = useMemo(() => (messages.data ?? []).map((m) => m.id), [messages.data])
@@ -280,7 +299,7 @@ function RoomScreenContent() {
   // measured row width, with a +N chip for the rest. A fixed cap wastes
   // space on wide screens yet still wraps on narrow ones under display zoom.
   const memberList = members.data ?? []
-  const stripFit = stripWidth > 0 ? Math.floor((stripWidth + STRIP_GAP) / (STRIP_AVATAR + STRIP_GAP)) : 8
+  const stripFit = stripWidth > 0 ? Math.floor((stripWidth - STRIP_INSET * 2 + STRIP_GAP) / (STRIP_AVATAR + STRIP_GAP)) : 8
   const stripHasOverflow = stripFit < memberList.length
   const stripVisibleCount = stripHasOverflow ? Math.max(0, stripFit - 1) : memberList.length
   const stripVisible = memberList.slice(0, stripVisibleCount)
@@ -1003,7 +1022,7 @@ function RoomScreenContent() {
   useFocusEffect(
     useCallback(() => {
       if (clusterMissing) {
-        router.replace('/(app)/home')
+        router.dismissTo('/home')
       }
     }, [clusterMissing]),
   )
@@ -1039,7 +1058,7 @@ function RoomScreenContent() {
             accessibilityRole="button"
             accessibilityLabel="Back to home"
             onPress={() => {
-              router.replace('/(app)/home')
+              router.dismissTo('/home')
             }}
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
@@ -1076,10 +1095,10 @@ function RoomScreenContent() {
             accessibilityRole="button"
             accessibilityLabel="Back to home"
             onPress={() => {
-              // Deterministic parent, not history: with backBehavior="history"
-              // a router.back() here could return to settings or signals if
-              // that was the previous stop. The room always exits home.
-              router.replace('/(app)/home')
+              // Deterministic parent, not history: the room always exits to
+              // Home even when it was opened from settings, signals, or a
+              // push tap.
+              router.dismissTo('/home')
             }}
             hitSlop={8}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, justifyContent: 'center', paddingRight: 8 }}
@@ -1213,7 +1232,16 @@ function RoomScreenContent() {
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View
-                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: STRIP_GAP, overflow: 'hidden', paddingVertical: 2, marginVertical: -2 }}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: STRIP_GAP,
+                  overflow: 'hidden',
+                  paddingVertical: STRIP_INSET,
+                  marginVertical: -STRIP_INSET,
+                  paddingHorizontal: STRIP_INSET,
+                }}
                 onLayout={(e) => {
                   const w = e.nativeEvent.layout.width
                   setStripWidth((prev) => (prev === w ? prev : w))
@@ -1362,7 +1390,7 @@ function RoomScreenContent() {
                       {loadEarlier.isPending ? 'Loading earlier messages…' : 'Load earlier messages'}
                     </Text>
                   </Pressable>
-                ) : null
+                ) : undefined
               }
               renderItem={({ item: row }) => {
                 const { item, showDay, showAuthor } = row

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { PanResponder, Text, View } from 'react-native'
+import { PanResponder, Text, View, type ViewInstance } from 'react-native'
 import { lightHaptic } from '../lib/haptics'
 import { useTheme } from '../lib/use-theme'
 
@@ -39,7 +39,7 @@ export function AgeRangeSlider({
   onChange: (nextMin: number, nextMax: number) => void
 }) {
   const t = useTheme()
-  const trackRef = useRef<View>(null)
+  const trackRef = useRef<ViewInstance>(null)
   const grant = useRef<Grant>(null)
 
   // Mirror touched only from effects and gesture handlers, never render.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from 'react-native'
+import { ActivityIndicator, Image, Pressable, Text, TextInput, View, type TextInputInstance } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { Check, CornerUpLeft, ImagePlay, ImagePlus, Pencil, Send, X } from 'lucide-react-native'
 import { Avatar } from './Avatar'
@@ -75,7 +75,7 @@ export function CommentComposer({
   const draftRef = useRef('')
   const editTextRef = useRef('')
   const focusedRef = useRef(false)
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<TextInputInstance>(null)
   const create = useCreateComment(clusterId)
   const edit = useEditComment(clusterId)
 
@@ -397,7 +397,7 @@ export function CommentComposer({
             multiline
             // No numberOfLines: on Android it pins the field to an exact line
             // count, which would stop the composer growing with wrapped text.
-            placeholder={isEditing ? 'Edit comment…' : 'Add a comment...'}
+            placeholder={isEditing ? 'Edit comment…' : 'Comment...'}
             placeholderTextColor={t.onSurfaceVariant}
             accessibilityLabel={isEditing ? 'Edit comment' : 'Add a comment'}
             style={{

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Text, View } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Sparkles } from 'lucide-react-native'
 import {
   useCluster,
   useMyMembership,
@@ -106,15 +105,9 @@ function IntroductionsScreenContent() {
       <Text style={{ fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, color: t.primary }}>
         Introductions · {cluster.data.name}
       </Text>
-      <Text style={{ marginTop: 4, fontSize: 24, lineHeight: 30, fontWeight: '600', color: t.onSurface }}>
+      <Text style={{ marginTop: 4, marginBottom: 16, fontSize: 24, lineHeight: 30, fontWeight: '600', color: t.onSurface }}>
         {isEdit ? 'Edit your introductions' : 'Tell your cluster who you are'}
       </Text>
-      <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <Sparkles size={16} color={t.primary} strokeWidth={1.5} />
-        <Text style={{ flex: 1, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
-          {isEdit ? 'Update anything that changed.' : 'Answer below to share who you are.'}
-        </Text>
-      </View>
 
       {(questions.data ?? []).map((q, i) => (
         <View

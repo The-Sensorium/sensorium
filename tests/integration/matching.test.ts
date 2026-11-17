@@ -242,6 +242,23 @@ describe('matching', () => {
       .eq('cluster_id', clusterId)
       .eq('type', 'cluster_formed')
     expect(notifs).toHaveLength(8)
+
+    const { data: emails, error: emailErr } = await admin
+      .from('outbound_emails')
+      .select('user_id, recipient_email, template, params, status')
+      .eq('template', 'cluster-formed')
+      .order('created_at', { ascending: true })
+    expect(emailErr).toBeNull()
+    expect(emails).toHaveLength(8)
+    expect(new Set(emails!.map((e) => e.user_id))).toEqual(new Set(users.map((u) => u.id)))
+    expect(emails!.every((e) => e.status === 'queued')).toBe(true)
+    expect(
+      emails!.every(
+        (e) =>
+          (e.params as { cluster_url?: string }).cluster_url ===
+          `http://127.0.0.1:5173/cluster/${clusterId}`,
+      ),
+    ).toBe(true)
   })
 
   it('get_my_matching_status reports joined state per mode', async () => {

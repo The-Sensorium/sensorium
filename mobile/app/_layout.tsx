@@ -14,27 +14,14 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans'
 import { hideNativeSplash } from '../src/components/AnimatedSplash'
 import { OfflineBanner } from '../src/components/OfflineBanner'
-import * as Sentry from '@sentry/react-native'
 import { AppProviders } from '../src/app-providers'
+import { useDismissKeyboardOnNavigate } from '../src/lib/use-dismiss-keyboard-on-navigate'
 import { colors, darkColors } from '../src/lib/theme-tokens'
 import { useResolvedScheme } from '../src/lib/theme-choice'
 import { handleAuthCallback } from '../src/lib/deep-links'
 import { goHome, resetTo } from '../src/lib/auth-navigation'
-import { isLiveKitAbortReasonNoise } from '../src/lib/sentry-noise'
 
 void SplashScreen.preventAutoHideAsync()
-
-const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN
-if (sentryDsn) {
-  Sentry.init({
-    dsn: sentryDsn,
-    environment: process.env.EXPO_PUBLIC_APP_ENV ?? 'development',
-    tracesSampleRate: 0,
-    beforeSend(event) {
-      return isLiveKitAbortReasonNoise(event) ? null : event
-    },
-  })
-}
 
 function useAuthDeepLinks() {
   useEffect(() => {
@@ -62,6 +49,7 @@ function useAuthDeepLinks() {
 
 function RootLayout() {
   useAuthDeepLinks()
+  useDismissKeyboardOnNavigate()
   const segments = useSegments()
   const [fontsLoaded, fontError] = useFonts({
     SpecialElite_400Regular,
@@ -137,4 +125,4 @@ function ThemedStatusBar() {
   return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
 }
 
-export default Sentry.wrap(RootLayout)
+export default RootLayout

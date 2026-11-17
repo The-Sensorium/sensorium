@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, Alert, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native'
+import { ActivityIndicator, Alert, Image, Pressable, Text, TextInput, View, type LayoutChangeEvent, type TextInputInstance } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { Check, CornerUpLeft, ImagePlus, Megaphone, Mic, Pencil, Phone, Plus, Send, X } from 'lucide-react-native'
 import { VoiceRecorder, type VoiceRecording } from './VoiceRecorder'
@@ -104,7 +104,7 @@ export function Composer({
   const [stagedImage, setStagedImage] = useState<PickedImage | null>(null)
   const [voiceOpen, setVoiceOpen] = useState(false)
   const [voiceSending, setVoiceSending] = useState(false)
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<TextInputInstance>(null)
   const focusedEditId = useRef<string | null>(null)
   const sendingRef = useRef(false)
 

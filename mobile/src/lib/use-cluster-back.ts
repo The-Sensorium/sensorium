@@ -1,31 +1,13 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { BackHandler } from 'react-native'
-import { router, useFocusEffect, type Href } from 'expo-router'
+import { router, type Href } from 'expo-router'
 
-// Shared hardware-back behavior for hidden tab routes and top-level screens
-// (cluster routes, posts, queue, invites, settings sub-screens, legal pages).
-// These sit under backBehavior="history" with no native stack, so a cold start
-// or a replace-forward transition leaves single-entry history where system
-// back would otherwise finish the Activity and land on the phone home screen.
-// Walk the visit trail when one exists, else replace to an explicit parent.
+// Shared UI-back behavior for screens pushed above the tabs. The native stack
+// owns hardware back and the iOS edge swipe; this covers in-screen back
+// buttons and the cold-start case where the fallback route is not in the
+// stack yet.
 export function goBackWithFallback(fallback: Href) {
   if (router.canGoBack()) router.back()
-  else router.replace(fallback)
-}
-
-export function createClusterBackHandler(getFallback: () => Href) {
-  return () => {
-    goBackWithFallback(getFallback())
-    return true
-  }
-}
-
-export function subscribeClusterBack(getFallback: () => Href): () => void {
-  const sub = BackHandler.addEventListener(
-    'hardwareBackPress',
-    createClusterBackHandler(getFallback),
-  )
-  return () => sub.remove()
+  else router.dismissTo(fallback)
 }
 
 export function useClusterBack(fallback: Href): () => void {
@@ -33,11 +15,7 @@ export function useClusterBack(fallback: Href): () => void {
   useEffect(() => {
     fallbackRef.current = fallback
   })
-  const goBack = useCallback(() => {
+  return useCallback(() => {
     goBackWithFallback(fallbackRef.current)
   }, [])
-  useFocusEffect(
-    useCallback(() => subscribeClusterBack(() => fallbackRef.current), []),
-  )
-  return goBack
 }

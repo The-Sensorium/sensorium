@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, TextInput, View, type TextInputInstance } from 'react-native'
 import { Modal } from '../Modal'
 import { radii } from '../../lib/theme-tokens'
 import { useTheme } from '../../lib/use-theme'
@@ -25,7 +25,7 @@ export function RaiseSignalModal({
   onRaise(): void
 }) {
   const t = useTheme()
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<TextInputInstance>(null)
   return (
     <Modal
       open={open}

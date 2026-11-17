@@ -8,7 +8,7 @@ import { TERMS_DOCUMENT } from '../src/legal/content'
 
 export default function TermsScreen() {
   const t = useTheme()
-  const goBack = useClusterBack('/(app)/settings')
+  const goBack = useClusterBack('/settings')
   return (
     <Screen>
       <Pressable

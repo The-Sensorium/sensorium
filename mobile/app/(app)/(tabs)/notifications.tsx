@@ -4,6 +4,7 @@ import {
   AtSign,
   Bell,
   CalendarDays,
+  CheckCheck,
   Flag,
   Heart,
   LockOpen,
@@ -29,16 +30,25 @@ import {
   useMyNotifications,
   type MyNotification,
   type NotificationType,
-} from '../../src/features/notifications'
-import { mobileTarget } from '../../src/lib/notification-routing'
-import { useMyClusters } from '../../src/features/matching'
-import { toErrorMessage } from '../../src/lib/error'
-import { radii, shadowShape, spacing } from '../../src/lib/theme-tokens'
-import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, LoadingView } from '../../src/components/ui'
-import { ConfirmDialog } from '../../src/components/ConfirmDialog'
-import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
-import { ActivityIndicator, FlatList, Modal as RNModal, Pressable, RefreshControl, Text, View } from 'react-native'
+} from '../../../src/features/notifications'
+import { isTabTarget, mobileTarget } from '../../../src/lib/notification-routing'
+import { useMyClusters } from '../../../src/features/matching'
+import { toErrorMessage } from '../../../src/lib/error'
+import { radii, shadowShape, spacing } from '../../../src/lib/theme-tokens'
+import { useTheme } from '../../../src/lib/use-theme'
+import { Card, ErrorText, LoadingView } from '../../../src/components/ui'
+import { ConfirmDialog } from '../../../src/components/ConfirmDialog'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
+import {
+  Dimensions,
+  FlatList,
+  Modal as RNModal,
+  Pressable,
+  RefreshControl,
+  Text,
+  View,
+  type GestureResponderEvent,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const MEETUP_TYPES: ReadonlySet<NotificationType> = new Set([
@@ -48,6 +58,19 @@ const MEETUP_TYPES: ReadonlySet<NotificationType> = new Set([
   'meetup_reminder_15m',
   'meetup_starting',
 ])
+
+const MENU_WIDTH = 248
+const MENU_HEIGHT = 120
+
+// Anchor the overflow menu to the button that opened it instead of a fixed
+// offset, so it tracks the header at any screen width or text scale.
+function menuPosition(x: number, y: number) {
+  const { width: windowWidth, height: windowHeight } = Dimensions.get('window')
+  const left = Math.min(Math.max(8, x - MENU_WIDTH + 32), Math.max(8, windowWidth - MENU_WIDTH - 8))
+  const below = y + 8
+  const top = Math.max(16, below + MENU_HEIGHT > windowHeight - 16 ? y - MENU_HEIGHT - 8 : below)
+  return { left, top }
+}
 
 const ICONS: Record<NotificationType, typeof Bell> = {
   message: MessageSquare,
@@ -92,6 +115,7 @@ export default function NotificationsScreen() {
   ])
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuAnchor, setMenuAnchor] = useState<{ x: number; y: number } | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   const items = notifications.data ?? []
@@ -112,8 +136,22 @@ export default function NotificationsScreen() {
       markRead.mutate(n.id)
     }
     const target = mobileTarget(n)
-    if (target) router.push(target)
+    if (target) {
+      if (isTabTarget(target)) router.navigate(target)
+      else router.push(target)
+    }
   }
+
+  function openMenu(e: GestureResponderEvent) {
+    const { pageX, pageY } = e.nativeEvent
+    setMenuAnchor({
+      x: typeof pageX === 'number' ? pageX : Dimensions.get('window').width - 40,
+      y: typeof pageY === 'number' ? pageY : 120,
+    })
+    setMenuOpen(true)
+  }
+
+  const menuAt = menuPosition(menuAnchor?.x ?? 0, menuAnchor?.y ?? 0)
 
   async function handleClear() {
     try {
@@ -139,36 +177,24 @@ export default function NotificationsScreen() {
         )}
         ListHeaderComponent={
           <>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', columnGap: 12, rowGap: 12, marginBottom: 16 }}>
               <View>
                 <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Notifications</Text>
                 <Text style={{ marginTop: 4, fontSize: 14, lineHeight: 20, color: t.onSurfaceVariant }}>
                   {unread > 0 ? `${unread} unread` : 'You’re all caught up'}
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Pressable
-                  onPress={() => void markAll.mutateAsync()}
-                  disabled={markAllDisabled}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: markAllDisabled }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, opacity: markAllDisabled ? 0.5 : 1 }}
-                >
-                  {markAll.isPending ? <ActivityIndicator size="small" color={t.onSurface} /> : null}
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>Mark all read</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setMenuOpen(true)}
-                  disabled={items.length === 0}
-                  accessibilityLabel="More notification options"
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: menuOpen, disabled: items.length === 0 }}
-                  hitSlop={8}
-                  style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: t.outlineVariant, alignItems: 'center', justifyContent: 'center', opacity: items.length === 0 ? 0.5 : 1 }}
-                >
-                  <MoreHorizontal size={20} color={t.onSurface} strokeWidth={1.5} />
-                </Pressable>
-              </View>
+              <Pressable
+                onPress={openMenu}
+                disabled={items.length === 0}
+                accessibilityLabel="More notification options"
+                accessibilityRole="button"
+                accessibilityState={{ expanded: menuOpen, disabled: items.length === 0 }}
+                hitSlop={8}
+                style={{ width: 48, height: 48, marginLeft: 'auto', borderRadius: 24, borderWidth: 1, borderColor: t.outlineVariant, alignItems: 'center', justifyContent: 'center', opacity: items.length === 0 ? 0.5 : 1 }}
+              >
+                <MoreHorizontal size={20} color={t.onSurface} strokeWidth={1.5} />
+              </Pressable>
             </View>
             {items.length > 0 ? (
               <View
@@ -270,9 +296,9 @@ export default function NotificationsScreen() {
             accessibilityLabel="Notification options"
             style={{
               position: 'absolute',
-              top: 110,
-              right: 24,
-              width: 248,
+              top: menuAt.top,
+              left: menuAt.left,
+              width: MENU_WIDTH,
               backgroundColor: t.surfaceLowest,
               borderWidth: 1,
               borderColor: t.outlineVariant,
@@ -285,14 +311,31 @@ export default function NotificationsScreen() {
             <Pressable
               onPress={() => {
                 setMenuOpen(false)
+                void markAll.mutateAsync()
+              }}
+              disabled={markAllDisabled}
+              accessibilityLabel="Mark all notifications read"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: markAllDisabled }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, minHeight: 52, opacity: markAllDisabled ? 0.5 : 1 }}
+            >
+              <CheckCheck size={18} color={t.onSurface} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.onSurface }}>
+                Mark all read
+              </Text>
+            </Pressable>
+            <View style={{ height: 1, marginHorizontal: 12, backgroundColor: t.outlineVariant, opacity: 0.4 }} />
+            <Pressable
+              onPress={() => {
+                setMenuOpen(false)
                 setConfirmOpen(true)
               }}
               accessibilityLabel="Clear all notifications"
               accessibilityRole="button"
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, minHeight: 52 }}
             >
-              <Trash2 size={18} color={t.error} strokeWidth={1.5} />
-              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.error }}>
+              <Trash2 size={18} color={t.destructive} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: t.destructive }}>
                 Clear all notifications
               </Text>
             </Pressable>

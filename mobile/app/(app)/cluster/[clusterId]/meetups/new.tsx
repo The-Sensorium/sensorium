@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Dimensions, Modal as RNModal, Pressable, Text, View, type GestureResponderEvent } from 'react-native'
+import { Dimensions, Modal as RNModal, Platform, Pressable, Text, View, type GestureResponderEvent } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CalendarDays, CalendarPlus, Clock, Globe, Moon, MoreVertical, Plus, Sun, Trash2 } from 'lucide-react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { useAuth } from '../../../../../src/auth-context'
@@ -122,7 +123,8 @@ function NewMeetupScreenContent() {
 
   const [rows, setRows] = useState<CustomRow[]>(() => [defaultRow()])
   const [touched, setTouched] = useState(false)
-  const [picker, setPicker] = useState<{ index: number; mode: 'date' | 'time' } | null>(null)
+  const [picker, setPicker] = useState<{ index: number; mode: 'date' | 'time'; value: Date } | null>(null)
+  const insets = useSafeAreaInsets()
   const [menu, setMenu] = useState<{ index: number; x: number; y: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const maxDay = useMemo(() => {
@@ -168,16 +170,35 @@ function NewMeetupScreenContent() {
     setRows(updater)
   }
 
+  function applyPickerValue(index: number, mode: 'date' | 'time', value: Date) {
+    changeRows((cur) => cur.map((row, i) => {
+      if (i !== index) return row
+      return mode === 'date' ? { ...row, day: value } : { ...row, time: value }
+    }))
+  }
+
+  function openPicker(index: number, mode: 'date' | 'time') {
+    const row = rows[index]
+    setMenu(null)
+    setPicker({
+      index,
+      mode,
+      value: (mode === 'date' ? row?.day : row?.time) ?? new Date(),
+    })
+  }
+
+  function applyPicker() {
+    if (!picker) return
+    const { index, mode, value } = picker
+    setPicker(null)
+    applyPickerValue(index, mode, value)
+  }
+
   function handlePickerValueChange(_event: unknown, selected: Date) {
     const current = picker
     setPicker(null)
     if (!selected || !current) return
-    const index = current.index
-    if (current.mode === 'date') {
-      changeRows((cur) => cur.map((row, i) => (i === index ? { ...row, day: selected } : row)))
-    } else {
-      changeRows((cur) => cur.map((row, i) => (i === index ? { ...row, time: selected } : row)))
-    }
+    applyPickerValue(current.index, current.mode, selected)
   }
 
   function openMenu(index: number, e: GestureResponderEvent) {
@@ -267,13 +288,13 @@ function NewMeetupScreenContent() {
                       icon={<CalendarDays size={18} color={t.onSurfaceVariant} strokeWidth={1.5} />}
                       label={dayLabel}
                       muted={!row.day}
-                      onPress={() => { setMenu(null); setPicker({ index, mode: 'date' }) }}
+                      onPress={() => { setMenu(null); openPicker(index, 'date') }}
                     />
                     <PickerPill
                       icon={<Clock size={18} color={t.onSurfaceVariant} strokeWidth={1.5} />}
                       label={timeLabel}
                       muted={!row.time}
-                      onPress={() => { setMenu(null); setPicker({ index, mode: 'time' }) }}
+                      onPress={() => { setMenu(null); openPicker(index, 'time') }}
                     />
                   </View>
                   {picked && !valid ? (
@@ -351,9 +372,54 @@ function NewMeetupScreenContent() {
               </Pressable>
             </View>
           ) : null}
-          {picker ? (
+          {picker && Platform.OS === 'ios' ? (
+            <RNModal visible transparent animationType="fade" onRequestClose={() => setPicker(null)}>
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
+                <Pressable
+                  accessibilityLabel="Close picker"
+                  onPress={() => setPicker(null)}
+                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                />
+                <View
+                  style={{
+                    backgroundColor: t.surfaceLowest,
+                    borderTopLeftRadius: radii.xl,
+                    borderTopRightRadius: radii.xl,
+                    paddingHorizontal: 20,
+                    paddingTop: 20,
+                    paddingBottom: 20 + insets.bottom,
+                  }}
+                >
+                  <Text accessibilityRole="header" style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
+                    {picker.mode === 'date' ? 'Pick a day' : 'Pick a time'}
+                  </Text>
+                  <View style={{ alignItems: 'center', marginTop: 8 }}>
+                    <DateTimePicker
+                      value={picker.value}
+                      mode={picker.mode}
+                      display={picker.mode === 'date' ? 'inline' : 'spinner'}
+                      themeVariant={scheme}
+                      accentColor={t.primary}
+                      minimumDate={picker.mode === 'date' ? new Date() : undefined}
+                      maximumDate={picker.mode === 'date' ? maxDay : undefined}
+                      onValueChange={(_event, selected) => {
+                        if (selected) setPicker((p) => (p ? { ...p, value: selected } : p))
+                      }}
+                      onDismiss={() => setPicker(null)}
+                    />
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                    <SecondaryButton title="Cancel" onPress={() => setPicker(null)} />
+                    <View style={{ flex: 1 }}>
+                      <PrimaryButton title="Done" onPress={applyPicker} />
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </RNModal>
+          ) : picker ? (
             <DateTimePicker
-              value={(picker.mode === 'date' ? rows[picker.index]?.day : rows[picker.index]?.time) ?? new Date()}
+              value={picker.value}
               mode={picker.mode}
               display="default"
               minimumDate={picker.mode === 'date' ? new Date() : undefined}
@@ -441,8 +507,8 @@ function NewMeetupScreenContent() {
                 accessibilityRole="button"
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 12, minHeight: 52, opacity: rows.length <= 1 ? 0.4 : 1 }}
               >
-                <Trash2 size={18} color={rows.length <= 1 ? t.onSurfaceVariant : t.error} strokeWidth={1.5} />
-                <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: rows.length <= 1 ? t.onSurfaceVariant : t.error }}>
+                <Trash2 size={18} color={rows.length <= 1 ? t.onSurfaceVariant : t.destructive} strokeWidth={1.5} />
+                <Text style={{ fontSize: 15, lineHeight: 21, fontWeight: '600', color: rows.length <= 1 ? t.onSurfaceVariant : t.destructive }}>
                   Remove option
                 </Text>
               </Pressable>

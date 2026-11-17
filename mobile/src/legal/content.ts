@@ -167,7 +167,6 @@ export const PRIVACY_DOCUMENT: LegalDocument = {
             'BigDataCloud: temporarily receives your approximate coordinates during Local Radius setup to determine your local area and country. Raw coordinates are not stored in your profile.',
             'Expo Push Notifications and Firebase Cloud Messaging (a Google service): deliver push notifications to your device, which can include the sender’s display name and a short preview of a new message.',
             "KLIPY: performs GIF searches and serves the GIF results you choose.",
-            'Sentry: receives crash reports and technical diagnostics from your device to help keep the app stable.',
             'Resend: sends account-related and transactional emails, such as verification and moderation notices, to your email address.',
             'Cloudflare Turnstile: verifies that a signup is human to prevent abuse. It may receive device and browser signals from the verification page.',
             'Google: if you sign in with Google, Google handles the sign-in and we receive the basic profile information you approve.',

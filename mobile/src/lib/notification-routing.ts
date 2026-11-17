@@ -13,6 +13,14 @@ export type PushData = {
   meetupId?: string
 }
 
+const TAB_TARGETS = new Set<string>(['/home', '/clusters', '/posts', '/notifications', '/settings'])
+
+// Tabs live below the detail stack, so pushing one from a detail can add a
+// second tab group. navigate reuses the existing group and selects the tab.
+export function isTabTarget(href: Href): boolean {
+  return typeof href === 'string' && TAB_TARGETS.has(href)
+}
+
 export function mobileTarget(n: MyNotification): Href | null {
   const target = notificationTarget(n)
   if (!target) return null
@@ -21,8 +29,8 @@ export function mobileTarget(n: MyNotification): Href | null {
 
 export function pushDataToHref(data: PushData | null | undefined): Href | null {
   if (!data) return null
-  if (data.kind === 'invitation_received') return '/(app)/home'
-  if (data.kind === 'queue_update') return '/(app)/clusters'
+  if (data.kind === 'invitation_received') return '/home'
+  if (data.kind === 'queue_update') return '/clusters'
   if (data.postId) {
     return {
       pathname: '/posts/[postId]',
@@ -62,7 +70,7 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
       params: { clusterId: data.clusterId, ...(data.messageId ? { message: data.messageId } : {}) },
     }
   }
-  return '/(app)/home'
+  return '/home'
 }
 
 export function appPathToHref(to: string): Href | null {
@@ -101,8 +109,8 @@ export function appPathToHref(to: string): Href | null {
     }
     return { pathname: '/cluster/[clusterId]/room', params: { clusterId, ...(message ? { message } : {}) } }
   }
-  if (to === '/home') return '/(app)/home'
-  if (to === '/clusters') return '/(app)/clusters'
+  if (to === '/home') return '/home'
+  if (to === '/clusters') return '/clusters'
   if (to === '/cluster-created') return '/cluster-created'
   return null
 }

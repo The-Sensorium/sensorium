@@ -3819,6 +3819,7 @@ export type Database = {
         | "report-resolved"
         | "appeal-received"
         | "appeal-resolved"
+        | "cluster-formed"
       platform_role: "moderator" | "admin"
       profile_status: "online" | "away" | "busy" | "invisible"
       replacement_status:
@@ -4052,6 +4053,7 @@ export const Constants = {
         "report-resolved",
         "appeal-received",
         "appeal-resolved",
+        "cluster-formed",
       ],
       platform_role: ["moderator", "admin"],
       profile_status: ["online", "away", "busy", "invisible"],

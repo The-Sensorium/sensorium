@@ -18,7 +18,7 @@ and the Android APK CI workflows.
 
 | Layer | Choice |
 |---|---|
-| Runtime | Expo SDK 57, React Native 0.86, React 19 |
+| Runtime | Expo SDK 58, React Native 0.88, React 19 |
 | Routing | `expo-router` (file-based, typed routes) |
 | Server state | TanStack Query 5 + Supabase Realtime |
 | Backend | Supabase (Postgres, Auth, Storage, Realtime) - shared with web |
@@ -48,8 +48,8 @@ mobile/
 ├─ app/                    # expo-router routes (file-based)
 │  ├─ (auth)/              # login, signup, verify-email, forgot/reset password
 │  ├─ (onboarding)/        # single index.tsx, 5 steps: profile, customization, modes, local, review
-│  ├─ (app)/               # member shell
-│  │  ├─ home.tsx, posts.tsx, clusters.tsx, notifications.tsx, settings.tsx
+│  ├─ (app)/               # member shell: native Stack above the tabs
+│  │  ├─ (tabs)/           # home, posts, notifications, clusters, settings
 │  │  ├─ cluster-created.tsx, mode/, posts/, profile/, queue/, settings/
 │  │  └─ cluster/[clusterId]/   # room, members, meetups (+ meetups/new), signals (+ signals/[signalId]), votes, settings, call, introductions, waiting
 │  ├─ appeal.tsx           # restricted-account appeal
@@ -67,11 +67,21 @@ mobile/
 └─ eas.json                # EAS build profiles
 ```
 
+Every non-tab route under `(app)/` is a stack push above the tab group. The
+native stack supplies the iOS edge-swipe back and the Android back pop, and
+pushed detail screens unmount on back. Both layouts anchor their deep-link
+state (`(app)` to `(tabs)`, `(tabs)` to `home`), so a push tap or deep link to a
+detail still has Home underneath it.
+
 ## Setup
 
 Prerequisites: Node.js 20+ and npm. Expo Go is enough for most UI work, but
 **calls and push notifications require a development build or a real device**.
 Native Android builds also need the Android SDK/emulator (or `eas build`).
+
+Expo Go only supports the current SDK, and iOS clients cannot be downgraded, so
+keep `expo` in step with the store build (`npx expo-doctor` warns on drift). The
+project is on SDK 58, which matches the SDK 58 Expo Go.
 
 1. `cd mobile && cp .env.example .env` - use the staging `EXPO_PUBLIC_SUPABASE_URL` + publishable key first.
 2. `npm install`
@@ -95,8 +105,6 @@ belong here - the anon/publishable key is the only credential the app holds.
 | `EXPO_PUBLIC_KLIPY_ENDPOINT` | no | KLIPY API base URL (defaults to `https://api.klipy.com/api/v1`) |
 | `EXPO_PUBLIC_GEOCODING_ENDPOINT` | no | Optional geocoding override used by local mode |
 | `EXPO_PUBLIC_WEB_URL` | yes for device builds | Web app origin hosting `/auth/mobile-challenge` (`https://preview.thesensorium.online` staging, `https://www.thesensorium.online` production). Powers the in-app human-verification sheet for auth; empty means verification is skipped (local dev only) |
-| `EXPO_PUBLIC_SENTRY_DSN` | yes for device builds | Sentry DSN for crash reporting (`@sentry/react-native`, initialized in `app/_layout.tsx`); empty means reporting is disabled (local dev only). Sourcemap upload during builds additionally needs `SENTRY_AUTH_TOKEN` plus the Sentry org/project |
-| `EXPO_PUBLIC_APP_ENV` | yes for device builds | Build flavor (`staging` / `production`), reported as the Sentry environment; unset means `development` |
 
 ## Scripts
 
@@ -111,11 +119,6 @@ belong here - the anon/publishable key is the only credential the app holds.
 
 There is also a local APK helper at [`scripts/android-build.ps1`](scripts/android-build.ps1)
 for building an installable APK without EAS.
-
-`react-native-keyboard-controller` is pinned outside the Expo SDK version
-(`expo.install.exclude` in [`package.json`](package.json)): the project tracks
-the 1.22.x line (SDK 57 pins 1.21.9), so `expo install --fix` flagging the
-drift is expected - do not "fix" it back.
 
 ## Auth and deep links
 
@@ -160,10 +163,11 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
   listener. Push-to-route mapping lives in
   [`src/lib/notification-routing.ts`](src/lib/notification-routing.ts).
   A `replacement` push carrying `newMemberId` (new-member-joined) opens the
-  joiner's profile; other governance pushes land on the votes tab. Meetup
+  joiner's profile; other governance pushes open the votes screen. Meetup
   pushes (invite, confirmation, reminders) ride the `governance` channel and
-  land on the meetups tab.
-- Push is a no-op in Expo Go and on web (guarded by `Constants.appOwnership`).
+  open the meetups screen.
+- Push is a no-op in Expo Go and on web (Expo Go is detected by
+  `Constants.executionEnvironment` plus the absence of the dev launcher module).
 - Server delivery, preferences, and the outbox worker are documented in
   [`../docs/TECHNICAL.md`](../docs/TECHNICAL.md).
 
@@ -182,8 +186,9 @@ Generated from web:
 Everything else is hand-written for mobile. Notable exceptions to keep an eye on:
 
 - `src/features/realtime.ts` is **pinned** (the mobile copy uses a ref-counted
-  `useClusterChannel` for tab-kept-mounted screens). If the web copy changes,
-  reconcile it by hand.
+  `useClusterChannel` for screens that stay mounted while unfocused: tabs and
+  stack screens with another screen pushed above them). If the web copy
+  changes, reconcile it by hand.
 - `src/features/voice-notes.ts` is a mobile-maintained fork (the send hook takes
   a file uri; Blob is unusable with Supabase Storage on React Native) and
   `scripts/sync-db-types.mjs` swaps the web Blob-based `uploadVoiceNote` for
@@ -237,6 +242,13 @@ npm test
   measurement only). It only produces the AAB artifact; Play Console upload
   is always manual. This is the default path for Play releases so the
   limited EAS quota is spared.
+- **R8 and WebRTC**: `app.json` adds `-dontwarn livekit.org.jni_zero.**`
+  through `expo-build-properties`. WebRTC 150 ships the prefixed `jni_zero`
+  bridge but not the generated `*Jni` registration classes, so R8 stops the
+  release minify on a dangling reference that nothing calls. This is the same
+  rule LiveKit is adding to the library's own consumer rules
+  (`livekit/react-native-webrtc#116`); drop it from `app.json` once a release
+  with that change is installed.
 - The app points at the **staging** Supabase project for preview builds and the
   **production** project for release builds, matching the web environments.
 

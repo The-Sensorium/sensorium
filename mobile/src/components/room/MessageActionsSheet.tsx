@@ -246,7 +246,7 @@ export function MessageActionsSheet({
                 </SheetRow>
               ) : (
                 <SheetRow label="Report" danger onPress={onReport}>
-                  <Flag size={18} color={t.error} strokeWidth={1.5} />
+                  <Flag size={18} color={t.destructive} strokeWidth={1.5} />
                 </SheetRow>
               )}
             </>
@@ -311,7 +311,7 @@ function SheetRow({
       style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14, minHeight: 48 }}
     >
       {children}
-      <Text style={{ fontSize: 16, lineHeight: 24, color: danger ? t.error : t.onSurface }}>{label}</Text>
+      <Text style={{ fontSize: 16, lineHeight: 24, color: danger ? t.destructive : t.onSurface }}>{label}</Text>
     </Pressable>
   )
 }

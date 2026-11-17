@@ -1,30 +1,33 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import { Newspaper } from 'lucide-react-native'
+import { useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useAuth } from '../../src/auth-context'
-import { useClusterMembers, useMyClusters } from '../../src/features/matching'
+import { useAuth } from '../../../src/auth-context'
+import { useClusterMembers, useMyClusters } from '../../../src/features/matching'
 import {
   useLoadEarlierPosts,
   POSTS_PAGE_SIZE,
   sortPostsForFeed,
   type PostSort,
-} from '../../src/features/posts'
+} from '../../../src/features/posts'
 import {
   useClusterPosts,
   useClusterPostComments,
   useClusterPostLikes,
   useTogglePostLike,
-} from '../../src/features/posts'
-import { useClusterChannel } from '../../src/features/realtime'
-import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../src/features/moderation'
-import { MutedHideBar, MutedPlaceholder } from '../../src/components/MutedPlaceholder'
-import { PostComposer } from '../../src/components/PostComposer'
-import { PostCard } from '../../src/components/PostCard'
-import { radii, spacing } from '../../src/lib/theme-tokens'
-import { useTheme } from '../../src/lib/use-theme'
-import { Card, ErrorText, FeedSkeleton } from '../../src/components/ui'
-import { usePullToRefresh } from '../../src/lib/use-pull-to-refresh'
+} from '../../../src/features/posts'
+import { useClusterChannel } from '../../../src/features/realtime'
+import { useMarkPostsSeen, useNewPostsCounts } from '../../../src/features/posts-badge'
+import { isMutedAuthor, mutedIds, toggleRevealedId, useMyMutes } from '../../../src/features/moderation'
+import { MutedHideBar, MutedPlaceholder } from '../../../src/components/MutedPlaceholder'
+import { PostComposer } from '../../../src/components/PostComposer'
+import { PostCard } from '../../../src/components/PostCard'
+import { radii, spacing } from '../../../src/lib/theme-tokens'
+import { useTheme } from '../../../src/lib/use-theme'
+import { Card, ErrorText, FeedSkeleton } from '../../../src/components/ui'
+import { usePullToRefresh } from '../../../src/lib/use-pull-to-refresh'
+import { badgeLabel } from '../../../src/lib/tab-badge'
 
 export default function PostsFeedScreen() {
   const t = useTheme()
@@ -45,6 +48,23 @@ export default function PostsFeedScreen() {
 
   const clusterId = selectedId
   const posts = useClusterPosts(clusterId)
+  const newPosts = useNewPostsCounts(clusterIds)
+  const markSeen = useMarkPostsSeen()
+  const [focused, setFocused] = useState(false)
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true)
+      return () => setFocused(false)
+    }, []),
+  )
+  // Clear only the cluster whose feed is actually open. The other chips keep
+  // their counts until the user switches to them, and the tab badge keeps
+  // counting posts elsewhere.
+  const newestPostId = posts.data?.[0]?.id
+  useEffect(() => {
+    if (!focused || !clusterId) return
+    void markSeen(clusterId)
+  }, [focused, clusterId, newestPostId, markSeen])
   const members = useClusterMembers(clusterId)
   const likes = useClusterPostLikes(clusterId)
   const comments = useClusterPostComments(clusterId)
@@ -166,14 +186,9 @@ export default function PostsFeedScreen() {
         }}
         ListHeaderComponent={
           <>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <View>
-                <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Posts</Text>
-                <Text style={{ fontSize: 12, lineHeight: 16, color: t.onSurfaceVariant }}>
-                  Share something with your cluster.
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, padding: 4, gap: 4 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', columnGap: 12, rowGap: 12, marginBottom: 16 }}>
+              <Text style={{ fontSize: 24, lineHeight: 30, letterSpacing: -0.2, fontWeight: '600', color: t.onSurface }} accessibilityRole="header">Posts</Text>
+              <View style={{ flexDirection: 'row', marginLeft: 'auto', borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, padding: 4, gap: 4 }}>
                 {(['new', 'top'] as const).map((option) => {
                   const active = sort === option
                   return (
@@ -198,19 +213,36 @@ export default function PostsFeedScreen() {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                 {(clusters.data ?? []).map((c) => {
                   const active = c.cluster.id === selectedId
+                  // The open cluster is being read right now, so hide its count
+                  // even before the mark-seen refetch lands.
+                  const newCount = active ? 0 : (newPosts.data?.get(c.cluster.id) ?? 0)
                   return (
                     <Pressable
                       key={c.cluster.id}
                       onPress={() => setSelectedId(c.cluster.id)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
-                      accessibilityLabel={c.cluster.name}
+                      accessibilityLabel={
+                        newCount > 0
+                          ? `${c.cluster.name}, ${newCount} new ${newCount === 1 ? 'post' : 'posts'}`
+                          : c.cluster.name
+                      }
                       hitSlop={8}
-                      style={{ borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radii.pill, paddingHorizontal: 16, paddingVertical: 12, minHeight: 48, justifyContent: 'center', backgroundColor: active ? t.surfaceContainer : 'transparent' }}
                     >
                       <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: '600', color: active ? t.primary : t.onSurfaceVariant }} numberOfLines={1}>
                         {c.cluster.name}
                       </Text>
+                      {newCount > 0 && (
+                        <View
+                          testID={`cluster-new-posts-${c.cluster.id}`}
+                          style={{ minWidth: 20, minHeight: 20, borderRadius: 10, backgroundColor: t.error, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }}
+                        >
+                          <Text style={{ fontSize: 11, lineHeight: 16, fontWeight: '600', color: t.onError }} maxFontSizeMultiplier={1.4}>
+                            {badgeLabel(newCount)}
+                          </Text>
+                        </View>
+                      )}
                     </Pressable>
                   )
                 })}
@@ -288,7 +320,7 @@ export default function PostsFeedScreen() {
                 </Text>
               )}
             </Pressable>
-          ) : null
+          ) : undefined
         }
         style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, padding: spacing.containerMargin, paddingBottom: 24 }}

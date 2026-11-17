@@ -21,7 +21,7 @@ export default function ClusterCreatedScreen() {
   const queryClient = useQueryClient()
   const formed = useLatestClusterFormed()
   const [notif, setNotif] = useState<ClusterFormedNotification | null>(null)
-  const goBack = useClusterBack('/(app)/home')
+  const goBack = useClusterBack('/home')
 
   useEffect(() => {
     if (formed.data && !notif) {
