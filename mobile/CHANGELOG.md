@@ -16,6 +16,38 @@ release) for the release ritual.
 ### Added
 
 - When your cluster forms, you now also get an email letting you know it is ready, alongside the push notification.
+
+### Changed
+
+- Screens like a cluster room, post, profile, and settings now open on top of the tab bar, so the iPhone edge-swipe back gesture works and Android back uses the normal system animation.
+- Leaving the call screen with back or the edge swipe now leaves the call. It no longer keeps running in the background while you use the rest of the app.
+- Crash reporting has been removed, and the privacy policy no longer lists a crash-reporting provider.
+- Recent posts are no longer listed on Home. New posts now show as a count badge on the Posts tab, and opening Posts clears it.
+- The Posts tab now shows a new post count on each cluster chip, so you can see which cluster has something new. Opening a cluster clears only that cluster's count, and the Posts tab badge keeps counting the clusters you have not opened yet.
+- Mark all read now lives in the Notifications overflow menu alongside Clear all notifications, so the header stays uncluttered.
+- Removed subtitles that repeated the page title on Clusters, My reports, Introductions, and Settings, plus the first create-cluster step.
+- Muted members now live on their own page under Safety, with the note that muting is private shown there.
+
+### Fixed
+
+- In cluster chat, the Android back gesture now closes the keyboard and then leaves the room on the next press, instead of needing an extra press.
+- The discard button and the preview screen's delete button for voice notes are now red in dark mode instead of pink, matching other delete actions.
+- The member strip at the top of cluster chat no longer clips the left edge of your own ringed avatar.
+- The New/Top sort control on Posts no longer runs off the right edge on narrower phones.
+- The Sign out confirmation now uses the same centered dialog as other confirmations, so its buttons keep a normal size instead of stretching into oversized pills.
+- The keyboard now closes when you move to another screen instead of staying open over the next page.
+- Fixed the bottom of typed text clipping in the login, signup, and other single-line fields on iPhone.
+- Fixed the iPhone meetup planner showing a stray date selector under the time options. Date and time pickers now open in a sheet, matching Android.
+- Destructive actions are now red in dark mode everywhere instead of pink, including delete account, clear notifications, remove meetup option, leave cluster, and remove location.
+- The keyboard now closes when you leave cluster chat instead of staying open on the next screen.
+- The Appearance theme cards now stack the preview above the name and description when your phone's text size is larger than default, instead of squeezing the description into a thin column.
+
+## [1.1.0]
+
+Initial closed-testing release on Google Play.
+
+### Added
+
 - Open Mix now has optional match preferences: choose an age range you are comfortable being grouped with (Any age by default).
 - Profile photos can now be cropped to a square and taken with the camera, not just picked from the gallery.
 - You now get notified when someone replies to a Signal you raised, and when a Signal you helped with is marked in progress or resolved.
@@ -33,23 +65,12 @@ release) for the release ritual.
 
 ### Changed
 
-- Screens like a cluster room, post, profile, and settings now open on top of the tab bar, so the iPhone edge-swipe back gesture works and Android back uses the normal system animation.
-- Leaving the call screen with back or the edge swipe now leaves the call. It no longer keeps running in the background while you use the rest of the app.
-- Crash reporting has been removed, and the privacy policy no longer lists a crash-reporting provider.
-- Recent posts are no longer listed on Home. New posts now show as a count badge on the Posts tab, and opening Posts clears it.
-- The Posts tab now shows a new post count on each cluster chip, so you can see which cluster has something new. Opening a cluster clears only that cluster's count, and the Posts tab badge keeps counting the clusters you have not opened yet.
-- Mark all read now lives in the Notifications overflow menu alongside Clear all notifications, so the header stays uncluttered.
 - Delete and other destructive confirmations now use a centered dialog with stacked, full-width actions, so the decision reads clearly before you commit to it. The Delete option in post and message menus now uses the same neutral color as Edit.
 - The chat room member strip now shows as many whole faces as fit your screen, with a +N badge for the rest, instead of spilling onto a second row on narrower phones. The message box also uses a shorter hint that fits on one line.
 - Tidied icons, spacing, text sizes, and accent colors across screens so things line up and read consistently.
-- Removed subtitles that repeated the page title on Clusters, My reports, Introductions, and Settings, plus the first create-cluster step.
-- Muted members now live on their own page under Safety, with the note that muting is private shown there.
 
 ### Fixed
 
-- In cluster chat, the Android back gesture now closes the keyboard and then leaves the room on the next press, instead of needing an extra press.
-- The discard button and the preview screen's delete button for voice notes are now red in dark mode instead of pink, matching other delete actions.
-- The member strip at the top of cluster chat no longer clips the left edge of your own ringed avatar.
 - Picking a mention suggestion now replaces the letters you typed instead of leaving the last one behind, in chat and post comments.
 - Busy chat no longer buzzes for every message: you get one notification per cluster that quietly updates with the recent messages until you read it, instead of a stack of buzzing alerts. Each one now names its cluster and shows who said what. Mentions still alert loudly.
 - Deleting your account now also removes the photos you shared in clusters you had already left.
@@ -66,15 +87,3 @@ release) for the release ritual.
 - Fixed sent chat text reappearing in the message box when you tap it again right after sending, which could resend the same message twice.
 - Fixed the in-call mute, camera, and speaker buttons being nearly invisible in light mode.
 - Fixed the "mode unavailable" notice being hard to read in dark mode.
-- The New/Top sort control on Posts no longer runs off the right edge on narrower phones.
-- The Sign out confirmation now uses the same centered dialog as other confirmations, so its buttons keep a normal size instead of stretching into oversized pills.
-- The keyboard now closes when you move to another screen instead of staying open over the next page.
-- Fixed the bottom of typed text clipping in the login, signup, and other single-line fields on iPhone.
-- Fixed the iPhone meetup planner showing a stray date selector under the time options. Date and time pickers now open in a sheet, matching Android.
-- Destructive actions are now red in dark mode everywhere instead of pink, including delete account, clear notifications, remove meetup option, leave cluster, and remove location.
-- The keyboard now closes when you leave cluster chat instead of staying open on the next screen.
-- The Appearance theme cards now stack the preview above the name and description when your phone's text size is larger than default, instead of squeezing the description into a thin column.
-
-## [1.1.0]
-
-Initial closed-testing release on Google Play.
