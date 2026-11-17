@@ -11,6 +11,8 @@ release) for the release ritual.
 
 ## [Unreleased]
 
+## [1.2.0]
+
 ### Added
 
 - When your cluster forms, you now also get an email letting you know it is ready, alongside the push notification.
