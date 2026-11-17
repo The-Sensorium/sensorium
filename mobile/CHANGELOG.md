@@ -11,6 +11,10 @@ release) for the release ritual.
 
 ## [Unreleased]
 
+### Fixed
+
+- The app icon no longer looks oversized on Android or iOS; the logo now has the same padding and proportions as the Play Store listing.
+
 ## [1.2.0]
 
 ### Added
