@@ -162,7 +162,7 @@ describe('MeetupsNewView', () => {
     const { container } = renderPage()
     fireEvent.click(screen.getByText('Add another time'))
     expect(customRows(container)).toHaveLength(2)
-    fillRow(container, 1, 0, '00:01')
+    fillRow(container, 1, -1, '12:00')
     expect(screen.getByText('Pick a time at least 3 hours out and within the next 7 days.')).toBeTruthy()
     removeRow(1)
     expect(customRows(container)).toHaveLength(1)
