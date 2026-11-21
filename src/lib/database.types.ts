@@ -3809,6 +3809,7 @@ export type Database = {
         | "meetup_reminder_24h"
         | "meetup_reminder_15m"
         | "meetup_starting"
+        | "incoming_call"
       outbound_email_template:
         | "message-hidden"
         | "warning-issued"

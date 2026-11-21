@@ -27,6 +27,7 @@ Status reflects the feature in the live app, not the doc's original framing.
 | [`MOBILE_CALLS_PLAN.md`](MOBILE_CALLS_PLAN.md) | Cluster audio/video calls on mobile | Shipped |
 | [`MOBILE_UX_IMPLEMENTATION_PLAN.md`](MOBILE_UX_IMPLEMENTATION_PLAN.md) | Mobile UX gaps (pull-to-refresh, virtualization, haptics, touch targets) | Shipped |
 | [`CLUSTER_CALLS_PLAN.md`](CLUSTER_CALLS_PLAN.md) | Cluster audio/video calls (web + mobile, LiveKit) | Shipped |
+| [`INCOMING_CALL_ALERTS_PLAN.md`](INCOMING_CALL_ALERTS_PLAN.md) | App-wide incoming call ringing and push on mobile | Implemented |
 | [`POSTS_FEATURE_PLAN.md`](POSTS_FEATURE_PLAN.md) | Cluster-scoped posts feed, comments/replies, likes, moderation | Shipped |
 | [`STAFF_NOTIFICATIONS_PLAN.md`](STAFF_NOTIFICATIONS_PLAN.md) | Moderator/admin unread badges for reports and appeals | Shipped |
 | [`EMAIL_NOTIFICATIONS_APPEALS_PLAN.md`](EMAIL_NOTIFICATIONS_APPEALS_PLAN.md) | Transactional email outbox + in-app appeals | Shipped |

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Constants, { ExecutionEnvironment } from 'expo-constants'
-import { NativeModules, Platform } from 'react-native'
+import { AppState, NativeModules, Platform } from 'react-native'
 import { shouldSuppressPushBanner, getSuppressedPushCluster } from './push-suppress'
 import { supabase } from './supabase'
 
@@ -39,7 +39,12 @@ async function notifications(): Promise<NotificationsModule | null> {
     mod.setNotificationHandler({
       handleNotification: async (notification) => {
         const data = (notification.request.content.data ?? {}) as Record<string, unknown>
-        const suppressed = shouldSuppressPushBanner(data, getSuppressedPushCluster())
+        // The in-app overlay is the alert while the app is foregrounded; the OS
+        // banner would ring twice (or show a duplicate for the same call).
+        const quietIncomingCall =
+          data.kind === 'incoming_call' && AppState.currentState === 'active'
+        const suppressed =
+          shouldSuppressPushBanner(data, getSuppressedPushCluster()) || quietIncomingCall
         return {
           shouldShowBanner: !suppressed,
           shouldShowList: !suppressed,
@@ -96,6 +101,14 @@ async function notifications(): Promise<NotificationsModule | null> {
           sound: 'default',
           vibrationPattern: [0, 250, 250, 250],
           lockscreenVisibility: publicVisibility,
+        }),
+        mod.setNotificationChannelAsync('calls', {
+          name: 'Calls',
+          description: 'Incoming cluster calls',
+          importance,
+          sound: 'default',
+          vibrationPattern: [0, 500, 500, 500],
+          lockscreenVisibility: privateVisibility,
         }),
       ]).catch(() => undefined)
       return cached

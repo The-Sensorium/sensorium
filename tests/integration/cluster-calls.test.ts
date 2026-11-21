@@ -65,6 +65,75 @@ describe('cluster calls RLS + RPC', () => {
     expect(anonRows ?? []).toHaveLength(0)
   })
 
+  it('start_call rings every other member but not the caller, off the inbox', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    const callId = await startCall(a, clusterId)
+
+    const { data: rings } = await admin
+      .from('notifications')
+      .select('user_id, type, payload')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'incoming_call')
+    expect((rings ?? []).map((r) => r.user_id)).toEqual([b.id])
+    expect(rings?.[0]?.payload).toMatchObject({ call_id: callId })
+
+    const { data: mine } = await b.client.rpc('get_my_notifications')
+    expect((mine ?? []).some((n: { type: string }) => n.type === 'incoming_call')).toBe(false)
+    const { data: unread } = await b.client.rpc('get_unread_notification_count')
+    expect(unread).toBe(0)
+  })
+
+  it('pushes an incoming call even when the cluster is push-muted', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    const { error: tokenErr } = await admin.from('push_tokens').insert({
+      user_id: b.id,
+      expo_push_token: 'ExponentPushToken[call-b]',
+    })
+    expect(tokenErr).toBeNull()
+    const { error: prefErr } = await admin.from('notification_prefs').upsert(
+      { user_id: b.id, cluster_id: clusterId, push_muted_until: 'infinity' },
+      { onConflict: 'user_id,cluster_id' },
+    )
+    expect(prefErr).toBeNull()
+
+    const callId = await startCall(a, clusterId)
+
+    const { data: rows } = await admin.from('push_outbox').select('*').eq('user_id', b.id)
+    expect(rows).toHaveLength(1)
+    expect(rows?.[0]?.type).toBe('incoming_call')
+    expect(rows?.[0]?.channel).toBe('calls')
+    expect(rows?.[0]?.data).toMatchObject({
+      v: 1,
+      kind: 'incoming_call',
+      clusterId,
+      callId,
+    })
+  })
+
+  it('ending a call deletes its ring notifications and queued pushes', async () => {
+    const { a, b, clusterId } = await wireCluster()
+    const { error: tokenErr } = await admin.from('push_tokens').insert({
+      user_id: b.id,
+      expo_push_token: 'ExponentPushToken[call-end-b]',
+    })
+    expect(tokenErr).toBeNull()
+    const callId = await startCall(a, clusterId)
+    await b.client.rpc('join_call', { p_call_id: callId })
+
+    const { error } = await a.client.rpc('end_call', { p_call_id: callId })
+    expect(error).toBeNull()
+
+    const { data: rings } = await admin
+      .from('notifications')
+      .select('id')
+      .eq('cluster_id', clusterId)
+      .eq('type', 'incoming_call')
+    expect(rings ?? []).toHaveLength(0)
+
+    const { data: queued } = await admin.from('push_outbox').select('id').eq('user_id', b.id)
+    expect(queued ?? []).toHaveLength(0)
+  })
+
   it('starting twice returns the same live call instead of a second row', async () => {
     const { a, b, clusterId } = await wireCluster()
     const first = await startCall(a, clusterId)

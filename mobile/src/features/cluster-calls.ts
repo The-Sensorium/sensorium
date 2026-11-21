@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { requireSupabase } from '../lib/supabase'
 import type { Database } from '../lib/database.types'
@@ -39,6 +40,59 @@ export function useActiveCall(clusterId: string | null, enabled = true) {
       return ((data ?? []) as Call[])[0] ?? null
     },
   })
+}
+
+/** Newest ringing call the user did not start, or null. */
+export function pickIncomingCall(calls: Call[], userId: string | null): Call | null {
+  if (!userId) return null
+  return calls.find((c) => c.status === 'ringing' && c.initiated_by !== userId) ?? null
+}
+
+/**
+ * The call that should ring this user wherever they are. Reads at mount and on
+ * foreground, then follows app-wide `calls` changes (RLS scopes the realtime
+ * events to the caller's clusters) so a new ring, a first join, or an end
+ * updates without leaving the screen.
+ */
+export function useRingingCall(userId: string | null) {
+  const queryClient = useQueryClient()
+  const query = useQuery({
+    queryKey: ['incoming-call', userId ?? 'none'],
+    enabled: userId !== null,
+    staleTime: 0,
+    queryFn: async () => {
+      if (!userId) throw new Error('Not signed in')
+      const supabase = requireSupabase()
+      const { data, error } = await supabase
+        .from('calls')
+        .select('*')
+        .eq('status', 'ringing')
+        .neq('initiated_by', userId)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5)
+      if (error) throw error
+      return pickIncomingCall((data ?? []) as Call[], userId)
+    },
+  })
+
+  useEffect(() => {
+    if (!userId) return
+    const supabase = requireSupabase()
+    const bump = () => {
+      void queryClient.invalidateQueries({ queryKey: ['incoming-call', userId] })
+    }
+    const channel = supabase
+      .channel(`incoming-calls:${userId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'calls' }, bump)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'calls' }, bump)
+      .subscribe()
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [userId, queryClient])
+
+  return query
 }
 
 /** A single call by id (for the call screen's timer / ended state). */
@@ -111,6 +165,21 @@ export function useJoinCall(clusterId: string | null) {
       if (clusterId) invalidateCall(queryClient, clusterId, callId)
     },
   })
+}
+
+/**
+ * Join from a push tap. The token function only admits open participants, so
+ * this must succeed before the call screen opens. Failures are ordinary (the
+ * call ended while the push sat in the shade) and route back to the room.
+ */
+export async function joinCallFromPush(callId: string): Promise<boolean> {
+  try {
+    const supabase = requireSupabase()
+    const { error } = await supabase.rpc('join_call', { p_call_id: callId })
+    return error === null
+  } catch {
+    return false
+  }
 }
 
 /** Leave a call. Only the caller leaves; the call ends when the last person does. */

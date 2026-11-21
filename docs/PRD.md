@@ -235,7 +235,7 @@ Supported:
 - GIFs
 - Emoji Reactions
 - Voice Notes (up to 2 minutes, recorded in the room with preview before send, played back with a simple player showing elapsed and total time)
-- Audio / Video Calls (cluster-scoped, started from the room, powered by LiveKit)
+- Audio / Video Calls (cluster-scoped, started from the room, powered by LiveKit). Starting a call rings other members in the mobile app wherever they are, with a push notification when the app is in the background.
 
 Not Supported:
 - Direct Messages
@@ -1205,7 +1205,7 @@ Delete
 React
 Reply
 @-mentions (including `@everyone`)
-Audio / Video Call (start or join from the room)
+Audio / Video Call (start or join from the room; mobile members are alerted app-wide)
 Read receipts (Info on your own message)
 ```
 

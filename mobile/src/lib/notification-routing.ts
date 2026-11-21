@@ -11,6 +11,7 @@ export type PushData = {
   signalId?: string
   newMemberId?: string
   meetupId?: string
+  callId?: string
 }
 
 const TAB_TARGETS = new Set<string>(['/home', '/clusters', '/posts', '/notifications', '/settings'])
@@ -31,6 +32,12 @@ export function pushDataToHref(data: PushData | null | undefined): Href | null {
   if (!data) return null
   if (data.kind === 'invitation_received') return '/home'
   if (data.kind === 'queue_update') return '/clusters'
+  if (data.kind === 'incoming_call' && data.clusterId && data.callId) {
+    return {
+      pathname: '/cluster/[clusterId]/call',
+      params: { clusterId: data.clusterId, callId: data.callId },
+    }
+  }
   if (data.postId) {
     return {
       pathname: '/posts/[postId]',

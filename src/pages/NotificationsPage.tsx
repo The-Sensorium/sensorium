@@ -15,6 +15,7 @@ import {
   MessageSquareWarning,
   MoreHorizontal,
   PartyPopper,
+  Phone,
   Scale,
   ShieldCheck,
   Trash2,
@@ -79,6 +80,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   meetup_reminder_24h: CalendarDays,
   meetup_reminder_15m: CalendarDays,
   meetup_starting: CalendarDays,
+  incoming_call: Phone,
 }
 
 export function NotificationsPage() {

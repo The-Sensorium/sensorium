@@ -148,6 +148,12 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
   the token comes from the `create-call-token` Edge Function.
 - The screen is `app/(app)/cluster/[clusterId]/call.tsx`, with pre-join and
   permissions in `src/components/room/call/`.
+- `src/components/IncomingCallOverlay.tsx` rings app-wide for a `ringing` call
+  via `useRingingCall` and `assets/incoming-call.wav`. It is mounted above the
+  app stack; Join seats the user with `join_call` before opening the call
+  screen.
+- `start_call` writes an `incoming_call` push for the other members. The OS
+  push handles the background case; a tap joins and routes to the call screen.
 
 ## Push notifications
 
@@ -155,7 +161,7 @@ Calls are LiveKit rooms scoped to a cluster, started from the room.
   registers it via the `register_push_token` / `unregister_push_token` RPCs on
   sign-in; it is refreshed on foreground and removed on sign-out
   ([`src/lib/push.ts`](src/lib/push.ts)).
-- Android channels: `messages`, `mentions`, `invites`, `governance`.
+- Android channels: `messages`, `mentions`, `invites`, `governance`, `calls`.
   `messages` and `mentions` use private lockscreen visibility; `invites` and
   `governance` stay public.
 - Cold-start taps are routed via `getLaunchPushData()` in
