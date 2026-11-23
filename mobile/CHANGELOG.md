@@ -11,6 +11,10 @@ release) for the release ritual.
 
 ## [Unreleased]
 
+### Added
+
+- Cluster calls now ring you wherever you are in the app. If the app is closed or in the background, you get a push notification. Tap Join to enter the call.
+
 ### Fixed
 
 - The app icon no longer looks oversized on Android or iOS; the logo now has the same padding and proportions as the Play Store listing.
