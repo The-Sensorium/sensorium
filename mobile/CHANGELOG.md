@@ -17,7 +17,13 @@ release) for the release ritual.
 
 ### Fixed
 
+- Destructive icon badges no longer show as solid red squares in dark mode; Leave cluster, Replace a member, and the restricted account badge now use a soft red tint like the web app.
+- The Appearance and Account sections in Settings now show their icons, matching the other sections.
 - The app icon no longer looks oversized on Android or iOS; the logo now has the same padding and proportions as the Play Store listing.
+
+### Changed
+
+- Delete account and Leave cluster entry buttons are now neutral; red stays on the confirmation action, plus in destructive menus and sheets.
 
 ## [1.2.0]
 

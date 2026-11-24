@@ -12,7 +12,7 @@ import { errorHaptic, successHaptic } from '../../../../src/lib/haptics'
 import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider } from '../../../../src/lib/cluster-theme'
 import { dateTimeFormatter } from '../../../../src/components/room/format'
-import { radii } from '../../../../src/lib/theme-tokens'
+import { radii, withAlpha } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { Card, Screen } from '../../../../src/components/ui'
 import { ConfirmDialog } from '../../../../src/components/ConfirmDialog'
@@ -106,7 +106,7 @@ function ClusterSettingsScreenContent() {
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View
-              style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.errorContainer, alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: withAlpha(t.errorContainer, 0.4), alignItems: 'center', justifyContent: 'center' }}
             >
               <LogOut size={16} color={t.destructive} strokeWidth={1.5} />
             </View>
@@ -124,10 +124,10 @@ function ClusterSettingsScreenContent() {
               onPress={() => setConfirming(true)}
               accessibilityRole="button"
               accessibilityLabel="Leave cluster"
-              style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.destructive, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
+              style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
-              <LogOut size={16} color={t.destructive} strokeWidth={1.5} />
-              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.destructive }}>
+              <LogOut size={16} color={t.onSurface} strokeWidth={1.5} />
+              <Text style={{ fontSize: 16, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>
                 Leave cluster
               </Text>
             </Pressable>
