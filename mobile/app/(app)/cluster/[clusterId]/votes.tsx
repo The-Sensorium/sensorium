@@ -24,7 +24,7 @@ import { ClusterSectionHeader } from '../../../../src/components/ClusterMenu'
 import { ClusterThemeProvider, useClusterOnAccent } from '../../../../src/lib/cluster-theme'
 import { mutateWithRetry } from '../../../../src/lib/mutate-retry'
 import { toErrorMessage } from '../../../../src/lib/error'
-import { radii } from '../../../../src/lib/theme-tokens'
+import { radii, withAlpha } from '../../../../src/lib/theme-tokens'
 import { useTheme } from '../../../../src/lib/use-theme'
 import { useResolvedScheme } from '../../../../src/lib/theme-choice'
 import { STATUS_PALETTE } from '../../../../src/lib/status-palette'
@@ -204,7 +204,7 @@ function VotesScreenContent() {
               })}
             >
               <View
-                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: t.errorContainer, alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: withAlpha(t.errorContainer, 0.4), alignItems: 'center', justifyContent: 'center' }}
               >
                 <Users size={18} color={t.error} strokeWidth={1.5} />
               </View>

@@ -9,7 +9,7 @@ import { useMyAppeal } from '../src/features/appeals'
 import { useActiveAccountGate } from '../src/lib/use-active-account'
 import { useMyAccess } from '../src/features/access'
 import { useDeleteAccount } from '../src/features/moderation'
-import { radii, spacing } from '../src/lib/theme-tokens'
+import { radii, spacing, withAlpha } from '../src/lib/theme-tokens'
 import { useTheme } from '../src/lib/use-theme'
 import { PrimaryButton } from '../src/components/ui'
 import { ConfirmDialog } from '../src/components/ConfirmDialog'
@@ -84,7 +84,7 @@ export default function RestrictedScreen() {
         </View>
         <View style={{ backgroundColor: t.surfaceLowest, borderRadius: radii.xl, padding: 32, alignItems: 'center' }}>
           <View
-            style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.errorContainer, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: withAlpha(t.errorContainer, 0.4), alignItems: 'center', justifyContent: 'center' }}
           >
             <ShieldAlert size={28} color={t.error} strokeWidth={1.5} />
           </View>
@@ -143,9 +143,9 @@ export default function RestrictedScreen() {
                     setError(null)
                     setConfirming(true)
                   }}
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.destructive, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44 }}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 44 }}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.destructive }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
                     Delete my account
                   </Text>
                 </Pressable>

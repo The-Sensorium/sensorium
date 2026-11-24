@@ -106,7 +106,7 @@ export function SettingsView() {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-error/40 px-5 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/5"
+            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
           >
             <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             Leave cluster

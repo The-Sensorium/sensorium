@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlertTriangle, BellRing, Check, ChevronDown, ChevronRight, Loader2, LogOut, Monitor, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react'
+import { AlertTriangle, BellRing, Check, ChevronDown, ChevronRight, Loader2, LogOut, Monitor, Moon, Pencil, ShieldCheck, Sun, Trash2, UserCog } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useDocumentTitle } from '../lib/use-document-title'
 import { useTheme, type ThemeMode } from '../lib/theme'
@@ -60,13 +60,16 @@ export function SettingsPage() {
       <SafetySection />
 
       <section aria-label="Account" className="rounded-2xl border border-outline-variant/60 bg-surface p-5 shadow-soft">
-        <h2 className="font-display text-lg font-semibold text-on-surface">Account</h2>
+        <div className="flex items-center gap-2">
+          <UserCog className="h-5 w-5 text-primary" strokeWidth={1.5} aria-hidden />
+          <h2 className="font-display text-lg font-semibold text-on-surface">Account</h2>
+        </div>
         <MfaRow />
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill border border-error/40 px-5 py-2.5 text-sm font-semibold text-error transition-colors hover:bg-error/5 sm:flex-1"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-5 py-2.5 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container sm:flex-1"
           >
             <Trash2 className="h-4 w-4" strokeWidth={1.5} aria-hidden />
             Delete account

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ActivityIndicator, Animated, Pressable, Text, TextInput, View } from 'react-native'
 import { Link, router } from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { BellOff, BellRing, ChevronDown, ChevronRight, Flag, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2 } from 'lucide-react-native'
+import { BellOff, BellRing, ChevronDown, ChevronRight, Flag, LogOut, MonitorSmartphone, Moon, Pencil, ShieldCheck, Sun, Trash2, UserCog } from 'lucide-react-native'
 import { useProfile } from '../../../src/lib/use-profile'
 import { goLogin } from '../../../src/lib/auth-navigation'
 import { requireSupabase } from '../../../src/lib/supabase'
@@ -78,15 +78,18 @@ export default function SettingsScreen() {
 
       <Card>
         <View style={{ marginBottom: 4 }}>
-          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Account</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <UserCog size={20} color={t.primary} strokeWidth={1.5} />
+            <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Account</Text>
+          </View>
           <View style={{ marginTop: 16, gap: 8 }}>
             <Pressable
               onPress={() => setDeleteOpen(true)}
               accessibilityRole="button"
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.destructive, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderColor: t.outlineVariant, borderRadius: radii.pill, paddingVertical: 12, minHeight: 48 }}
             >
-              <Trash2 size={16} color={t.destructive} strokeWidth={1.5} />
-              <Text style={{ fontSize: 14, fontWeight: '600', color: t.destructive }}>
+              <Trash2 size={16} color={t.onSurface} strokeWidth={1.5} />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: t.onSurface }}>
                 Delete account
               </Text>
             </Pressable>
@@ -253,7 +256,10 @@ function AppearanceSection() {
   return (
     <Card>
       <View style={{ marginBottom: 4 }}>
-        <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Appearance</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Sun size={20} color={t.primary} strokeWidth={1.5} />
+          <Text style={{ fontSize: 18, lineHeight: 24, fontWeight: '600', color: t.onSurface }}>Appearance</Text>
+        </View>
         <View style={{ marginTop: 16, flexDirection: 'row', gap: 8 }}>
           {THEME_OPTIONS.map((option) => {
             const active = choice === option.value

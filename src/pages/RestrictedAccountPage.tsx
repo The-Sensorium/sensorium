@@ -147,7 +147,7 @@ export function RestrictedAccountPage() {
                 <button
                   type="button"
                   onClick={() => setConfirming(true)}
-                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-error/70 px-4 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/10"
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-pill border border-outline-variant/60 px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container"
                 >
                   Delete my account
                 </button>
